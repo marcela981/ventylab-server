@@ -13,6 +13,8 @@ import authRoutes from './routes/auth';
 import usersRoutes from './routes/users';
 import progressRoutes from './routes/progress';
 import evaluationRoutes from './routes/evaluation';
+import modulesRoutes from './routes/modules';
+import lessonsRoutes from './routes/lessons';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -148,6 +150,12 @@ app.use('/api/progress', progressRoutes);
 // Rutas de casos clínicos (evaluación)
 app.use('/api/cases', evaluationRoutes);
 
+// Rutas de módulos educativos
+app.use('/api/modules', modulesRoutes);
+
+// Rutas de lecciones
+app.use('/api/lessons', lessonsRoutes);
+
 // TODO: Rutas de servicios de IA (cuando se implementen)
 // app.use('/api/ai', aiRoutes);
 
@@ -180,6 +188,8 @@ const startServer = () => {
     console.log('  - GET  /api/users/* - Usuarios');
     console.log('  - GET  /api/progress/* - Progreso');
     console.log('  - GET  /api/cases/* - Casos clínicos');
+    console.log('  - GET  /api/modules/* - Módulos educativos');
+    console.log('  - GET  /api/lessons/* - Lecciones');
     console.log('='.repeat(50));
   });
 };

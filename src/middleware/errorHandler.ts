@@ -5,12 +5,22 @@ import { Request, Response, NextFunction } from 'express';
  */
 export class AppError extends Error {
   statusCode: number;
+  code: string;
   isOperational: boolean;
+  details?: any[];
 
-  constructor(message: string, statusCode: number = 500) {
+  constructor(
+    message: string,
+    statusCode: number = 500,
+    code: string = 'INTERNAL_SERVER_ERROR',
+    isOperational: boolean = true,
+    details?: any[]
+  ) {
     super(message);
     this.statusCode = statusCode;
-    this.isOperational = true;
+    this.code = code;
+    this.isOperational = isOperational;
+    this.details = details;
     Error.captureStackTrace(this, this.constructor);
   }
 }
@@ -24,8 +34,8 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  const isOperational = err instanceof AppError;
-  const statusCode = isOperational ? err.statusCode : 500;
+  const isAppError = err instanceof AppError;
+  const statusCode = isAppError ? err.statusCode : 500;
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   // Log del error según severidad
@@ -55,15 +65,21 @@ export const errorHandler = (
   const errorResponse: any = {
     success: false,
     error: {
+      code: isAppError ? err.code : 'INTERNAL_SERVER_ERROR',
       message: err.message || 'Error interno del servidor',
       statusCode,
     },
   };
 
+  // Incluir detalles si existen
+  if (isAppError && err.details && err.details.length > 0) {
+    errorResponse.error.details = err.details;
+  }
+
   // En desarrollo, incluir stack trace
-  if (isDevelopment && !isOperational) {
+  if (isDevelopment && !isAppError) {
     errorResponse.error.stack = err.stack;
-    errorResponse.error.details = {
+    errorResponse.error.debug = {
       name: err.name,
       url: req.url,
       method: req.method,
@@ -71,7 +87,7 @@ export const errorHandler = (
   }
 
   // En producción, no exponer detalles de errores internos
-  if (!isDevelopment && !isOperational) {
+  if (!isDevelopment && !isAppError) {
     errorResponse.error.message = 'Error interno del servidor';
   }
 
@@ -88,10 +104,10 @@ export const notFoundHandler = (
 ) => {
   const error = new AppError(
     `Ruta no encontrada: ${req.method} ${req.originalUrl}`,
-    404
+    404,
+    'NOT_FOUND'
   );
   next(error);
 };
 
 export default errorHandler;
-

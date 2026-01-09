@@ -27,6 +27,7 @@ model User {
   quizAttempts       QuizAttempt[]
   achievements       Achievement[]
   evaluationAttempts EvaluationAttempt[]
+  learningProgress   LearningProgress[]
 
   @@map("users")
 }
@@ -71,32 +72,60 @@ model VerificationToken {
 }
 
 model Module {
-  id          String   @id @default(cuid())
-  title       String
-  description String?  @db.Text
-  order      Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  description   String?  @db.Text
+  category      String?
+  difficulty    String?  @default("beginner") // beginner, intermediate, advanced
+  estimatedTime Int?     @default(0) // en minutos
+  thumbnail     String?
+  order         Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  lessons    Lesson[]
-  progress   Progress[]
+  lessons          Lesson[]
+  progress         Progress[]
+  learningProgress LearningProgress[]
+  
+  // Relaciones de prerequisitos
+  prerequisites    ModulePrerequisite[] @relation("ModulePrerequisites")
+  dependentModules ModulePrerequisite[] @relation("DependentModules")
 
   @@map("modules")
 }
 
-model Lesson {
-  id          String   @id @default(cuid())
-  moduleId    String
-  title       String
-  content     String?  @db.Text
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// Relación many-to-many para prerequisitos de módulos
+model ModulePrerequisite {
+  id             String   @id @default(cuid())
+  moduleId       String
+  prerequisiteId String
+  createdAt      DateTime @default(now())
 
-  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  progress    Progress[]
+  module       Module @relation("ModulePrerequisites", fields: [moduleId], references: [id], onDelete: Cascade)
+  prerequisite Module @relation("DependentModules", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, prerequisiteId])
+  @@map("module_prerequisites")
+}
+
+model Lesson {
+  id            String   @id @default(cuid())
+  moduleId      String
+  title         String
+  content       String?  @db.Text
+  order         Int      @default(0)
+  estimatedTime Int?     @default(0) // en minutos
+  aiGenerated   Boolean  @default(false)
+  sourcePrompt  String?  @db.Text
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress       Progress[]
+  lessonProgress LessonProgress[]
+  quizzes        Quiz[]
 
   @@map("lessons")
 }
@@ -127,13 +156,52 @@ model Quiz {
   questions   Json     // Array of questions stored as JSON
   passingScore Float   @default(70.0)
   timeLimit   Int?     // Time limit in minutes
+  order       Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  lesson      Lesson?  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   attempts    QuizAttempt[]
 
   @@map("quizzes")
+}
+
+// Progreso de aprendizaje del usuario en un módulo
+model LearningProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  moduleId    String
+  timeSpent   Int       @default(0) // en minutos
+  score       Float?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lessonProgress LessonProgress[]
+
+  @@unique([userId, moduleId])
+  @@map("learning_progress")
+}
+
+// Progreso del usuario en lecciones individuales
+model LessonProgress {
+  id           String    @id @default(cuid())
+  progressId   String
+  lessonId     String
+  completed    Boolean   @default(false)
+  timeSpent    Int       @default(0) // en minutos
+  lastAccessed DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  learningProgress LearningProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  lesson           Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([progressId, lessonId])
+  @@map("lesson_progress")
 }
 
 model QuizAttempt {
