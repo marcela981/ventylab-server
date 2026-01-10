@@ -182,8 +182,8 @@ export async function unlockAchievement(
       return {
         id: existing.id,
         title: existing.title,
-        description: existing.description || undefined,
-        icon: achievementDef.icon,
+        description: existing.description || '',
+        icon: achievementDef.icon || 'default-icon',
         unlockedAt: existing.unlockedAt,
         xpReward: achievementDef.xpReward,
       };
@@ -220,8 +220,8 @@ export async function unlockAchievement(
     return {
       id: result.id,
       title: result.title,
-      description: result.description || undefined,
-      icon: achievementDef.icon,
+      description: result.description || '',
+      icon: achievementDef.icon || 'default-icon',
       unlockedAt: result.unlockedAt,
       xpReward: achievementDef.xpReward,
     };
@@ -308,8 +308,8 @@ export async function getUserAchievements(userId: string): Promise<UnlockedAchie
       return {
         id: achievement.id,
         title: achievement.title,
-        description: achievement.description || undefined,
-        icon: achievement.icon || undefined,
+        description: achievement.description || '',
+        icon: achievement.icon || 'default-icon',
         unlockedAt: achievement.unlockedAt,
         xpReward: def?.xpReward || 0,
       };

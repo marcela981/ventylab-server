@@ -610,13 +610,27 @@ export async function saveEvaluationAttempt(
     // Log de intento guardado
     console.log(`[${new Date().toISOString()}] Intento de evaluación guardado: Usuario ${userId}, Caso ${caseId}, Score: ${score}`);
 
+    // Validar y convertir userConfiguration
+    const userConfigData = attempt.userConfiguration;
+    if (!userConfigData || typeof userConfigData !== 'object' || Array.isArray(userConfigData)) {
+      throw new Error('Invalid user configuration format');
+    }
+    const savedUserConfig = userConfigData as unknown as UserConfiguration;
+
+    // Validar y convertir differences (comparison)
+    const comparisonData = attempt.differences;
+    if (!comparisonData || typeof comparisonData !== 'object' || Array.isArray(comparisonData)) {
+      throw new Error('Invalid comparison format');
+    }
+    const savedDifferences = comparisonData as unknown as ConfigurationComparison;
+
     return {
       id: attempt.id,
       userId: attempt.userId,
       clinicalCaseId: attempt.clinicalCaseId,
-      userConfiguration: attempt.userConfiguration as UserConfiguration,
+      userConfiguration: savedUserConfig,
       score: attempt.score,
-      differences: attempt.differences as ConfigurationComparison,
+      differences: savedDifferences,
       aiFeedback: attempt.aiFeedback || '',
       completionTime: attempt.completionTime ?? undefined,
       isSuccessful: attempt.isSuccessful,

@@ -416,7 +416,7 @@ async function calculateTotalXP(userId: string): Promise<number> {
   // XP por quiz pasado
   const xpPerQuiz = 100;
 
-  const [completedLessons, completedModules, passedQuizzes, achievements] = await Promise.all([
+  const [completedLessons, completedModulesResult, passedQuizzes, achievements] = await Promise.all([
     prisma.progress.count({
       where: {
         userId,
@@ -424,13 +424,14 @@ async function calculateTotalXP(userId: string): Promise<number> {
         completed: true,
       },
     }),
-    prisma.progress.count({
+    prisma.progress.findMany({
       where: {
         userId,
         moduleId: { not: null },
         completed: true,
       },
       distinct: ['moduleId'],
+      select: { moduleId: true },
     }),
     prisma.quizAttempt.count({
       where: {
@@ -443,6 +444,8 @@ async function calculateTotalXP(userId: string): Promise<number> {
       select: { id: true },
     }),
   ]);
+
+  const completedModules = completedModulesResult.length;
 
   // XP de logros (se calculará desde el servicio de logros)
   const { getAchievementXP } = await import('./achievements.service');

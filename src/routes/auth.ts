@@ -1,19 +1,10 @@
 import { Router, Request, Response } from 'express';
-import NextAuth from 'next-auth';
-import { authOptions } from '../config/auth';
 import { prisma } from '../config/prisma';
 import * as bcrypt from 'bcryptjs';
 import { UserRole } from '@prisma/client';
+import { generateToken } from '../utils/jwt';
 
 const router = Router();
-
-// Handler de NextAuth para Express
-const handler = NextAuth(authOptions);
-
-// Rutas de NextAuth (/* se monta en /api/auth en index.ts)
-router.all('/*', (req: Request, res: Response) => {
-  return handler(req, res);
-});
 
 /**
  * POST /api/auth/register
@@ -114,11 +105,22 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    // Usar NextAuth para crear la sesión
-    // Esto redirigirá al flujo de NextAuth
+    // Generar token JWT
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
     res.json({
-      message: 'Login exitoso. Usa el endpoint /api/auth/signin de NextAuth para obtener el token.',
-      userId: user.id,
+      message: 'Login exitoso',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     });
   } catch (error: any) {
     console.error('Error en login:', error);

@@ -3,7 +3,7 @@
  * Helper functions for JWT token generation and verification
  */
 
-import jwt, { Secret, SignOptions } from 'jsonwebtoken';
+import jwt, { Secret, SignOptions, Algorithm } from 'jsonwebtoken';
 
 /**
  * JWT Payload Interface
@@ -19,15 +19,35 @@ const JWT_SECRET: Secret = process.env.NEXTAUTH_SECRET || 'fallback-secret-for-d
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 /**
+ * Convert time string to seconds
+ * Supports formats: "7d", "24h", "30m", "60s" or plain number
+ */
+function parseExpiresIn(value: string): number {
+  const match = value.match(/^(\d+)([dhms]?)$/);
+  if (!match) {
+    return 604800; // Default: 7 days in seconds
+  }
+  
+  const num = parseInt(match[1], 10);
+  const unit = match[2] || 's';
+  
+  switch (unit) {
+    case 'd': return num * 86400;
+    case 'h': return num * 3600;
+    case 'm': return num * 60;
+    case 's': 
+    default: return num;
+  }
+}
+
+/**
  * Generate a JWT token
  * @param payload - The data to encode in the token
  * @returns The signed JWT token
  */
 export const generateToken = (payload: TokenPayload): string => {
-  const options: SignOptions = {
-    expiresIn: JWT_EXPIRES_IN as string,
-  };
-  return jwt.sign(payload, JWT_SECRET, options);
+  const expiresInSeconds = parseExpiresIn(JWT_EXPIRES_IN);
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: expiresInSeconds });
 };
 
 /**

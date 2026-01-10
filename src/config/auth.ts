@@ -1,31 +1,36 @@
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import type { NextAuthOptions } from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
-import CredentialsProvider from 'next-auth/providers/credentials';
+import type { AuthConfig } from '@auth/core';
+import type { User, Account, Profile, Session } from '@auth/core/types';
+import type { JWT } from '@auth/core/jwt';
+import Google from '@auth/core/providers/google';
+import Credentials from '@auth/core/providers/credentials';
 import { prisma } from './prisma';
 import * as bcrypt from 'bcryptjs';
 import { UserRole } from '@prisma/client';
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthConfig = {
   adapter: PrismaAdapter(prisma) as any,
   providers: [
-    GoogleProvider({
+    Google({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     }),
-    CredentialsProvider({
+    Credentials({
       name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'email', placeholder: 'email@ejemplo.com' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+      async authorize(credentials: Record<string, unknown> | undefined) {
+        const email = credentials?.email as string | undefined;
+        const password = credentials?.password as string | undefined;
+
+        if (!email || !password) {
           throw new Error('Email y contraseña son requeridos');
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email },
         });
 
         if (!user) {
@@ -38,7 +43,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Verificar contraseña
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+        const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
           throw new Error('Contraseña incorrecta');
@@ -66,7 +71,11 @@ export const authOptions: NextAuthOptions = {
     verifyRequest: '/auth/verify-request',
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account }: { 
+      token: JWT; 
+      user?: User; 
+      account?: Account | null 
+    }) {
       // Cuando el usuario inicia sesión, agregar datos al token
       if (user) {
         token.id = user.id;
@@ -88,17 +97,24 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { 
+      session: Session; 
+      token: JWT 
+    }) {
       // Agregar datos del token a la sesión
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as UserRole;
+        (session.user as any).id = token.id as string;
+        (session.user as any).role = token.role as UserRole;
         session.user.email = token.email as string;
       }
 
       return session;
     },
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile }: { 
+      user: User; 
+      account?: Account | null; 
+      profile?: Profile 
+    }) {
       // Validar que el usuario esté activo o permitir registro
       if (account?.provider === 'google') {
         // Verificar si el usuario ya existe
