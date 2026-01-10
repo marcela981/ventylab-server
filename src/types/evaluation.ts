@@ -94,15 +94,3 @@ export interface CaseSearchCriteria {
   limit?: number;
   offset?: number;
 }
-
-export default {
-  ClinicalCaseData,
-  ExpertConfigurationData,
-  UserConfiguration,
-  ParameterComparison,
-  ConfigurationComparison,
-  EvaluationFeedback,
-  EvaluationAttemptData,
-  CaseSearchCriteria,
-};
-

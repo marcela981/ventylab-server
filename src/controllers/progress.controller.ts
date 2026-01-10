@@ -195,21 +195,28 @@ export const getModuleProgress = async (req: Request, res: Response) => {
       },
     });
 
-    const quizStats = quizzes.map(quiz => ({
-      id: quiz.id,
-      title: quiz.title,
-      lastAttempt: quiz.attempts[0] ? {
-        score: quiz.attempts[0].score,
-        passed: quiz.attempts[0].passed,
-        completedAt: quiz.attempts[0].completedAt,
-      } : null,
-      totalAttempts: await prisma.quizAttempt.count({
-        where: {
-          userId,
-          quizId: quiz.id,
-        },
-      }),
-    }));
+    // Obtener conteo de intentos para cada quiz
+    const quizStats = await Promise.all(
+      quizzes.map(async (quiz) => {
+        const totalAttempts = await prisma.quizAttempt.count({
+          where: {
+            userId,
+            quizId: quiz.id,
+          },
+        });
+        
+        return {
+          id: quiz.id,
+          title: quiz.title,
+          lastAttempt: quiz.attempts[0] ? {
+            score: quiz.attempts[0].score,
+            passed: quiz.attempts[0].passed,
+            completedAt: quiz.attempts[0].completedAt,
+          } : null,
+          totalAttempts,
+        };
+      })
+    );
 
     const completedQuizzes = quizStats.filter(q => q.lastAttempt?.passed).length;
 

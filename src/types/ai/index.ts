@@ -77,14 +77,3 @@ export interface TutorPromptOptions {
   tone?: 'formal' | 'friendly' | 'educational';
   language?: string;
 }
-
-export default {
-  AIResponse,
-  VentilatorAnalysisResult,
-  AIProviderStats,
-  AIProvider,
-  LessonContext,
-  TutorMessage,
-  TutorPromptOptions
-};
-

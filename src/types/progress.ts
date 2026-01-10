@@ -90,16 +90,3 @@ export interface ProgressUpdateResult {
   achievementsUnlocked?: UnlockedAchievement[];
   error?: string;
 }
-
-export default {
-  UserProgress,
-  ModuleProgress,
-  LessonProgress,
-  UserStats,
-  LevelInfo,
-  AchievementCondition,
-  AchievementDefinition,
-  UnlockedAchievement,
-  ProgressUpdateResult,
-};
-

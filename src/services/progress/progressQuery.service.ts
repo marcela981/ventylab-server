@@ -294,8 +294,8 @@ export async function getUserStats(userId: string): Promise<UserStats> {
       const totalXP = await calculateTotalXP(userId);
 
       // Obtener nivel (se calculará en otro servicio)
-      const { level } = await import('./levelCalculation.service');
-      const levelInfo = await level.calculateLevel(totalXP);
+      const { calculateLevel } = await import('./levelCalculation.service');
+      const levelInfo = await calculateLevel(totalXP);
 
       // Obtener última actividad
       const lastActivity = allProgress.length > 0
