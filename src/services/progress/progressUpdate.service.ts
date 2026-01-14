@@ -44,6 +44,7 @@ export async function completeLesson(
           data: {
             completed: true,
             progress: 100,
+            completionPercentage: 100,
           },
         });
       } else {
@@ -55,6 +56,7 @@ export async function completeLesson(
             lessonId,
             completed: true,
             progress: 100,
+            completionPercentage: 100,
           },
         });
       }
@@ -90,6 +92,7 @@ export async function completeLesson(
         lessonId: result.lessonId || undefined,
         completed: result.completed,
         progress: result.progress,
+        completionPercentage: result.completionPercentage ?? undefined,
         updatedAt: result.updatedAt,
       },
       xpGained,
@@ -118,7 +121,9 @@ export async function completeLesson(
 export async function saveLessonProgress(
   userId: string,
   lessonId: string,
-  progressPercent: number
+  progressPercent: number,
+  completionPercentage?: number,
+  completedOverride?: boolean
 ): Promise<ProgressUpdateResult> {
   try {
     // Validar porcentaje de progreso
@@ -156,7 +161,12 @@ export async function saveLessonProgress(
         },
       });
 
-      const isCompleted = progressPercent >= 100;
+    const isCompleted = typeof completedOverride === 'boolean'
+      ? completedOverride
+      : progressPercent >= 100;
+    const resolvedCompletionPercentage = typeof completionPercentage === 'number'
+      ? completionPercentage
+      : progressPercent;
 
       if (progress) {
         // Actualizar progreso existente
@@ -165,6 +175,7 @@ export async function saveLessonProgress(
           data: {
             progress: progressPercent,
             completed: isCompleted,
+            completionPercentage: resolvedCompletionPercentage,
           },
         });
       } else {
@@ -176,6 +187,7 @@ export async function saveLessonProgress(
             lessonId,
             progress: progressPercent,
             completed: isCompleted,
+            completionPercentage: resolvedCompletionPercentage,
           },
         });
       }
@@ -203,6 +215,7 @@ export async function saveLessonProgress(
         lessonId: result.lessonId || undefined,
         completed: result.completed,
         progress: result.progress,
+        completionPercentage: result.completionPercentage ?? undefined,
         updatedAt: result.updatedAt,
       },
     };
@@ -435,6 +448,7 @@ async function checkAndCompleteModule(
         data: {
           completed: true,
           progress: 100,
+          completionPercentage: 100,
         },
       });
     } else {
@@ -444,6 +458,7 @@ async function checkAndCompleteModule(
           moduleId,
           completed: true,
           progress: 100,
+          completionPercentage: 100,
         },
       });
     }

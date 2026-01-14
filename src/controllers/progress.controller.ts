@@ -416,7 +416,7 @@ export const updateLessonProgress = async (req: Request, res: Response) => {
     setNoCacheHeaders(res);
 
     const userId = req.user?.id;
-    const { lessonId, moduleId, progress, timeSpent, sectionIndex, completed } = req.body;
+    const { lessonId, moduleId, progress, timeSpent, sectionIndex, completed, completionPercentage } = req.body;
 
     if (!userId) {
       return res.status(401).json({
@@ -442,8 +442,75 @@ export const updateLessonProgress = async (req: Request, res: Response) => {
       });
     }
 
+    const normalizedCompletionPercentage = typeof completionPercentage === 'number'
+      ? (completionPercentage <= 1 ? completionPercentage * 100 : completionPercentage)
+      : undefined;
+
+    if (
+      normalizedCompletionPercentage !== undefined &&
+      (normalizedCompletionPercentage < 0 || normalizedCompletionPercentage > 100)
+    ) {
+      return res.status(400).json({
+        error: 'Datos inválidos',
+        message: 'El porcentaje de completado debe estar entre 0 y 100',
+      });
+    }
+
+    if (completed === true && normalizedCompletionPercentage !== undefined && normalizedCompletionPercentage < 100) {
+      return res.status(400).json({
+        error: 'Datos inválidos',
+        message: 'No se puede completar una lección con porcentaje menor a 100',
+      });
+    }
+
+    let resolvedCompleted: boolean | undefined;
+    if (completed === true) {
+      resolvedCompleted = true;
+    } else if (completed === false) {
+      resolvedCompleted = false;
+    } else if (progressPercent >= 100 || (normalizedCompletionPercentage ?? 0) >= 100) {
+      resolvedCompleted = true;
+    }
+
+    if (resolvedCompleted) {
+      const activeQuiz = await prisma.quiz.findFirst({
+        where: {
+          lessonId,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          passingScore: true,
+        },
+      });
+
+      if (activeQuiz) {
+        const passedAttempt = await prisma.quizAttempt.findFirst({
+          where: {
+            userId,
+            quizId: activeQuiz.id,
+            passed: true,
+          },
+          select: { id: true },
+        });
+
+        if (!passedAttempt) {
+          return res.status(400).json({
+            error: 'Validación fallida',
+            message: 'Debes aprobar el quiz para completar esta lección',
+          });
+        }
+      }
+    }
+
     // Guardar progreso usando el servicio
-    const result = await saveLessonProgress(userId, lessonId, progressPercent);
+    const result = await saveLessonProgress(
+      userId,
+      lessonId,
+      progressPercent,
+      normalizedCompletionPercentage,
+      resolvedCompleted
+    );
 
     if (!result.success) {
       // Si la lección no existe en BD, es normal en desarrollo
@@ -467,6 +534,7 @@ export const updateLessonProgress = async (req: Request, res: Response) => {
       },
       progress: result.progress?.progress || progressPercent,
       completed: result.progress?.completed || false,
+      completionPercentage: result.progress?.completionPercentage ?? normalizedCompletionPercentage ?? null,
       savedToDb: true,
     };
 

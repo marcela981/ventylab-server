@@ -79,6 +79,7 @@ export interface ProgressUpdateResult {
     lessonId?: string;
     completed: boolean;
     progress: number;
+    completionPercentage?: number;
     updatedAt: Date;
   };
   xpGained?: number;
