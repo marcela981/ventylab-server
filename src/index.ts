@@ -70,7 +70,14 @@ app.use(cors({
     }
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-user-id',
+    'x-auth-token',
+    'cache-control'
+  ],
+  exposedHeaders: ['x-user-id'],
   credentials: true,
   optionsSuccessStatus: 200, // Para navegadores legacy
 }));
@@ -146,6 +153,8 @@ app.use('/api/users', usersRoutes);
 
 // Rutas de progreso
 app.use('/api/progress', progressRoutes);
+// También sin prefijo /api para compatibilidad con frontend
+app.use('/progress', progressRoutes);
 
 // Rutas de casos clínicos (evaluación)
 app.use('/api/cases', evaluationRoutes);

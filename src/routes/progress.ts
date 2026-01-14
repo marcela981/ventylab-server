@@ -6,6 +6,7 @@ import {
   getLessonProgress,
   completeLesson,
   submitQuizAttempt,
+  updateLessonProgress,
 } from '../controllers/progress.controller';
 
 const router = Router();
@@ -30,6 +31,12 @@ router.get('/modules/:moduleId', getModuleProgress);
  * Obtener estado de una lección específica
  */
 router.get('/lessons/:lessonId', getLessonProgress);
+
+/**
+ * PUT /api/progress/lesson
+ * Actualizar progreso parcial de una lección (usado por el frontend)
+ */
+router.put('/lesson', updateLessonProgress);
 
 /**
  * POST /api/progress/lessons/:lessonId/complete
