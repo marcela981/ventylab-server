@@ -171,5 +171,91 @@ router.get('/me', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/auth/nextauth-token
+ * Genera un token JWT del backend a partir de los datos de sesión de NextAuth
+ * Este endpoint es llamado por el frontend para obtener un token válido del backend
+ */
+router.post('/nextauth-token', async (req: Request, res: Response) => {
+  try {
+    const { userId, email } = req.body;
+
+    // Validar campos requeridos
+    if (!userId || !email) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_FIELDS',
+          message: 'userId y email son requeridos',
+        },
+      });
+    }
+
+    // Verificar que el usuario existe en la base de datos
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        image: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'Usuario no encontrado',
+        },
+      });
+    }
+
+    // Verificar que el email coincide
+    if (user.email !== email) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'EMAIL_MISMATCH',
+          message: 'El email no coincide con el usuario',
+        },
+      });
+    }
+
+    // Generar token JWT
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          image: user.image,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error generando token de NextAuth:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'TOKEN_GENERATION_ERROR',
+        message: 'Error al generar el token',
+        details: error.message,
+      },
+    });
+  }
+});
+
 export default router;
 
