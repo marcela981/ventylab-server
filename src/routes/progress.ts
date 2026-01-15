@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
+import { validateRequest } from '../middleware/validate';
+import { updateLessonProgressValidator } from '../middleware/validators';
 import {
   getProgressOverview,
   getModuleProgress,
@@ -7,6 +9,7 @@ import {
   completeLesson,
   submitQuizAttempt,
   updateLessonProgress,
+  getModuleResumePoint,
 } from '../controllers/progress.controller';
 
 const router = Router();
@@ -27,16 +30,26 @@ router.get('/overview', getProgressOverview);
 router.get('/modules/:moduleId', getModuleProgress);
 
 /**
+ * GET /api/progress/modules/:moduleId/resume
+ * Obtener punto de reanudación de un módulo
+ */
+router.get('/modules/:moduleId/resume', getModuleResumePoint);
+
+/**
  * GET /api/progress/lessons/:lessonId
  * Obtener estado de una lección específica
  */
 router.get('/lessons/:lessonId', getLessonProgress);
 
 /**
- * PUT /api/progress/lesson
+ * PUT /api/progress/lesson/:lessonId
  * Actualizar progreso parcial de una lección (usado por el frontend)
  */
-router.put('/lesson', updateLessonProgress);
+router.put(
+  '/lesson/:lessonId',
+  validateRequest(updateLessonProgressValidator),
+  updateLessonProgress
+);
 
 /**
  * POST /api/progress/lessons/:lessonId/complete

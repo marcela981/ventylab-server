@@ -59,6 +59,15 @@ router.get(
   modulesController.getModuleProgress
 );
 
+// GET /api/modules/:id/resume - Get resume point for a module
+router.get(
+  '/:id/resume',
+  readLimiter,
+  authenticate,
+  validateRequest(idValidator),
+  modulesController.getModuleResume
+);
+
 /**
  * Admin/Instructor routes (role-based access)
  */

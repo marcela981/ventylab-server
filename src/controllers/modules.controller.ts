@@ -179,6 +179,31 @@ export const getModuleProgress = async (
 };
 
 /**
+ * Get resume point for a module
+ * GET /api/modules/:id/resume
+ */
+export const getModuleResume = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id: moduleId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return sendSuccess(res, HTTP_STATUS.UNAUTHORIZED, 'Usuario no autenticado');
+    }
+
+    const resumeData = await moduleService.getModuleResumePoint(userId, moduleId);
+
+    sendSuccess(res, HTTP_STATUS.OK, 'Punto de reanudación obtenido', resumeData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Add a prerequisite to a module
  * POST /api/modules/:id/prerequisites
  */

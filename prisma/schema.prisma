@@ -141,6 +141,8 @@ model Progress {
   score      Float?
   timeSpent  Int       @default(0) // en minutos
   lastAccess DateTime?
+  scrollPosition      Int?     // Last scroll position in pixels
+  lastViewedSection   String?  // Section ID or name for resume
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
@@ -150,6 +152,9 @@ model Progress {
 
   @@unique([userId, moduleId], name: "progress_user_module_unique")
   @@unique([userId, lessonId], name: "progress_user_lesson_unique")
+  @@index([userId, moduleId])
+  @@index([userId, lastAccess])
+  @@index([userId, completed])
   @@map("progress")
 }
 

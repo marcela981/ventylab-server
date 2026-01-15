@@ -377,3 +377,42 @@ export const completeLessonValidator: ValidationChain[] = [
     .toInt(),
 ];
 
+/**
+ * Update Lesson Progress Validator
+ */
+export const updateLessonProgressValidator: ValidationChain[] = [
+  param('lessonId')
+    .trim()
+    .notEmpty()
+    .withMessage('lessonId es requerido')
+    .isString()
+    .withMessage('lessonId debe ser un string válido'),
+
+  body('lessonId')
+    .optional()
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('lessonId es requerido'),
+
+  body('completionPercentage')
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('completionPercentage debe estar entre 0 y 100'),
+
+  body('progress')
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('progress debe estar entre 0 y 100'),
+
+  body('timeSpent')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('timeSpent debe ser un número positivo'),
+
+  body('completed')
+    .optional()
+    .isBoolean()
+    .withMessage('completed debe ser booleano'),
+];
+

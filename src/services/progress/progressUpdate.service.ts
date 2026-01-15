@@ -1,6 +1,13 @@
 import { prisma } from '../../config/prisma';
 import { ProgressUpdateResult } from '../../types/progress';
 import { invalidateUserCache } from './progressQuery.service';
+import { calculateAndSaveModuleProgress } from './moduleProgress.service';
+
+export interface LessonProgressUpdate {
+  completionPercentage: number;
+  timeSpent?: number;
+  completed?: boolean;
+}
 
 /**
  * Marcar una lección como completada
@@ -231,6 +238,124 @@ export async function saveLessonProgress(
     return {
       success: false,
       error: 'Error al guardar el progreso',
+    };
+  }
+}
+
+/**
+ * Actualizar progreso de una lección (nuevo flujo)
+ */
+export async function updateLessonProgress(
+  userId: string,
+  lessonId: string,
+  data: LessonProgressUpdate
+): Promise<ProgressUpdateResult> {
+  try {
+    const { completionPercentage, timeSpent, completed } = data;
+
+    if (completionPercentage < 0 || completionPercentage > 100) {
+      return {
+        success: false,
+        error: 'El porcentaje de progreso debe estar entre 0 y 100',
+      };
+    }
+
+    // Try to get lesson from DB, but extract moduleId from lessonId if not found
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, moduleId: true },
+    });
+
+    // Extract moduleId from lessonId format: "module-01-lesson-01"
+    let moduleId: string | null = lesson?.moduleId || null;
+    if (!moduleId && lessonId.includes('-')) {
+      const parts = lessonId.split('-');
+      if (parts.length >= 2) {
+        moduleId = `${parts[0]}-${parts[1]}`;
+      }
+    }
+
+    // Log if lesson not in DB (normal for JSON-based lessons)
+    if (!lesson) {
+      console.log(`[updateLessonProgress] Lesson ${lessonId} not in DB, using derived moduleId: ${moduleId}`);
+    }
+
+    const isCompleted = typeof completed === 'boolean'
+      ? completed
+      : completionPercentage >= 90;
+
+    const timeSpentIncrement = typeof timeSpent === 'number' && timeSpent > 0
+      ? timeSpent
+      : undefined;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const progress = await tx.progress.upsert({
+        where: {
+          userId_lessonId: { userId, lessonId },
+        },
+        update: {
+          moduleId: moduleId,
+          progress: completionPercentage,
+          completionPercentage,
+          completed: isCompleted,
+          timeSpent: timeSpentIncrement ? { increment: timeSpentIncrement } : undefined,
+          lastAccess: new Date(),
+        },
+        create: {
+          userId,
+          moduleId: moduleId,
+          lessonId,
+          progress: completionPercentage,
+          completionPercentage,
+          completed: isCompleted,
+          timeSpent: timeSpentIncrement ?? 0,
+          lastAccess: new Date(),
+        },
+      });
+
+      // Only update module progress if we have a moduleId
+      if (moduleId) {
+        try {
+          await calculateAndSaveModuleProgress(userId, moduleId);
+        } catch (error) {
+          console.warn(`[updateLessonProgress] Could not update module progress for ${moduleId}:`, error);
+          // Don't fail the lesson progress update if module update fails
+        }
+      }
+
+      return progress;
+    }, {
+      maxWait: 5000,
+      timeout: 10000,
+    });
+
+    invalidateUserCache(userId);
+
+    return {
+      success: true,
+      progress: {
+        id: result.id,
+        userId: result.userId,
+        moduleId: result.moduleId || undefined,
+        lessonId: result.lessonId || undefined,
+        completed: result.completed,
+        progress: result.progress,
+        completionPercentage: result.completionPercentage ?? undefined,
+        updatedAt: result.updatedAt,
+      },
+    };
+  } catch (error: any) {
+    if (error.code === 'P2034') {
+      return {
+        success: false,
+        error: 'Conflicto de concurrencia. Por favor, intenta nuevamente.',
+      };
+    }
+
+    console.error('Error al actualizar progreso de lección:', error);
+    return {
+      success: false,
+      error: 'Error al actualizar progreso de la lección',
     };
   }
 }
@@ -475,6 +600,7 @@ async function checkAndCompleteModule(
 export default {
   completeLesson,
   saveLessonProgress,
+  updateLessonProgress,
   recordQuizAttempt,
   updateUserXP,
 };

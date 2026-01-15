@@ -75,6 +75,7 @@ app.use(cors({
     'Authorization',
     'x-user-id',
     'x-auth-token',
+    'x-request-id',
     'cache-control'
   ],
   exposedHeaders: ['x-user-id'],

@@ -5,8 +5,9 @@
  */
 
 import { prisma } from '../../config/prisma';
-import { AppError } from '../../middleware/errorHandler';
+import { AppError } from '../../utils/errors';
 import { HTTP_STATUS, ERROR_CODES, PAGINATION } from '../../config/constants';
+import { getModuleProgressStats } from '../progress/moduleProgress.service';
 
 /**
  * Type definitions for service parameters and returns
@@ -47,6 +48,17 @@ interface UpdateModuleData {
   order?: number;
   isActive?: boolean;
   thumbnail?: string;
+}
+
+export interface ModuleResumeData {
+  resumeLessonId: string;
+  resumeLessonTitle: string;
+  resumeLessonProgress: number;
+  resumeLessonOrder: number;
+  moduleProgress: number;
+  totalLessons: number;
+  completedLessons: number;
+  nextLessonOrder: number;
 }
 
 /**
@@ -760,6 +772,96 @@ export const getModuleLessons = async (
     console.error('Error in getModuleLessons:', error);
     throw new AppError(
       'Error al obtener las lecciones',
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_CODES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+/**
+ * Get resume point for a module
+ *
+ * @param userId - User ID
+ * @param moduleId - Module ID
+ * @returns Resume lesson and module progress stats
+ */
+export const getModuleResumePoint = async (
+  userId: string,
+  moduleId: string
+): Promise<ModuleResumeData> => {
+  try {
+    const lessons = await prisma.lesson.findMany({
+      where: { moduleId },
+      orderBy: { order: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        order: true,
+      },
+    });
+
+    if (lessons.length === 0) {
+      throw new AppError(
+        'No hay lecciones disponibles en este módulo',
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_CODES.NOT_FOUND
+      );
+    }
+
+    const lessonIds = lessons.map((lesson) => lesson.id);
+    const progressRecords = await prisma.progress.findMany({
+      where: {
+        userId,
+        lessonId: { in: lessonIds },
+      },
+      select: {
+        lessonId: true,
+        progress: true,
+        completed: true,
+      },
+    });
+
+    const progressMap = new Map(
+      progressRecords.map((record) => [record.lessonId, record])
+    );
+
+    const hasStarted = progressRecords.length > 0;
+
+    let resumeLesson = lessons.find((lesson) => {
+      const record = progressMap.get(lesson.id);
+      const progressValue = record?.progress ?? 0;
+      const isCompleted = Boolean(record?.completed) || progressValue >= 90;
+      return !isCompleted;
+    });
+
+    if (!resumeLesson) {
+      resumeLesson = lessons[lessons.length - 1];
+    } else if (!hasStarted) {
+      resumeLesson = lessons[0];
+    }
+
+    const resumeProgressRecord = progressMap.get(resumeLesson.id);
+    const resumeLessonProgress = resumeProgressRecord?.progress ?? 0;
+
+    const stats = await getModuleProgressStats(userId, moduleId);
+
+    return {
+      resumeLessonId: resumeLesson.id,
+      resumeLessonTitle: resumeLesson.title,
+      resumeLessonProgress,
+      resumeLessonOrder: resumeLesson.order,
+      moduleProgress: stats.moduleProgress,
+      totalLessons: stats.totalLessons,
+      completedLessons: stats.completedLessons,
+      nextLessonOrder: resumeLesson.order + 1,
+    };
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    console.error('Error in getModuleResumePoint:', error);
+    throw new AppError(
+      'Error al obtener el punto de reanudación del módulo',
       HTTP_STATUS.INTERNAL_SERVER_ERROR,
       ERROR_CODES.INTERNAL_SERVER_ERROR
     );

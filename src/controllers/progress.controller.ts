@@ -5,12 +5,12 @@ import {
   getLessonProgress as getLessonProgressService,
   getUserStats,
 } from '../services/progress/progressQuery.service';
+import { getModuleProgressStats } from '../services/progress/moduleProgress.service';
 import {
   completeLesson as completeLessonService,
-  saveLessonProgress,
+  updateLessonProgress as updateLessonProgressService,
   recordQuizAttempt,
 } from '../services/progress/progressUpdate.service';
-import { calculateLevel } from '../services/progress/levelCalculation.service';
 import { prisma } from '../config/prisma';
 
 /**
@@ -31,6 +31,8 @@ export const getProgressOverview = async (req: Request, res: Response) => {
     setNoCacheHeaders(res);
 
     const userId = req.user?.id;
+    const userEmail = req.user?.email;
+    const userName = (req.user as { name?: string } | undefined)?.name;
 
     if (!userId) {
       return res.status(401).json({
@@ -39,84 +41,74 @@ export const getProgressOverview = async (req: Request, res: Response) => {
       });
     }
 
-    // Obtener progreso general y estadísticas
-    const [progress, stats] = await Promise.all([
-      getUserProgress(userId),
-      getUserStats(userId),
-    ]);
+    const progressOverview = await getUserProgress(userId);
 
-    // Obtener nivel actual
-    const levelInfo = await calculateLevel(stats.totalXP);
-
-    // Obtener próximas lecciones sugeridas (lecciones no completadas)
-    const nextLessons = await prisma.lesson.findMany({
+    const modulesWithProgress = await prisma.module.findMany({
       where: {
         isActive: true,
         progress: {
-          none: {
-            userId,
-            completed: true,
-          },
+          some: { userId },
         },
       },
-      include: {
-        module: {
+      select: {
+        id: true,
+        title: true,
+        progress: {
+          where: { userId },
           select: {
-            id: true,
-            title: true,
+            updatedAt: true,
           },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+          take: 1,
         },
       },
-      orderBy: [
-        { module: { order: 'asc' } },
-        { order: 'asc' },
-      ],
-      take: 5, // Próximas 5 lecciones
     });
 
-    // Obtener objetivos próximos (logros cercanos)
-    const { getAvailableAchievements } = await import('../services/progress/achievements.service');
-    const availableAchievements = await getAvailableAchievements(userId);
-    const nearAchievements = availableAchievements.slice(0, 3); // Próximos 3 logros
+    const modulesWithStats = await Promise.all(
+      modulesWithProgress.map(async (module) => {
+        const stats = await getModuleProgressStats(userId, module.id);
+        const lastAccessed = module.progress[0]?.updatedAt ?? null;
+        const isCompleted = stats.totalLessons > 0 && stats.completedLessons >= stats.totalLessons;
 
-    const overview = {
-      progress: {
-        overallPercentage: progress.overallProgress,
-        modulesCompleted: progress.completedModules,
-        modulesTotal: progress.totalModules,
-        lessonsCompleted: progress.completedLessons,
-        lessonsTotal: progress.totalLessons,
-        lastActivity: progress.lastActivity,
+        return {
+          id: module.id,
+          title: module.title,
+          progress: stats.moduleProgress,
+          completed: isCompleted,
+          totalLessons: stats.totalLessons,
+          completedLessons: stats.completedLessons,
+          lastAccessedLesson: stats.lastAccessedLesson,
+          nextLesson: stats.nextIncompleteLesson,
+          lastAccessed,
+        };
+      })
+    );
+
+    modulesWithStats.sort((a, b) => {
+      const aTime = a.lastAccessed ? new Date(a.lastAccessed).getTime() : 0;
+      const bTime = b.lastAccessed ? new Date(b.lastAccessed).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    const response = {
+      user: {
+        id: userId,
+        email: userEmail,
+        name: userName,
       },
-      stats: {
-        totalXP: stats.totalXP,
-        level: levelInfo.level,
-        xpToNextLevel: levelInfo.xpToNext,
-        progressToNextLevel: levelInfo.progressToNext,
-        currentStreak: stats.currentStreak,
-        longestStreak: stats.longestStreak,
-        totalStudyTime: stats.totalStudyTime,
+      overview: {
+        totalModules: progressOverview.totalModules,
+        completedModules: progressOverview.completedModules,
+        overallProgress: progressOverview.overallProgress,
       },
-      nextLessons: nextLessons.map(lesson => ({
-        id: lesson.id,
-        title: lesson.title,
-        moduleId: lesson.moduleId,
-        moduleTitle: lesson.module.title,
-        order: lesson.order,
-      })),
-      upcomingAchievements: nearAchievements.map(achievement => ({
-        id: achievement.id,
-        title: achievement.title,
-        description: achievement.description,
-        icon: achievement.icon,
-        xpReward: achievement.xpReward,
-      })),
+      modules: modulesWithStats,
     };
 
-    // Log de acceso
     console.log(`[${new Date().toISOString()}] Usuario ${userId} accedió a overview de progreso`);
 
-    res.status(200).json(overview);
+    res.status(200).json(response);
   } catch (error: any) {
     console.error('Error al obtener overview de progreso:', error);
     res.status(500).json({
@@ -321,10 +313,24 @@ export const getLessonProgress = async (req: Request, res: Response) => {
     // Obtener progreso de la lección
     const lessonProgress = await getLessonProgressService(userId, lessonId);
 
+    // Si no hay progreso, devolver progreso inicial en lugar de 404
     if (!lessonProgress) {
-      return res.status(404).json({
-        error: 'Progreso no encontrado',
-        message: 'No se encontró progreso para esta lección',
+      return res.status(200).json({
+        lesson: {
+          id: lessonId,
+          title: lesson.title,
+          moduleId: lesson.moduleId,
+          moduleTitle: lesson.module.title,
+        },
+        progress: {
+          completed: false,
+          progressPercentage: 0,
+          lastAccessed: null,
+          completedAt: null,
+          estimatedTimeMinutes: 0,
+          accessCount: 0,
+        },
+        quizAttempts: [],
       });
     }
 
@@ -407,16 +413,17 @@ export const getLessonProgress = async (req: Request, res: Response) => {
 };
 
 /**
- * PUT /api/progress/lesson
+ * PUT /api/progress/lesson/:lessonId
  * Actualizar progreso parcial de una lección
- * Body: { lessonId, moduleId, progress, timeSpent?, sectionIndex?, completed? }
+ * Body: { progress, timeSpent?, completed?, completionPercentage? }
  */
 export const updateLessonProgress = async (req: Request, res: Response) => {
   try {
     setNoCacheHeaders(res);
 
     const userId = req.user?.id;
-    const { lessonId, moduleId, progress, timeSpent, sectionIndex, completed, completionPercentage } = req.body;
+    const { lessonId } = req.params;
+    const { progress, timeSpent, completed, completionPercentage } = req.body;
 
     if (!userId) {
       return res.status(401).json({
@@ -433,125 +440,89 @@ export const updateLessonProgress = async (req: Request, res: Response) => {
       });
     }
 
-    // Validar progreso
-    const progressPercent = typeof progress === 'number' ? progress : 0;
-    if (progressPercent < 0 || progressPercent > 100) {
+    const rawCompletion = typeof completionPercentage === 'number'
+      ? completionPercentage
+      : (typeof progress === 'number' ? progress : undefined);
+
+    if (typeof rawCompletion !== 'number') {
       return res.status(400).json({
         error: 'Datos inválidos',
-        message: 'El progreso debe estar entre 0 y 100',
+        message: 'El progreso es requerido',
       });
     }
 
-    const normalizedCompletionPercentage = typeof completionPercentage === 'number'
-      ? (completionPercentage <= 1 ? completionPercentage * 100 : completionPercentage)
-      : undefined;
+    const normalizedCompletionPercentage = rawCompletion <= 1
+      ? rawCompletion * 100
+      : rawCompletion;
+    const clampedCompletionPercentage = Math.min(100, Math.max(0, normalizedCompletionPercentage));
 
-    if (
-      normalizedCompletionPercentage !== undefined &&
-      (normalizedCompletionPercentage < 0 || normalizedCompletionPercentage > 100)
-    ) {
+    if (Number.isNaN(clampedCompletionPercentage)) {
       return res.status(400).json({
         error: 'Datos inválidos',
-        message: 'El porcentaje de completado debe estar entre 0 y 100',
+        message: 'El progreso debe ser un número válido',
       });
     }
 
-    if (completed === true && normalizedCompletionPercentage !== undefined && normalizedCompletionPercentage < 100) {
-      return res.status(400).json({
-        error: 'Datos inválidos',
-        message: 'No se puede completar una lección con porcentaje menor a 100',
-      });
-    }
-
-    let resolvedCompleted: boolean | undefined;
-    if (completed === true) {
-      resolvedCompleted = true;
-    } else if (completed === false) {
-      resolvedCompleted = false;
-    } else if (progressPercent >= 100 || (normalizedCompletionPercentage ?? 0) >= 100) {
-      resolvedCompleted = true;
-    }
-
-    if (resolvedCompleted) {
-      const activeQuiz = await prisma.quiz.findFirst({
-        where: {
-          lessonId,
-          isActive: true,
-        },
-        select: {
-          id: true,
-          passingScore: true,
-        },
-      });
-
-      if (activeQuiz) {
-        const passedAttempt = await prisma.quizAttempt.findFirst({
-          where: {
-            userId,
-            quizId: activeQuiz.id,
-            passed: true,
-          },
-          select: { id: true },
-        });
-
-        if (!passedAttempt) {
-          return res.status(400).json({
-            error: 'Validación fallida',
-            message: 'Debes aprobar el quiz para completar esta lección',
-          });
-        }
-      }
-    }
-
-    // Guardar progreso usando el servicio
-    const result = await saveLessonProgress(
-      userId,
-      lessonId,
-      progressPercent,
-      normalizedCompletionPercentage,
-      resolvedCompleted
-    );
+    const result = await updateLessonProgressService(userId, lessonId, {
+      completionPercentage: clampedCompletionPercentage,
+      timeSpent,
+      completed,
+    });
 
     if (!result.success) {
-      // Si la lección no existe en BD, es normal en desarrollo
-      // Retornar éxito silencioso para no bloquear el frontend
-      console.log(`[${new Date().toISOString()}] Progreso para lección ${lessonId} no guardado en BD: ${result.error}`);
-      return res.status(200).json({
-        success: true,
-        message: 'Progreso registrado (modo desarrollo)',
-        lesson: { id: lessonId },
-        progress: progressPercent,
-        savedToDb: false,
+      if (result.error?.toLowerCase().includes('lección no encontrada')) {
+        // Si la lección no existe en BD, es normal en desarrollo
+        console.log(`[${new Date().toISOString()}] Progreso para lección ${lessonId} no guardado en BD: ${result.error}`);
+        return res.status(200).json({
+          success: true,
+          message: 'Progreso actualizado',
+          lesson: { id: lessonId },
+          progress: clampedCompletionPercentage,
+          completed: completed ?? clampedCompletionPercentage >= 90,
+          timeSpent: typeof timeSpent === 'number' ? timeSpent : 0,
+          savedToDb: false,
+        });
+      }
+
+      return res.status(400).json({
+        error: 'Error al actualizar progreso',
+        message: result.error || 'No se pudo actualizar el progreso',
       });
     }
+
+    const persistedProgress = result.progress?.id
+      ? await prisma.progress.findUnique({
+          where: { id: result.progress.id },
+          select: { timeSpent: true, moduleId: true },
+        })
+      : null;
+
+    const resolvedModuleId = persistedProgress?.moduleId ?? result.progress?.moduleId;
+    const resolvedTimeSpent = persistedProgress?.timeSpent ?? 0;
 
     const response = {
       success: true,
       message: 'Progreso actualizado',
       lesson: {
         id: lessonId,
-        moduleId: moduleId || result.progress?.moduleId,
+        moduleId: resolvedModuleId,
       },
-      progress: result.progress?.progress || progressPercent,
-      completed: result.progress?.completed || false,
-      completionPercentage: result.progress?.completionPercentage ?? normalizedCompletionPercentage ?? null,
+      progress: result.progress?.progress ?? clampedCompletionPercentage,
+      completed: result.progress?.completed ?? false,
+      timeSpent: resolvedTimeSpent,
       savedToDb: true,
     };
 
-    // Log de progreso (reducido para no saturar logs)
-    if (progressPercent % 25 === 0 || completed) {
-      console.log(`[${new Date().toISOString()}] Usuario ${userId} - Lección ${lessonId}: ${progressPercent}%`);
-    }
+    console.log(
+      `[${new Date().toISOString()}] Usuario ${userId} - Lección ${lessonId}: ${clampedCompletionPercentage}%`
+    );
 
     res.status(200).json(response);
   } catch (error: any) {
     console.error('Error al actualizar progreso de lección:', error);
-    
-    // En caso de error, retornar éxito para no bloquear el frontend
-    res.status(200).json({
-      success: true,
-      message: 'Progreso registrado localmente',
-      savedToDb: false,
+    res.status(500).json({
+      error: 'Error al actualizar progreso',
+      message: 'Ocurrió un error al actualizar el progreso',
     });
   }
 };
@@ -858,6 +829,55 @@ export const submitQuizAttempt = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * GET /api/progress/module/:moduleId/resume
+ * Get resume point for a module (first incomplete lesson)
+ */
+export const getModuleResumePoint = async (req: Request, res: Response) => {
+  try {
+    setNoCacheHeaders(res);
+
+    const userId = req.user?.id;
+    const { moduleId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'No autenticado',
+        message: 'Debes estar autenticado para obtener el punto de reanudación',
+      });
+    }
+
+    if (!moduleId) {
+      return res.status(400).json({
+        error: 'Parámetro faltante',
+        message: 'El ID del módulo es requerido',
+      });
+    }
+
+    // Import the new service
+    const { getModuleResumePoint: getResumePointService } = await import('../services/progress.service');
+    
+    const resumePoint = await getResumePointService(userId, moduleId);
+
+    if (!resumePoint) {
+      return res.status(404).json({
+        error: 'Sin lecciones',
+        message: 'No se encontraron lecciones para este módulo',
+      });
+    }
+
+    console.log(`[${new Date().toISOString()}] Usuario ${userId} obtuvo punto de reanudación para módulo ${moduleId}`);
+
+    res.status(200).json(resumePoint);
+  } catch (error: any) {
+    console.error('Error al obtener punto de reanudación:', error);
+    res.status(500).json({
+      error: 'Error al obtener punto de reanudación',
+      message: 'Ocurrió un error al consultar el punto de reanudación',
+    });
+  }
+};
+
 export default {
   getProgressOverview,
   getModuleProgress,
@@ -865,5 +885,6 @@ export default {
   updateLessonProgress,
   completeLesson,
   submitQuizAttempt,
+  getModuleResumePoint,
 };
 
