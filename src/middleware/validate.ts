@@ -47,6 +47,13 @@ export const validateRequest = (validations: ValidationChain[]) => {
     res: Response,
     next: NextFunction
   ): Promise<void> => {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('[Validation Middleware] Running validations...');
+    console.log('[Validation Middleware] URL:', req.url);
+    console.log('[Validation Middleware] Params:', req.params);
+    console.log('[Validation Middleware] Body:', req.body);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
     // Run all validations
     await Promise.all(validations.map((validation) => validation.run(req)));
 
@@ -54,9 +61,15 @@ export const validateRequest = (validations: ValidationChain[]) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('[Validation Middleware] ❌ VALIDATION FAILED');
+      console.error('[Validation Middleware] Errors:', JSON.stringify(errors.array(), null, 2));
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
       const formattedErrors = errors.array().map((error) => ({
         field: error.type === 'field' ? (error as any).path : undefined,
         message: error.msg,
+        value: error.type === 'field' ? (error as any).value : undefined,
       }));
 
       return next(
@@ -70,6 +83,7 @@ export const validateRequest = (validations: ValidationChain[]) => {
       );
     }
 
+    console.log('[Validation Middleware] ✅ Validation passed');
     next();
   };
 };

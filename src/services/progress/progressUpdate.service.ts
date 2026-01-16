@@ -4,7 +4,7 @@ import { invalidateUserCache } from './progressQuery.service';
 import { calculateAndSaveModuleProgress } from './moduleProgress.service';
 
 export interface LessonProgressUpdate {
-  completionPercentage: number;
+  completionPercentage?: number;
   timeSpent?: number;
   completed?: boolean;
 }
@@ -253,10 +253,19 @@ export async function updateLessonProgress(
   try {
     const { completionPercentage, timeSpent, completed } = data;
 
-    if (completionPercentage < 0 || completionPercentage > 100) {
+    // Validate completionPercentage only if provided
+    if (completionPercentage !== undefined && (completionPercentage < 0 || completionPercentage > 100)) {
       return {
         success: false,
         error: 'El porcentaje de progreso debe estar entre 0 y 100',
+      };
+    }
+
+    // Ensure we have at least completionPercentage or timeSpent
+    if (completionPercentage === undefined && timeSpent === undefined) {
+      return {
+        success: false,
+        error: 'Se requiere al menos completionPercentage o timeSpent',
       };
     }
 
@@ -282,35 +291,73 @@ export async function updateLessonProgress(
 
     const isCompleted = typeof completed === 'boolean'
       ? completed
-      : completionPercentage >= 90;
+      : (completionPercentage !== undefined ? completionPercentage >= 90 : false);
 
     const timeSpentIncrement = typeof timeSpent === 'number' && timeSpent > 0
       ? timeSpent
       : undefined;
 
+    // Helper function to clean undefined values and ensure only valid Prisma columns
+    const cleanObject = (obj: any) => {
+      // Valid Progress model columns only (from Prisma schema)
+      const validColumns = [
+        'userId',
+        'moduleId',
+        'lessonId',
+        'completed',
+        'completionPercentage',
+        'progress',
+        'score',
+        'timeSpent',
+        'lastAccess',
+        'scrollPosition',
+        'lastViewedSection',
+      ];
+      
+      return Object.fromEntries(
+        Object.entries(obj)
+          .filter(([key, v]) => {
+            // Only include valid columns and non-undefined values
+            return validColumns.includes(key) && v !== undefined;
+          })
+      );
+    };
+
     const result = await prisma.$transaction(async (tx) => {
+      // Prepare update data (only valid Prisma columns, no undefined values)
+      const updateData: any = {};
+      
+      if (moduleId !== null && moduleId !== undefined) {
+        updateData.moduleId = moduleId;
+      }
+      if (completionPercentage !== undefined) {
+        updateData.progress = completionPercentage;
+        updateData.completionPercentage = completionPercentage;
+      }
+      updateData.completed = isCompleted;
+      if (timeSpentIncrement !== undefined && timeSpentIncrement > 0) {
+        updateData.timeSpent = { increment: timeSpentIncrement };
+      }
+      updateData.lastAccess = new Date();
+
+      // Prepare create data (only valid Prisma columns)
+      const createData: any = {
+        userId,
+        moduleId: moduleId || null,
+        lessonId,
+        progress: completionPercentage !== undefined ? completionPercentage : 0,
+        completionPercentage: completionPercentage !== undefined ? completionPercentage : 0,
+        completed: isCompleted,
+        timeSpent: timeSpentIncrement ?? 0,
+        lastAccess: new Date(),
+      };
+
       const progress = await tx.progress.upsert({
         where: {
-          userId_lessonId: { userId, lessonId },
+          progress_user_lesson_unique: { userId, lessonId },
         },
-        update: {
-          moduleId: moduleId,
-          progress: completionPercentage,
-          completionPercentage,
-          completed: isCompleted,
-          timeSpent: timeSpentIncrement ? { increment: timeSpentIncrement } : undefined,
-          lastAccess: new Date(),
-        },
-        create: {
-          userId,
-          moduleId: moduleId,
-          lessonId,
-          progress: completionPercentage,
-          completionPercentage,
-          completed: isCompleted,
-          timeSpent: timeSpentIncrement ?? 0,
-          lastAccess: new Date(),
-        },
+        update: updateData,
+        create: createData,
       });
 
       // Only update module progress if we have a moduleId

@@ -11,6 +11,7 @@ import {
   updateLessonProgress as updateLessonProgressService,
   recordQuizAttempt,
 } from '../services/progress/progressUpdate.service';
+import { calculateLevel } from '../services/progress/levelCalculation.service';
 import { prisma } from '../config/prisma';
 
 /**
@@ -418,72 +419,184 @@ export const getLessonProgress = async (req: Request, res: Response) => {
  * Body: { progress, timeSpent?, completed?, completionPercentage? }
  */
 export const updateLessonProgress = async (req: Request, res: Response) => {
+  // ═══════════════════════════════════════════════════════════════
+  console.log('');
+  console.log('═══════════════════════════════════════════════════════════════');
+  console.log('🚀 [BACKEND] updateLessonProgress REQUEST RECEIVED');
+  console.log('═══════════════════════════════════════════════════════════════');
+  console.log('📍 Method:', req.method);
+  console.log('📍 URL:', req.url);
+  console.log('📍 Full path:', req.path);
+  console.log('📍 Base URL:', req.baseUrl);
+  console.log('📍 Original URL:', req.originalUrl);
+  console.log('');
+  console.log('📦 req.params:', JSON.stringify(req.params, null, 2));
+  console.log('📦 req.query:', JSON.stringify(req.query, null, 2));
+  console.log('📦 req.body:', JSON.stringify(req.body, null, 2));
+  console.log('');
+  console.log('👤 req.user exists?', !!req.user);
+  if (req.user) {
+    console.log('👤 req.user.id:', req.user.id);
+    console.log('👤 req.user:', JSON.stringify(req.user, null, 2));
+  } else {
+    console.log('👤 req.user:', 'NULL or UNDEFINED');
+  }
+  console.log('');
+  console.log('🔑 Headers:');
+  console.log('   - Content-Type:', req.headers['content-type']);
+  console.log('   - Authorization:', req.headers['authorization'] ? 'EXISTS' : 'MISSING');
+  console.log('   - Cookie:', req.headers['cookie'] ? 'EXISTS' : 'MISSING');
+  console.log('   - Origin:', req.headers['origin']);
+  console.log('   - Referer:', req.headers['referer']);
+  console.log('═══════════════════════════════════════════════════════════════');
+  console.log('');
+  
   try {
     setNoCacheHeaders(res);
 
+    // Extract data
     const userId = req.user?.id;
-    const { lessonId } = req.params;
-    const { progress, timeSpent, completed, completionPercentage } = req.body;
+    const lessonIdFromParams = req.params.lessonId;
+    const { 
+      lessonId: lessonIdFromBody, 
+      moduleId, 
+      progress, 
+      completionPercentage, 
+      timeSpent,
+      timeSpentDelta,
+      completed,
+      lastAccessed
+    } = req.body;
 
+    console.log('🔍 [BACKEND] Extracted values:');
+    console.log('   - userId:', userId);
+    console.log('   - lessonIdFromParams:', lessonIdFromParams);
+    console.log('   - lessonIdFromBody:', lessonIdFromBody);
+    console.log('   - moduleId:', moduleId);
+    console.log('   - progress:', progress);
+    console.log('   - completionPercentage:', completionPercentage);
+    console.log('   - timeSpent:', timeSpent);
+    console.log('   - timeSpentDelta:', timeSpentDelta);
+    console.log('   - completed:', completed);
+    console.log('   - lastAccessed:', lastAccessed);
+    console.log('');
+
+    // Validation
     if (!userId) {
+      console.error('❌ [BACKEND] VALIDATION ERROR: No userId');
+      console.error('   req.user:', req.user);
+      console.log('═══════════════════════════════════════════════════════════════');
       return res.status(401).json({
         error: 'No autenticado',
-        message: 'Debes estar autenticado para actualizar el progreso',
+        message: 'Usuario no encontrado en la sesión',
+        details: {
+          hasUser: !!req.user,
+          userId: userId
+        }
       });
     }
 
-    // Validar que lessonId esté presente
+    const lessonId = lessonIdFromParams || lessonIdFromBody;
     if (!lessonId) {
+      console.error('❌ [BACKEND] VALIDATION ERROR: No lessonId');
+      console.error('   lessonIdFromParams:', lessonIdFromParams);
+      console.error('   lessonIdFromBody:', lessonIdFromBody);
+      console.error('   req.body:', req.body);
+      console.log('═══════════════════════════════════════════════════════════════');
       return res.status(400).json({
         error: 'Parámetro faltante',
-        message: 'El ID de la lección es requerido',
+        message: 'lessonId es requerido',
+        details: {
+          receivedParams: req.params,
+          receivedBody: req.body
+        }
       });
     }
+
+    console.log('✅ [BACKEND] Validation passed');
+    console.log('   - Using lessonId:', lessonId);
+    console.log('   - Using userId:', userId);
+    console.log('');
+
+    // Handle timeSpentDelta OR timeSpent
+    const effectiveTimeSpent = timeSpentDelta !== undefined ? timeSpentDelta : timeSpent;
 
     const rawCompletion = typeof completionPercentage === 'number'
       ? completionPercentage
       : (typeof progress === 'number' ? progress : undefined);
 
-    if (typeof rawCompletion !== 'number') {
+    console.log('[Backend Controller] rawCompletion calculated:', rawCompletion);
+    console.log('[Backend Controller] effectiveTimeSpent:', effectiveTimeSpent);
+
+    // Make progress optional for timeSpent-only updates
+    if (typeof rawCompletion !== 'number' && effectiveTimeSpent === undefined) {
+      console.error('[Backend Controller] ❌ Neither progress nor timeSpent provided');
       return res.status(400).json({
         error: 'Datos inválidos',
-        message: 'El progreso es requerido',
+        message: 'Se requiere al menos progress o timeSpent',
       });
     }
 
-    const normalizedCompletionPercentage = rawCompletion <= 1
-      ? rawCompletion * 100
-      : rawCompletion;
-    const clampedCompletionPercentage = Math.min(100, Math.max(0, normalizedCompletionPercentage));
+    // Only calculate completion percentage if rawCompletion is provided
+    let clampedCompletionPercentage: number | undefined = undefined;
+    
+    if (typeof rawCompletion === 'number') {
+      const normalizedCompletionPercentage = rawCompletion <= 1
+        ? rawCompletion * 100
+        : rawCompletion;
+      clampedCompletionPercentage = Math.min(100, Math.max(0, normalizedCompletionPercentage));
 
-    if (Number.isNaN(clampedCompletionPercentage)) {
-      return res.status(400).json({
-        error: 'Datos inválidos',
-        message: 'El progreso debe ser un número válido',
-      });
+      if (Number.isNaN(clampedCompletionPercentage)) {
+        console.error('[Backend Controller] ❌ Invalid completion percentage (NaN)');
+        return res.status(400).json({
+          error: 'Datos inválidos',
+          message: 'El progreso debe ser un número válido',
+        });
+      }
+      
+      console.log('[Backend Controller] clampedCompletionPercentage:', clampedCompletionPercentage);
+    } else {
+      console.log('[Backend Controller] No completion percentage provided, timeSpent-only update');
     }
+
+    console.log('📤 [BACKEND] Calling updateLessonProgressService with:');
+    console.log('   - userId:', userId);
+    console.log('   - lessonId:', lessonId);
+    console.log('   - completionPercentage:', clampedCompletionPercentage);
+    console.log('   - timeSpent:', effectiveTimeSpent);
+    console.log('   - completed:', completed);
+    console.log('');
 
     const result = await updateLessonProgressService(userId, lessonId, {
       completionPercentage: clampedCompletionPercentage,
-      timeSpent,
+      timeSpent: effectiveTimeSpent,
       completed,
     });
 
     if (!result.success) {
+      console.error('❌ [BACKEND] Service returned failure:', result.error);
+      
       if (result.error?.toLowerCase().includes('lección no encontrada')) {
         // Si la lección no existe en BD, es normal en desarrollo
         console.log(`[${new Date().toISOString()}] Progreso para lección ${lessonId} no guardado en BD: ${result.error}`);
-        return res.status(200).json({
+        const response = {
           success: true,
           message: 'Progreso actualizado',
           lesson: { id: lessonId },
-          progress: clampedCompletionPercentage,
-          completed: completed ?? clampedCompletionPercentage >= 90,
-          timeSpent: typeof timeSpent === 'number' ? timeSpent : 0,
+          progress: clampedCompletionPercentage ?? 0,
+          completed: completed ?? (clampedCompletionPercentage ? clampedCompletionPercentage >= 90 : false),
+          timeSpent: typeof effectiveTimeSpent === 'number' ? effectiveTimeSpent : 0,
           savedToDb: false,
-        });
+        };
+        console.log('✅ [BACKEND] Sending response (not saved to DB):', JSON.stringify(response, null, 2));
+        console.log('═══════════════════════════════════════════════════════════════');
+        console.log('');
+        return res.status(200).json(response);
       }
 
+      console.error('❌ [BACKEND] Service error, returning 400');
+      console.log('═══════════════════════════════════════════════════════════════');
+      console.log('');
       return res.status(400).json({
         error: 'Error al actualizar progreso',
         message: result.error || 'No se pudo actualizar el progreso',
@@ -507,22 +620,41 @@ export const updateLessonProgress = async (req: Request, res: Response) => {
         id: lessonId,
         moduleId: resolvedModuleId,
       },
-      progress: result.progress?.progress ?? clampedCompletionPercentage,
+      progress: result.progress?.progress ?? clampedCompletionPercentage ?? 0,
       completed: result.progress?.completed ?? false,
       timeSpent: resolvedTimeSpent,
       savedToDb: true,
     };
 
+    console.log('✅ [BACKEND] Service call successful');
+    console.log('   result:', JSON.stringify(result, null, 2));
+    console.log('');
+    console.log('✅ [BACKEND] Sending response:');
+    console.log('   - Status: 200');
+    console.log('   - Response:', JSON.stringify(response, null, 2));
     console.log(
-      `[${new Date().toISOString()}] Usuario ${userId} - Lección ${lessonId}: ${clampedCompletionPercentage}%`
+      `   - Summary: Usuario ${userId} - Lección ${lessonId}: progress=${clampedCompletionPercentage ?? 'none'}, timeSpent=${effectiveTimeSpent ?? 'none'}`
     );
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('');
 
     res.status(200).json(response);
   } catch (error: any) {
-    console.error('Error al actualizar progreso de lección:', error);
-    res.status(500).json({
-      error: 'Error al actualizar progreso',
-      message: 'Ocurrió un error al actualizar el progreso',
+    console.error('');
+    console.error('═══════════════════════════════════════════════════════════════');
+    console.error('❌ [BACKEND] CATCH ERROR in updateLessonProgress');
+    console.error('═══════════════════════════════════════════════════════════════');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Full error:', error);
+    console.error('═══════════════════════════════════════════════════════════════');
+    console.error('');
+
+    return res.status(500).json({
+      error: 'Error interno del servidor',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };

@@ -402,13 +402,23 @@ export const updateLessonProgressValidator: ValidationChain[] = [
 
   body('progress')
     .optional()
-    .isFloat({ min: 0, max: 100 })
-    .withMessage('progress debe estar entre 0 y 100'),
+    .isFloat({ min: 0, max: 1 })
+    .withMessage('progress debe estar entre 0 y 1'),
 
   body('timeSpent')
     .optional()
     .isInt({ min: 0 })
     .withMessage('timeSpent debe ser un número positivo'),
+
+  body('timeSpentDelta')
+    .optional()
+    .isNumeric()
+    .withMessage('timeSpentDelta debe ser un número'),
+
+  body('lastAccessed')
+    .optional()
+    .isISO8601()
+    .withMessage('lastAccessed debe ser una fecha válida en formato ISO 8601'),
 
   body('completed')
     .optional()

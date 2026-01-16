@@ -80,7 +80,7 @@ export async function calculateAndSaveModuleProgress(
 
     const updatedProgress = await prisma.progress.upsert({
       where: {
-        userId_moduleId: { userId, moduleId },
+        progress_user_module_unique: { userId, moduleId },
       },
       update: {
         progress: roundedProgress,

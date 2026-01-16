@@ -14,6 +14,8 @@ import {
 
 const router = Router();
 
+console.log('[Routes] Registering progress routes...');
+
 // Todas las rutas requieren autenticación
 router.use(authenticate);
 
@@ -47,6 +49,14 @@ router.get('/lessons/:lessonId', getLessonProgress);
  */
 router.put(
   '/lesson/:lessonId',
+  (req, res, next) => {
+    console.log('[Route Middleware] PUT /lesson/:lessonId HIT');
+    console.log('[Route Middleware] Timestamp:', new Date().toISOString());
+    console.log('[Route Middleware] Params:', req.params);
+    console.log('[Route Middleware] Body:', req.body);
+    console.log('[Route Middleware] User:', req.user);
+    next();
+  },
   validateRequest(updateLessonProgressValidator),
   updateLessonProgress
 );
@@ -62,6 +72,9 @@ router.post('/lessons/:lessonId/complete', completeLesson);
  * Registrar intento de quiz y calcular score
  */
 router.post('/quiz/:quizId/attempt', submitQuizAttempt);
+
+console.log('[Routes] ✅ Progress routes registered successfully');
+console.log('[Routes] - PUT /lesson/:lessonId -> updateLessonProgress');
 
 export default router;
 
