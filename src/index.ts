@@ -39,6 +39,9 @@ const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
+// Trust proxy for rate limiting (needed when behind reverse proxy)
+app.set('trust proxy', true);
+
 // ============================================
 // Configuración de CORS
 // ============================================
@@ -148,6 +151,8 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Rutas de autenticación
 app.use('/api/auth', authRoutes);
+// También sin prefijo /api para compatibilidad con frontend
+app.use('/auth', authRoutes);
 
 // Rutas de usuarios
 app.use('/api/users', usersRoutes);
