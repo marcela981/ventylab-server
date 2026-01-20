@@ -4,15 +4,17 @@
   "description": "Servidor backend para Ventylab",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && tsc",
-    "start": "node dist/index.js",
+    "dev": "npm run prisma:generate && tsx watch src/index.ts",
+    "build": "npm run prisma:generate && tsc",
+    "start": "npm run prisma:deploy && node dist/index.js",
     "postinstall": "prisma generate",
     "prebuild": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:reset": "prisma migrate reset --force",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:generate": "prisma generate"
+    "prisma:seed": "tsx prisma/seed.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

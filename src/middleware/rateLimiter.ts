@@ -33,6 +33,7 @@ export const strictLimiter: RateLimitRequestHandler = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: false,
   skipFailedRequests: false,
+  validate: { trustProxy: false },
 });
 
 /**
@@ -61,6 +62,7 @@ export const authLimiter: RateLimitRequestHandler = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
+  validate: { trustProxy: false },
 });
 
 /**
@@ -119,6 +121,7 @@ export const readLimiter: RateLimitRequestHandler = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });
 
 /**
@@ -173,6 +176,7 @@ export const passwordResetLimiter: RateLimitRequestHandler = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });
 
 /**
@@ -232,6 +236,7 @@ export const createRateLimiter = (
     },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { trustProxy: false },
   });
 };
 

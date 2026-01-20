@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as progressService from '../services/progress.service';
+import { prisma } from '../config/prisma';
 
 // GET /api/progress/lesson/:lessonId
 export async function getLessonProgress(req: Request, res: Response, next: NextFunction) {
@@ -127,6 +128,105 @@ export async function markComplete(req: Request, res: Response, next: NextFuncti
 
     const progress = await progressService.markLessonComplete(userId, lessonId, totalSteps || 1);
     res.json(progress);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ============================================
+// STUBS PARA RUTAS NUEVAS
+// TODO: Implementar funcionalidad completa cuando haya tiempo
+// ============================================
+
+/**
+ * GET /api/progress/milestones
+ * Obtener milestones/hitos del usuario
+ */
+export async function getMilestones(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // TODO: Implementar lógica de milestones
+    // Por ahora retornar estructura vacía para no romper el frontend
+    res.json({
+      milestones: [],
+      totalCompleted: 0,
+      totalAvailable: 0,
+      nextMilestone: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/progress/achievements
+ * Obtener logros del usuario
+ */
+export async function getAchievements(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // Intentar obtener achievements de la BD si existen
+    try {
+      const achievements = await prisma.achievement.findMany({
+        where: { userId },
+        orderBy: { unlockedAt: 'desc' },
+      });
+      
+      res.json({
+        achievements: achievements.map(a => ({
+          id: a.id,
+          title: a.title,
+          description: a.description,
+          icon: a.icon,
+          unlockedAt: a.unlockedAt,
+        })),
+        totalUnlocked: achievements.length,
+      });
+    } catch {
+      // Si falla, retornar vacío
+      res.json({
+        achievements: [],
+        totalUnlocked: 0,
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/progress/skills
+ * Obtener habilidades/competencias del usuario
+ */
+export async function getSkills(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // TODO: Implementar sistema de skills basado en progreso
+    // Por ahora retornar estructura vacía
+    res.json({
+      skills: [],
+      categories: [
+        { id: 'physiology', name: 'Fisiología Respiratoria', progress: 0 },
+        { id: 'ventilation', name: 'Ventilación Mecánica', progress: 0 },
+        { id: 'clinical', name: 'Casos Clínicos', progress: 0 },
+      ],
+      overallLevel: 'beginner',
+    });
   } catch (error) {
     next(error);
   }

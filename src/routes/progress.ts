@@ -22,4 +22,17 @@ router.put('/lesson/:lessonId', progressController.updateLessonProgress);
 // Marcar lección como completada
 router.post('/lesson/:lessonId/complete', progressController.markComplete);
 
+// ============================================
+// NUEVAS RUTAS (stubs para evitar 404)
+// ============================================
+
+// Milestones - Para gamificación futura
+router.get('/milestones', progressController.getMilestones);
+
+// Achievements - Logros del usuario
+router.get('/achievements', progressController.getAchievements);
+
+// Skills - Habilidades/competencias
+router.get('/skills', progressController.getSkills);
+
 export default router;

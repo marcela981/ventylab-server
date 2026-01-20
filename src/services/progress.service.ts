@@ -95,13 +95,18 @@ export async function updateLessonProgress(
     where: { userId, lessonId }
   });
 
+  // Extraer moduleId del lessonId si es posible
+  const moduleId = extractModuleId(lessonId);
+
   const progress = existing
     ? await prisma.progress.update({
         where: { id: existing.id },
         data: {
+          moduleId,
           currentStep,
           totalSteps,
           completionPercentage,
+          progress: completionPercentage, // Mantener sincronizado
           completed,
           ...(completed && !existing.completedAt && { completedAt: new Date() }),
           timeSpent: existing.timeSpent + timeSpent,
@@ -111,10 +116,12 @@ export async function updateLessonProgress(
     : await prisma.progress.create({
         data: {
           userId,
+          moduleId,
           lessonId,
           currentStep,
           totalSteps,
           completionPercentage,
+          progress: completionPercentage, // Mantener sincronizado
           completed,
           completedAt: completed ? new Date() : null,
           timeSpent,
@@ -148,7 +155,7 @@ export async function updateLessonProgressByPercentage(
   userId: string,
   input: UpdateProgressByPercentageInput
 ): Promise<ProgressResponse> {
-  const { lessonId, completionPercentage, timeSpent = 0 } = input;
+  const { lessonId, completionPercentage, timeSpent = 0, scrollPosition, lastViewedSection, moduleId: providedModuleId } = input;
   
   // Clamp completionPercentage between 0 and 100
   const clampedPercentage = Math.max(0, Math.min(100, Math.round(completionPercentage)));
@@ -179,15 +186,22 @@ export async function updateLessonProgressByPercentage(
     currentStep = clampedPercentage;
   }
 
+  // Extraer moduleId del lessonId si no se proporciona
+  const moduleId = providedModuleId || extractModuleId(lessonId);
+
   // Update existing or create new progress
   const progress = existing
     ? await prisma.progress.update({
         where: { id: existing.id },
         data: {
+          moduleId,
           currentStep,
           totalSteps,
           completionPercentage: clampedPercentage,
+          progress: clampedPercentage, // Mantener sincronizado
           completed,
+          scrollPosition,
+          lastViewedSection,
           ...(completed && !existing.completedAt && { completedAt: new Date() }),
           timeSpent: existing.timeSpent + timeSpent,
           lastAccess: new Date()
@@ -196,11 +210,15 @@ export async function updateLessonProgressByPercentage(
     : await prisma.progress.create({
         data: {
           userId,
+          moduleId,
           lessonId,
           currentStep,
           totalSteps,
           completionPercentage: clampedPercentage,
+          progress: clampedPercentage, // Mantener sincronizado
           completed,
+          scrollPosition,
+          lastViewedSection,
           completedAt: completed ? new Date() : null,
           timeSpent,
           lastAccess: new Date()

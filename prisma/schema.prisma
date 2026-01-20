@@ -128,12 +128,16 @@ model Lesson {
 model Progress {
   id                   String    @id @default(cuid())
   userId               String
-  lessonId             String    // ID del JSON, ej: "module-01-inversion-fisiologica"
+  moduleId             String?   // NUEVO: Para tracking a nivel módulo
+  lessonId             String?   // Ahora opcional, puede ser progreso de módulo
   currentStep          Int       @default(0)
   totalSteps           Int       @default(1)
   completed            Boolean   @default(false)
   completionPercentage Float     @default(0)
+  progress             Float     @default(0)  // NUEVO: Alias para compatibilidad
   timeSpent            Int       @default(0) // en segundos
+  scrollPosition       Float?    // NUEVO: Posición de scroll
+  lastViewedSection    String?   // NUEVO: Última sección vista
   lastAccess           DateTime?
   completedAt          DateTime?
   createdAt            DateTime  @default(now())
@@ -141,9 +145,12 @@ model Progress {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, lessonId])
+  // Constraints nombrados explícitamente
+  @@unique([userId, lessonId], name: "progress_user_lesson_unique")
+  @@unique([userId, moduleId], name: "progress_user_module_unique")
   @@index([userId])
   @@index([lessonId])
+  @@index([moduleId])
   @@map("progress")
 }
 

@@ -40,7 +40,8 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Trust proxy for rate limiting (needed when behind reverse proxy)
-app.set('trust proxy', true);
+// Cambiado a 1 para evitar error con express-rate-limit v7+
+app.set('trust proxy', 1);
 
 // ============================================
 // Configuración de CORS
