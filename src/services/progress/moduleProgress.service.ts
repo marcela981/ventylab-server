@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma';
 import type { Progress } from '@prisma/client';
+import { computeModuleProgress, isModuleComplete } from '../../utils/computeModuleProgress';
 
 export interface ModuleProgressResult {
   success: boolean;
@@ -40,7 +41,6 @@ export async function calculateAndSaveModuleProgress(
       },
     });
 
-    const totalLessons = lessons.length;
     const lessonIds = lessons.map((lesson) => lesson.id);
 
     // Get all lesson progress records for this module
@@ -53,51 +53,67 @@ export async function calculateAndSaveModuleProgress(
           select: {
             lessonId: true,
             progress: true,
-            completed: true, // Use explicit completion flag
+            completionPercentage: true,
           },
         })
       : [];
 
+    // Build lesson list with progress values for computeModuleProgress
+    // Map each lesson to its progress (0-100), defaulting to 0 if no record
     const progressMap = new Map(
       progressRecords.map((record) => [record.lessonId, record])
     );
 
-    // Count ONLY explicitly completed lessons (completed = true)
-    // Never use progress percentage as a heuristic for completion
-    const completedLessons = progressRecords.filter((record) => record.completed === true).length;
+    const lessonsWithProgress = lessons.map((lesson) => {
+      const record = progressMap.get(lesson.id);
+      // Use completionPercentage (0-100) as the progress value
+      // Fall back to progress field if completionPercentage is not set
+      const progressValue = record?.completionPercentage ?? record?.progress ?? 0;
+      return {
+        id: lesson.id,
+        progress: progressValue,
+      };
+    });
 
-    // Module progress = (completedLessons / totalLessons) * 100
-    const calculatedProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-    const roundedProgress = Math.round(calculatedProgress * 100) / 100;
+    // Use computeModuleProgress as the single source of truth
+    const { completedLessonsCount, totalLessonsCount, progressPercentage } =
+      computeModuleProgress(lessonsWithProgress);
 
-    // Module is complete ONLY when ALL lessons are explicitly completed
-    const isModuleComplete = totalLessons > 0 && completedLessons === totalLessons;
+    // Module is complete when all lessons have progress === 100
+    const moduleComplete = isModuleComplete(lessonsWithProgress);
+
+    // Defensive check: clamp progressPercentage to 0-100
+    const clampedProgress = Math.max(0, Math.min(100, progressPercentage));
 
     if (isDev) {
       console.log('[moduleProgress] calculateAndSaveModuleProgress', {
         userId,
         moduleId,
-        totalLessons,
-        completedLessons,
-        calculatedProgress: roundedProgress,
-        isModuleComplete,
+        totalLessonsCount,
+        completedLessonsCount,
+        progressPercentage: clampedProgress,
+        moduleComplete,
       });
     }
 
+    // Use upsert with unique constraint to ensure only ONE module progress record per user+module
     const updatedProgress = await prisma.progress.upsert({
       where: {
         progress_user_module_unique: { userId, moduleId },
       },
       update: {
-        progress: roundedProgress,
-        completed: isModuleComplete,
+        progress: clampedProgress,
+        completionPercentage: clampedProgress,
+        completed: moduleComplete,
         lastAccess: new Date(),
       },
       create: {
         userId,
         moduleId,
-        progress: roundedProgress,
-        completed: isModuleComplete,
+        lessonId: null, // Module-level progress has no lessonId
+        progress: clampedProgress,
+        completionPercentage: clampedProgress,
+        completed: moduleComplete,
         lastAccess: new Date(),
       },
     });
@@ -133,20 +149,20 @@ export async function getModuleProgressStats(
       orderBy: { order: 'asc' },
     });
 
-    const totalLessons = lessons.length;
     const lessonIds = lessons.map((lesson) => lesson.id);
 
+    // Get all lesson progress records for this module
+    // Only filter by lessonId (not moduleId) since moduleId in Progress table is for module-level records
     const progressRecords = lessonIds.length > 0
       ? await prisma.progress.findMany({
           where: {
             userId,
-            moduleId,
             lessonId: { in: lessonIds },
           },
           select: {
             lessonId: true,
             progress: true,
-            completed: true,
+            completionPercentage: true,
           },
         })
       : [];
@@ -155,45 +171,43 @@ export async function getModuleProgressStats(
       progressRecords.map((record) => [record.lessonId, record])
     );
 
-    let completedLessons = 0;
-    let totalProgress = 0;
-
-    // Count ONLY explicitly completed lessons (completed = true)
-    // Never use progress percentage as a heuristic for completion
-    lessons.forEach((lesson) => {
+    // Build lesson list with progress values for computeModuleProgress
+    const lessonsWithProgress = lessons.map((lesson) => {
       const record = progressMap.get(lesson.id);
-      // Only check explicit completed flag, not progress value
-      const isCompleted = record?.completed === true;
-
-      if (isCompleted) {
-        completedLessons += 1;
-      }
+      // Use completionPercentage (0-100), fall back to progress field
+      const progressValue = record?.completionPercentage ?? record?.progress ?? 0;
+      return {
+        id: lesson.id,
+        progress: progressValue,
+      };
     });
 
-    // Module progress = (completedLessons / totalLessons) * 100
-    const moduleProgress = totalLessons > 0
-      ? Math.round((completedLessons / totalLessons) * 100 * 100) / 100
-      : 0;
+    // Use computeModuleProgress as the single source of truth
+    const { completedLessonsCount, totalLessonsCount, progressPercentage } =
+      computeModuleProgress(lessonsWithProgress);
 
-    const lastAccessedRecord = await prisma.progress.findFirst({
-      where: {
-        userId,
-        moduleId,
-        lessonId: { not: null },
-      },
-      include: {
-        lesson: {
-          select: {
-            id: true,
-            title: true,
+    // Find last accessed lesson by querying lesson progress records (not module progress)
+    // Filter by lessonId in lessonIds array, not by moduleId
+    const lastAccessedRecord = lessonIds.length > 0
+      ? await prisma.progress.findFirst({
+          where: {
+            userId,
+            lessonId: { in: lessonIds },
           },
-        },
-      },
-      orderBy: [
-        { lastAccess: 'desc' },
-        { updatedAt: 'desc' },
-      ],
-    });
+          include: {
+            lesson: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+          orderBy: [
+            { lastAccess: 'desc' },
+            { updatedAt: 'desc' },
+          ],
+        })
+      : null;
 
     const lastAccessedLesson = lastAccessedRecord?.lesson
       ? {
@@ -203,27 +217,27 @@ export async function getModuleProgressStats(
         }
       : null;
 
-    // Find next lesson that is NOT explicitly marked as completed
+    // Find next lesson where progress !== 100 (not completed)
     const nextIncompleteLesson = lessons.find((lesson) => {
       const record = progressMap.get(lesson.id);
-      // Only check explicit completed flag
-      return record?.completed !== true;
+      const progressValue = record?.completionPercentage ?? record?.progress ?? 0;
+      return progressValue !== 100;
     }) ?? null;
 
     if (isDev) {
       console.log('[moduleProgress] getModuleProgressStats', {
         userId,
         moduleId,
-        totalLessons,
-        completedLessons,
-        moduleProgress,
+        totalLessonsCount,
+        completedLessonsCount,
+        progressPercentage,
       });
     }
 
     return {
-      totalLessons,
-      completedLessons,
-      moduleProgress,
+      totalLessons: totalLessonsCount,
+      completedLessons: completedLessonsCount,
+      moduleProgress: progressPercentage,
       lastAccessedLesson,
       nextIncompleteLesson: nextIncompleteLesson
         ? {

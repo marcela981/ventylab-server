@@ -1,11 +1,12 @@
 import { prisma } from '../config/prisma';
+import { computeModuleProgress } from '../utils/computeModuleProgress';
 
 interface UpdateProgressInput {
   lessonId: string;
   currentStep: number;
   totalSteps: number;
   timeSpent?: number; // segundos adicionales a sumar
-  completed?: boolean; // explicit completion flag - never auto-complete
+  // Note: completed is derived from currentStep === totalSteps, never passed explicitly
 }
 
 interface ProgressResponse {
@@ -25,10 +26,13 @@ export async function getLessonProgress(
   userId: string,
   lessonId: string
 ): Promise<ProgressResponse | null> {
-  const progress = await prisma.progress.findFirst({
+  // Use unique constraint to ensure we get the correct record (only one per user+lesson)
+  const progress = await prisma.progress.findUnique({
     where: { 
-      userId,
-      lessonId
+      progress_user_lesson_unique: {
+        userId,
+        lessonId
+      }
     }
   });
   
@@ -38,7 +42,7 @@ export async function getLessonProgress(
 
   return {
     id: progress.id,
-    lessonId: progress.lessonId,
+    lessonId: progress.lessonId!,
     currentStep: progress.currentStep,
     totalSteps: progress.totalSteps,
     completed: progress.completed,
@@ -86,55 +90,71 @@ export async function updateLessonProgress(
   userId: string,
   input: UpdateProgressInput
 ): Promise<ProgressResponse> {
-  const { lessonId, currentStep, totalSteps, timeSpent = 0, completed: explicitCompleted } = input;
+  const { lessonId, currentStep, totalSteps, timeSpent = 0 } = input;
 
-  const completionPercentage = Math.round((currentStep / totalSteps) * 100);
-  // IMPORTANT: Only mark as completed when explicitly requested
-  // Never auto-complete based on currentStep >= totalSteps
-  const completed = explicitCompleted === true;
+  // Defensive check: ensure totalSteps > 0 to avoid division by zero
+  if (totalSteps <= 0) {
+    throw new Error('totalSteps must be greater than 0');
+  }
 
-  // Find existing progress
-  const existing = await prisma.progress.findFirst({
-    where: { userId, lessonId }
-  });
+  // Validation: currentStep cannot exceed totalSteps
+  if (currentStep > totalSteps) {
+    throw new Error(`currentStep (${currentStep}) cannot exceed totalSteps (${totalSteps})`);
+  }
+
+  // Calculate completion percentage and clamp to 0-100
+  const rawPercentage = (currentStep / totalSteps) * 100;
+  const completionPercentage = Math.max(0, Math.min(100, Math.round(rawPercentage)));
+
+  // Completion logic: completed = true ONLY when currentStep === totalSteps
+  // This ensures the user must reach the final step to complete
+  const completed = currentStep === totalSteps;
 
   // Extraer moduleId del lessonId si es posible
   const moduleId = extractModuleId(lessonId);
 
-  const progress = existing
-    ? await prisma.progress.update({
-        where: { id: existing.id },
-        data: {
-          moduleId,
-          currentStep,
-          totalSteps,
-          completionPercentage,
-          progress: completionPercentage, // Mantener sincronizado
-          completed,
-          ...(completed && !existing.completedAt && { completedAt: new Date() }),
-          timeSpent: existing.timeSpent + timeSpent,
-          lastAccess: new Date()
-        }
-      })
-    : await prisma.progress.create({
-        data: {
-          userId,
-          moduleId,
-          lessonId,
-          currentStep,
-          totalSteps,
-          completionPercentage,
-          progress: completionPercentage, // Mantener sincronizado
-          completed,
-          completedAt: completed ? new Date() : null,
-          timeSpent,
-          lastAccess: new Date()
-        }
-      });
+  // Use upsert with unique constraint to prevent duplicates and race conditions
+  // This ensures only ONE record per user+lesson
+  const progress = await prisma.progress.upsert({
+    where: {
+      progress_user_lesson_unique: {
+        userId,
+        lessonId
+      }
+    },
+    update: {
+      moduleId,
+      currentStep,
+      totalSteps,
+      completionPercentage,
+      progress: completionPercentage, // Mantener sincronizado
+      completed,
+      // Set completedAt when marking as completed (if not already set)
+      // Clear it if marking as not completed
+      completedAt: completed ? new Date() : null,
+      timeSpent: {
+        increment: timeSpent
+      },
+      lastAccess: new Date()
+    },
+    create: {
+      userId,
+      moduleId,
+      lessonId,
+      currentStep,
+      totalSteps,
+      completionPercentage,
+      progress: completionPercentage, // Mantener sincronizado
+      completed,
+      completedAt: completed ? new Date() : null,
+      timeSpent,
+      lastAccess: new Date()
+    }
+  });
 
   return {
     id: progress.id,
-    lessonId: progress.lessonId,
+    lessonId: progress.lessonId!,
     currentStep: progress.currentStep,
     totalSteps: progress.totalSteps,
     completed: progress.completed,
@@ -145,95 +165,110 @@ export async function updateLessonProgress(
   };
 }
 
-// Actualizar progreso usando completionPercentage directamente (nuevo formato)
+// Actualizar progreso con currentStep y totalSteps del frontend
+// Frontend MUST send currentStep, totalSteps, and completionPercentage
+// Backend NEVER fabricates totalSteps
 interface UpdateProgressByPercentageInput {
   lessonId: string;
+  currentStep: number;       // REQUIRED: actual section index + 1
+  totalSteps: number;        // REQUIRED: sections.length from lesson JSON
   completionPercentage: number;
   timeSpent?: number; // segundos adicionales a sumar
-  scrollPosition?: number; // opcional, no se guarda en BD por ahora
-  lastViewedSection?: string; // opcional, no se guarda en BD por ahora
-  completed?: boolean; // explicit completion flag - never auto-complete
+  scrollPosition?: number; // opcional
+  lastViewedSection?: string; // opcional
+  moduleId?: string; // opcional
 }
 
 export async function updateLessonProgressByPercentage(
   userId: string,
   input: UpdateProgressByPercentageInput
 ): Promise<ProgressResponse> {
-  const { lessonId, completionPercentage, timeSpent = 0, scrollPosition, lastViewedSection, moduleId: providedModuleId, completed: explicitCompleted } = input;
+  const {
+    lessonId,
+    currentStep: inputCurrentStep,
+    totalSteps: inputTotalSteps,
+    completionPercentage,
+    timeSpent = 0,
+    scrollPosition,
+    lastViewedSection,
+    moduleId: providedModuleId
+  } = input;
+
+  // Validation: totalSteps must be > 0 (never fabricated, always from frontend)
+  if (!inputTotalSteps || inputTotalSteps <= 0) {
+    throw new Error('totalSteps must be provided and greater than 0');
+  }
+
+  // Validation: currentStep must be valid
+  if (inputCurrentStep < 0) {
+    throw new Error('currentStep cannot be negative');
+  }
+
+  // Validation: currentStep cannot exceed totalSteps
+  if (inputCurrentStep > inputTotalSteps) {
+    throw new Error(`currentStep (${inputCurrentStep}) cannot exceed totalSteps (${inputTotalSteps})`);
+  }
+
+  // Use values from frontend - NEVER fabricate
+  const currentStep = inputCurrentStep;
+  const totalSteps = inputTotalSteps;
 
   // Clamp completionPercentage between 0 and 100
   const clampedPercentage = Math.max(0, Math.min(100, Math.round(completionPercentage)));
-  // IMPORTANT: Only mark as completed when explicitly requested
-  // Never auto-complete based on completionPercentage >= 100
-  const completed = explicitCompleted === true;
 
-  // Get existing progress to preserve currentStep/totalSteps if they exist
-  // Otherwise, use a default totalSteps of 100 (so currentStep = completionPercentage)
-  const existing = await prisma.progress.findFirst({
-    where: { 
-      userId,
-      lessonId
-    }
-  });
-
-  // Calculate currentStep and totalSteps
-  // If we have existing progress, try to preserve the ratio
-  // Otherwise, use totalSteps = 100 so currentStep = completionPercentage
-  let currentStep: number;
-  let totalSteps: number;
-
-  if (existing && existing.totalSteps > 0) {
-    // Preserve existing totalSteps and calculate currentStep
-    totalSteps = existing.totalSteps;
-    currentStep = Math.round((clampedPercentage / 100) * totalSteps);
-  } else {
-    // Default: use 100 as totalSteps
-    totalSteps = 100;
-    currentStep = clampedPercentage;
-  }
+  // Completion logic: completed = true ONLY when currentStep === totalSteps
+  // This ensures the user must reach the final step to complete
+  const completed = currentStep === totalSteps;
 
   // Extraer moduleId del lessonId si no se proporciona
   const moduleId = providedModuleId || extractModuleId(lessonId);
 
-  // Update existing or create new progress
-  const progress = existing
-    ? await prisma.progress.update({
-        where: { id: existing.id },
-        data: {
-          moduleId,
-          currentStep,
-          totalSteps,
-          completionPercentage: clampedPercentage,
-          progress: clampedPercentage, // Mantener sincronizado
-          completed,
-          scrollPosition,
-          lastViewedSection,
-          ...(completed && !existing.completedAt && { completedAt: new Date() }),
-          timeSpent: existing.timeSpent + timeSpent,
-          lastAccess: new Date()
-        }
-      })
-    : await prisma.progress.create({
-        data: {
-          userId,
-          moduleId,
-          lessonId,
-          currentStep,
-          totalSteps,
-          completionPercentage: clampedPercentage,
-          progress: clampedPercentage, // Mantener sincronizado
-          completed,
-          scrollPosition,
-          lastViewedSection,
-          completedAt: completed ? new Date() : null,
-          timeSpent,
-          lastAccess: new Date()
-        }
-      });
+  // Use upsert with unique constraint to prevent duplicates and race conditions
+  // This ensures only ONE record per user+lesson
+  const progress = await prisma.progress.upsert({
+    where: {
+      progress_user_lesson_unique: {
+        userId,
+        lessonId
+      }
+    },
+    update: {
+      moduleId,
+      currentStep,
+      totalSteps,
+      completionPercentage: clampedPercentage,
+      progress: clampedPercentage, // Mantener sincronizado
+      completed,
+      scrollPosition,
+      lastViewedSection,
+      // Set completedAt when marking as completed
+      // Clear it if marking as not completed
+      completedAt: completed ? new Date() : null,
+      timeSpent: {
+        increment: timeSpent
+      },
+      lastAccess: new Date()
+    },
+    create: {
+      userId,
+      moduleId,
+      lessonId,
+      currentStep,
+      totalSteps,
+      completionPercentage: clampedPercentage,
+      progress: clampedPercentage, // Mantener sincronizado
+      completed,
+      scrollPosition,
+      lastViewedSection,
+      completedAt: completed ? new Date() : null,
+      timeSpent,
+      lastAccess: new Date()
+    }
+  });
 
   return {
     id: progress.id,
-    lessonId: progress.lessonId,
+    lessonId: progress.lessonId!,
     currentStep: progress.currentStep,
     totalSteps: progress.totalSteps,
     completed: progress.completed,
@@ -245,6 +280,7 @@ export async function updateLessonProgressByPercentage(
 }
 
 // Marcar lección como completada manualmente
+// Sets currentStep = totalSteps, which triggers completed = true
 export async function markLessonComplete(
   userId: string,
   lessonId: string,
@@ -252,8 +288,8 @@ export async function markLessonComplete(
 ): Promise<ProgressResponse> {
   return updateLessonProgress(userId, {
     lessonId,
-    currentStep: totalSteps,
-    totalSteps
+    currentStep: totalSteps, // Setting currentStep = totalSteps marks as completed
+    totalSteps,
   });
 }
 
@@ -304,9 +340,7 @@ async function getTotalLessonsInModule(moduleId: string): Promise<number> {
   try {
     const count = await prisma.lesson.count({
       where: {
-        module: {
-          id: moduleId
-        },
+        moduleId,
         isActive: true
       }
     });
@@ -320,32 +354,63 @@ async function getTotalLessonsInModule(moduleId: string): Promise<number> {
 }
 
 // Obtener progreso agregado de un módulo específico
+// Uses computeModuleProgress: lesson completed when progress === 100
+// Always calculates module progress from lesson progress aggregation
 export async function getModuleProgress(
   userId: string,
   moduleId: string
 ): Promise<ModuleProgressResponse> {
-  // Buscar todas las lecciones de este módulo que tienen progreso
-  // Usamos startsWith para matchear "module-01-leccion-x" con "module-01"
-  const progresses = await prisma.progress.findMany({
+  // Get all lessons for this module from the database
+  const lessons = await prisma.lesson.findMany({
     where: {
-      userId,
-      lessonId: {
-        startsWith: moduleId
-      }
+      moduleId,
+      isActive: true,
     },
-    orderBy: { lastAccess: 'desc' }
+    select: {
+      id: true,
+    },
+    orderBy: { order: 'asc' },
   });
 
-  // Obtener total de lecciones del módulo
-  const totalLessonsInModule = await getTotalLessonsInModule(moduleId);
+  const lessonIds = lessons.map((lesson) => lesson.id);
+  const totalLessonsInModule = lessons.length;
 
-  // Calcular lecciones completadas
-  const completedLessons = progresses.filter(p => p.completed).length;
+  // Get all lesson progress records for this module
+  // Only filter by lessonId (not moduleId) since moduleId in Progress table is for module-level records
+  const progresses = lessonIds.length > 0
+    ? await prisma.progress.findMany({
+        where: {
+          userId,
+          lessonId: { in: lessonIds },
+        },
+        orderBy: { lastAccess: 'desc' }
+      })
+    : [];
 
-  // Calcular porcentaje de completación
-  const completionPercentage = totalLessonsInModule > 0
-    ? Math.round((completedLessons / totalLessonsInModule) * 100)
-    : 0;
+  // Build progress map for quick lookup
+  const progressMap = new Map(
+    progresses.map((record) => [record.lessonId!, record])
+  );
+
+  // Build lessons array for computeModuleProgress
+  // Use completionPercentage (0-100) as the progress value, defaulting to 0 if no record
+  const lessonsWithProgress = lessons.map((lesson) => {
+    const record = progressMap.get(lesson.id);
+    const progressValue = record?.completionPercentage ?? record?.progress ?? 0;
+    // Defensive check: clamp to 0-100
+    const clampedProgress = Math.max(0, Math.min(100, progressValue));
+    return {
+      id: lesson.id,
+      progress: clampedProgress,
+    };
+  });
+
+  // Use computeModuleProgress as single source of truth
+  // This ensures module progress is always calculated from lesson progress aggregation
+  const { completedLessonsCount, progressPercentage } = computeModuleProgress(lessonsWithProgress);
+
+  // Defensive check: clamp progressPercentage to 0-100
+  const clampedProgressPercentage = Math.max(0, Math.min(100, progressPercentage));
 
   // Calcular tiempo total
   const totalTimeSpent = progresses.reduce((acc, p) => acc + p.timeSpent, 0);
@@ -355,19 +420,27 @@ export async function getModuleProgress(
 
   return {
     moduleId,
-    completionPercentage,
-    completedLessons,
+    completionPercentage: clampedProgressPercentage,
+    completedLessons: completedLessonsCount,
     totalLessons: totalLessonsInModule,
     totalTimeSpent,
     lastAccess,
-    lessons: progresses.map(p => ({
-      lessonId: p.lessonId,
-      completed: p.completed,
-      completionPercentage: p.completionPercentage,
-      currentStep: p.currentStep,
-      totalSteps: p.totalSteps,
-      timeSpent: p.timeSpent,
-      lastAccess: p.lastAccess
-    }))
+    lessons: lessons.map((lesson) => {
+      const progressRecord = progressMap.get(lesson.id);
+      const progressValue = progressRecord?.completionPercentage ?? progressRecord?.progress ?? 0;
+      // Defensive check: clamp to 0-100
+      const clampedProgress = Math.max(0, Math.min(100, progressValue));
+      // A lesson is completed when progress === 100
+      const isCompleted = clampedProgress === 100;
+      return {
+        lessonId: lesson.id,
+        completed: isCompleted,
+        completionPercentage: clampedProgress,
+        currentStep: progressRecord?.currentStep ?? 0,
+        totalSteps: progressRecord?.totalSteps ?? 1,
+        timeSpent: progressRecord?.timeSpent ?? 0,
+        lastAccess: progressRecord?.lastAccess ?? null
+      };
+    })
   };
 }

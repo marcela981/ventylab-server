@@ -69,47 +69,47 @@ export async function getModuleProgress(req: Request, res: Response, next: NextF
 }
 
 // PUT /api/progress/lesson/:lessonId
+// Frontend MUST send: currentStep, totalSteps, completionPercentage
+// Backend NEVER fabricates totalSteps
 export async function updateLessonProgress(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
     const { lessonId } = req.params;
-    const { completionPercentage, timeSpent, scrollPosition, lastViewedSection } = req.body;
+    const { currentStep, totalSteps, completionPercentage, timeSpent, scrollPosition, lastViewedSection } = req.body;
 
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    // Accept completionPercentage (new format) or currentStep/totalSteps (legacy format)
-    if (typeof completionPercentage === 'number') {
-      // New format: use completionPercentage directly
-      const progress = await progressService.updateLessonProgressByPercentage(userId, {
-        lessonId,
-        completionPercentage,
-        timeSpent: timeSpent || 0,
-        scrollPosition,
-        lastViewedSection
-      });
-
-      res.json(progress);
-    } else if (req.body.currentStep !== undefined && req.body.totalSteps !== undefined) {
-      // Legacy format: support for backward compatibility
-      const { currentStep, totalSteps } = req.body;
-      
-      if (typeof currentStep !== 'number' || typeof totalSteps !== 'number') {
-        return res.status(400).json({ error: 'currentStep y totalSteps deben ser números' });
-      }
-
-      const progress = await progressService.updateLessonProgress(userId, {
-        lessonId,
-        currentStep,
-        totalSteps,
-        timeSpent: timeSpent || 0
-      });
-
-      res.json(progress);
-    } else {
-      return res.status(400).json({ error: 'completionPercentage o currentStep/totalSteps son requeridos' });
+    // Validate required fields: currentStep, totalSteps, and completionPercentage
+    if (typeof currentStep !== 'number') {
+      return res.status(400).json({ error: 'currentStep es requerido y debe ser un número' });
     }
+    if (typeof totalSteps !== 'number' || totalSteps <= 0) {
+      return res.status(400).json({ error: 'totalSteps es requerido y debe ser mayor a 0' });
+    }
+    if (typeof completionPercentage !== 'number') {
+      return res.status(400).json({ error: 'completionPercentage es requerido y debe ser un número' });
+    }
+
+    // Validate currentStep <= totalSteps
+    if (currentStep > totalSteps) {
+      return res.status(400).json({
+        error: `currentStep (${currentStep}) no puede ser mayor que totalSteps (${totalSteps})`
+      });
+    }
+
+    const progress = await progressService.updateLessonProgressByPercentage(userId, {
+      lessonId,
+      currentStep,
+      totalSteps,
+      completionPercentage,
+      timeSpent: timeSpent || 0,
+      scrollPosition,
+      lastViewedSection
+    });
+
+    res.json(progress);
   } catch (error) {
     next(error);
   }

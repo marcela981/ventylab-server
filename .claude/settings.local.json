@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "Bash(npx next lint)",
+      "Bash(where:*)",
+      "Bash(C:/nvm4w/nodejs/node.exe ./node_modules/eslint/bin/eslint.js:*)",
+      "Bash(C:/nvm4w/nodejs/node.exe ./node_modules/next/dist/bin/next build)",
+      "Bash(C:nvm4wnodejsnpm.cmd run lint)",
+      "Read(//c/Marcela/TESIS/ventilab-web/**)",
+      "Bash(find:*)"
+    ]
+  }
+}

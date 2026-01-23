@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma';
 import { UserProgress, ModuleProgress, LessonProgress, UserStats } from '../../types/progress';
+import { computeModuleProgress } from '../../utils/computeModuleProgress';
 
 // Caché en memoria para datos que no cambian frecuentemente
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -49,6 +50,8 @@ export function invalidateUserCache(userId: string) {
 /**
  * Obtener progreso general del usuario
  * Incluye porcentaje completado y módulos terminados
+ *
+ * Uses computeModuleProgress logic: lesson completed when progress === 100
  */
 export async function getUserProgress(userId: string): Promise<UserProgress> {
   try {
@@ -58,38 +61,75 @@ export async function getUserProgress(userId: string): Promise<UserProgress> {
         where: { isActive: true },
       });
 
-      // Obtener todos los módulos con progreso completado
-      const modulesWithProgress = await prisma.progress.findMany({
-        where: {
-          userId,
-          moduleId: { not: null },
-          completed: true,
-        },
-        select: {
-          moduleId: true,
-        },
-        distinct: ['moduleId'],
-      });
-
-      const completedModules = modulesWithProgress.length;
-
       // Obtener todas las lecciones activas
-      const totalLessons = await prisma.lesson.count({
+      const allLessons = await prisma.lesson.findMany({
         where: { isActive: true },
+        select: { id: true },
       });
+      const totalLessons = allLessons.length;
+      const lessonIds = allLessons.map(l => l.id);
 
-      // Obtener lecciones completadas
-      const completedLessons = await prisma.progress.count({
-        where: {
-          userId,
-          lessonId: { not: null },
-          completed: true,
+      // Obtener progreso de todas las lecciones del usuario
+      const allLessonProgress = lessonIds.length > 0
+        ? await prisma.progress.findMany({
+            where: {
+              userId,
+              lessonId: { in: lessonIds },
+            },
+            select: {
+              lessonId: true,
+              progress: true,
+              completionPercentage: true,
+            },
+          })
+        : [];
+
+      // Count lessons where progress === 100 (using computeModuleProgress logic)
+      const lessonsWithProgress = allLessonProgress.map(p => ({
+        id: p.lessonId,
+        progress: p.completionPercentage ?? p.progress ?? 0,
+      }));
+      const { completedLessonsCount } = computeModuleProgress(lessonsWithProgress);
+
+      // Count completed modules (where all lessons have progress === 100)
+      const modules = await prisma.module.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          lessons: {
+            where: { isActive: true },
+            select: { id: true },
+          },
         },
       });
 
-      // Calcular progreso general
+      let completedModulesCount = 0;
+      for (const mod of modules) {
+        if (mod.lessons.length === 0) continue;
+
+        const modLessonProgress = allLessonProgress.filter(p =>
+          mod.lessons.some(l => l.id === p.lessonId)
+        );
+
+        const modLessonsWithProgress = mod.lessons.map(l => {
+          const record = modLessonProgress.find(p => p.lessonId === l.id);
+          return {
+            id: l.id,
+            progress: record?.completionPercentage ?? record?.progress ?? 0,
+          };
+        });
+
+        const { completedLessonsCount: modCompleted, totalLessonsCount } =
+          computeModuleProgress(modLessonsWithProgress);
+
+        if (totalLessonsCount > 0 && modCompleted === totalLessonsCount) {
+          completedModulesCount++;
+        }
+      }
+
+      // Calcular progreso general usando floor
       const overallProgress = totalLessons > 0
-        ? (completedLessons / totalLessons) * 100
+        ? Math.floor((completedLessonsCount / totalLessons) * 100)
         : 0;
 
       // Obtener última actividad
@@ -102,10 +142,10 @@ export async function getUserProgress(userId: string): Promise<UserProgress> {
       return {
         userId,
         totalModules,
-        completedModules,
+        completedModules: completedModulesCount,
         totalLessons,
-        completedLessons,
-        overallProgress: Math.round(overallProgress * 100) / 100,
+        completedLessons: completedLessonsCount,
+        overallProgress,
         lastActivity: lastActivity?.updatedAt,
       };
     });
@@ -117,6 +157,8 @@ export async function getUserProgress(userId: string): Promise<UserProgress> {
 
 /**
  * Obtener progreso de un módulo específico
+ *
+ * Uses computeModuleProgress: lesson completed when progress === 100
  */
 export async function getModuleProgress(
   userId: string,
@@ -146,8 +188,6 @@ export async function getModuleProgress(
         throw new Error('Módulo no encontrado');
       }
 
-      const totalLessons = module.lessons.length;
-
       // Obtener progreso de cada lección
       const progressRecords = await prisma.progress.findMany({
         where: {
@@ -170,30 +210,43 @@ export async function getModuleProgress(
         progressRecords.map(p => [p.lessonId!, p])
       );
 
-      // Construir array de progreso de lecciones
-      const lessons: LessonProgress[] = module.lessons.map(lesson => {
-        const progressRecord = progressMap.get(lesson.id);
+      // Build lessons with progress for computeModuleProgress
+      const lessonsWithProgress = module.lessons.map(lesson => {
+        const record = progressMap.get(lesson.id);
+        // Use completionPercentage (0-100), fall back to progress field
+        const progressValue = record?.completionPercentage ?? record?.progress ?? 0;
         return {
-          lessonId: lesson.id,
-          lessonTitle: lesson.title,
-          completed: progressRecord?.completed || false,
-          progress: progressRecord?.progress || 0,
-          lastAccessed: progressRecord?.updatedAt,
-          completedAt: progressRecord?.completed ? progressRecord.updatedAt : undefined,
+          id: lesson.id,
+          progress: progressValue,
         };
       });
 
-      const completedLessons = lessons.filter(l => l.completed).length;
-      const progress = totalLessons > 0
-        ? (completedLessons / totalLessons) * 100
-        : 0;
+      // Use computeModuleProgress as single source of truth
+      const { completedLessonsCount, totalLessonsCount, progressPercentage } =
+        computeModuleProgress(lessonsWithProgress);
+
+      // Construir array de progreso de lecciones for response
+      const lessons: LessonProgress[] = module.lessons.map(lesson => {
+        const progressRecord = progressMap.get(lesson.id);
+        const progressValue = progressRecord?.completionPercentage ?? progressRecord?.progress ?? 0;
+        // A lesson is completed when progress === 100
+        const isCompleted = progressValue === 100;
+        return {
+          lessonId: lesson.id,
+          lessonTitle: lesson.title,
+          completed: isCompleted,
+          progress: progressValue,
+          lastAccessed: progressRecord?.updatedAt,
+          completedAt: isCompleted ? progressRecord?.updatedAt : undefined,
+        };
+      });
 
       return {
         moduleId: module.id,
         moduleTitle: module.title,
-        totalLessons,
-        completedLessons,
-        progress: Math.round(progress * 100) / 100,
+        totalLessons: totalLessonsCount,
+        completedLessons: completedLessonsCount,
+        progress: progressPercentage,
         lessons,
       };
     });
@@ -211,11 +264,14 @@ export async function getLessonProgress(
   lessonId: string
 ): Promise<LessonProgress | null> {
   try {
+    // Use unique constraint to ensure we get the correct record (only one per user+lesson)
     // No usar caché para progreso de lección individual (cambia frecuentemente)
-    const progressRecord = await prisma.progress.findFirst({
+    const progressRecord = await prisma.progress.findUnique({
       where: {
-        userId,
-        lessonId,
+        progress_user_lesson_unique: {
+          userId,
+          lessonId
+        }
       },
       include: {
         lesson: {
@@ -225,7 +281,6 @@ export async function getLessonProgress(
           },
         },
       },
-      orderBy: { updatedAt: 'desc' },
     });
 
     if (!progressRecord) {
@@ -247,13 +302,18 @@ export async function getLessonProgress(
       };
     }
 
+    // Use completionPercentage if available, fall back to progress field
+    const progressValue = progressRecord.completionPercentage ?? progressRecord.progress ?? 0;
+    // A lesson is completed when progress === 100 (using computeModuleProgress logic)
+    const isCompleted = progressValue === 100 || progressRecord.completed;
+
     return {
       lessonId: progressRecord.lesson!.id,
       lessonTitle: progressRecord.lesson!.title,
-      completed: progressRecord.completed,
-      progress: progressRecord.progress,
+      completed: isCompleted,
+      progress: progressValue,
       lastAccessed: progressRecord.updatedAt,
-      completedAt: progressRecord.completed ? progressRecord.updatedAt : undefined,
+      completedAt: isCompleted ? progressRecord.completedAt ?? progressRecord.updatedAt : undefined,
     };
   } catch (error) {
     console.error('Error al obtener progreso de la lección:', error);
@@ -407,6 +467,8 @@ function calculateLongestStreak(progress: Array<{ updatedAt: Date }>): number {
 /**
  * Calcular XP total del usuario
  * Esto es una estimación basada en progreso y logros
+ *
+ * Uses computeModuleProgress logic: lesson completed when progress === 100
  */
 async function calculateTotalXP(userId: string): Promise<number> {
   // XP por lección completada
@@ -416,36 +478,70 @@ async function calculateTotalXP(userId: string): Promise<number> {
   // XP por quiz pasado
   const xpPerQuiz = 100;
 
-  const [completedLessons, completedModulesResult, passedQuizzes, achievements] = await Promise.all([
-    prisma.progress.count({
-      where: {
-        userId,
-        lessonId: { not: null },
-        completed: true,
+  // Get all lesson progress records
+  const allLessonProgress = await prisma.progress.findMany({
+    where: {
+      userId,
+      lessonId: { not: null },
+    },
+    select: {
+      lessonId: true,
+      progress: true,
+      completionPercentage: true,
+    },
+  });
+
+  // Count lessons with progress === 100
+  const lessonsWithProgress = allLessonProgress.map(p => ({
+    id: p.lessonId,
+    progress: p.completionPercentage ?? p.progress ?? 0,
+  }));
+  const { completedLessonsCount: completedLessons } = computeModuleProgress(lessonsWithProgress);
+
+  // Count completed modules (where all lessons have progress === 100)
+  const modules = await prisma.module.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      lessons: {
+        where: { isActive: true },
+        select: { id: true },
       },
-    }),
-    prisma.progress.findMany({
-      where: {
-        userId,
-        moduleId: { not: null },
-        completed: true,
-      },
-      distinct: ['moduleId'],
-      select: { moduleId: true },
-    }),
+    },
+  });
+
+  let completedModules = 0;
+  for (const mod of modules) {
+    if (mod.lessons.length === 0) continue;
+
+    const modLessonProgress = allLessonProgress.filter(p =>
+      mod.lessons.some(l => l.id === p.lessonId)
+    );
+
+    const modLessonsWithProgress = mod.lessons.map(l => {
+      const record = modLessonProgress.find(p => p.lessonId === l.id);
+      return {
+        id: l.id,
+        progress: record?.completionPercentage ?? record?.progress ?? 0,
+      };
+    });
+
+    const { completedLessonsCount, totalLessonsCount } =
+      computeModuleProgress(modLessonsWithProgress);
+
+    if (totalLessonsCount > 0 && completedLessonsCount === totalLessonsCount) {
+      completedModules++;
+    }
+  }
+
+  const [passedQuizzes] = await Promise.all([
     prisma.quizAttempt.count({
       where: {
         userId,
         passed: true,
       },
     }),
-    prisma.achievement.findMany({
-      where: { userId },
-      select: { id: true },
-    }),
   ]);
-
-  const completedModules = completedModulesResult.length;
 
   // XP de logros (se calculará desde el servicio de logros)
   const { getAchievementXP } = await import('./achievements.service');
