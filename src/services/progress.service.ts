@@ -5,6 +5,7 @@ interface UpdateProgressInput {
   currentStep: number;
   totalSteps: number;
   timeSpent?: number; // segundos adicionales a sumar
+  completed?: boolean; // explicit completion flag - never auto-complete
 }
 
 interface ProgressResponse {
@@ -85,10 +86,12 @@ export async function updateLessonProgress(
   userId: string,
   input: UpdateProgressInput
 ): Promise<ProgressResponse> {
-  const { lessonId, currentStep, totalSteps, timeSpent = 0 } = input;
-  
+  const { lessonId, currentStep, totalSteps, timeSpent = 0, completed: explicitCompleted } = input;
+
   const completionPercentage = Math.round((currentStep / totalSteps) * 100);
-  const completed = currentStep >= totalSteps;
+  // IMPORTANT: Only mark as completed when explicitly requested
+  // Never auto-complete based on currentStep >= totalSteps
+  const completed = explicitCompleted === true;
 
   // Find existing progress
   const existing = await prisma.progress.findFirst({
@@ -149,17 +152,20 @@ interface UpdateProgressByPercentageInput {
   timeSpent?: number; // segundos adicionales a sumar
   scrollPosition?: number; // opcional, no se guarda en BD por ahora
   lastViewedSection?: string; // opcional, no se guarda en BD por ahora
+  completed?: boolean; // explicit completion flag - never auto-complete
 }
 
 export async function updateLessonProgressByPercentage(
   userId: string,
   input: UpdateProgressByPercentageInput
 ): Promise<ProgressResponse> {
-  const { lessonId, completionPercentage, timeSpent = 0, scrollPosition, lastViewedSection, moduleId: providedModuleId } = input;
-  
+  const { lessonId, completionPercentage, timeSpent = 0, scrollPosition, lastViewedSection, moduleId: providedModuleId, completed: explicitCompleted } = input;
+
   // Clamp completionPercentage between 0 and 100
   const clampedPercentage = Math.max(0, Math.min(100, Math.round(completionPercentage)));
-  const completed = clampedPercentage >= 100;
+  // IMPORTANT: Only mark as completed when explicitly requested
+  // Never auto-complete based on completionPercentage >= 100
+  const completed = explicitCompleted === true;
 
   // Get existing progress to preserve currentStep/totalSteps if they exist
   // Otherwise, use a default totalSteps of 100 (so currentStep = completionPercentage)

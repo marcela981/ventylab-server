@@ -15,6 +15,7 @@ import progressRoutes from './routes/progress';
 import evaluationRoutes from './routes/evaluation';
 import modulesRoutes from './routes/modules';
 import lessonsRoutes from './routes/lessons';
+import curriculumRoutes from './routes/curriculum';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -172,6 +173,9 @@ app.use('/api/modules', modulesRoutes);
 // Rutas de lecciones
 app.use('/api/lessons', lessonsRoutes);
 
+// Rutas de curriculum (orden explícito de módulos por nivel)
+app.use('/api/curriculum', curriculumRoutes);
+
 // TODO: Rutas de servicios de IA (cuando se implementen)
 // app.use('/api/ai', aiRoutes);
 
@@ -206,6 +210,7 @@ const startServer = () => {
     console.log('  - GET  /api/cases/* - Casos clínicos');
     console.log('  - GET  /api/modules/* - Módulos educativos');
     console.log('  - GET  /api/lessons/* - Lecciones');
+    console.log('  - GET  /api/curriculum/* - Curriculum (orden explícito)');
     console.log('='.repeat(50));
   });
 };

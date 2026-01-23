@@ -133,8 +133,21 @@ export const PAGINATION = {
 
 /**
  * Module Difficulties
+ * Note: prerequisitos is an optional level that does NOT affect
+ * beginner navigation or unlocking
  */
 export const MODULE_DIFFICULTIES = {
+  PREREQUISITOS: 'prerequisitos',
+  BEGINNER: 'beginner',
+  INTERMEDIATE: 'intermediate',
+  ADVANCED: 'advanced',
+} as const;
+
+/**
+ * Main levels (excludes optional prerequisitos)
+ * Use this for navigation and unlocking logic
+ */
+export const MAIN_MODULE_DIFFICULTIES = {
   BEGINNER: 'beginner',
   INTERMEDIATE: 'intermediate',
   ADVANCED: 'advanced',

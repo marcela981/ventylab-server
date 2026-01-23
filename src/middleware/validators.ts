@@ -156,8 +156,8 @@ export const createModuleValidator: ValidationChain[] = [
   body('difficulty')
     .optional()
     .trim()
-    .isIn([MODULE_DIFFICULTIES.BEGINNER, MODULE_DIFFICULTIES.INTERMEDIATE, MODULE_DIFFICULTIES.ADVANCED])
-    .withMessage('La dificultad debe ser: beginner, intermediate o advanced'),
+    .isIn([MODULE_DIFFICULTIES.PREREQUISITOS, MODULE_DIFFICULTIES.BEGINNER, MODULE_DIFFICULTIES.INTERMEDIATE, MODULE_DIFFICULTIES.ADVANCED])
+    .withMessage('La dificultad debe ser: prerequisitos, beginner, intermediate o advanced'),
 
   body('estimatedTime')
     .optional()
@@ -201,8 +201,8 @@ export const updateModuleValidator: ValidationChain[] = [
   body('difficulty')
     .optional()
     .trim()
-    .isIn([MODULE_DIFFICULTIES.BEGINNER, MODULE_DIFFICULTIES.INTERMEDIATE, MODULE_DIFFICULTIES.ADVANCED])
-    .withMessage('La dificultad debe ser: beginner, intermediate o advanced'),
+    .isIn([MODULE_DIFFICULTIES.PREREQUISITOS, MODULE_DIFFICULTIES.BEGINNER, MODULE_DIFFICULTIES.INTERMEDIATE, MODULE_DIFFICULTIES.ADVANCED])
+    .withMessage('La dificultad debe ser: prerequisitos, beginner, intermediate o advanced'),
 
   body('estimatedTime')
     .optional()

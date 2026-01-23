@@ -8,6 +8,7 @@ import { prisma } from '../../config/prisma';
 import { AppError } from '../../utils/errors';
 import { HTTP_STATUS, ERROR_CODES, PAGINATION } from '../../config/constants';
 import { getModuleProgressStats } from '../progress/moduleProgress.service';
+import { calculatePageCount } from '../lessons';
 
 /**
  * Type definitions for service parameters and returns
@@ -764,7 +765,13 @@ export const getModuleLessons = async (
       include,
     });
 
-    return lessons;
+    // Add pageCount to each lesson based on actual content sections
+    const lessonsWithPageCount = lessons.map((lesson) => ({
+      ...lesson,
+      pageCount: calculatePageCount(lesson.content),
+    }));
+
+    return lessonsWithPageCount;
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
@@ -827,11 +834,11 @@ export const getModuleResumePoint = async (
 
     const hasStarted = progressRecords.length > 0;
 
+    // Find next lesson that is NOT explicitly marked as completed
     let resumeLesson = lessons.find((lesson) => {
       const record = progressMap.get(lesson.id);
-      const progressValue = record?.progress ?? 0;
-      const isCompleted = Boolean(record?.completed) || progressValue >= 90;
-      return !isCompleted;
+      // Only check explicit completed flag, not progress value
+      return record?.completed !== true;
     });
 
     if (!resumeLesson) {

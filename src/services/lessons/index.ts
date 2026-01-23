@@ -6,6 +6,56 @@
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/errorHandler';
 import { HTTP_STATUS, ERROR_CODES } from '../../config/constants';
+import { isPrerequisitosModule, isBeginnerModule, getBeginnerModuleOrder, getPreviousBeginnerModule } from '../../config/curriculumData';
+
+/**
+ * Section types that should NOT be counted as actual lesson pages.
+ * These are non-content pages like intro screens, completion screens, or conditional navigation.
+ */
+const EXCLUDED_SECTION_TYPES = new Set([
+  'intro',
+  'introduction',
+  'completion',
+  'complete',
+  'conditional',
+  'navigation',
+  'redirect',
+  'summary', // Summary pages are typically auto-generated, not actual content
+]);
+
+/**
+ * Calculates the actual page count for a lesson by counting only rendered content sections.
+ * Excludes intro, completion, conditional, and other non-content sections.
+ *
+ * @param content - Lesson content (string JSON or parsed object)
+ * @returns The count of actual content pages
+ */
+export const calculatePageCount = (content: any): number => {
+  try {
+    const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+
+    if (!parsed || !Array.isArray(parsed.sections)) {
+      return 0;
+    }
+
+    // Count only sections that are actual content pages
+    const contentPages = parsed.sections.filter((section: any) => {
+      // If section has no type, it's considered a content page
+      if (!section.type) {
+        return true;
+      }
+
+      // Exclude sections with special types
+      const sectionType = String(section.type).toLowerCase();
+      return !EXCLUDED_SECTION_TYPES.has(sectionType);
+    });
+
+    return contentPages.length;
+  } catch (error) {
+    // If content can't be parsed, return 0
+    return 0;
+  }
+};
 
 /**
  * Validates that content is a valid JSON with proper lesson structure
@@ -26,9 +76,43 @@ const validateLessonContent = (content: any): boolean => {
 
 /**
  * Validates if user has access to a lesson's module (checks prerequisites)
+ * IMPORTANT: Prerequisitos modules are always accessible
+ * Beginner modules use the explicit curriculum order for unlocking
  */
 const validateModuleAccess = async (moduleId: string, userId: string): Promise<boolean> => {
-  // Get module with prerequisites
+  // Prerequisitos modules are always accessible
+  if (isPrerequisitosModule(moduleId)) {
+    return true;
+  }
+
+  // For beginner modules, check against curriculum order
+  if (isBeginnerModule(moduleId)) {
+    const moduleOrder = getBeginnerModuleOrder(moduleId);
+
+    // First module is always unlocked
+    if (moduleOrder === 1) {
+      return true;
+    }
+
+    // Check if previous beginner module is completed
+    const previousModule = getPreviousBeginnerModule(moduleId);
+    if (!previousModule) {
+      return true; // No previous module means unlocked
+    }
+
+    const previousProgress = await prisma.progress.findFirst({
+      where: {
+        userId,
+        moduleId: previousModule.id,
+        lessonId: null, // Module-level progress
+        completed: true,
+      },
+    });
+
+    return !!previousProgress;
+  }
+
+  // For other modules, use database prerequisites
   const module = await prisma.module.findUnique({
     where: { id: moduleId },
     include: {
@@ -50,7 +134,13 @@ const validateModuleAccess = async (moduleId: string, userId: string): Promise<b
   }
 
   // Check if user completed all prerequisites
+  // Skip prerequisitos modules in this check
   for (const prereq of module.prerequisites) {
+    // Skip if prerequisite is a prerequisitos module
+    if (isPrerequisitosModule(prereq.prerequisiteId)) {
+      continue;
+    }
+
     const progress = await prisma.learningProgress.findUnique({
       where: {
         userId_moduleId: {
@@ -106,6 +196,9 @@ export const getLessonById = async (
     );
   }
 
+  // Calculate pageCount from lesson content
+  const pageCount = calculatePageCount(lesson.content);
+
   // If user is provided, check access and include progress
   if (userId) {
     const hasAccess = await validateModuleAccess(lesson.moduleId, userId);
@@ -148,10 +241,10 @@ export const getLessonById = async (
       },
     });
 
-    return { ...lesson, progress: progress || undefined };
+    return { ...lesson, pageCount, progress: progress || undefined };
   }
 
-  return lesson;
+  return { ...lesson, pageCount };
 };
 
 /**
@@ -189,7 +282,15 @@ export const getNextLesson = async (lessonId: string): Promise<any | null> => {
     },
   });
 
-  return nextLesson;
+  if (!nextLesson) {
+    return null;
+  }
+
+  // Add pageCount to the returned lesson
+  return {
+    ...nextLesson,
+    pageCount: calculatePageCount(nextLesson.content),
+  };
 };
 
 /**
@@ -227,7 +328,15 @@ export const getPreviousLesson = async (lessonId: string): Promise<any | null> =
     },
   });
 
-  return previousLesson;
+  if (!previousLesson) {
+    return null;
+  }
+
+  // Add pageCount to the returned lesson
+  return {
+    ...previousLesson,
+    pageCount: calculatePageCount(previousLesson.content),
+  };
 };
 
 /**
@@ -310,7 +419,11 @@ export const createLesson = async (data: {
     },
   });
 
-  return lesson;
+  // Add pageCount to the returned lesson
+  return {
+    ...lesson,
+    pageCount: calculatePageCount(lesson.content),
+  };
 };
 
 /**
@@ -382,7 +495,11 @@ export const updateLesson = async (
     },
   });
 
-  return updatedLesson;
+  // Add pageCount to the returned lesson
+  return {
+    ...updatedLesson,
+    pageCount: calculatePageCount(updatedLesson.content),
+  };
 };
 
 /**

@@ -168,9 +168,9 @@ export async function saveLessonProgress(
         },
       });
 
-    const isCompleted = typeof completedOverride === 'boolean'
-      ? completedOverride
-      : progressPercent >= 100;
+    // IMPORTANT: Only mark as completed when explicitly requested
+    // Never auto-complete based on progress percentage
+    const isCompleted = completedOverride === true;
     const resolvedCompletionPercentage = typeof completionPercentage === 'number'
       ? completionPercentage
       : progressPercent;
@@ -289,9 +289,9 @@ export async function updateLessonProgress(
       console.log(`[updateLessonProgress] Lesson ${lessonId} not in DB, using derived moduleId: ${moduleId}`);
     }
 
-    const isCompleted = typeof completed === 'boolean'
-      ? completed
-      : (completionPercentage !== undefined ? completionPercentage >= 90 : false);
+    // IMPORTANT: Only mark as completed when explicitly requested
+    // Never auto-complete based on progress percentage
+    const isCompleted = completed === true;
 
     const timeSpentIncrement = typeof timeSpent === 'number' && timeSpent > 0
       ? timeSpent

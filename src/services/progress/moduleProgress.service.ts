@@ -43,6 +43,7 @@ export async function calculateAndSaveModuleProgress(
     const totalLessons = lessons.length;
     const lessonIds = lessons.map((lesson) => lesson.id);
 
+    // Get all lesson progress records for this module
     const progressRecords = lessonIds.length > 0
       ? await prisma.progress.findMany({
           where: {
@@ -52,29 +53,34 @@ export async function calculateAndSaveModuleProgress(
           select: {
             lessonId: true,
             progress: true,
+            completed: true, // Use explicit completion flag
           },
         })
       : [];
 
     const progressMap = new Map(
-      progressRecords.map((record) => [record.lessonId, record.progress])
+      progressRecords.map((record) => [record.lessonId, record])
     );
 
-    const totalProgress = lessonIds.reduce((sum, lessonId) => {
-      const lessonProgress = progressMap.get(lessonId) ?? 0;
-      return sum + lessonProgress;
-    }, 0);
+    // Count ONLY explicitly completed lessons (completed = true)
+    // Never use progress percentage as a heuristic for completion
+    const completedLessons = progressRecords.filter((record) => record.completed === true).length;
 
-    const averageProgress = totalLessons > 0 ? totalProgress / totalLessons : 0;
-    const calculatedProgress = Math.max(0, Math.min(100, averageProgress));
+    // Module progress = (completedLessons / totalLessons) * 100
+    const calculatedProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
     const roundedProgress = Math.round(calculatedProgress * 100) / 100;
+
+    // Module is complete ONLY when ALL lessons are explicitly completed
+    const isModuleComplete = totalLessons > 0 && completedLessons === totalLessons;
 
     if (isDev) {
       console.log('[moduleProgress] calculateAndSaveModuleProgress', {
         userId,
         moduleId,
         totalLessons,
+        completedLessons,
         calculatedProgress: roundedProgress,
+        isModuleComplete,
       });
     }
 
@@ -84,14 +90,14 @@ export async function calculateAndSaveModuleProgress(
       },
       update: {
         progress: roundedProgress,
-        completed: roundedProgress >= 100,
+        completed: isModuleComplete,
         lastAccess: new Date(),
       },
       create: {
         userId,
         moduleId,
         progress: roundedProgress,
-        completed: roundedProgress >= 100,
+        completed: isModuleComplete,
         lastAccess: new Date(),
       },
     });
@@ -152,20 +158,22 @@ export async function getModuleProgressStats(
     let completedLessons = 0;
     let totalProgress = 0;
 
+    // Count ONLY explicitly completed lessons (completed = true)
+    // Never use progress percentage as a heuristic for completion
     lessons.forEach((lesson) => {
       const record = progressMap.get(lesson.id);
-      const progressValue = record?.progress ?? 0;
-      const isCompleted = Boolean(record?.completed) || progressValue >= 90;
+      // Only check explicit completed flag, not progress value
+      const isCompleted = record?.completed === true;
 
       if (isCompleted) {
         completedLessons += 1;
       }
-
-      totalProgress += progressValue;
     });
 
-    const averageProgress = totalLessons > 0 ? totalProgress / totalLessons : 0;
-    const moduleProgress = Math.round(Math.max(0, Math.min(100, averageProgress)) * 100) / 100;
+    // Module progress = (completedLessons / totalLessons) * 100
+    const moduleProgress = totalLessons > 0
+      ? Math.round((completedLessons / totalLessons) * 100 * 100) / 100
+      : 0;
 
     const lastAccessedRecord = await prisma.progress.findFirst({
       where: {
@@ -195,11 +203,11 @@ export async function getModuleProgressStats(
         }
       : null;
 
+    // Find next lesson that is NOT explicitly marked as completed
     const nextIncompleteLesson = lessons.find((lesson) => {
       const record = progressMap.get(lesson.id);
-      const progressValue = record?.progress ?? 0;
-      const isCompleted = Boolean(record?.completed) || progressValue >= 90;
-      return !isCompleted;
+      // Only check explicit completed flag
+      return record?.completed !== true;
     }) ?? null;
 
     if (isDev) {
