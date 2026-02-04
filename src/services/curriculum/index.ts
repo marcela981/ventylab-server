@@ -72,17 +72,17 @@ export async function getBeginnerCurriculumModules(
     // Create a map for quick lookup
     const dbModuleMap = new Map(dbModules.map((m) => [m.id, m]));
 
-    // Fetch user progress if userId provided
-    let progressMap = new Map<string, any>();
+    // Fetch user progress from LearningProgress if userId provided
+    let progressMap = new Map<string, { completedAt: Date | null; timeSpent: number }>();
     if (userId) {
-      const progressRecords = await prisma.progress.findMany({
+      const progressRecords = await prisma.learningProgress.findMany({
         where: {
           userId,
           moduleId: { in: beginnerModuleIds },
-          lessonId: null, // Module-level progress only
         },
+        select: { moduleId: true, completedAt: true, timeSpent: true },
       });
-      progressMap = new Map(progressRecords.map((p) => [p.moduleId!, p]));
+      progressMap = new Map(progressRecords.map((p) => [p.moduleId, p]));
     }
 
     // Build modules in explicit order from curriculum data
@@ -91,13 +91,11 @@ export async function getBeginnerCurriculumModules(
         const dbModule = dbModuleMap.get(currModule.id);
         const progress = progressMap.get(currModule.id);
 
-        // Determine if module is locked
-        // First module is always unlocked, subsequent modules require previous completion
         let isLocked = false;
         if (index > 0 && userId) {
           const previousModuleId = BEGINNER_MODULES[index - 1].id;
           const previousProgress = progressMap.get(previousModuleId);
-          isLocked = !previousProgress?.completed;
+          isLocked = previousProgress?.completedAt == null;
         }
 
         return {
@@ -105,8 +103,8 @@ export async function getBeginnerCurriculumModules(
           dbModule,
           progress: progress
             ? {
-                completed: progress.completed,
-                completionPercentage: progress.completionPercentage || 0,
+                completed: progress.completedAt != null,
+                completionPercentage: progress.completedAt != null ? 100 : 0,
                 timeSpent: progress.timeSpent || 0,
               }
             : undefined,
@@ -116,7 +114,6 @@ export async function getBeginnerCurriculumModules(
       }
     );
 
-    // Calculate level statistics
     const completedModules = modules.filter(
       (m) => m.progress?.completed
     ).length;
@@ -167,20 +164,18 @@ export async function getPrerequisitosModules(
 
     const dbModuleMap = new Map(dbModules.map((m) => [m.id, m]));
 
-    // Fetch user progress
-    let progressMap = new Map<string, any>();
+    let progressMap = new Map<string, { completedAt: Date | null; timeSpent: number }>();
     if (userId) {
-      const progressRecords = await prisma.progress.findMany({
+      const progressRecords = await prisma.learningProgress.findMany({
         where: {
           userId,
           moduleId: { in: prereqModuleIds },
-          lessonId: null,
         },
+        select: { moduleId: true, completedAt: true, timeSpent: true },
       });
-      progressMap = new Map(progressRecords.map((p) => [p.moduleId!, p]));
+      progressMap = new Map(progressRecords.map((p) => [p.moduleId, p]));
     }
 
-    // Build modules - prerequisitos are never locked
     const modules: CurriculumModuleWithProgress[] = PREREQUISITOS_MODULES.map(
       (currModule) => {
         const dbModule = dbModuleMap.get(currModule.id);
@@ -191,12 +186,12 @@ export async function getPrerequisitosModules(
           dbModule,
           progress: progress
             ? {
-                completed: progress.completed,
-                completionPercentage: progress.completionPercentage || 0,
+                completed: progress.completedAt != null,
+                completionPercentage: progress.completedAt != null ? 100 : 0,
                 timeSpent: progress.timeSpent || 0,
               }
             : undefined,
-          isLocked: false, // Prerequisitos are always accessible
+          isLocked: false,
           lessonCount: dbModule?._count?.lessons || 0,
         };
       }
@@ -266,29 +261,28 @@ async function getDatabaseModulesByLevel(
       },
     });
 
-    let progressMap = new Map<string, any>();
+    let progressMap = new Map<string, { completedAt: Date | null; timeSpent: number }>();
     if (userId && dbModules.length > 0) {
       const moduleIds = dbModules.map((m) => m.id);
-      const progressRecords = await prisma.progress.findMany({
+      const progressRecords = await prisma.learningProgress.findMany({
         where: {
           userId,
           moduleId: { in: moduleIds },
-          lessonId: null,
         },
+        select: { moduleId: true, completedAt: true, timeSpent: true },
       });
-      progressMap = new Map(progressRecords.map((p) => [p.moduleId!, p]));
+      progressMap = new Map(progressRecords.map((p) => [p.moduleId, p]));
     }
 
     const modules: CurriculumModuleWithProgress[] = dbModules.map(
       (dbModule, index) => {
         const progress = progressMap.get(dbModule.id);
 
-        // Calculate lock status based on previous module completion
         let isLocked = false;
         if (index > 0 && userId) {
           const previousModuleId = dbModules[index - 1].id;
           const previousProgress = progressMap.get(previousModuleId);
-          isLocked = !previousProgress?.completed;
+          isLocked = previousProgress?.completedAt == null;
         }
 
         return {
@@ -299,8 +293,8 @@ async function getDatabaseModulesByLevel(
           dbModule,
           progress: progress
             ? {
-                completed: progress.completed,
-                completionPercentage: progress.completionPercentage || 0,
+                completed: progress.completedAt != null,
+                completionPercentage: progress.completedAt != null ? 100 : 0,
                 timeSpent: progress.timeSpent || 0,
               }
             : undefined,
@@ -363,16 +357,14 @@ export async function isModuleUnlocked(
       return true; // No previous module means unlocked
     }
 
-    const previousProgress = await prisma.progress.findFirst({
+    const previousProgress = await prisma.learningProgress.findUnique({
       where: {
-        userId,
-        moduleId: previousModule.id,
-        lessonId: null,
-        completed: true,
+        userId_moduleId: { userId, moduleId: previousModule.id },
       },
+      select: { completedAt: true },
     });
 
-    return !!previousProgress;
+    return previousProgress?.completedAt != null;
   }
 
   // For other levels, check database prerequisites
@@ -407,12 +399,11 @@ export async function isModuleUnlocked(
   }
 
   const prereqIds = relevantPrereqs.map((p) => p.prerequisiteId);
-  const completedPrereqs = await prisma.progress.count({
+  const completedPrereqs = await prisma.learningProgress.count({
     where: {
       userId,
       moduleId: { in: prereqIds },
-      lessonId: null,
-      completed: true,
+      completedAt: { not: null },
     },
   });
 

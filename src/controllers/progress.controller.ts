@@ -1,32 +1,77 @@
 import { Request, Response, NextFunction } from 'express';
-import * as progressService from '../services/progress.service';
+import * as learningProgressService from '../services/progress/learningProgress.service';
 import { prisma } from '../config/prisma';
 
+// Helper to extract moduleId from lessonId
+function extractModuleId(lessonId: string): string {
+  // Assumes lessonId format: module-XX-lesson-name
+  const match = lessonId.match(/^(module-\d+)/);
+  return match ? match[1] : lessonId.split('-')[0];
+}
+
+/**
+ * Resolve moduleId for a lesson - never fails.
+ * Progress is created on access; we never return 404 for "no progress".
+ */
+async function resolveModuleIdForLesson(
+  lessonId: string,
+  moduleIdFromQuery?: string
+): Promise<string | null> {
+  if (moduleIdFromQuery) {
+    const exists = await prisma.module.findUnique({
+      where: { id: moduleIdFromQuery, isActive: true },
+      select: { id: true },
+    });
+    if (exists) return moduleIdFromQuery;
+  }
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: { moduleId: true },
+  });
+  if (lesson) return lesson.moduleId;
+
+  const moduleWithLesson = await prisma.module.findFirst({
+    where: { isActive: true, lessons: { some: { id: lessonId } } },
+    select: { id: true },
+  });
+  if (moduleWithLesson) return moduleWithLesson.id;
+
+  const firstModule = await prisma.module.findFirst({
+    where: { isActive: true },
+    orderBy: { order: 'asc' },
+    select: { id: true },
+  });
+  return firstModule?.id ?? null;
+}
+
 // GET /api/progress/lesson/:lessonId
+// Never 404: progress is created on access (upsert)
 export async function getLessonProgress(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
     const { lessonId } = req.params;
+    const moduleIdFromQuery = req.query.moduleId as string | undefined;
 
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    const progress = await progressService.getLessonProgress(userId, lessonId);
-    
-    // Si no hay progreso, retornar objeto inicial (no 404)
-    if (!progress) {
+    const moduleId = await resolveModuleIdForLesson(lessonId, moduleIdFromQuery);
+    if (!moduleId) {
       return res.json({
         lessonId,
-        currentStep: 0,
-        totalSteps: 1,
         completed: false,
-        completionPercentage: 0,
         timeSpent: 0,
-        lastAccess: null,
-        completedAt: null
+        lastAccessed: null,
       });
     }
+
+    const progress = await learningProgressService.getLessonProgress(
+      userId,
+      moduleId,
+      lessonId
+    );
 
     res.json(progress);
   } catch (error) {
@@ -43,7 +88,7 @@ export async function getUserOverview(req: Request, res: Response, next: NextFun
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    const overview = await progressService.getUserProgress(userId);
+    const overview = await learningProgressService.getUserProgressOverview(userId);
     res.json(overview);
   } catch (error) {
     next(error);
@@ -51,6 +96,7 @@ export async function getUserOverview(req: Request, res: Response, next: NextFun
 }
 
 // GET /api/progress/module/:moduleId - Progreso agregado del módulo
+// Never 404: creates progress on access (upsert)
 export async function getModuleProgress(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
@@ -60,8 +106,25 @@ export async function getModuleProgress(req: Request, res: Response, next: NextF
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    // Obtener progreso del módulo usando el servicio
-    const moduleProgress = await progressService.getModuleProgress(userId, moduleId);
+    const moduleExists = await prisma.module.findUnique({
+      where: { id: moduleId, isActive: true },
+      select: { id: true },
+    });
+
+    if (!moduleExists) {
+      return res.json({
+        moduleId,
+        totalLessons: 0,
+        completedLessons: 0,
+        completionPercentage: 0,
+        timeSpent: 0,
+        score: null,
+        lessons: [],
+        completedAt: null,
+      });
+    }
+
+    const moduleProgress = await learningProgressService.getModuleProgress(userId, moduleId);
     res.json(moduleProgress);
   } catch (error) {
     next(error);
@@ -69,65 +132,100 @@ export async function getModuleProgress(req: Request, res: Response, next: NextF
 }
 
 // PUT /api/progress/lesson/:lessonId
-// Frontend MUST send: currentStep, totalSteps, completionPercentage
-// Backend NEVER fabricates totalSteps
+// Update lesson progress - never 404, progress created on access (upsert)
 export async function updateLessonProgress(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
     const { lessonId } = req.params;
-    const { currentStep, totalSteps, completionPercentage, timeSpent, scrollPosition, lastViewedSection } = req.body;
+    const { completed = false, timeSpent = 0 } = req.body;
+    const moduleIdFromQuery = req.query.moduleId as string | undefined;
 
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    // Validate required fields: currentStep, totalSteps, and completionPercentage
-    if (typeof currentStep !== 'number') {
-      return res.status(400).json({ error: 'currentStep es requerido y debe ser un número' });
-    }
-    if (typeof totalSteps !== 'number' || totalSteps <= 0) {
-      return res.status(400).json({ error: 'totalSteps es requerido y debe ser mayor a 0' });
-    }
-    if (typeof completionPercentage !== 'number') {
-      return res.status(400).json({ error: 'completionPercentage es requerido y debe ser un número' });
-    }
-
-    // Validate currentStep <= totalSteps
-    if (currentStep > totalSteps) {
-      return res.status(400).json({
-        error: `currentStep (${currentStep}) no puede ser mayor que totalSteps (${totalSteps})`
+    const moduleId = await resolveModuleIdForLesson(lessonId, moduleIdFromQuery);
+    if (!moduleId) {
+      return res.json({
+        lessonId,
+        completed,
+        timeSpent,
+        lastAccessed: new Date().toISOString(),
+        nextLessonId: null,
       });
     }
 
-    const progress = await progressService.updateLessonProgressByPercentage(userId, {
+    const progress = await learningProgressService.updateLessonProgress({
+      userId,
+      moduleId,
       lessonId,
-      currentStep,
-      totalSteps,
-      completionPercentage,
-      timeSpent: timeSpent || 0,
-      scrollPosition,
-      lastViewedSection
+      completed,
+      timeSpent,
     });
 
-    res.json(progress);
+    let nextLessonId: string | null = null;
+    if (completed) {
+      nextLessonId = await learningProgressService.getNextLesson(
+        userId,
+        moduleId,
+        lessonId
+      );
+    }
+
+    res.json({
+      ...progress,
+      nextLessonId,
+    });
   } catch (error) {
     next(error);
   }
 }
 
 // POST /api/progress/lesson/:lessonId/complete
+// Never 404, progress created on access (upsert)
 export async function markComplete(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
     const { lessonId } = req.params;
-    const { totalSteps } = req.body;
+    const { timeSpent = 0 } = req.body;
+    const moduleIdFromQuery = req.query.moduleId as string | undefined;
 
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    const progress = await progressService.markLessonComplete(userId, lessonId, totalSteps || 1);
-    res.json(progress);
+    const moduleId = await resolveModuleIdForLesson(lessonId, moduleIdFromQuery);
+    if (!moduleId) {
+      return res.json({
+        lessonId,
+        completed: true,
+        timeSpent,
+        lastAccessed: new Date().toISOString(),
+        nextLessonId: null,
+        message: 'Lección completada.',
+      });
+    }
+
+    const progress = await learningProgressService.markLessonComplete(
+      userId,
+      moduleId,
+      lessonId,
+      timeSpent
+    );
+
+    const nextLessonId = await learningProgressService.getNextLesson(
+      userId,
+      moduleId,
+      lessonId
+    );
+
+    res.json({
+      ...progress,
+      nextLessonId,
+      message: nextLessonId
+        ? 'Lección completada. Avanzando a la siguiente.'
+        : 'Lección completada. Has terminado este módulo.',
+    });
   } catch (error) {
     next(error);
   }

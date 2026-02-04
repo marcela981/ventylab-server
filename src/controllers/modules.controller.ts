@@ -81,8 +81,9 @@ export const createModule = async (
 ): Promise<void> => {
   try {
     const moduleData = req.body;
+    const userId = req.user?.id;
 
-    const module = await moduleService.createModule(moduleData);
+    const module = await moduleService.createModule(moduleData, userId);
 
     sendCreated(res, SUCCESS_MESSAGES.MODULE_CREATED, module);
   } catch (error) {
@@ -102,8 +103,9 @@ export const updateModule = async (
   try {
     const { id } = req.params;
     const updateData = req.body;
+    const userId = req.user?.id;
 
-    const module = await moduleService.updateModule(id, updateData);
+    const module = await moduleService.updateModule(id, updateData, userId);
 
     sendSuccess(res, HTTP_STATUS.OK, SUCCESS_MESSAGES.MODULE_UPDATED, module);
   } catch (error) {
@@ -122,8 +124,9 @@ export const deleteModule = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
 
-    const message = await moduleService.deleteModule(id);
+    const message = await moduleService.deleteModule(id, userId);
 
     sendSuccess(res, HTTP_STATUS.OK, message);
   } catch (error) {

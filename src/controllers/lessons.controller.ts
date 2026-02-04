@@ -99,8 +99,9 @@ export const createLesson = async (
 ): Promise<void> => {
   try {
     const lessonData = req.body;
+    const userId = req.user?.id;
 
-    const lesson = await lessonService.createLesson(lessonData);
+    const lesson = await lessonService.createLesson(lessonData, userId);
 
     sendCreated(res, SUCCESS_MESSAGES.LESSON_CREATED, lesson);
   } catch (error) {
@@ -120,8 +121,9 @@ export const updateLesson = async (
   try {
     const { id } = req.params;
     const updateData = req.body;
+    const userId = req.user?.id;
 
-    const lesson = await lessonService.updateLesson(id, updateData);
+    const lesson = await lessonService.updateLesson(id, updateData, userId);
 
     sendSuccess(res, HTTP_STATUS.OK, SUCCESS_MESSAGES.LESSON_UPDATED, lesson);
   } catch (error) {
@@ -140,8 +142,10 @@ export const deleteLesson = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
+    const forceDeactivate = req.query.forceDeactivate === 'true';
+    const userId = req.user?.id;
 
-    const result = await lessonService.deleteLesson(id);
+    const result = await lessonService.deleteLesson(id, forceDeactivate, userId);
 
     sendSuccess(res, HTTP_STATUS.OK, result.message);
   } catch (error) {

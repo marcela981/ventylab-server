@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/prisma';
+import { USER_ROLES, UserRoleType } from '../config/constants';
 
 // Extender el tipo Request para incluir user
 declare global {
@@ -171,19 +172,41 @@ export const optionalAuth = async (
 };
 
 /**
- * Middleware para verificar roles específicos
+ * RBAC Middleware - Verifies user has required role
+ *
+ * SUPERUSER RULE: Users with SUPERUSER role implicitly pass ALL role checks.
+ * This is the ONLY place superuser logic is implemented - never hardcode elsewhere.
+ *
+ * @param roles - Roles that can access the route (SUPERUSER not needed in list)
+ * @returns Express middleware
+ *
+ * @example
+ * // Admin or superuser can access
+ * router.delete('/resource', authenticate, requireRole(USER_ROLES.ADMIN), handler);
+ *
+ * // Teacher, Admin, or superuser can access
+ * router.post('/resource', authenticate, requireRole(USER_ROLES.TEACHER, USER_ROLES.ADMIN), handler);
  */
 export const requireRole = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({
         error: 'No autenticado',
+        code: 'UNAUTHORIZED',
       });
     }
 
+    // SUPERUSER always passes - implicit access to ALL routes
+    // This is the single source of truth for superuser access
+    if (req.user.role === USER_ROLES.SUPERUSER) {
+      return next();
+    }
+
+    // Check if user's role is in the allowed roles
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         error: 'Acceso denegado',
+        code: 'FORBIDDEN',
         message: `Se requiere uno de los siguientes roles: ${roles.join(', ')}`,
       });
     }
@@ -191,6 +214,18 @@ export const requireRole = (...roles: string[]) => {
     next();
   };
 };
+
+/**
+ * Convenience middleware: Require ADMIN role (SUPERUSER implicit)
+ * Use for /admin/* routes
+ */
+export const requireAdmin = requireRole(USER_ROLES.ADMIN);
+
+/**
+ * Convenience middleware: Require TEACHER or ADMIN role (SUPERUSER implicit)
+ * Use for /panel/*, /editor/* routes
+ */
+export const requireTeacherPlus = requireRole(USER_ROLES.TEACHER, USER_ROLES.ADMIN);
 
 export default authenticate;
 

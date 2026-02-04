@@ -5,8 +5,9 @@
 
 import { Router } from 'express';
 import * as modulesController from '../controllers/modules.controller';
-import { authenticate, requireRole } from '../middleware/auth';
+import { authenticate, requireRole, requireAdmin, requireTeacherPlus } from '../middleware/auth';
 import { validateRequest } from '../middleware/validate';
+import { USER_ROLES } from '../config/constants';
 import {
   createModuleValidator,
   updateModuleValidator,
@@ -69,7 +70,8 @@ router.get(
 );
 
 /**
- * Admin/Instructor routes (role-based access)
+ * Teacher/Admin routes (role-based access)
+ * Note: SUPERUSER has implicit access via requireRole middleware
  */
 
 // POST /api/modules - Create a new module
@@ -77,7 +79,7 @@ router.post(
   '/',
   writeLimiter,
   authenticate,
-  requireRole('ADMIN', 'INSTRUCTOR'),
+  requireTeacherPlus,  // TEACHER, ADMIN (SUPERUSER implicit)
   validateRequest(createModuleValidator),
   modulesController.createModule
 );
@@ -87,7 +89,7 @@ router.put(
   '/:id',
   writeLimiter,
   authenticate,
-  requireRole('ADMIN', 'INSTRUCTOR'),
+  requireTeacherPlus,  // TEACHER, ADMIN (SUPERUSER implicit)
   validateRequest([...idValidator, ...updateModuleValidator]),
   modulesController.updateModule
 );
@@ -97,7 +99,7 @@ router.delete(
   '/:id',
   writeLimiter,
   authenticate,
-  requireRole('ADMIN'),
+  requireAdmin,  // ADMIN only (SUPERUSER implicit)
   validateRequest(idValidator),
   modulesController.deleteModule
 );
@@ -107,7 +109,7 @@ router.post(
   '/:id/prerequisites',
   writeLimiter,
   authenticate,
-  requireRole('ADMIN', 'INSTRUCTOR'),
+  requireTeacherPlus,  // TEACHER, ADMIN (SUPERUSER implicit)
   validateRequest([...idValidator, ...prerequisiteValidator]),
   modulesController.addPrerequisite
 );
@@ -117,7 +119,7 @@ router.delete(
   '/:id/prerequisites/:prerequisiteId',
   writeLimiter,
   authenticate,
-  requireRole('ADMIN', 'INSTRUCTOR'),
+  requireTeacherPlus,  // TEACHER, ADMIN (SUPERUSER implicit)
   modulesController.removePrerequisite
 );
 

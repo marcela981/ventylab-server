@@ -2,6 +2,8 @@
  * Module Service
  * Business logic for module-related operations
  * Handles CRUD operations, prerequisites, and progress tracking
+ *
+ * All mutations are logged to the audit trail (fail-soft)
  */
 
 import { prisma } from '../../config/prisma';
@@ -9,6 +11,7 @@ import { AppError } from '../../utils/errors';
 import { HTTP_STATUS, ERROR_CODES, PAGINATION } from '../../config/constants';
 import { getModuleProgressStats } from '../progress/moduleProgress.service';
 import { calculatePageCount } from '../lessons';
+import { logChange, getDiff } from '../changelog';
 
 /**
  * Type definitions for service parameters and returns
@@ -237,9 +240,13 @@ export const getModuleById = async (
  * Create a new module
  *
  * @param data - Module creation data
+ * @param userId - ID of the user creating the module (for audit trail)
  * @returns Created module with prerequisites
  */
-export const createModule = async (data: CreateModuleData): Promise<any> => {
+export const createModule = async (
+  data: CreateModuleData,
+  userId?: string
+): Promise<any> => {
   try {
     const { title, prerequisiteIds, ...moduleData } = data;
 
@@ -286,11 +293,14 @@ export const createModule = async (data: CreateModuleData): Promise<any> => {
 
     // Create module and prerequisites in a transaction
     const module = await prisma.$transaction(async (tx) => {
-      // Create the module
+      // Create the module with audit fields
       const newModule = await tx.module.create({
         data: {
           title,
           ...moduleData,
+          // Audit fields
+          lastModifiedBy: userId,
+          lastModifiedAt: userId ? new Date() : undefined,
         },
       });
 
@@ -323,6 +333,16 @@ export const createModule = async (data: CreateModuleData): Promise<any> => {
       });
     });
 
+    // Log the change (fail-soft)
+    if (userId && module) {
+      await logChange({
+        entityType: 'Module',
+        entityId: module.id,
+        action: 'create',
+        changedBy: userId,
+      });
+    }
+
     return module;
   } catch (error) {
     if (error instanceof AppError) {
@@ -342,14 +362,16 @@ export const createModule = async (data: CreateModuleData): Promise<any> => {
  *
  * @param moduleId - Module ID
  * @param data - Update data
+ * @param userId - ID of the user making the update (for audit trail)
  * @returns Updated module
  */
 export const updateModule = async (
   moduleId: string,
-  data: UpdateModuleData
+  data: UpdateModuleData,
+  userId?: string
 ): Promise<any> => {
   try {
-    // Validate module exists
+    // Validate module exists and get current state for diff
     const existingModule = await prisma.module.findUnique({
       where: { id: moduleId },
     });
@@ -388,10 +410,15 @@ export const updateModule = async (
       }
     }
 
-    // Update the module
+    // Update the module with audit fields
     const updatedModule = await prisma.module.update({
       where: { id: moduleId },
-      data,
+      data: {
+        ...data,
+        // Audit fields
+        lastModifiedBy: userId,
+        lastModifiedAt: userId ? new Date() : undefined,
+      },
       include: {
         _count: {
           select: {
@@ -412,6 +439,27 @@ export const updateModule = async (
       },
     });
 
+    // Calculate and log diff (fail-soft)
+    if (userId) {
+      const diff = getDiff(existingModule, updatedModule, [
+        'title',
+        'description',
+        'category',
+        'difficulty',
+        'estimatedTime',
+        'thumbnail',
+        'order',
+        'isActive',
+      ]);
+      await logChange({
+        entityType: 'Module',
+        entityId: moduleId,
+        action: 'update',
+        changedBy: userId,
+        diff,
+      });
+    }
+
     return updatedModule;
   } catch (error) {
     if (error instanceof AppError) {
@@ -430,9 +478,13 @@ export const updateModule = async (
  * Delete a module (soft delete)
  *
  * @param moduleId - Module ID
+ * @param userId - ID of the user making the deletion (for audit trail)
  * @returns Confirmation message
  */
-export const deleteModule = async (moduleId: string): Promise<string> => {
+export const deleteModule = async (
+  moduleId: string,
+  userId?: string
+): Promise<string> => {
   try {
     // Validate module exists
     const module = await prisma.module.findUnique({
@@ -471,8 +523,22 @@ export const deleteModule = async (moduleId: string): Promise<string> => {
       where: { id: moduleId },
       data: {
         isActive: false,
+        // Audit fields
+        lastModifiedBy: userId,
+        lastModifiedAt: userId ? new Date() : undefined,
       },
     });
+
+    // Log the deletion (fail-soft)
+    if (userId) {
+      await logChange({
+        entityType: 'Module',
+        entityId: moduleId,
+        action: 'delete',
+        changedBy: userId,
+        diff: { isActive: { before: true, after: false } },
+      });
+    }
 
     return `Módulo "${module.title}" desactivado exitosamente`;
   } catch (error) {
@@ -816,28 +882,26 @@ export const getModuleResumePoint = async (
     }
 
     const lessonIds = lessons.map((lesson) => lesson.id);
-    const progressRecords = await prisma.progress.findMany({
+
+    const learningProgress = await prisma.learningProgress.findUnique({
       where: {
-        userId,
-        lessonId: { in: lessonIds },
+        userId_moduleId: { userId, moduleId },
       },
-      select: {
-        lessonId: true,
-        progress: true,
-        completed: true,
+      include: {
+        lessons: {
+          where: { lessonId: { in: lessonIds } },
+        },
       },
     });
 
     const progressMap = new Map(
-      progressRecords.map((record) => [record.lessonId, record])
+      (learningProgress?.lessons ?? []).map((lp) => [lp.lessonId, lp])
     );
 
-    const hasStarted = progressRecords.length > 0;
+    const hasStarted = (learningProgress?.lessons?.length ?? 0) > 0;
 
-    // Find next lesson that is NOT explicitly marked as completed
     let resumeLesson = lessons.find((lesson) => {
       const record = progressMap.get(lesson.id);
-      // Only check explicit completed flag, not progress value
       return record?.completed !== true;
     });
 
@@ -848,7 +912,7 @@ export const getModuleResumePoint = async (
     }
 
     const resumeProgressRecord = progressMap.get(resumeLesson.id);
-    const resumeLessonProgress = resumeProgressRecord?.progress ?? 0;
+    const resumeLessonProgress = resumeProgressRecord?.completed ? 100 : 0;
 
     const stats = await getModuleProgressStats(userId, moduleId);
 

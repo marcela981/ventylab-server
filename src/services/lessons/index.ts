@@ -1,12 +1,16 @@
 /**
  * Lesson Service
  * Contains all business logic for lesson management
+ *
+ * All mutations are logged to the audit trail (fail-soft)
  */
 
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/errorHandler';
-import { HTTP_STATUS, ERROR_CODES } from '../../config/constants';
+import { HTTP_STATUS, ERROR_CODES, USER_ROLES } from '../../config/constants';
 import { isPrerequisitosModule, isBeginnerModule, getBeginnerModuleOrder, getPreviousBeginnerModule } from '../../config/curriculumData';
+import { logChange, getDiff } from '../changelog';
+import { resolveLessonWithOverrides } from '../overrides';
 
 /**
  * Section types that should NOT be counted as actual lesson pages.
@@ -100,16 +104,14 @@ const validateModuleAccess = async (moduleId: string, userId: string): Promise<b
       return true; // No previous module means unlocked
     }
 
-    const previousProgress = await prisma.progress.findFirst({
+    const previousProgress = await prisma.learningProgress.findUnique({
       where: {
-        userId,
-        moduleId: previousModule.id,
-        lessonId: null, // Module-level progress
-        completed: true,
+        userId_moduleId: { userId, moduleId: previousModule.id },
       },
+      select: { completedAt: true },
     });
 
-    return !!previousProgress;
+    return previousProgress?.completedAt != null;
   }
 
   // For other modules, use database prerequisites
@@ -211,6 +213,12 @@ export const getLessonById = async (
       );
     }
 
+    // Get user role to determine if overrides should be applied
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
     // Get or create learning progress for this module
     let learningProgress = await prisma.learningProgress.findUnique({
       where: {
@@ -240,6 +248,25 @@ export const getLessonById = async (
         },
       },
     });
+
+    // Apply content overrides for students
+    // FUTURE: Add caching for override resolution in high-traffic scenarios
+    if (user?.role === USER_ROLES.STUDENT) {
+      try {
+        const { lesson: resolvedLesson, hasOverrides } = await resolveLessonWithOverrides(lessonId, userId);
+        const resolvedPageCount = calculatePageCount(resolvedLesson.content);
+        return {
+          ...resolvedLesson,
+          pageCount: resolvedPageCount,
+          progress: progress || undefined,
+          _hasOverrides: hasOverrides,
+        };
+      } catch (error) {
+        // Fail-soft: If override resolution fails, return original lesson
+        console.error('[Lessons] Override resolution failed (fail-soft):', error);
+        return { ...lesson, pageCount, progress: progress || undefined };
+      }
+    }
 
     return { ...lesson, pageCount, progress: progress || undefined };
   }
@@ -342,17 +369,21 @@ export const getPreviousLesson = async (lessonId: string): Promise<any | null> =
 /**
  * Create a new lesson
  * @param data - Lesson creation data
+ * @param userId - ID of the user creating the lesson (for audit trail)
  * @returns Created lesson
  */
-export const createLesson = async (data: {
-  moduleId: string;
-  title: string;
-  content: any;
-  order?: number;
-  estimatedTime?: number;
-  aiGenerated?: boolean;
-  sourcePrompt?: string;
-}): Promise<any> => {
+export const createLesson = async (
+  data: {
+    moduleId: string;
+    title: string;
+    content: any;
+    order?: number;
+    estimatedTime?: number;
+    aiGenerated?: boolean;
+    sourcePrompt?: string;
+  },
+  userId?: string
+): Promise<any> => {
   const { moduleId, title, content, order = 0, estimatedTime = 0, aiGenerated = false, sourcePrompt } = data;
 
   // Validate module exists and is active
@@ -413,11 +444,24 @@ export const createLesson = async (data: {
       estimatedTime,
       aiGenerated,
       sourcePrompt,
+      // Audit fields
+      lastModifiedBy: userId,
+      lastModifiedAt: userId ? new Date() : undefined,
     },
     include: {
       module: true,
     },
   });
+
+  // Log the change (fail-soft)
+  if (userId) {
+    await logChange({
+      entityType: 'Lesson',
+      entityId: lesson.id,
+      action: 'create',
+      changedBy: userId,
+    });
+  }
 
   // Add pageCount to the returned lesson
   return {
@@ -430,6 +474,7 @@ export const createLesson = async (data: {
  * Update an existing lesson
  * @param lessonId - Lesson ID
  * @param data - Fields to update
+ * @param userId - ID of the user making the update (for audit trail)
  * @returns Updated lesson
  */
 export const updateLesson = async (
@@ -441,13 +486,15 @@ export const updateLesson = async (
     estimatedTime?: number;
     aiGenerated?: boolean;
     sourcePrompt?: string;
-  }
+  },
+  userId?: string
 ): Promise<any> => {
-  const lesson = await prisma.lesson.findUnique({
+  // Get existing lesson for diff calculation
+  const existingLesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
   });
 
-  if (!lesson) {
+  if (!existingLesson) {
     throw new AppError(
       'Lección no encontrada',
       HTTP_STATUS.NOT_FOUND,
@@ -456,16 +503,16 @@ export const updateLesson = async (
   }
 
   // If updating order, check for conflicts
-  if (data.order !== undefined && data.order !== lesson.order) {
-    const existingLesson = await prisma.lesson.findFirst({
+  if (data.order !== undefined && data.order !== existingLesson.order) {
+    const conflictingLesson = await prisma.lesson.findFirst({
       where: {
-        moduleId: lesson.moduleId,
+        moduleId: existingLesson.moduleId,
         order: data.order,
         id: { not: lessonId },
       },
     });
 
-    if (existingLesson) {
+    if (conflictingLesson) {
       throw new AppError(
         `Ya existe una lección con el orden ${data.order} en este módulo`,
         HTTP_STATUS.CONFLICT,
@@ -489,11 +536,34 @@ export const updateLesson = async (
 
   const updatedLesson = await prisma.lesson.update({
     where: { id: lessonId },
-    data,
+    data: {
+      ...data,
+      // Audit fields
+      lastModifiedBy: userId,
+      lastModifiedAt: userId ? new Date() : undefined,
+    },
     include: {
       module: true,
     },
   });
+
+  // Calculate and log diff (fail-soft)
+  if (userId) {
+    const diff = getDiff(existingLesson, updatedLesson, [
+      'title',
+      'content',
+      'order',
+      'estimatedTime',
+      'isActive',
+    ]);
+    await logChange({
+      entityType: 'Lesson',
+      entityId: lessonId,
+      action: 'update',
+      changedBy: userId,
+      diff,
+    });
+  }
 
   // Add pageCount to the returned lesson
   return {
@@ -503,13 +573,34 @@ export const updateLesson = async (
 };
 
 /**
- * Delete a lesson (hard delete)
+ * Delete a lesson (soft delete for data safety)
+ *
+ * DATA SAFETY:
+ * - Uses soft delete (isActive = false) by default to preserve student progress
+ * - Checks for active steps before allowing deletion
+ * - Student progress is NOT affected by soft deletion
+ *
+ * FUTURE EXTENSIONS:
+ * - Add forceHardDelete option for admin cleanup
+ * - Add checkStudentProgress option to block deletion if students have progress
+ *
  * @param lessonId - Lesson ID
+ * @param forceDeactivate - If true, deactivates lesson even with active steps
+ * @param userId - ID of the user making the deletion (for audit trail)
  * @returns Confirmation message
  */
-export const deleteLesson = async (lessonId: string): Promise<{ message: string }> => {
+export const deleteLesson = async (
+  lessonId: string,
+  forceDeactivate: boolean = false,
+  userId?: string
+): Promise<{ message: string }> => {
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
+    include: {
+      steps: {
+        where: { isActive: true },
+      },
+    },
   });
 
   if (!lesson) {
@@ -520,23 +611,43 @@ export const deleteLesson = async (lessonId: string): Promise<{ message: string 
     );
   }
 
-  // Delete in transaction to handle foreign key constraints
-  await prisma.$transaction([
-    // Delete all quizzes associated with this lesson
-    prisma.quiz.deleteMany({
-      where: { lessonId },
-    }),
-    // Delete all lesson progress records
-    prisma.lessonProgress.deleteMany({
-      where: { lessonId },
-    }),
-    // Delete the lesson
-    prisma.lesson.delete({
-      where: { id: lessonId },
-    }),
-  ]);
+  // Check for active steps
+  if (lesson.steps && lesson.steps.length > 0 && !forceDeactivate) {
+    throw new AppError(
+      'No se puede eliminar una lección con pasos activos',
+      HTTP_STATUS.BAD_REQUEST,
+      ERROR_CODES.LESSON_HAS_STEPS,
+      true,
+      [
+        `Esta lección tiene ${lesson.steps.length} pasos activos asociados`,
+        'Elimina o desactiva los pasos primero, o usa forceDeactivate=true',
+      ]
+    );
+  }
 
-  return { message: 'Lección eliminada exitosamente' };
+  // Soft delete by setting isActive to false
+  await prisma.lesson.update({
+    where: { id: lessonId },
+    data: {
+      isActive: false,
+      // Audit fields
+      lastModifiedBy: userId,
+      lastModifiedAt: userId ? new Date() : undefined,
+    },
+  });
+
+  // Log the deletion (fail-soft)
+  if (userId) {
+    await logChange({
+      entityType: 'Lesson',
+      entityId: lessonId,
+      action: 'delete',
+      changedBy: userId,
+      diff: { isActive: { before: true, after: false } },
+    });
+  }
+
+  return { message: `Lección "${lesson.title}" desactivada exitosamente` };
 };
 
 /**

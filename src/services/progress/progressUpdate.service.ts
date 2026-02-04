@@ -34,56 +34,52 @@ export async function completeLesson(
       };
     }
 
-    // Usar transacción para asegurar consistencia
+    // Usar transacción: LearningProgress + LessonProgress
     const result = await prisma.$transaction(async (tx) => {
-      // Buscar o crear registro de progreso
-      let progress = await tx.progress.findFirst({
+      const learningProgress = await tx.learningProgress.upsert({
         where: {
+          userId_moduleId: { userId, moduleId: lesson.moduleId },
+        },
+        update: { updatedAt: new Date() },
+        create: {
           userId,
-          lessonId,
+          moduleId: lesson.moduleId,
+          timeSpent: 0,
         },
       });
 
-      if (progress) {
-        // Actualizar progreso existente
-        progress = await tx.progress.update({
-          where: { id: progress.id },
-          data: {
-            completed: true,
-            progress: 100,
-            completionPercentage: 100,
-          },
-        });
-      } else {
-        // Crear nuevo registro de progreso
-        progress = await tx.progress.create({
-          data: {
-            userId,
-            moduleId: lesson.moduleId,
+      const lessonProgress = await tx.lessonProgress.upsert({
+        where: {
+          progressId_lessonId: {
+            progressId: learningProgress.id,
             lessonId,
-            completed: true,
-            progress: 100,
-            completionPercentage: 100,
           },
-        });
-      }
+        },
+        update: {
+          completed: true,
+          lastAccessed: new Date(),
+        },
+        create: {
+          progressId: learningProgress.id,
+          lessonId,
+          completed: true,
+          timeSpent: 0,
+          lastAccessed: new Date(),
+        },
+      });
 
-      // Verificar si el módulo está completo
       await checkAndCompleteModule(userId, lesson.moduleId, tx);
 
-      return progress;
+      return { learningProgress, lessonProgress };
     }, {
-      maxWait: 5000, // Tiempo máximo de espera
-      timeout: 10000, // Timeout de la transacción
+      maxWait: 5000,
+      timeout: 10000,
     });
 
-    // Invalidar caché
     invalidateUserCache(userId);
 
-    // Calcular XP ganado
-    const xpGained = 50; // XP por lección completada
+    const xpGained = 50;
 
-    // Verificar logros
     const { checkAndUnlockAchievements } = await import('./achievements.service');
     const achievements = await checkAndUnlockAchievements(userId, {
       type: 'lessons_completed',
@@ -93,14 +89,14 @@ export async function completeLesson(
     return {
       success: true,
       progress: {
-        id: result.id,
-        userId: result.userId,
-        moduleId: result.moduleId || undefined,
-        lessonId: result.lessonId || undefined,
-        completed: result.completed,
-        progress: result.progress,
-        completionPercentage: result.completionPercentage ?? undefined,
-        updatedAt: result.updatedAt,
+        id: result.lessonProgress.id,
+        userId,
+        moduleId: lesson.moduleId,
+        lessonId,
+        completed: result.lessonProgress.completed,
+        progress: 100,
+        completionPercentage: 100,
+        updatedAt: result.lessonProgress.updatedAt,
       },
       xpGained,
       achievementsUnlocked: achievements,
@@ -158,71 +154,65 @@ export async function saveLessonProgress(
       };
     }
 
-    // Usar transacción
+    const isCompleted = completedOverride === true;
+
     const result = await prisma.$transaction(async (tx) => {
-      // Buscar progreso existente
-      let progress = await tx.progress.findFirst({
+      const learningProgress = await tx.learningProgress.upsert({
         where: {
+          userId_moduleId: { userId, moduleId: lesson.moduleId },
+        },
+        update: { updatedAt: new Date() },
+        create: {
           userId,
-          lessonId,
+          moduleId: lesson.moduleId,
+          timeSpent: 0,
         },
       });
 
-    // IMPORTANT: Only mark as completed when explicitly requested
-    // Never auto-complete based on progress percentage
-    const isCompleted = completedOverride === true;
-    const resolvedCompletionPercentage = typeof completionPercentage === 'number'
-      ? completionPercentage
-      : progressPercent;
-
-      if (progress) {
-        // Actualizar progreso existente
-        progress = await tx.progress.update({
-          where: { id: progress.id },
-          data: {
-            progress: progressPercent,
-            completed: isCompleted,
-            completionPercentage: resolvedCompletionPercentage,
-          },
-        });
-      } else {
-        // Crear nuevo registro
-        progress = await tx.progress.create({
-          data: {
-            userId,
-            moduleId: lesson.moduleId,
+      const lessonProgress = await tx.lessonProgress.upsert({
+        where: {
+          progressId_lessonId: {
+            progressId: learningProgress.id,
             lessonId,
-            progress: progressPercent,
-            completed: isCompleted,
-            completionPercentage: resolvedCompletionPercentage,
           },
-        });
-      }
+        },
+        update: {
+          completed: isCompleted,
+          lastAccessed: new Date(),
+        },
+        create: {
+          progressId: learningProgress.id,
+          lessonId,
+          completed: isCompleted,
+          timeSpent: 0,
+          lastAccessed: new Date(),
+        },
+      });
 
-      // Si se completó, verificar módulo
       if (isCompleted) {
         await checkAndCompleteModule(userId, lesson.moduleId, tx);
       }
 
-      return progress;
+      return lessonProgress;
     }, {
       maxWait: 5000,
       timeout: 10000,
     });
 
-    // Invalidar caché
     invalidateUserCache(userId);
+
+    const progressValue = isCompleted ? 100 : progressPercent;
 
     return {
       success: true,
       progress: {
         id: result.id,
-        userId: result.userId,
-        moduleId: result.moduleId || undefined,
-        lessonId: result.lessonId || undefined,
+        userId,
+        moduleId: lesson.moduleId,
+        lessonId,
         completed: result.completed,
-        progress: result.progress,
-        completionPercentage: result.completionPercentage ?? undefined,
+        progress: progressValue,
+        completionPercentage: typeof completionPercentage === 'number' ? completionPercentage : progressValue,
         updatedAt: result.updatedAt,
       },
     };
@@ -297,80 +287,68 @@ export async function updateLessonProgress(
       ? timeSpent
       : undefined;
 
-    // Helper function to clean undefined values and ensure only valid Prisma columns
-    const cleanObject = (obj: any) => {
-      // Valid Progress model columns only (from Prisma schema)
-      const validColumns = [
-        'userId',
-        'moduleId',
-        'lessonId',
-        'completed',
-        'completionPercentage',
-        'progress',
-        'score',
-        'timeSpent',
-        'lastAccess',
-        'scrollPosition',
-        'lastViewedSection',
-      ];
-      
-      return Object.fromEntries(
-        Object.entries(obj)
-          .filter(([key, v]) => {
-            // Only include valid columns and non-undefined values
-            return validColumns.includes(key) && v !== undefined;
-          })
-      );
-    };
+    if (!moduleId) {
+      return {
+        success: false,
+        error: 'No se pudo determinar el módulo de la lección',
+      };
+    }
 
     const result = await prisma.$transaction(async (tx) => {
-      // Prepare update data (only valid Prisma columns, no undefined values)
-      const updateData: any = {};
-      
-      if (moduleId !== null && moduleId !== undefined) {
-        updateData.moduleId = moduleId;
-      }
-      if (completionPercentage !== undefined) {
-        updateData.progress = completionPercentage;
-        updateData.completionPercentage = completionPercentage;
-      }
-      updateData.completed = isCompleted;
-      if (timeSpentIncrement !== undefined && timeSpentIncrement > 0) {
-        updateData.timeSpent = { increment: timeSpentIncrement };
-      }
-      updateData.lastAccess = new Date();
-
-      // Prepare create data (only valid Prisma columns)
-      const createData: any = {
-        userId,
-        moduleId: moduleId || null,
-        lessonId,
-        progress: completionPercentage !== undefined ? completionPercentage : 0,
-        completionPercentage: completionPercentage !== undefined ? completionPercentage : 0,
-        completed: isCompleted,
-        timeSpent: timeSpentIncrement ?? 0,
-        lastAccess: new Date(),
-      };
-
-      const progress = await tx.progress.upsert({
+      const learningProgress = await tx.learningProgress.upsert({
         where: {
-          progress_user_lesson_unique: { userId, lessonId },
+          userId_moduleId: { userId, moduleId },
         },
-        update: updateData,
-        create: createData,
+        update: {
+          ...(timeSpentIncrement !== undefined && timeSpentIncrement > 0
+            ? { timeSpent: { increment: timeSpentIncrement } }
+            : {}),
+          updatedAt: new Date(),
+        },
+        create: {
+          userId,
+          moduleId,
+          timeSpent: timeSpentIncrement ?? 0,
+        },
       });
 
-      // Only update module progress if we have a moduleId
-      if (moduleId) {
-        try {
-          await calculateAndSaveModuleProgress(userId, moduleId);
-        } catch (error) {
-          console.warn(`[updateLessonProgress] Could not update module progress for ${moduleId}:`, error);
-          // Don't fail the lesson progress update if module update fails
-        }
+      const lessonProgress = await tx.lessonProgress.upsert({
+        where: {
+          progressId_lessonId: {
+            progressId: learningProgress.id,
+            lessonId,
+          },
+        },
+        update: {
+          completed: isCompleted,
+          ...(timeSpentIncrement !== undefined && timeSpentIncrement > 0
+            ? { timeSpent: { increment: timeSpentIncrement } }
+            : {}),
+          lastAccessed: new Date(),
+        },
+        create: {
+          progressId: learningProgress.id,
+          lessonId,
+          completed: isCompleted,
+          timeSpent: timeSpentIncrement ?? 0,
+          lastAccessed: new Date(),
+        },
+      });
+
+      if (timeSpentIncrement !== undefined && timeSpentIncrement > 0) {
+        await tx.learningProgress.update({
+          where: { id: learningProgress.id },
+          data: { timeSpent: { increment: timeSpentIncrement } },
+        });
       }
 
-      return progress;
+      try {
+        await calculateAndSaveModuleProgress(userId, moduleId);
+      } catch (error) {
+        console.warn(`[updateLessonProgress] Could not update module progress for ${moduleId}:`, error);
+      }
+
+      return lessonProgress;
     }, {
       maxWait: 5000,
       timeout: 10000,
@@ -378,16 +356,18 @@ export async function updateLessonProgress(
 
     invalidateUserCache(userId);
 
+    const progressValue = completionPercentage ?? (isCompleted ? 100 : 0);
+
     return {
       success: true,
       progress: {
         id: result.id,
-        userId: result.userId,
-        moduleId: result.moduleId || undefined,
-        lessonId: result.lessonId || undefined,
+        userId,
+        moduleId,
+        lessonId,
         completed: result.completed,
-        progress: result.progress,
-        completionPercentage: result.completionPercentage ?? undefined,
+        progress: progressValue,
+        completionPercentage: completionPercentage ?? progressValue,
         updatedAt: result.updatedAt,
       },
     };
@@ -570,14 +550,13 @@ export async function updateUserXP(
 }
 
 /**
- * Verificar y completar módulo si todas las lecciones están completadas
+ * Verificar y completar módulo si todas las lecciones están completadas (LearningProgress + LessonProgress)
  */
 async function checkAndCompleteModule(
   userId: string,
   moduleId: string,
   tx: any
 ): Promise<void> {
-  // Obtener todas las lecciones del módulo
   const module = await tx.module.findUnique({
     where: { id: moduleId },
     include: {
@@ -588,60 +567,39 @@ async function checkAndCompleteModule(
     },
   });
 
-  if (!module) return;
+  if (!module || module.lessons.length === 0) return;
 
-  const totalLessons = module.lessons.length;
-  if (totalLessons === 0) return;
+  const lessonIds = module.lessons.map((l: { id: string }) => l.id);
 
-  // Contar lecciones completadas del usuario
-  const completedLessons = await tx.progress.count({
+  const learningProgress = await tx.learningProgress.findUnique({
     where: {
-      userId,
-      moduleId,
-      lessonId: { in: module.lessons.map((l: any) => l.id) },
-      completed: true,
+      userId_moduleId: { userId, moduleId },
+    },
+    include: {
+      lessons: {
+        where: { lessonId: { in: lessonIds }, completed: true },
+      },
     },
   });
 
-  // Si todas las lecciones están completadas, marcar módulo como completado
-  if (completedLessons === totalLessons) {
-    // Buscar o crear progreso del módulo
-    let moduleProgress = await tx.progress.findFirst({
-      where: {
-        userId,
-        moduleId,
-        lessonId: null,
-      },
-    });
+  if (!learningProgress) return;
 
-    if (moduleProgress) {
-      await tx.progress.update({
-        where: { id: moduleProgress.id },
-        data: {
-          completed: true,
-          progress: 100,
-          completionPercentage: 100,
-        },
-      });
-    } else {
-      await tx.progress.create({
-        data: {
-          userId,
-          moduleId,
-          completed: true,
-          progress: 100,
-          completionPercentage: 100,
-        },
-      });
-    }
+  const completedCount = learningProgress.lessons.length;
+  if (completedCount !== lessonIds.length) return;
 
-    // Verificar logros por módulo completado
-    const { checkAndUnlockAchievements } = await import('./achievements.service');
-    await checkAndUnlockAchievements(userId, {
-      type: 'modules_completed',
-      value: 1,
-    });
-  }
+  await tx.learningProgress.update({
+    where: { id: learningProgress.id },
+    data: {
+      completedAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  const { checkAndUnlockAchievements } = await import('./achievements.service');
+  await checkAndUnlockAchievements(userId, {
+    type: 'modules_completed',
+    value: 1,
+  });
 }
 
 export default {

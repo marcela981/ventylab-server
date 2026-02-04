@@ -69,25 +69,25 @@ export async function getUserProgress(userId: string): Promise<UserProgress> {
       const totalLessons = allLessons.length;
       const lessonIds = allLessons.map(l => l.id);
 
-      // Obtener progreso de todas las lecciones del usuario
-      const allLessonProgress = lessonIds.length > 0
-        ? await prisma.progress.findMany({
-            where: {
-              userId,
-              lessonId: { in: lessonIds },
-            },
-            select: {
-              lessonId: true,
-              progress: true,
-              completionPercentage: true,
-            },
-          })
-        : [];
+      // Obtener progreso de todas las lecciones del usuario (LearningProgress + LessonProgress)
+      const allLearningProgress = await prisma.learningProgress.findMany({
+        where: { userId },
+        include: {
+          lessons: {
+            where: { lessonId: { in: lessonIds } },
+            select: { lessonId: true, completed: true },
+          },
+        },
+      });
 
-      // Count lessons where progress === 100 (using computeModuleProgress logic)
+      const allLessonProgress = allLearningProgress.flatMap(lp =>
+        lp.lessons.map(l => ({ lessonId: l.lessonId, completed: l.completed }))
+      );
+
+      // Count lessons where completed (progress === 100 in new model)
       const lessonsWithProgress = allLessonProgress.map(p => ({
-        id: p.lessonId ?? undefined, // Normalize null → undefined for LessonProgressInput
-        progress: p.completionPercentage ?? p.progress ?? 0,
+        id: p.lessonId ?? undefined,
+        progress: p.completed ? 100 : 0,
       }));
       const { completedLessonsCount } = computeModuleProgress(lessonsWithProgress);
 
@@ -115,7 +115,7 @@ export async function getUserProgress(userId: string): Promise<UserProgress> {
           const record = modLessonProgress.find(p => p.lessonId === l.id);
           return {
             id: l.id,
-            progress: record?.completionPercentage ?? record?.progress ?? 0,
+            progress: record?.completed ? 100 : 0,
           };
         });
 
@@ -132,9 +132,9 @@ export async function getUserProgress(userId: string): Promise<UserProgress> {
         ? Math.floor((completedLessonsCount / totalLessons) * 100)
         : 0;
 
-      // Obtener última actividad
-      const lastActivity = await prisma.progress.findFirst({
-        where: { userId },
+      // Obtener última actividad desde LessonProgress
+      const lastLessonProgress = await prisma.lessonProgress.findFirst({
+        where: { learningProgress: { userId } },
         orderBy: { updatedAt: 'desc' },
         select: { updatedAt: true },
       });
@@ -146,7 +146,7 @@ export async function getUserProgress(userId: string): Promise<UserProgress> {
         totalLessons,
         completedLessons: completedLessonsCount,
         overallProgress,
-        lastActivity: lastActivity?.updatedAt,
+        lastActivity: lastLessonProgress?.updatedAt,
       };
     });
   } catch (error) {
@@ -188,25 +188,22 @@ export async function getModuleProgress(
         throw new Error('Módulo no encontrado');
       }
 
-      // Obtener progreso de cada lección
-      const progressRecords = await prisma.progress.findMany({
+      // Obtener progreso de cada lección (LearningProgress + LessonProgress)
+      const learningProgress = await prisma.learningProgress.findUnique({
         where: {
-          userId,
-          moduleId,
-          lessonId: { not: null },
+          userId_moduleId: { userId, moduleId },
         },
+        include: { lessons: true },
       });
 
-      // Crear mapa de progreso por lección
       const progressMap = new Map(
-        progressRecords.map(p => [p.lessonId!, p])
+        (learningProgress?.lessons ?? []).map(lp => [lp.lessonId, lp])
       );
 
-      // Build lessons with progress for computeModuleProgress
+      // Build lessons with progress for computeModuleProgress (completed = 100)
       const lessonsWithProgress = module.lessons.map(lesson => {
         const record = progressMap.get(lesson.id);
-        // Use completionPercentage (0-100), fall back to progress field
-        const progressValue = record?.completionPercentage ?? record?.progress ?? 0;
+        const progressValue = record?.completed ? 100 : 0;
         return {
           id: lesson.id,
           progress: progressValue,
@@ -220,16 +217,15 @@ export async function getModuleProgress(
       // Construir array de progreso de lecciones for response
       const lessons: LessonProgress[] = module.lessons.map(lesson => {
         const progressRecord = progressMap.get(lesson.id);
-        const progressValue = progressRecord?.completionPercentage ?? progressRecord?.progress ?? 0;
-        // A lesson is completed when progress === 100
-        const isCompleted = progressValue === 100;
+        const progressValue = progressRecord?.completed ? 100 : 0;
+        const isCompleted = progressRecord?.completed ?? false;
         return {
           lessonId: lesson.id,
           lessonTitle: lesson.title,
           completed: isCompleted,
           progress: progressValue,
-          lastAccessed: progressRecord?.updatedAt,
-          completedAt: isCompleted ? progressRecord?.updatedAt : undefined,
+          lastAccessed: progressRecord?.lastAccessed ?? progressRecord?.updatedAt,
+          completedAt: isCompleted ? (progressRecord?.updatedAt ?? undefined) : undefined,
         };
       });
 
@@ -256,26 +252,34 @@ export async function getLessonProgress(
   lessonId: string
 ): Promise<LessonProgress | null> {
   try {
-    // Use unique constraint to ensure we get the correct record (only one per user+lesson)
-    // Fetch lesson info first - we need it for both cases
+    // Fetch lesson info (include moduleId for LearningProgress lookup)
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      select: { id: true, title: true },
+      select: { id: true, title: true, moduleId: true },
     });
 
-    if (!lesson) {
-      return null;
+    if (!lesson) return null;
+    if (!lesson.moduleId) {
+      return {
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        completed: false,
+        progress: 0,
+      };
     }
 
-    // No usar caché para progreso de lección individual (cambia frecuentemente)
-    const progressRecord = await prisma.progress.findUnique({
+    const learningProgress = await prisma.learningProgress.findUnique({
       where: {
-        progress_user_lesson_unique: {
-          userId,
-          lessonId,
+        userId_moduleId: { userId, moduleId: lesson.moduleId },
+      },
+      include: {
+        lessons: {
+          where: { lessonId },
         },
       },
     });
+
+    const progressRecord = learningProgress?.lessons?.[0];
 
     if (!progressRecord) {
       return {
@@ -286,18 +290,15 @@ export async function getLessonProgress(
       };
     }
 
-    // Use completionPercentage if available, fall back to progress field
-    const progressValue = progressRecord.completionPercentage ?? progressRecord.progress ?? 0;
-    // A lesson is completed when progress === 100 (using computeModuleProgress logic)
-    const isCompleted = progressValue === 100 || progressRecord.completed;
+    const progressValue = progressRecord.completed ? 100 : 0;
 
     return {
       lessonId: lesson.id,
       lessonTitle: lesson.title,
-      completed: isCompleted,
+      completed: progressRecord.completed,
       progress: progressValue,
-      lastAccessed: progressRecord.updatedAt,
-      completedAt: isCompleted ? progressRecord.completedAt ?? progressRecord.updatedAt : undefined,
+      lastAccessed: progressRecord.lastAccessed ?? progressRecord.updatedAt,
+      completedAt: progressRecord.completed ? (progressRecord.updatedAt ?? undefined) : undefined,
     };
   } catch (error) {
     console.error('Error al obtener progreso de la lección:', error);
@@ -312,9 +313,9 @@ export async function getLessonProgress(
 export async function getUserStats(userId: string): Promise<UserStats> {
   try {
     return await getCached(`user:${userId}:stats`, async () => {
-      // Obtener todos los registros de progreso del usuario
-      const allProgress = await prisma.progress.findMany({
-        where: { userId },
+      // Obtener todos los registros de progreso del usuario (LessonProgress vía LearningProgress)
+      const allProgress = await prisma.lessonProgress.findMany({
+        where: { learningProgress: { userId } },
         orderBy: { updatedAt: 'asc' },
         select: {
           updatedAt: true,
@@ -462,23 +463,19 @@ async function calculateTotalXP(userId: string): Promise<number> {
   // XP por quiz pasado
   const xpPerQuiz = 100;
 
-  // Get all lesson progress records
-  const allLessonProgress = await prisma.progress.findMany({
-    where: {
-      userId,
-      lessonId: { not: null },
-    },
+  // Get all lesson progress records (LessonProgress via LearningProgress)
+  const allLessonProgress = await prisma.lessonProgress.findMany({
+    where: { learningProgress: { userId } },
     select: {
       lessonId: true,
-      progress: true,
-      completionPercentage: true,
+      completed: true,
     },
   });
 
-  // Count lessons with progress === 100
+  // Count lessons with completed === true (progress === 100)
   const lessonsWithProgress = allLessonProgress.map(p => ({
-    id: p.lessonId ?? undefined, // Normalize null → undefined for LessonProgressInput
-    progress: p.completionPercentage ?? p.progress ?? 0,
+    id: p.lessonId ?? undefined,
+    progress: p.completed ? 100 : 0,
   }));
   const { completedLessonsCount: completedLessons } = computeModuleProgress(lessonsWithProgress);
 
@@ -506,7 +503,7 @@ async function calculateTotalXP(userId: string): Promise<number> {
       const record = modLessonProgress.find(p => p.lessonId === l.id);
       return {
         id: l.id,
-        progress: record?.completionPercentage ?? record?.progress ?? 0,
+        progress: record?.completed ? 100 : 0,
       };
     });
 

@@ -4,14 +4,16 @@
  */
 
 import jwt, { Secret, SignOptions, Algorithm } from 'jsonwebtoken';
+import { UserRoleType } from '../config/constants';
 
 /**
  * JWT Payload Interface
+ * Contains user identity and role for authorization
  */
 export interface TokenPayload {
   id: string;
   email: string;
-  role: string;
+  role: UserRoleType;
 }
 
 // JWT Configuration

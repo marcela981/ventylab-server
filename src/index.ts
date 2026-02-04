@@ -16,9 +16,30 @@ import evaluationRoutes from './routes/evaluation';
 import modulesRoutes from './routes/modules';
 import lessonsRoutes from './routes/lessons';
 import curriculumRoutes from './routes/curriculum';
+import teacherStudentsRoutes from './routes/teacherStudents';
+import levelsRoutes from './routes/levels';
+import cardsRoutes from './routes/cards';
+import changelogRoutes from './routes/changelog';
+import overridesRoutes from './routes/overrides';
 
-// Cargar variables de entorno
-dotenv.config();
+// ============================================
+// ENVIRONMENT CONFIGURATION
+// ============================================
+// Load environment variables based on NODE_ENV
+// Priority: process.env.NODE_ENV > .env.development (default)
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const envFile = NODE_ENV === 'production' ? '.env.production' : '.env.development';
+
+const envResult = dotenv.config({ path: envFile });
+
+if (envResult.error) {
+  console.error(`❌ Error loading ${envFile}:`, envResult.error.message);
+  console.error('Falling back to .env file...');
+  dotenv.config(); // Fallback to .env
+} else {
+  console.log(`✅ Loaded environment from: ${envFile}`);
+  console.log(`🔧 NODE_ENV: ${NODE_ENV}`);
+}
 
 // Validar variables de entorno requeridas
 const requiredEnvVars = [
@@ -37,7 +58,7 @@ if (missingEnvVars.length > 0) {
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const NODE_ENV = process.env.NODE_ENV || 'development';
+// NODE_ENV already defined above after dotenv.config()
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Trust proxy for rate limiting (needed when behind reverse proxy)
@@ -173,8 +194,26 @@ app.use('/api/modules', modulesRoutes);
 // Rutas de lecciones
 app.use('/api/lessons', lessonsRoutes);
 
+// Rutas de niveles (CRUD para niveles curriculares)
+app.use('/api/levels', levelsRoutes);
+
+// Rutas de tarjetas/pasos (CRUD para contenido atómico dentro de lecciones)
+app.use('/api/cards', cardsRoutes);
+
 // Rutas de curriculum (orden explícito de módulos por nivel)
 app.use('/api/curriculum', curriculumRoutes);
+
+// Rutas de relación profesor-estudiante
+// Includes: /api/teacher-students, /api/teachers/:id/students, /api/students/:id/teachers
+app.use('/api', teacherStudentsRoutes);
+
+// Rutas de historial de cambios (audit trail)
+// RBAC: TEACHER+ can view (teachers see own changes, admins see all)
+app.use('/api/changelog', changelogRoutes);
+
+// Rutas de overrides de contenido (personalización por estudiante)
+// RBAC: TEACHER+ can manage (teachers manage assigned students, admins manage all)
+app.use('/api/overrides', overridesRoutes);
 
 // TODO: Rutas de servicios de IA (cuando se implementen)
 // app.use('/api/ai', aiRoutes);
@@ -208,9 +247,14 @@ const startServer = () => {
     console.log('  - GET  /api/users/* - Usuarios');
     console.log('  - GET  /api/progress/* - Progreso');
     console.log('  - GET  /api/cases/* - Casos clínicos');
-    console.log('  - GET  /api/modules/* - Módulos educativos');
-    console.log('  - GET  /api/lessons/* - Lecciones');
+    console.log('  - CRUD /api/levels/* - Niveles curriculares');
+    console.log('  - CRUD /api/modules/* - Módulos educativos');
+    console.log('  - CRUD /api/lessons/* - Lecciones');
+    console.log('  - CRUD /api/cards/* - Tarjetas/Pasos');
     console.log('  - GET  /api/curriculum/* - Curriculum (orden explícito)');
+    console.log('  - GET  /api/teacher-students/* - Relaciones profesor-estudiante');
+    console.log('  - GET  /api/changelog/* - Historial de cambios (audit trail)');
+    console.log('  - CRUD /api/overrides/* - Overrides de contenido por estudiante');
     console.log('='.repeat(50));
   });
 };

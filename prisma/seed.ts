@@ -1,3 +1,4 @@
+
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -85,73 +86,33 @@ const PREREQUISITOS_MODULES = [
 async function seedModules() {
   console.log('🌱 Seeding curriculum modules...');
 
-  // Seed beginner modules
-  for (const moduleData of BEGINNER_MODULES) {
-    const existing = await prisma.module.findUnique({
-      where: { id: moduleData.id },
-    });
+  const allModules = [...PREREQUISITOS_MODULES, ...BEGINNER_MODULES];
 
-    if (existing) {
+  for (const moduleData of allModules) {
+    const existing = await prisma.$queryRaw<[{ id: string }]>`
+      SELECT id FROM modules WHERE id = ${moduleData.id} LIMIT 1
+    `;
+
+    const now = new Date();
+    if (existing.length > 0) {
       console.log(`  ⏭️  Module "${moduleData.id}" already exists, updating...`);
-      await prisma.module.update({
-        where: { id: moduleData.id },
-        data: {
-          title: moduleData.title,
-          description: moduleData.description,
-          order: moduleData.order,
-          difficulty: moduleData.difficulty,
-          estimatedTime: moduleData.estimatedTime,
-          isActive: true,
-        },
-      });
+      await prisma.$executeRaw`
+        UPDATE modules SET
+          title = ${moduleData.title},
+          description = ${moduleData.description},
+          "order" = ${moduleData.order},
+          difficulty = ${moduleData.difficulty},
+          "estimatedTime" = ${moduleData.estimatedTime},
+          "isActive" = true,
+          "updatedAt" = ${now}
+        WHERE id = ${moduleData.id}
+      `;
     } else {
       console.log(`  ✅ Creating module "${moduleData.id}"...`);
-      await prisma.module.create({
-        data: {
-          id: moduleData.id,
-          title: moduleData.title,
-          description: moduleData.description,
-          order: moduleData.order,
-          difficulty: moduleData.difficulty,
-          estimatedTime: moduleData.estimatedTime,
-          isActive: true,
-        },
-      });
-    }
-  }
-
-  // Seed prerequisitos modules
-  for (const moduleData of PREREQUISITOS_MODULES) {
-    const existing = await prisma.module.findUnique({
-      where: { id: moduleData.id },
-    });
-
-    if (existing) {
-      console.log(`  ⏭️  Module "${moduleData.id}" already exists, updating...`);
-      await prisma.module.update({
-        where: { id: moduleData.id },
-        data: {
-          title: moduleData.title,
-          description: moduleData.description,
-          order: moduleData.order,
-          difficulty: moduleData.difficulty,
-          estimatedTime: moduleData.estimatedTime,
-          isActive: true,
-        },
-      });
-    } else {
-      console.log(`  ✅ Creating module "${moduleData.id}"...`);
-      await prisma.module.create({
-        data: {
-          id: moduleData.id,
-          title: moduleData.title,
-          description: moduleData.description,
-          order: moduleData.order,
-          difficulty: moduleData.difficulty,
-          estimatedTime: moduleData.estimatedTime,
-          isActive: true,
-        },
-      });
+      await prisma.$executeRaw`
+        INSERT INTO modules (id, title, description, "order", difficulty, "estimatedTime", "isActive", "createdAt", "updatedAt")
+        VALUES (${moduleData.id}, ${moduleData.title}, ${moduleData.description}, ${moduleData.order}, ${moduleData.difficulty}, ${moduleData.estimatedTime}, true, ${now}, ${now})
+      `;
     }
   }
 

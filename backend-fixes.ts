@@ -218,49 +218,11 @@ export async function getSkills(req: Request, res: Response, next: NextFunction)
 // import { prisma } from '../config/prisma';
 
 // =============================================================================
-// FIX 5: backend/src/services/progress.service.ts - Corregir upsert
+// FIX 5: Progress system uses LearningProgress + LessonProgress (NOT legacy Progress)
 // =============================================================================
-
-// La función updateLessonProgress debe usar el constraint correcto.
-// BUSCAR los upsert que usan where incorrecto y cambiar a:
-
-// ANTES (puede fallar):
-const progress = await prisma.progress.upsert({
-  where: {
-    userId_lessonId: { userId, lessonId }, // nombre autogenerado
-  },
-  // ...
-});
-
-// DESPUÉS (correcto con schema actualizado):
-const progress = await prisma.progress.upsert({
-  where: {
-    progress_user_lesson_unique: { userId, lessonId },
-  },
-  update: {
-    currentStep,
-    totalSteps,
-    completionPercentage,
-    progress: completionPercentage, // mantener sincronizados
-    completed,
-    timeSpent: { increment: timeSpent || 0 },
-    lastAccess: new Date(),
-    ...(completed && { completedAt: new Date() }),
-  },
-  create: {
-    userId,
-    lessonId,
-    moduleId: extractModuleId(lessonId), // extraer del lessonId
-    currentStep,
-    totalSteps,
-    completionPercentage,
-    progress: completionPercentage,
-    completed,
-    timeSpent: timeSpent || 0,
-    lastAccess: new Date(),
-    completedAt: completed ? new Date() : null,
-  },
-});
+// Use src/services/progress/learningProgress.service.ts for all progress operations.
+// Example: updateLessonProgress({ userId, moduleId, lessonId, completed, timeSpent })
+// Do NOT use prisma.progress - that model is deprecated and disabled in the schema.
 
 // =============================================================================
 // FIX 6: package.json - Scripts para automatizar Prisma

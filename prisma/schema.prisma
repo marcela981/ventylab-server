@@ -23,12 +23,155 @@ model User {
 
   accounts           Account[]
   sessions           Session[]
-  progress           Progress[]
+  // progress           Progress[]           // DEPRECATED - DISABLED to prevent phantom table errors
+  learningProgress   LearningProgress[]   // ACTIVE: Module-level progress
   quizAttempts       QuizAttempt[]
   achievements       Achievement[]
   evaluationAttempts EvaluationAttempt[]
 
+  // Teacher-Student relationships
+  // When user is a teacher: their assigned students
+  studentsAsTeacher  TeacherStudent[] @relation("TeacherToStudents")
+  // When user is a student: their assigned teachers
+  teachersAsStudent  TeacherStudent[] @relation("StudentToTeachers")
+
+  // Audit trail relations
+  changeLogs ChangeLog[]
+
+  // Content override relations
+  // When user is a student: their personalized content overrides
+  contentOverrides    ContentOverride[] @relation("StudentOverrides")
+  // When user is a teacher/admin: overrides they created for students
+  createdOverrides    ContentOverride[] @relation("CreatedOverrides")
+
   @@map("users")
+}
+
+// ============================================
+// ChangeLog Model - Audit trail for content changes
+// ============================================
+// Tracks all create, update, delete, and reorder operations
+// on teaching content (Level, Module, Lesson, Step).
+//
+// DESIGN DECISIONS:
+// - Uses JSON for diff to allow flexible schema changes
+// - Stores entityType as string for extensibility
+// - Does NOT use cascade delete to preserve audit history
+//
+// FUTURE EXTENSIONS:
+// - Add rollback capability (revert to previous state using diff.before)
+// - Add visual diff UI in admin panel
+// - Add per-student content overrides tracking (add studentId field)
+// - Add metadata for IP address, user agent for security auditing
+model ChangeLog {
+  id          String   @id @default(cuid())
+  entityType  String   // "Level" | "Module" | "Lesson" | "Step"
+  entityId    String   // ID of the changed entity
+  action      String   // "create" | "update" | "delete" | "reorder"
+  changedBy   String   // User ID who made the change
+  changedAt   DateTime @default(now())
+  diff        Json?    // { "field": { "before": old, "after": new } } - only for updates
+  metadata    Json?    // Additional context (IP, userAgent, etc.)
+
+  // Relation to User (onDelete: SetNull to preserve audit history if user deleted)
+  user User @relation(fields: [changedBy], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([changedBy])
+  @@index([changedAt])
+  @@index([action])
+  @@map("change_logs")
+}
+
+// ============================================
+// Teacher-Student Relationship (Many-to-Many)
+// ============================================
+// Represents the assignment of students to teachers.
+// - A teacher (TEACHER/ADMIN/SUPERUSER) can have multiple students
+// - A student (STUDENT) can have multiple teachers
+//
+// ACCESS RULES:
+// - Teachers can view ONLY their assigned students
+// - Admin & Superuser can assign/remove any relationship
+// - Students cannot access or modify this relationship
+//
+// FUTURE EXTENSIONS:
+// - Add courseId/groupId for course-specific assignments
+// - Add assignedBy field to track who created the relationship
+// - Add status field (active, paused, completed) for relationship lifecycle
+model TeacherStudent {
+  id        String   @id @default(cuid())
+  teacherId String
+  studentId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations with explicit names for bi-directional access
+  teacher User @relation("TeacherToStudents", fields: [teacherId], references: [id], onDelete: Cascade)
+  student User @relation("StudentToTeachers", fields: [studentId], references: [id], onDelete: Cascade)
+
+  // Prevent duplicate teacher-student pairs
+  @@unique([teacherId, studentId])
+  // Indexes for efficient queries
+  @@index([teacherId])
+  @@index([studentId])
+  @@map("teacher_students")
+}
+
+// ============================================
+// ContentOverride Model - Per-student content customization
+// ============================================
+// Allows teachers/admins to customize global content for individual students.
+// Overrides are additive and non-destructive - global content is preserved.
+//
+// OVERRIDE DATA STRUCTURE (overrideData JSON):
+// {
+//   "fieldOverrides": { "title": "...", "content": "...", "order": N, "isActive": bool },
+//   "extraCards": [{ "id": "...", "title": "...", "content": "...", "contentType": "...", "insertAfterOrder": N }],
+//   "hiddenCardIds": ["stepId1", "stepId2"]  // Only for LESSON entityType
+// }
+//
+// ACCESS RULES:
+// - Teachers: Can create overrides ONLY for their assigned students
+// - Admin & Superuser: Can create overrides for any student
+// - Students: Cannot see or modify overrides (they just see resolved content)
+//
+// PROGRESS SAFETY:
+// - Hidden cards are marked as "skipped", NOT deleted from progress
+// - Extra cards are included in totalSteps calculation
+//
+// FUTURE EXTENSIONS:
+// - Add groupId/cohortId for group-based overrides (Phase 2)
+// - Add validFrom/validUntil for time-limited overrides (Phase 2)
+// - Add variantId for A/B testing support (Phase 3)
+// - Add priority field for override precedence when multiple apply
+model ContentOverride {
+  id            String             @id @default(cuid())
+  studentId     String
+  entityType    OverrideEntityType
+  entityId      String             // ID of the Level, Lesson, or Step being overridden
+  overrideData  Json               // { fieldOverrides?, extraCards?, hiddenCardIds? }
+
+  // Audit fields
+  createdBy     String             // Teacher/Admin who created the override
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  isActive      Boolean            @default(true)
+
+  // Relations
+  student       User               @relation("StudentOverrides", fields: [studentId], references: [id], onDelete: Cascade)
+  creator       User               @relation("CreatedOverrides", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  // Each student can have only one active override per entity
+  @@unique([studentId, entityType, entityId], name: "override_student_entity_unique")
+
+  // Indexes for efficient queries
+  @@index([studentId])
+  @@index([entityType, entityId])
+  @@index([createdBy])
+  @@index([isActive])
+
+  @@map("content_overrides")
 }
 
 model Account {
@@ -70,8 +213,94 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+// ============================================
+// Level Model - Top-level content organization
+// ============================================
+// Represents curriculum levels (e.g., Beginner, Intermediate, Advanced)
+// Modules belong to a Level, enabling structured curriculum progression.
+//
+// PREREQUISITE SYSTEM:
+// - Level unlocked if ALL prerequisite levels are completed (AND logic)
+// - No prerequisites = unlocked by default
+// - NEVER lock levels already completed by a student (progress safety)
+//
+// FUTURE EXTENSIONS:
+// - Add `unlockCondition` (JSON) for custom unlock rules
+// - Add `metadata` (JSON) for badges, rewards, etc.
+model Level {
+  id          String   @id @default(cuid())
+  title       String   @unique
+  description String?  @db.Text
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Audit trail fields
+  lastModifiedBy String?   // User ID who last modified this level
+  lastModifiedAt DateTime? // Timestamp of last modification
+
+  modules Module[]
+
+  // Level prerequisite relations (same pattern as ModulePrerequisite)
+  // prerequisites: Levels that must be completed before accessing THIS level
+  // dependentLevels: Levels that depend on THIS level being completed
+  prerequisites    LevelPrerequisite[] @relation("LevelPrerequisites")
+  dependentLevels  LevelPrerequisite[] @relation("DependentLevels")
+
+  @@index([order])
+  @@index([isActive])
+  @@index([lastModifiedBy])
+  @@map("levels")
+}
+
+// ============================================
+// LevelPrerequisite Model - Level-to-Level Prerequisites
+// ============================================
+// Defines prerequisite relationships between curriculum levels.
+// Uses AND logic: ALL prerequisites must be completed to unlock a level.
+//
+// PREREQUISITE RULES:
+// - Level unlocked if ALL prerequisite levels are completed (AND logic)
+// - No prerequisites = unlocked by default
+// - NEVER lock levels already completed by student (progress safety)
+//
+// VALIDATION RULES:
+// - Circular dependencies are detected and rejected (DFS algorithm)
+// - Cannot add itself as prerequisite
+// - Cannot delete levels that are prerequisites for other active levels
+//
+// FUTURE EXTENSIONS:
+// - isOptional Boolean @default(false) // Optional levels that don't block progression
+// - unlockType String @default("AND")   // "AND" vs "OR" logic for branching paths
+// - roleRequirement String?             // Role-specific roadmaps (e.g., "TEACHER_TRAINEE")
+// - experimentGroup String?             // A/B testing support for experimental curricula
+// - minimumScore Float?                 // Require minimum completion score
+// - validFrom DateTime?                 // Time-based unlock windows
+// - validUntil DateTime?                // Expiration for time-limited paths
+model LevelPrerequisite {
+  id                  String   @id @default(cuid())
+  levelId             String   // Level that requires the prerequisite
+  prerequisiteLevelId String   // Level that must be completed first
+  createdAt           DateTime @default(now())
+
+  // Self-referencing relations (like ModulePrerequisite pattern)
+  level             Level @relation("LevelPrerequisites", fields: [levelId], references: [id], onDelete: Cascade)
+  prerequisiteLevel Level @relation("DependentLevels", fields: [prerequisiteLevelId], references: [id], onDelete: Cascade)
+
+  // Prevent duplicate prerequisite relationships
+  @@unique([levelId, prerequisiteLevelId], name: "level_prerequisite_unique")
+
+  // Indexes for efficient queries
+  @@index([levelId])
+  @@index([prerequisiteLevelId])
+
+  @@map("level_prerequisites")
+}
+
 model Module {
   id            String   @id @default(cuid())
+  levelId       String?  // Optional: Module can belong to a Level
   title         String
   description   String?  @db.Text
   category      String?
@@ -83,12 +312,26 @@ model Module {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Audit trail fields
+  lastModifiedBy String?   // User ID who last modified this module
+  lastModifiedAt DateTime? // Timestamp of last modification
+
+  // FUTURE EXTENSIONS:
+  // - Add `version` Int for content versioning
+  // - Add `publishedAt` DateTime for draft/publish workflow
+
+  level            Level?               @relation(fields: [levelId], references: [id], onDelete: SetNull)
   lessons          Lesson[]
-  
+  learningProgress LearningProgress[]   // NEW: Track progress for this module
+
   // Relaciones de prerequisitos
   prerequisites    ModulePrerequisite[] @relation("ModulePrerequisites")
   dependentModules ModulePrerequisite[] @relation("DependentModules")
 
+  @@index([levelId])
+  @@index([order])
+  @@index([isActive])
+  @@index([lastModifiedBy])
   @@map("modules")
 }
 
@@ -110,7 +353,7 @@ model Lesson {
   id            String   @id @default(cuid())
   moduleId      String
   title         String
-  content       String?  @db.Text
+  content       String?  @db.Text   // Legacy: JSON content, kept for backwards compatibility
   order         Int      @default(0)
   estimatedTime Int?     @default(0) // en minutos
   aiGenerated   Boolean  @default(false)
@@ -119,12 +362,78 @@ model Lesson {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Audit trail fields
+  lastModifiedBy String?   // User ID who last modified this lesson
+  lastModifiedAt DateTime? // Timestamp of last modification
+
+  // FUTURE EXTENSIONS:
+  // - Add `version` Int for content versioning
+  // - Add `publishedAt` DateTime for draft/publish workflow
+
   module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   quizzes        Quiz[]
+  steps          Step[]           // New: Structured lesson steps (cards)
+  lessonProgress LessonProgress[] // NEW: Track progress for this lesson
 
+  @@index([moduleId])
+  @@index([order])
+  @@index([isActive])
+  @@index([lastModifiedBy])
   @@map("lessons")
 }
 
+// ============================================
+// Step Model (Cards) - Atomic content units within lessons
+// ============================================
+// Represents individual learning steps/cards within a lesson.
+// Each step is a discrete content unit that can be navigated independently.
+//
+// CONTENT TYPES:
+// - text: Rich text content
+// - image: Image with optional caption
+// - video: Embedded video
+// - quiz: Inline quiz question
+// - simulation: Interactive simulation
+// - code: Code snippet with optional execution
+//
+// FUTURE EXTENSIONS:
+// - Add `metadata` (JSON) for step-specific settings
+// - Add `conditions` (JSON) for conditional display logic
+// - Add `feedback` (JSON) for step completion feedback
+// - Add `version` Int for content versioning
+model Step {
+  id          String   @id @default(cuid())
+  lessonId    String
+  title       String?  // Optional title for the step
+  content     String   @db.Text  // Step content (can be JSON or HTML)
+  contentType String   @default("text") // text, image, video, quiz, simulation, code
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Audit trail fields
+  lastModifiedBy String?   // User ID who last modified this step
+  lastModifiedAt DateTime? // Timestamp of last modification
+
+  // FUTURE EXTENSIONS:
+  // - Add `duration` Int for estimated reading/viewing time
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([order])
+  @@index([isActive])
+  @@index([lastModifiedBy])
+  @@map("steps")
+}
+
+// ============================================
+// DEPRECATED: Old Progress System (Keep for migration compatibility)
+// ============================================
+// This model is DEPRECATED and should not be used for new code.
+// Use LearningProgress + LessonProgress instead.
+// Keep this model to prevent breaking existing migrations.
 model Progress {
   id                   String    @id @default(cuid())
   userId               String
@@ -143,7 +452,7 @@ model Progress {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // user User @relation(fields: [userId], references: [id], onDelete: Cascade) // DISABLED: relation removed from User model
 
   // Constraints nombrados explícitamente
   @@unique([userId, lessonId], name: "progress_user_lesson_unique")
@@ -152,6 +461,57 @@ model Progress {
   @@index([lessonId])
   @@index([moduleId])
   @@map("progress")
+}
+
+// ============================================
+// NEW Progress System - Learning Progress (Module Level)
+// ============================================
+// Represents overall progress for a user within a module
+// This is the parent table - one record per user per module
+model LearningProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  moduleId    String
+  timeSpent   Int       @default(0) // Total time in seconds
+  score       Float?    // Optional score/grade
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lessons LessonProgress[]
+
+  @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
+  @@map("learning_progress")
+}
+
+// ============================================
+// NEW Progress System - Lesson Progress (Lesson Level)
+// ============================================
+// Represents progress for individual lessons within a module
+// This is the child table - multiple records per learning progress
+model LessonProgress {
+  id           String    @id @default(cuid())
+  progressId   String    // FK to LearningProgress
+  lessonId     String
+  completed    Boolean   @default(false)
+  timeSpent    Int       @default(0) // Time spent in seconds
+  lastAccessed DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  learningProgress LearningProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  lesson           Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([progressId, lessonId])
+  @@index([progressId])
+  @@index([lessonId])
+  @@map("lesson_progress")
 }
 
 model Quiz {
@@ -205,8 +565,16 @@ model Achievement {
 
 enum UserRole {
   STUDENT
-  INSTRUCTOR
+  TEACHER      // Renamed from INSTRUCTOR - migration maps existing users
   ADMIN
+  SUPERUSER    // Full access to all routes (implicit in middleware)
+}
+
+// Entity types that support per-student overrides
+enum OverrideEntityType {
+  LEVEL
+  LESSON
+  CARD       // Step/Card content
 }
 
 enum CaseDifficulty {

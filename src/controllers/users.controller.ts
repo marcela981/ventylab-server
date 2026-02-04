@@ -29,7 +29,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     // Construir objeto include dinámicamente
     const include: any = {};
     if (includeProgress) {
-      include.progress = {
+      include.learningProgress = {
         take: 10, // Limitar a los últimos 10
         orderBy: { updatedAt: 'desc' },
         include: {
@@ -39,10 +39,12 @@ export const getCurrentUser = async (req: Request, res: Response) => {
               title: true,
             },
           },
-          lesson: {
+          lessons: {
             select: {
               id: true,
-              title: true,
+              lessonId: true,
+              completed: true,
+              timeSpent: true,
             },
           },
         },
@@ -67,7 +69,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
         emailVerified: true,
         createdAt: true,
         updatedAt: true,
-        ...(includeProgress && { progress: include.progress }),
+        ...(includeProgress && { learningProgress: include.learningProgress }),
         ...(includeAchievements && { achievements: include.achievements }),
         // Excluir password explícitamente
         password: false,
@@ -424,15 +426,16 @@ export const getUserStats = async (req: Request, res: Response) => {
       });
     }
 
-    // Obtener estadísticas agregadas
-    const [totalProgress, completedProgress, totalAchievements, totalQuizAttempts, averageScore] = await Promise.all([
-      prisma.progress.count({
+    // Obtener estadísticas agregadas usando learning_progress
+    const [learningProgress, totalAchievements, totalQuizAttempts, averageScore] = await Promise.all([
+      prisma.learningProgress.findMany({
         where: { userId },
-      }),
-      prisma.progress.count({
-        where: {
-          userId,
-          completed: true,
+        include: {
+          lessons: {
+            select: {
+              completed: true,
+            },
+          },
         },
       }),
       prisma.achievement.count({
@@ -448,6 +451,13 @@ export const getUserStats = async (req: Request, res: Response) => {
         },
       }),
     ]);
+
+    // Calculate totals from learning progress
+    const totalProgress = learningProgress.reduce((sum, lp) => sum + lp.lessons.length, 0);
+    const completedProgress = learningProgress.reduce(
+      (sum, lp) => sum + lp.lessons.filter((l) => l.completed).length,
+      0
+    );
 
     const stats = {
       progress: {
@@ -477,10 +487,249 @@ export const getUserStats = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * GET /api/users/students
+ * Get all students in the system
+ *
+ * ACCESS: Admin and Superuser only (checked by middleware)
+ *
+ * Query params:
+ * - page: Page number (1-indexed, default: 1)
+ * - limit: Items per page (default: 25, max: 100)
+ * - search: Search term for name/email
+ * - sortBy: Field to sort by (name, email, createdAt, lastAccess)
+ * - sortOrder: 'asc' or 'desc'
+ */
+export const getAllStudents = async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 25));
+    const search = (req.query.search as string) || '';
+    const sortBy = (req.query.sortBy as string) || 'name';
+    const sortOrder = (req.query.sortOrder as string) === 'desc' ? 'desc' : 'asc';
+
+    // Build where clause
+    const where: any = {
+      role: 'STUDENT',
+    };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Build orderBy
+    const validSortFields = ['name', 'email', 'createdAt'];
+    const orderByField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    const orderBy = { [orderByField]: sortOrder };
+
+    // Get total count for pagination
+    const totalCount = await prisma.user.count({ where });
+
+    // Get students with pagination
+    const students = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        learningProgress: {
+          select: {
+            lessons: {
+              select: {
+                completed: true,
+                timeSpent: true,
+                lastAccessed: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    // Compute aggregated progress for each student
+    const studentsWithStats = students.map((student) => {
+      const allLessons = student.learningProgress.flatMap((lp) => lp.lessons);
+      const completedLessons = allLessons.filter((l) => l.completed).length;
+      const totalTimeSpent = allLessons.reduce((acc, l) => acc + l.timeSpent, 0);
+      const lastAccess = allLessons.reduce(
+        (latest: Date | null, l) => {
+          if (!l.lastAccessed) return latest;
+          if (!latest) return l.lastAccessed;
+          return l.lastAccessed > latest ? l.lastAccessed : latest;
+        },
+        null as Date | null
+      );
+
+      // Remove raw progress data, replace with aggregated stats
+      const { learningProgress, ...studentData } = student;
+
+      return {
+        ...studentData,
+        stats: {
+          completedLessons,
+          totalLessons: allLessons.length,
+          totalTimeSpent,
+          lastAccess,
+          progressPercentage:
+            allLessons.length > 0
+              ? Math.round((completedLessons / allLessons.length) * 100)
+              : 0,
+        },
+      };
+    });
+
+    res.status(200).json({
+      students: studentsWithStats,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNextPage: page * limit < totalCount,
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error al obtener estudiantes:', error);
+    res.status(500).json({
+      error: 'Error al obtener estudiantes',
+      message: 'Ocurrió un error al consultar la lista de estudiantes',
+    });
+  }
+};
+
+/**
+ * GET /api/users/students/:id
+ * Get a single student's details
+ *
+ * ACCESS: Teacher (only assigned students), Admin, Superuser
+ */
+export const getStudentById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const requestingUserId = req.user?.id;
+    const requestingUserRole = req.user?.role?.toUpperCase();
+
+    if (!requestingUserId) {
+      return res.status(401).json({
+        error: 'No autenticado',
+        message: 'Debes estar autenticado para acceder a esta información',
+      });
+    }
+
+    // Get the student
+    const student = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        error: 'Estudiante no encontrado',
+        message: 'No se encontró un estudiante con el ID especificado',
+      });
+    }
+
+    if (student.role !== 'STUDENT') {
+      return res.status(400).json({
+        error: 'Usuario no es estudiante',
+        message: 'El usuario especificado no tiene rol de estudiante',
+      });
+    }
+
+    // If requesting user is a teacher (not admin/superuser), verify assignment
+    if (requestingUserRole === 'TEACHER') {
+      const isAssigned = await prisma.teacherStudent.findUnique({
+        where: {
+          teacherId_studentId: {
+            teacherId: requestingUserId,
+            studentId: id,
+          },
+        },
+      });
+
+      if (!isAssigned) {
+        return res.status(403).json({
+          error: 'Acceso denegado',
+          message: 'No tienes permiso para ver este estudiante',
+        });
+      }
+    }
+
+    // Get aggregated progress from learning_progress
+    const learningProgress = await prisma.learningProgress.findMany({
+      where: { userId: id },
+      include: {
+        lessons: {
+          select: {
+            completed: true,
+            timeSpent: true,
+            lastAccessed: true,
+          },
+        },
+      },
+    });
+
+    const allLessons = learningProgress.flatMap((lp) => lp.lessons);
+    const completedLessons = allLessons.filter((l) => l.completed).length;
+    const totalTimeSpent = allLessons.reduce((acc, l) => acc + l.timeSpent, 0);
+    const lastAccess = allLessons.reduce(
+      (latest: Date | null, l) => {
+        if (!l.lastAccessed) return latest;
+        if (!latest) return l.lastAccessed;
+        return l.lastAccessed > latest ? l.lastAccessed : latest;
+      },
+      null as Date | null
+    );
+
+    res.status(200).json({
+      student: {
+        ...student,
+        stats: {
+          completedLessons,
+          totalLessons: allLessons.length,
+          totalTimeSpent,
+          lastAccess,
+          progressPercentage:
+            allLessons.length > 0
+              ? Math.round((completedLessons / allLessons.length) * 100)
+              : 0,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error al obtener estudiante:', error);
+    res.status(500).json({
+      error: 'Error al obtener estudiante',
+      message: 'Ocurrió un error al consultar los datos del estudiante',
+    });
+  }
+};
+
 export default {
   getCurrentUser,
   updateCurrentUser,
   changePassword,
   getUserStats,
+  getAllStudents,
+  getStudentById,
 };
 

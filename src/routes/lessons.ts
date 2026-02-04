@@ -5,7 +5,8 @@
 
 import { Router } from 'express';
 import * as lessonsController from '../controllers/lessons.controller';
-import { authenticate, requireRole } from '../middleware/auth';
+import * as stepsController from '../controllers/steps.controller';
+import { authenticate, requireAdmin, requireTeacherPlus } from '../middleware/auth';
 import { validateRequest } from '../middleware/validate';
 import {
   createLessonValidator,
@@ -45,6 +46,13 @@ router.get(
   lessonsController.getPreviousLesson
 );
 
+// GET /api/lessons/:id/steps - Get all steps (cards) for a lesson
+router.get(
+  '/:id/steps',
+  readLimiter,
+  stepsController.getStepsByLesson
+);
+
 /**
  * Protected routes (authentication required)
  */
@@ -68,7 +76,8 @@ router.post(
 );
 
 /**
- * Admin/Instructor routes (role-based access)
+ * Teacher/Admin routes (role-based access)
+ * Note: SUPERUSER has implicit access via requireRole middleware
  */
 
 // POST /api/lessons - Create a new lesson
@@ -76,7 +85,7 @@ router.post(
   '/',
   writeLimiter,
   authenticate,
-  requireRole('ADMIN', 'INSTRUCTOR'),
+  requireTeacherPlus,  // TEACHER, ADMIN (SUPERUSER implicit)
   validateRequest(createLessonValidator),
   lessonsController.createLesson
 );
@@ -86,7 +95,7 @@ router.put(
   '/:id',
   writeLimiter,
   authenticate,
-  requireRole('ADMIN', 'INSTRUCTOR'),
+  requireTeacherPlus,  // TEACHER, ADMIN (SUPERUSER implicit)
   validateRequest([...idValidator, ...updateLessonValidator]),
   lessonsController.updateLesson
 );
@@ -96,7 +105,7 @@ router.delete(
   '/:id',
   writeLimiter,
   authenticate,
-  requireRole('ADMIN'),
+  requireAdmin,  // ADMIN only (SUPERUSER implicit)
   validateRequest(idValidator),
   lessonsController.deleteLesson
 );
