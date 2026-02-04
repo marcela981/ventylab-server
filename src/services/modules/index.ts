@@ -199,7 +199,7 @@ export const getModuleById = async (
               userId,
             },
             include: {
-              lessonProgress: {
+              lessons: {
                 select: {
                   lessonId: true,
                   completed: true,
@@ -960,7 +960,7 @@ export const getUserModuleProgress = async (
         },
       },
       include: {
-        lessonProgress: {
+        lessons: {
           include: {
             lesson: {
               select: {
@@ -1000,7 +1000,7 @@ export const getUserModuleProgress = async (
           timeSpent: 0,
         },
         include: {
-          lessonProgress: {
+          lessons: {
             include: {
               lesson: {
                 select: {
@@ -1029,8 +1029,8 @@ export const getUserModuleProgress = async (
 
     // Calculate statistics
     const totalLessons = progress.module._count.lessons;
-    const completedLessons = progress.lessonProgress.filter(
-      (lp) => lp.completed
+    const completedLessons = progress.lessons.filter(
+      (lp: { completed: boolean }) => lp.completed
     ).length;
     const completionPercentage =
       totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
@@ -1053,7 +1053,7 @@ export const getUserModuleProgress = async (
         completionPercentage,
         remainingLessons: totalLessons - completedLessons,
       },
-      lessonProgress: progress.lessonProgress,
+      lessonProgress: progress.lessons,
     };
   } catch (error) {
     console.error('Error in getUserModuleProgress:', error);

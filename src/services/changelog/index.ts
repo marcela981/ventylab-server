@@ -16,6 +16,7 @@
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/errorHandler';
 import { HTTP_STATUS, ERROR_CODES, PAGINATION, USER_ROLES } from '../../config/constants';
+import { Prisma } from '@prisma/client';
 
 // ============================================
 // Type Definitions
@@ -174,8 +175,8 @@ export const logChange = async (
         entityId,
         action,
         changedBy,
-        diff: diff || undefined,
-        metadata: metadata || undefined,
+        diff: diff as Prisma.InputJsonValue | undefined,
+        metadata: metadata as Prisma.InputJsonValue | undefined,
       },
     });
 

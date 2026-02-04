@@ -269,13 +269,16 @@ export async function getTeacherStudents(
 
     // Add progress data if requested
     if (includeProgress && 'learningProgress' in rel.student) {
-      const learningProgress = rel.student.learningProgress as Array<{
-        lessons: Array<{
-          completed: boolean;
-          timeSpent: number;
-          lastAccessed: Date | null;
+      // Cast through unknown due to conditional include type inference limitations
+      const learningProgress = (rel.student as unknown as {
+        learningProgress: Array<{
+          lessons: Array<{
+            completed: boolean;
+            timeSpent: number;
+            lastAccessed: Date | null;
+          }>;
         }>;
-      }>;
+      }).learningProgress;
 
       const allLessons = learningProgress.flatMap((lp) => lp.lessons);
       const completedLessons = allLessons.filter((l) => l.completed).length;
