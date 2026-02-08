@@ -429,32 +429,53 @@ model Step {
 }
 
 // ============================================
-// DEPRECATED: Old Progress System (Keep for migration compatibility)
+// ⚠️ DEPRECATED: Old Progress System - SCHEDULED FOR REMOVAL
 // ============================================
-// This model is DEPRECATED and should not be used for new code.
-// Use LearningProgress + LessonProgress instead.
-// Keep this model to prevent breaking existing migrations.
+// STATUS: DEPRECATED - DO NOT USE
+// REPLACEMENT: LearningProgress + LessonProgress (above)
+// REMOVAL DATE: After data migration verified (see migration script)
+//
+// WHY DEPRECATED:
+// 1. Conflicting with new LearningProgress system
+// 2. User relation disabled (orphaned data)
+// 3. Mixed module/lesson tracking causes ambiguity
+// 4. Frontend cannot reliably determine which system to use
+//
+// MIGRATION STRATEGY:
+// 1. All new code uses LearningProgress + LessonProgress
+// 2. Run migration script to copy valid data to new tables
+// 3. Verify data integrity
+// 4. Delete this model and run prisma migrate
+//
+// SAFE REMOVAL CHECKLIST:
+// [ ] All backend services use new progress system
+// [ ] No API endpoints reference Progress model
+// [ ] Migration script has been run
+// [ ] Data integrity verified in production
+// [ ] This model can then be deleted
+//
+// DO NOT add new code that references this model.
 model Progress {
   id                   String    @id @default(cuid())
   userId               String
-  moduleId             String?   // NUEVO: Para tracking a nivel módulo
-  lessonId             String?   // Ahora opcional, puede ser progreso de módulo
+  moduleId             String?
+  lessonId             String?
   currentStep          Int       @default(0)
   totalSteps           Int       @default(1)
   completed            Boolean   @default(false)
   completionPercentage Float     @default(0)
-  progress             Float     @default(0)  // NUEVO: Alias para compatibilidad
-  timeSpent            Int       @default(0) // en segundos
-  scrollPosition       Float?    // NUEVO: Posición de scroll
-  lastViewedSection    String?   // NUEVO: Última sección vista
+  progress             Float     @default(0)
+  timeSpent            Int       @default(0)
+  scrollPosition       Float?
+  lastViewedSection    String?
   lastAccess           DateTime?
   completedAt          DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  // user User @relation(fields: [userId], references: [id], onDelete: Cascade) // DISABLED: relation removed from User model
+  // ⚠️ RELATION DISABLED - This model is orphaned from User
+  // user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Constraints nombrados explícitamente
   @@unique([userId, lessonId], name: "progress_user_lesson_unique")
   @@unique([userId, moduleId], name: "progress_user_module_unique")
   @@index([userId])
@@ -466,51 +487,82 @@ model Progress {
 // ============================================
 // NEW Progress System - Learning Progress (Module Level)
 // ============================================
-// Represents overall progress for a user within a module
-// This is the parent table - one record per user per module
+// Represents overall progress for a user within a module.
+// This is the parent table - ONE record per user per module.
+//
+// RESUME STRATEGY:
+// - lastAccessedLessonId: The lesson to resume when user clicks "Continue"
+// - lastAccessedAt: When user last interacted with this module
+// - The actual step position is stored in the child LessonProgress record
+//
+// SINGLE SOURCE OF TRUTH:
+// - Frontend MUST call GET /api/progress/resume/:moduleId to get resume state
+// - Frontend MUST NOT guess or infer progress from UI state
 model LearningProgress {
-  id          String    @id @default(cuid())
-  userId      String
-  moduleId    String
-  timeSpent   Int       @default(0) // Total time in seconds
-  score       Float?    // Optional score/grade
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  userId               String
+  moduleId             String
+  lastAccessedLessonId String?   // 👈 NEW: Lesson to resume (FK-like, not enforced for flexibility)
+  lastAccessedAt       DateTime? // 👈 NEW: When user last accessed this module
+  timeSpent            Int       @default(0) // Total time in seconds across all lessons
+  score                Float?    // Optional score/grade for the module
+  completedAt          DateTime? // When all lessons were completed
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   // Relations
-  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module  Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   lessons LessonProgress[]
 
+  // Constraints: ONE progress record per user per module
   @@unique([userId, moduleId])
   @@index([userId])
   @@index([moduleId])
+  @@index([lastAccessedLessonId])
+  @@index([lastAccessedAt])
   @@map("learning_progress")
 }
 
 // ============================================
 // NEW Progress System - Lesson Progress (Lesson Level)
 // ============================================
-// Represents progress for individual lessons within a module
-// This is the child table - multiple records per learning progress
+// Represents progress for individual lessons within a module.
+// This is the child table - ONE record per LearningProgress per Lesson.
+//
+// STEP-LEVEL TRACKING:
+// - currentStepIndex: 0-based index of the step user is currently on
+// - totalSteps: Total number of steps in this lesson (cached for fast resume)
+//
+// COMPLETION LOGIC:
+// - Lesson is complete when: completed === true
+// - Auto-complete when: currentStepIndex >= totalSteps - 1 AND user clicks "complete"
+// - NEVER auto-complete based solely on step index (user must confirm)
+//
+// RESUME CONTRACT:
+// - On resume, frontend navigates to lessonId at currentStepIndex
+// - currentStepIndex is updated on EVERY step navigation
 model LessonProgress {
-  id           String    @id @default(cuid())
-  progressId   String    // FK to LearningProgress
-  lessonId     String
-  completed    Boolean   @default(false)
-  timeSpent    Int       @default(0) // Time spent in seconds
-  lastAccessed DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  progressId       String    // FK to LearningProgress
+  lessonId         String
+  currentStepIndex Int       @default(0)    // 👈 NEW: 0-based step index for resume
+  totalSteps       Int       @default(1)    // 👈 NEW: Total steps in lesson (cached)
+  completed        Boolean   @default(false)
+  timeSpent        Int       @default(0)    // Time spent in seconds
+  lastAccessed     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Relations
   learningProgress LearningProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
   lesson           Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
+  // Constraints: ONE progress record per lesson per learning progress
   @@unique([progressId, lessonId])
   @@index([progressId])
   @@index([lessonId])
+  @@index([completed])
   @@map("lesson_progress")
 }
 

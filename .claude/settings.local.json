@@ -11,7 +11,29 @@
       "Bash(C:/nvm4w/nodejs/node.exe ./node_modules/next/dist/bin/next build)",
       "Bash(C:nvm4wnodejsnpm.cmd run lint)",
       "Read(//c/Marcela/TESIS/ventilab-web/**)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(dir \"c:\\\\Marcela\\\\TESIS\\\\ventilab-web\\\\src\\\\data\\\\lessons\\\\module-02-parameters\"\")",
+      "Bash(del \"c:\\\\Marcela\\\\TESIS\\\\ventilab-web\\\\src\\\\data\\\\lessons\\\\module-02-parameters\\\\module-09-simv\")",
+      "Bash(dir c:MarcelaTESIS /b)",
+      "Bash(powershell.exe:*)",
+      "Bash(dir /b /s \"c:\\\\Marcela\\\\TESIS\\\\ventylab-server\\\\src\")",
+      "Bash(findstr:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(dir:*)",
+      "Bash(npx prisma generate)",
+      "Bash(/c/nvm4w/nodejs/npx prisma generate)",
+      "Bash(PATH=\"/c/nvm4w/nodejs:$PATH\" npx prisma generate:*)",
+      "Bash(PATH=\"/c/nvm4w/nodejs:$PATH\" npx prisma migrate:*)",
+      "Bash(PATH=\"/c/nvm4w/nodejs:$PATH\" npx prisma db push:*)",
+      "Bash(PATH=\"/c/nvm4w/nodejs:$PATH\" npx tsc:*)",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force ''c:\\\\Marcela\\\\TESIS\\\\ventylab-server\\\\node_modules\\\\.prisma''; cd ''c:\\\\Marcela\\\\TESIS\\\\ventylab-server''; npx prisma generate\")",
+      "Bash(\"C:\\\\nvm4w\\\\nodejs\\\\node.exe\" node_modules/.bin/prisma generate)",
+      "Bash(node_modules.binprisma.cmd generate)",
+      "Bash(node:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Marcela\\TESIS\\ventilab-web\\src\\components\\auth"
     ]
   }
 }
