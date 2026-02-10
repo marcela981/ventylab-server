@@ -21,6 +21,7 @@ import levelsRoutes from './routes/levels';
 import cardsRoutes from './routes/cards';
 import changelogRoutes from './routes/changelog';
 import overridesRoutes from './routes/overrides';
+import teachingRoutes from './routes/teaching';
 
 // ============================================
 // ENVIRONMENT CONFIGURATION
@@ -214,6 +215,9 @@ app.use('/api/changelog', changelogRoutes);
 // Rutas de overrides de contenido (personalización por estudiante)
 // RBAC: TEACHER+ can manage (teachers manage assigned students, admins manage all)
 app.use('/api/overrides', overridesRoutes);
+
+// Rutas de progresión docente (unlock + completion)
+app.use('/api/teaching', teachingRoutes);
 
 // TODO: Rutas de servicios de IA (cuando se implementen)
 // app.use('/api/ai', aiRoutes);

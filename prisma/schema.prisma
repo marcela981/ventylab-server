@@ -44,6 +44,10 @@ model User {
   // When user is a teacher/admin: overrides they created for students
   createdOverrides    ContentOverride[] @relation("CreatedOverrides")
 
+  // Teaching progression (UserProgress + LessonCompletion)
+  userProgress       UserProgress[]
+  lessonCompletions  LessonCompletion[]
+
   @@map("users")
 }
 
@@ -328,6 +332,9 @@ model Module {
   prerequisites    ModulePrerequisite[] @relation("ModulePrerequisites")
   dependentModules ModulePrerequisite[] @relation("DependentModules")
 
+  // Teaching progression
+  userProgress     UserProgress[]
+
   @@index([levelId])
   @@index([order])
   @@index([isActive])
@@ -353,6 +360,7 @@ model Lesson {
   id            String   @id @default(cuid())
   moduleId      String
   title         String
+  slug          String?          // Human-readable identifier for URL mapping
   content       String?  @db.Text   // Legacy: JSON content, kept for backwards compatibility
   order         Int      @default(0)
   estimatedTime Int?     @default(0) // en minutos
@@ -366,15 +374,18 @@ model Lesson {
   lastModifiedBy String?   // User ID who last modified this lesson
   lastModifiedAt DateTime? // Timestamp of last modification
 
-  // FUTURE EXTENSIONS:
-  // - Add `version` Int for content versioning
-  // - Add `publishedAt` DateTime for draft/publish workflow
-
   module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   quizzes        Quiz[]
   steps          Step[]           // New: Structured lesson steps (cards)
   lessonProgress LessonProgress[] // NEW: Track progress for this lesson
 
+  // Teaching progression validation
+  hasRequiredQuiz   Boolean            @default(false)
+  hasRequiredCase   Boolean            @default(false)
+  completions       LessonCompletion[]
+  lastAccessedBy    UserProgress[]     @relation("LastAccessedLesson")
+
+  @@unique([moduleId, slug])
   @@index([moduleId])
   @@index([order])
   @@index([isActive])
@@ -723,5 +734,88 @@ model EvaluationAttempt {
   @@index([isSuccessful])
   @@index([startedAt])
   @@map("evaluation_attempts")
+}
+
+// ============================================
+// TEACHING PROGRESSION SYSTEM
+// ============================================
+// UserProgress: Module-level progress with denormalized counters
+// LessonCompletion: Lesson-level completion with quiz/case scores
+//
+// These tables are the SINGLE SOURCE OF TRUTH for:
+// - Module unlock logic (via ModuleUnlockService)
+// - Lesson sequential access (via LessonProgressService)
+// - Module completion percentage
+//
+// Coexists with LearningProgress + LessonProgress which
+// handle step-level tracking within lessons.
+// ============================================
+
+enum ProgressStatus {
+  NOT_STARTED  // Module not yet started
+  IN_PROGRESS  // At least one lesson completed
+  COMPLETED    // All lessons completed (100%)
+}
+
+model UserProgress {
+  id                    String         @id @default(cuid())
+  userId                String
+  moduleId              String
+
+  // Module status
+  status                ProgressStatus @default(NOT_STARTED)
+
+  // Denormalized counters (recalculated on each lesson completion)
+  completedLessonsCount Int            @default(0)
+  totalLessons          Int            @default(0)
+  progressPercentage    Float          @default(0) // 0-100
+
+  // Navigation
+  lastAccessedLessonId  String?
+  lastAccessedAt        DateTime       @default(now())
+
+  // Lifecycle
+  startedAt             DateTime       @default(now())
+  completedAt           DateTime?
+
+  // Relations
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module                Module         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lastAccessedLesson    Lesson?        @relation("LastAccessedLesson", fields: [lastAccessedLessonId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
+  @@index([status])
+  @@map("user_progress")
+}
+
+model LessonCompletion {
+  id              String   @id @default(cuid())
+  userId          String
+  lessonId        String
+
+  // Quiz tracking (if lesson.hasRequiredQuiz = true)
+  quizAttempts    Int      @default(0)
+  bestQuizScore   Float?   // 0-100
+  lastQuizScore   Float?
+
+  // Case study tracking (if lesson.hasRequiredCase = true)
+  caseAttempts    Int      @default(0)
+  bestCaseScore   Float?   // 0-100
+  lastCaseScore   Float?
+
+  // Timestamps
+  completedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson          Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@map("lesson_completions")
 }
 

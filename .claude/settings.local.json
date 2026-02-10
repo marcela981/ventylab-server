@@ -30,7 +30,11 @@
       "Bash(powershell -Command \"Remove-Item -Recurse -Force ''c:\\\\Marcela\\\\TESIS\\\\ventylab-server\\\\node_modules\\\\.prisma''; cd ''c:\\\\Marcela\\\\TESIS\\\\ventylab-server''; npx prisma generate\")",
       "Bash(\"C:\\\\nvm4w\\\\nodejs\\\\node.exe\" node_modules/.bin/prisma generate)",
       "Bash(node_modules.binprisma.cmd generate)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npx prisma validate:*)",
+      "Bash(/c/nvm4w/nodejs/npx prisma validate)",
+      "Bash(export PATH=\"/c/nvm4w/nodejs:$PATH\")",
+      "Bash(C:nvm4wnodejsnpx.cmd tsc --noEmit)"
     ],
     "additionalDirectories": [
       "c:\\Marcela\\TESIS\\ventilab-web\\src\\components\\auth"

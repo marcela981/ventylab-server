@@ -1,9 +1,11 @@
 /**
  * Curriculum Data Configuration
- * Defines the explicit module order and structure for each level
+ * Defines the explicit module order and structure for each level.
  *
- * IMPORTANT: This is the single source of truth for module ordering.
- * Selectors and mappers should consume this data directly instead of recomputing.
+ * IMPORTANT: Module IDs here MUST match those in prisma/seed.ts.
+ * The database is the single source of truth for content.
+ * This file provides fast in-memory lookups for the curriculum service
+ * without hitting the database on every request.
  */
 
 /**
@@ -33,17 +35,33 @@ export interface CurriculumModule {
  */
 export interface LevelConfig {
   level: CurriculumLevel;
+  levelId: string; // DB level ID (e.g., 'level-beginner')
   isOptional: boolean;
   affectsUnlocking: boolean;
   autoNavigation: boolean;
   modules: CurriculumModule[];
 }
 
-/**
- * BEGINNER LEVEL MODULES
- * Explicit order: These are the ONLY 6 modules for beginner level
- * Order is fixed and should not be recomputed
- */
+// ============================================
+// MODULE DEFINITIONS PER LEVEL
+// IDs must match prisma/seed.ts exactly
+// ============================================
+
+export const PREREQUISITOS_MODULES: CurriculumModule[] = [
+  {
+    id: 'respiratory-physiology',
+    order: 1,
+    title: 'Fisiología Respiratoria',
+    description: 'Principios del intercambio gaseoso, mecánica ventilatoria y difusión',
+  },
+  {
+    id: 'ventilation-principles',
+    order: 2,
+    title: 'Principios de Ventilación Mecánica',
+    description: 'Indicaciones, objetivos y parámetros básicos de configuración del ventilador',
+  },
+];
+
 export const BEGINNER_MODULES: CurriculumModule[] = [
   {
     id: 'module-01-inversion-fisiologica',
@@ -83,41 +101,88 @@ export const BEGINNER_MODULES: CurriculumModule[] = [
   },
 ];
 
-/**
- * PREREQUISITOS LEVEL MODULES (Optional)
- * This level does NOT affect:
- * - Beginner level navigation
- * - Beginner level unlocking
- * - Automatic navigation flow
- */
-export const PREREQUISITOS_MODULES: CurriculumModule[] = [
+export const INTERMEDIATE_MODULES: CurriculumModule[] = [
   {
-    id: 'module-00-anatomia-respiratoria',
+    id: 'principles-mechanical-ventilation',
     order: 1,
-    title: 'Anatomía Respiratoria',
-    description: 'Revisión de la anatomía del sistema respiratorio',
+    title: 'Principios de Ventilación Mecánica',
+    description: 'Diferencias entre modalidades, indicaciones clínicas y resolución de alarmas',
   },
   {
-    id: 'module-00-fisiologia-basica',
+    id: 'module-02-modalidades-parametros',
     order: 2,
-    title: 'Fisiología Básica',
-    description: 'Conceptos básicos de fisiología respiratoria',
+    title: 'Modalidades Ventilatorias y Parámetros',
+    description: 'Modalidades ventilatorias y manejo de parámetros críticos',
+  },
+  {
+    id: 'volume-control',
+    order: 3,
+    title: 'Ventilación Controlada por Volumen (VCV)',
+    description: 'Funcionamiento, configuración y práctica de VCV',
+  },
+  {
+    id: 'pressure-control',
+    order: 4,
+    title: 'Ventilación Controlada por Presión (PCV)',
+    description: 'Configuración y manejo de complicaciones en PCV',
+  },
+  {
+    id: 'psv-mode',
+    order: 5,
+    title: 'Ventilación con Soporte de Presión (PSV)',
+    description: 'Funcionamiento y configuración de PSV',
+  },
+  {
+    id: 'simv-mode',
+    order: 6,
+    title: 'Ventilación Mandatoria Intermitente Sincronizada (SIMV)',
+    description: 'SIMV y sus aplicaciones en destete ventilatorio',
   },
 ];
 
-/**
- * Complete curriculum configuration by level
- */
+export const ADVANCED_MODULES: CurriculumModule[] = [
+  {
+    id: 'ards-management',
+    order: 1,
+    title: 'Manejo de ARDS y Estrategias de Protección Pulmonar',
+    description: 'Protocolo ARDSnet e implementación de estrategias de protección pulmonar',
+  },
+  {
+    id: 'copd-management',
+    order: 2,
+    title: 'Manejo Ventilatorio en EPOC',
+    description: 'Estrategias ventilatorias específicas, auto-PEEP y hiperinsuflación',
+  },
+  {
+    id: 'asthma-crisis',
+    order: 3,
+    title: 'Manejo de Crisis Asmática',
+    description: 'Ventilación permisiva y manejo de complicaciones en crisis asmática',
+  },
+  {
+    id: 'clinical-cases',
+    order: 4,
+    title: 'Casos Clínicos Complejos',
+    description: 'Integración de conocimientos en casos clínicos complejos',
+  },
+];
+
+// ============================================
+// CURRICULUM CONFIG
+// ============================================
+
 export const CURRICULUM_CONFIG: Record<CurriculumLevel, LevelConfig> = {
   [CURRICULUM_LEVELS.PREREQUISITOS]: {
     level: CURRICULUM_LEVELS.PREREQUISITOS,
+    levelId: 'level-prerequisitos',
     isOptional: true,
-    affectsUnlocking: false,  // Does NOT affect beginner unlocking
-    autoNavigation: false,    // No automatic navigation leads into it
+    affectsUnlocking: false,
+    autoNavigation: false,
     modules: PREREQUISITOS_MODULES,
   },
   [CURRICULUM_LEVELS.BEGINNER]: {
     level: CURRICULUM_LEVELS.BEGINNER,
+    levelId: 'level-beginner',
     isOptional: false,
     affectsUnlocking: true,
     autoNavigation: true,
@@ -125,117 +190,117 @@ export const CURRICULUM_CONFIG: Record<CurriculumLevel, LevelConfig> = {
   },
   [CURRICULUM_LEVELS.INTERMEDIATE]: {
     level: CURRICULUM_LEVELS.INTERMEDIATE,
+    levelId: 'level-intermedio',
     isOptional: false,
     affectsUnlocking: true,
     autoNavigation: true,
-    modules: [], // To be populated from database or defined here
+    modules: INTERMEDIATE_MODULES,
   },
   [CURRICULUM_LEVELS.ADVANCED]: {
     level: CURRICULUM_LEVELS.ADVANCED,
+    levelId: 'level-avanzado',
     isOptional: false,
     affectsUnlocking: true,
     autoNavigation: true,
-    modules: [], // To be populated from database or defined here
+    modules: ADVANCED_MODULES,
   },
 };
 
-/**
- * Get modules for a specific level in the defined order
- * Use this instead of database queries when you need the canonical order
- */
+// ============================================
+// ALL MODULES (flat list for quick lookups)
+// ============================================
+
+const ALL_MODULES: CurriculumModule[] = [
+  ...PREREQUISITOS_MODULES,
+  ...BEGINNER_MODULES,
+  ...INTERMEDIATE_MODULES,
+  ...ADVANCED_MODULES,
+];
+
+// Pre-built maps for O(1) lookups
+const MODULE_TO_LEVEL = new Map<string, CurriculumLevel>();
+for (const [level, config] of Object.entries(CURRICULUM_CONFIG)) {
+  for (const mod of config.modules) {
+    MODULE_TO_LEVEL.set(mod.id, level as CurriculumLevel);
+  }
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
 export function getModulesForLevel(level: CurriculumLevel): CurriculumModule[] {
   const config = CURRICULUM_CONFIG[level];
   return config ? [...config.modules] : [];
 }
 
-/**
- * Get module IDs for a specific level in order
- */
 export function getModuleIdsForLevel(level: CurriculumLevel): string[] {
   return getModulesForLevel(level).map(m => m.id);
 }
 
-/**
- * Get the beginner modules (exactly 6, in explicit order)
- * This is the primary function for rendering beginner level cards
- */
 export function getBeginnerModules(): CurriculumModule[] {
   return [...BEGINNER_MODULES];
 }
 
-/**
- * Get beginner module IDs in order
- */
 export function getBeginnerModuleIds(): string[] {
   return BEGINNER_MODULES.map(m => m.id);
 }
 
-/**
- * Check if a module belongs to the beginner level
- */
 export function isBeginnerModule(moduleId: string): boolean {
   return BEGINNER_MODULES.some(m => m.id === moduleId);
 }
 
-/**
- * Check if a module belongs to prerequisitos level
- */
 export function isPrerequisitosModule(moduleId: string): boolean {
   return PREREQUISITOS_MODULES.some(m => m.id === moduleId);
 }
 
+export function isIntermediateModule(moduleId: string): boolean {
+  return INTERMEDIATE_MODULES.some(m => m.id === moduleId);
+}
+
+export function isAdvancedModule(moduleId: string): boolean {
+  return ADVANCED_MODULES.some(m => m.id === moduleId);
+}
+
 /**
- * Get the order of a module within beginner level
- * Returns -1 if not found
+ * Get the level a module belongs to.
+ * Returns undefined if module is not in any level config.
  */
+export function getModuleLevel(moduleId: string): CurriculumLevel | undefined {
+  return MODULE_TO_LEVEL.get(moduleId);
+}
+
 export function getBeginnerModuleOrder(moduleId: string): number {
   const module = BEGINNER_MODULES.find(m => m.id === moduleId);
   return module ? module.order : -1;
 }
 
-/**
- * Get next module in beginner sequence
- * Returns null if at end or not found
- */
 export function getNextBeginnerModule(currentModuleId: string): CurriculumModule | null {
   const currentOrder = getBeginnerModuleOrder(currentModuleId);
   if (currentOrder === -1 || currentOrder >= BEGINNER_MODULES.length) {
     return null;
   }
-  return BEGINNER_MODULES[currentOrder] || null; // order is 1-indexed, array is 0-indexed
+  return BEGINNER_MODULES[currentOrder] || null;
 }
 
-/**
- * Get previous module in beginner sequence
- * Returns null if at start or not found
- */
 export function getPreviousBeginnerModule(currentModuleId: string): CurriculumModule | null {
   const currentOrder = getBeginnerModuleOrder(currentModuleId);
   if (currentOrder <= 1) {
     return null;
   }
-  return BEGINNER_MODULES[currentOrder - 2] || null; // order is 1-indexed, array is 0-indexed
+  return BEGINNER_MODULES[currentOrder - 2] || null;
 }
 
-/**
- * Check if a level affects unlocking (prerequisitos does not)
- */
 export function levelAffectsUnlocking(level: CurriculumLevel): boolean {
   const config = CURRICULUM_CONFIG[level];
   return config ? config.affectsUnlocking : true;
 }
 
-/**
- * Check if automatic navigation leads into a level
- */
 export function levelHasAutoNavigation(level: CurriculumLevel): boolean {
   const config = CURRICULUM_CONFIG[level];
   return config ? config.autoNavigation : true;
 }
 
-/**
- * Get all non-optional levels (excluding prerequisitos)
- */
 export function getMainLevels(): CurriculumLevel[] {
   return Object.values(CURRICULUM_LEVELS).filter(
     level => !CURRICULUM_CONFIG[level]?.isOptional
@@ -243,26 +308,10 @@ export function getMainLevels(): CurriculumLevel[] {
 }
 
 /**
- * Map module order index for lesson navigation within beginner level
- * Ensures lessons respect the explicit beginner module order
+ * Get the DB level ID for a curriculum level string.
  */
-export function getBeginnerLessonNavigationOrder(
-  moduleId: string,
-  lessonOrder: number
-): { globalOrder: number; isFirstInModule: boolean; isLastInModule: boolean } {
-  const moduleOrder = getBeginnerModuleOrder(moduleId);
-  if (moduleOrder === -1) {
-    return { globalOrder: -1, isFirstInModule: false, isLastInModule: false };
-  }
-
-  // Calculate global order based on module position (assuming max 10 lessons per module)
-  const globalOrder = (moduleOrder - 1) * 100 + lessonOrder;
-
-  return {
-    globalOrder,
-    isFirstInModule: lessonOrder === 1,
-    isLastInModule: false, // Would need total lessons to determine
-  };
+export function getLevelId(level: CurriculumLevel): string {
+  return CURRICULUM_CONFIG[level]?.levelId ?? '';
 }
 
 export default {
@@ -270,17 +319,22 @@ export default {
   CURRICULUM_CONFIG,
   BEGINNER_MODULES,
   PREREQUISITOS_MODULES,
+  INTERMEDIATE_MODULES,
+  ADVANCED_MODULES,
   getModulesForLevel,
   getModuleIdsForLevel,
   getBeginnerModules,
   getBeginnerModuleIds,
   isBeginnerModule,
   isPrerequisitosModule,
+  isIntermediateModule,
+  isAdvancedModule,
+  getModuleLevel,
   getBeginnerModuleOrder,
   getNextBeginnerModule,
   getPreviousBeginnerModule,
   levelAffectsUnlocking,
   levelHasAutoNavigation,
   getMainLevels,
-  getBeginnerLessonNavigationOrder,
+  getLevelId,
 };
