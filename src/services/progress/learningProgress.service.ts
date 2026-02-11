@@ -254,9 +254,17 @@ export async function getModuleProgress(
 }
 
 /**
- * Get overview of all modules for a user
+ * Get overview of all modules for a user.
+ *
+ * Returns { overview, modules, lessons } so the frontend ProgressSource
+ * can populate its snapshot with lesson-level progress data.
+ *
+ * - overview: aggregate stats matching the frontend Overview type
+ * - modules: per-module summaries (legacy compat)
+ * - lessons: per-lesson progress with frontend-compatible IDs (via Page.legacyJsonId)
  */
 export async function getUserProgressOverview(userId: string) {
+  // 1. Fetch all progress with lessons & module metadata
   const allProgress = await prisma.learningProgress.findMany({
     where: { userId },
     include: {
@@ -276,19 +284,83 @@ export async function getUserProgressOverview(userId: string) {
     },
   });
 
-  return allProgress.map(progress => ({
-    moduleId: progress.moduleId,
-    moduleTitle: progress.module.title,
-    completedLessons: progress.lessons.filter(l => l.completed).length,
-    totalLessons: progress.lessons.length,
-    timeSpent: progress.timeSpent,
-    completedAt: progress.completedAt,
-    lastAccessed: progress.lessons.reduce((latest, lesson) => {
-      if (!lesson.lastAccessed) return latest;
-      if (!latest || lesson.lastAccessed > latest) return lesson.lastAccessed;
-      return latest;
-    }, null as Date | null),
-  }));
+  // 2. Count active Pages per module for accurate totalLessons
+  const pageCounts = await prisma.page.groupBy({
+    by: ['moduleId'],
+    where: { isActive: true },
+    _count: { id: true },
+  });
+  const pageCountMap = new Map(pageCounts.map(p => [p.moduleId, p._count.id]));
+
+  // 3. Build DB lessonId → frontend legacyJsonId mapping from Page table
+  const pages = await prisma.page.findMany({
+    where: { isActive: true, legacyLessonId: { not: null } },
+    select: { legacyLessonId: true, legacyJsonId: true },
+  });
+  const lessonIdToFrontendId = new Map<string, string>();
+  for (const page of pages) {
+    if (page.legacyLessonId && page.legacyJsonId) {
+      lessonIdToFrontendId.set(page.legacyLessonId, page.legacyJsonId);
+    }
+  }
+
+  // 4. Build per-module summaries
+  const modules = allProgress.map(progress => {
+    const totalFromPages = pageCountMap.get(progress.moduleId) ?? 0;
+    const totalLessons = totalFromPages > 0 ? totalFromPages : progress.lessons.length;
+    return {
+      moduleId: progress.moduleId,
+      moduleTitle: progress.module.title,
+      completedLessons: progress.lessons.filter(l => l.completed).length,
+      totalLessons,
+      timeSpent: progress.timeSpent,
+      completedAt: progress.completedAt,
+      lastAccessed: progress.lessons.reduce((latest, lesson) => {
+        if (!lesson.lastAccessed) return latest;
+        if (!latest || lesson.lastAccessed > latest) return lesson.lastAccessed;
+        return latest;
+      }, null as Date | null),
+    };
+  });
+
+  // 5. Build lesson-level array with frontend-compatible IDs
+  const lessons: Array<{ lessonId: string; progress: number; updatedAt: string }> = [];
+  for (const progress of allProgress) {
+    for (const lp of progress.lessons) {
+      const frontendId = lessonIdToFrontendId.get(lp.lessonId) || lp.lessonId;
+      const progressValue = lp.completed
+        ? 1
+        : (lp.totalSteps > 0 ? (lp.currentStepIndex + 1) / lp.totalSteps : 0);
+      lessons.push({
+        lessonId: frontendId,
+        progress: Math.min(1, progressValue),
+        updatedAt: (lp.updatedAt ?? lp.lastAccessed ?? new Date()).toISOString(),
+      });
+    }
+  }
+
+  // 6. Aggregate overview stats
+  const totalCompletedLessons = modules.reduce((s, m) => s + m.completedLessons, 0);
+  const totalLessonsAll = modules.reduce((s, m) => s + m.totalLessons, 0);
+  const modulesCompleted = modules.filter(
+    m => m.totalLessons > 0 && m.completedLessons >= m.totalLessons
+  ).length;
+
+  return {
+    overview: {
+      completedLessons: totalCompletedLessons,
+      totalLessons: totalLessonsAll,
+      modulesCompleted,
+      totalModules: modules.length,
+      xpTotal: totalCompletedLessons * 100,
+      level: Math.floor(totalCompletedLessons / 5) + 1,
+      nextLevelXp: (Math.floor(totalCompletedLessons / 5) + 1) * 500,
+      streakDays: 0,
+      calendar: [],
+    },
+    modules,
+    lessons,
+  };
 }
 
 /**
