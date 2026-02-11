@@ -22,6 +22,7 @@ import cardsRoutes from './routes/cards';
 import changelogRoutes from './routes/changelog';
 import overridesRoutes from './routes/overrides';
 import teachingRoutes from './routes/teaching';
+import pagesRoutes from './routes/pages';
 
 // ============================================
 // ENVIRONMENT CONFIGURATION
@@ -219,6 +220,9 @@ app.use('/api/overrides', overridesRoutes);
 // Rutas de progresión docente (unlock + completion)
 app.use('/api/teaching', teachingRoutes);
 
+// Rutas de páginas (Phase 1 - Content Hierarchy Refactoring)
+app.use('/api/pages', pagesRoutes);
+
 // TODO: Rutas de servicios de IA (cuando se implementen)
 // app.use('/api/ai', aiRoutes);
 
@@ -259,6 +263,7 @@ const startServer = () => {
     console.log('  - GET  /api/teacher-students/* - Relaciones profesor-estudiante');
     console.log('  - GET  /api/changelog/* - Historial de cambios (audit trail)');
     console.log('  - CRUD /api/overrides/* - Overrides de contenido por estudiante');
+    console.log('  - GET  /api/pages/* - Páginas (Phase 1 - Content Hierarchy)');
     console.log('='.repeat(50));
   });
 };

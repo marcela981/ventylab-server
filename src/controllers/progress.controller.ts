@@ -3,47 +3,59 @@ import * as learningProgressService from '../services/progress/learningProgress.
 import * as unifiedProgressService from '../services/progress/unifiedProgress.service';
 import { prisma } from '../config/prisma';
 
-// Helper to extract moduleId from lessonId
-function extractModuleId(lessonId: string): string {
-  // Assumes lessonId format: module-XX-lesson-name
-  const match = lessonId.match(/^(module-\d+)/);
-  return match ? match[1] : lessonId.split('-')[0];
-}
-
 /**
- * Resolve moduleId for a lesson - never fails.
- * Progress is created on access; we never return 404 for "no progress".
+ * Resolve canonical moduleId AND lessonId for a progress operation.
+ *
+ * The frontend may send a legacyJsonId (e.g. "module-01-inversion-fisiologica")
+ * instead of the real Lesson.id (e.g. "lesson-inversion-fisiologica").
+ * This function maps through the Page table to find the correct DB IDs.
+ *
+ * Resolution order:
+ *   1. Direct Lesson lookup by frontendLessonId
+ *   2. Page lookup by legacyJsonId → use page.legacyLessonId + page.moduleId
+ *   3. Page lookup by legacyLessonId → use frontendLessonId + page.moduleId
+ *   4. Module hint from query parameter
+ *   5. null (no match)
  */
-async function resolveModuleIdForLesson(
-  lessonId: string,
-  moduleIdFromQuery?: string
-): Promise<string | null> {
-  if (moduleIdFromQuery) {
-    const exists = await prisma.module.findUnique({
-      where: { id: moduleIdFromQuery, isActive: true },
-      select: { id: true },
-    });
-    if (exists) return moduleIdFromQuery;
+async function resolveIdsForProgress(
+  frontendLessonId: string,
+  moduleIdHint?: string
+): Promise<{ moduleId: string; lessonId: string } | null> {
+  // 1. Direct Lesson lookup (works for non-migrated content)
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: frontendLessonId },
+    select: { id: true, moduleId: true },
+  });
+  if (lesson) return { moduleId: lesson.moduleId, lessonId: lesson.id };
+
+  // 2. Page lookup by legacyJsonId (frontend sends JSON file IDs as lessonId)
+  const pageByJson = await prisma.page.findFirst({
+    where: { legacyJsonId: frontendLessonId, isActive: true },
+    select: { moduleId: true, legacyLessonId: true },
+  });
+  if (pageByJson?.legacyLessonId) {
+    return { moduleId: pageByJson.moduleId, lessonId: pageByJson.legacyLessonId };
   }
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: { moduleId: true },
+  // 3. Page lookup by legacyLessonId
+  const pageByLesson = await prisma.page.findFirst({
+    where: { legacyLessonId: frontendLessonId, isActive: true },
+    select: { moduleId: true, legacyLessonId: true },
   });
-  if (lesson) return lesson.moduleId;
+  if (pageByLesson) {
+    return { moduleId: pageByLesson.moduleId, lessonId: frontendLessonId };
+  }
 
-  const moduleWithLesson = await prisma.module.findFirst({
-    where: { isActive: true, lessons: { some: { id: lessonId } } },
-    select: { id: true },
-  });
-  if (moduleWithLesson) return moduleWithLesson.id;
+  // 4. Module hint from query parameter
+  if (moduleIdHint) {
+    const exists = await prisma.module.findUnique({
+      where: { id: moduleIdHint, isActive: true },
+      select: { id: true },
+    });
+    if (exists) return { moduleId: moduleIdHint, lessonId: frontendLessonId };
+  }
 
-  const firstModule = await prisma.module.findFirst({
-    where: { isActive: true },
-    orderBy: { order: 'asc' },
-    select: { id: true },
-  });
-  return firstModule?.id ?? null;
+  return null;
 }
 
 // GET /api/progress/lesson/:lessonId
@@ -58,8 +70,8 @@ export async function getLessonProgress(req: Request, res: Response, next: NextF
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    const moduleId = await resolveModuleIdForLesson(lessonId, moduleIdFromQuery);
-    if (!moduleId) {
+    const resolved = await resolveIdsForProgress(lessonId, moduleIdFromQuery);
+    if (!resolved) {
       return res.json({
         lessonId,
         completed: false,
@@ -70,8 +82,8 @@ export async function getLessonProgress(req: Request, res: Response, next: NextF
 
     const progress = await learningProgressService.getLessonProgress(
       userId,
-      moduleId,
-      lessonId
+      resolved.moduleId,
+      resolved.lessonId
     );
 
     res.json(progress);
@@ -155,7 +167,7 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
 
     const moduleIdFromQuery = req.query.moduleId as string | undefined;
 
-    // Debug logging - uncomment to verify endpoint is being hit
+    // Debug logging
     console.log('🔥 PUT /api/progress/lesson/:lessonId HIT', {
       userId: userId?.substring(0, 8) + '...',
       lessonId,
@@ -170,9 +182,10 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    const moduleId = await resolveModuleIdForLesson(lessonId, moduleIdFromQuery);
-    if (!moduleId) {
-      console.log('⚠️ Could not resolve moduleId for lesson:', lessonId);
+    // Resolve canonical IDs (maps frontend legacyJsonId → DB Lesson ID via Page table)
+    const resolved = await resolveIdsForProgress(lessonId, moduleIdFromQuery);
+    if (!resolved) {
+      console.log('⚠️ Could not resolve IDs for lesson:', lessonId);
       return res.json({
         lessonId,
         completed,
@@ -182,8 +195,12 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
       });
     }
 
-    // CRITICAL FIX: If step data is provided, use unified progress service
-    // This ensures step-level tracking is persisted to the database
+    const { moduleId, lessonId: canonicalLessonId } = resolved;
+    if (canonicalLessonId !== lessonId) {
+      console.log(`🔀 Mapped frontend ID "${lessonId}" → canonical "${canonicalLessonId}" (module: ${moduleId})`);
+    }
+
+    // If step data is provided, use unified progress service
     if (typeof currentStep === 'number' && typeof totalSteps === 'number') {
       console.log('📝 Using unified progress service for step tracking');
 
@@ -193,7 +210,7 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
       const result = await unifiedProgressService.updateStepProgress({
         userId,
         moduleId,
-        lessonId,
+        lessonId: canonicalLessonId,
         currentStepIndex,
         totalSteps,
         timeSpentDelta: timeSpent,
@@ -216,12 +233,12 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
           nextLessonId = await learningProgressService.getNextLesson(
             userId,
             moduleId,
-            lessonId
+            canonicalLessonId
           );
         }
 
         return res.json({
-          lessonId: result.lessonId,
+          lessonId, // Return original frontend ID for state consistency
           completed: result.completed,
           timeSpent,
           lastAccessed: new Date().toISOString(),
@@ -238,7 +255,7 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
     const progress = await learningProgressService.updateLessonProgress({
       userId,
       moduleId,
-      lessonId,
+      lessonId: canonicalLessonId,
       completed,
       timeSpent,
     });
@@ -248,12 +265,13 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
       nextLessonId = await learningProgressService.getNextLesson(
         userId,
         moduleId,
-        lessonId
+        canonicalLessonId
       );
     }
 
     res.json({
       ...progress,
+      lessonId, // Return original frontend ID
       nextLessonId,
     });
   } catch (error) {
@@ -275,8 +293,8 @@ export async function markComplete(req: Request, res: Response, next: NextFuncti
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    const moduleId = await resolveModuleIdForLesson(lessonId, moduleIdFromQuery);
-    if (!moduleId) {
+    const resolved = await resolveIdsForProgress(lessonId, moduleIdFromQuery);
+    if (!resolved) {
       return res.json({
         lessonId,
         completed: true,
@@ -287,21 +305,24 @@ export async function markComplete(req: Request, res: Response, next: NextFuncti
       });
     }
 
+    const { moduleId, lessonId: canonicalLessonId } = resolved;
+
     const progress = await learningProgressService.markLessonComplete(
       userId,
       moduleId,
-      lessonId,
+      canonicalLessonId,
       timeSpent
     );
 
     const nextLessonId = await learningProgressService.getNextLesson(
       userId,
       moduleId,
-      lessonId
+      canonicalLessonId
     );
 
     res.json({
       ...progress,
+      lessonId, // Return original frontend ID
       nextLessonId,
       message: nextLessonId
         ? 'Lección completada. Avanzando a la siguiente.'

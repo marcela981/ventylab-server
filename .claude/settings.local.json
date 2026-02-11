@@ -34,7 +34,11 @@
       "Bash(npx prisma validate:*)",
       "Bash(/c/nvm4w/nodejs/npx prisma validate)",
       "Bash(export PATH=\"/c/nvm4w/nodejs:$PATH\")",
-      "Bash(C:nvm4wnodejsnpx.cmd tsc --noEmit)"
+      "Bash(C:nvm4wnodejsnpx.cmd tsc --noEmit)",
+      "Bash(set PATH=C:nvm4wnodejs)",
+      "Bash(%PATH%)",
+      "Bash(C:nvm4wnodejsnpx.cmd tsc --noEmit --pretty)",
+      "Bash(/c/nvm4w/nodejs/npx.cmd tsc --noEmit --pretty)"
     ],
     "additionalDirectories": [
       "c:\\Marcela\\TESIS\\ventilab-web\\src\\components\\auth"

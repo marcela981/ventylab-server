@@ -48,6 +48,11 @@ model User {
   userProgress       UserProgress[]
   lessonCompletions  LessonCompletion[]
 
+  // Page content authoring (Phase 1 - Content Hierarchy Refactoring)
+  createdPages       Page[]          @relation("PageCreator")
+  updatedPages       Page[]          @relation("PageUpdater")
+  pageRevisions      PageRevision[]  @relation("PageRevisionChanger")
+
   @@map("users")
 }
 
@@ -334,6 +339,9 @@ model Module {
 
   // Teaching progression
   userProgress     UserProgress[]
+
+  // Phase 1: Pages belong to Module directly (will migrate to Book in Phase 2)
+  pages            Page[]
 
   @@index([levelId])
   @@index([order])
@@ -817,5 +825,186 @@ model LessonCompletion {
   @@index([userId])
   @@index([lessonId])
   @@map("lesson_completions")
+}
+
+// ============================================
+// CONTENT HIERARCHY REFACTORING - Phase 1
+// ============================================
+// New content tables that coexist with existing Lesson/Step tables.
+// Goal: Render lessons from the database instead of frontend JSON files.
+//
+// Phase 1: Page → Module (temporarily)
+// Phase 2: Page → Book (when Book model is introduced)
+// ============================================
+
+enum PageType {
+  THEORY
+  EXERCISE
+  CASE_STUDY
+  SIMULATION
+  VIDEO
+}
+
+enum ContentDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum SectionType {
+  // Semantic types (from JSON lesson sections)
+  INTRODUCTION
+  THEORY
+  CASE_STUDY
+  SUMMARY
+  EXERCISE
+  QUIZ
+  REFERENCES
+
+  // Block/format types (for future content editor)
+  TEXT
+  IMAGE
+  VIDEO
+  EQUATION
+  CALLOUT
+  CODE
+  DIVIDER
+}
+
+// ============================================
+// Page Model - Atomic learning unit (replaces Lesson conceptually)
+// ============================================
+// Phase 1: References Module directly via moduleId.
+// Phase 2: FK migrates to Book when Book model is introduced.
+//
+// MIGRATION TRACEABILITY:
+// - legacyLessonId: links to existing Lesson record (if one exists)
+// - legacyJsonId: original JSON file id (e.g. "module-01-inversion-fisiologica")
+model Page {
+  id                 String            @id @default(cuid())
+
+  // Hierarchy FK (Phase 1: Module, Phase 2: Book)
+  moduleId           String
+
+  // Identity
+  title              String
+  slug               String
+  order              Int
+  type               PageType          @default(THEORY)
+
+  // Metadata
+  description        String?           @db.Text
+  difficulty         ContentDifficulty @default(INTERMEDIATE)
+  bloomLevel         String?
+  estimatedMinutes   Int?
+
+  // Learning metadata
+  learningObjectives String[]
+  prerequisites      String[]
+  keyTakeaways       String[]
+  tags               String[]
+
+  // Completion requirements
+  hasRequiredQuiz    Boolean           @default(false)
+  minQuizScore       Float?
+
+  // Rich JSON fields (from original JSON)
+  aiConfig           Json?
+  resources          Json?
+
+  // Content versioning
+  version            Int               @default(1)
+
+  // Editorial state
+  isActive           Boolean           @default(true)
+  isPublished        Boolean           @default(false)
+
+  // Migration traceability
+  legacyLessonId     String?           @unique
+  legacyJsonId       String?           @unique
+
+  // Audit
+  createdBy          String
+  updatedBy          String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  publishedAt        DateTime?
+
+  // Relations
+  module             Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  sections           PageSection[]
+  revisions          PageRevision[]
+
+  creator            User              @relation("PageCreator", fields: [createdBy], references: [id])
+  updater            User?             @relation("PageUpdater", fields: [updatedBy], references: [id])
+
+  @@unique([moduleId, slug])
+  @@unique([moduleId, order])
+  @@index([moduleId])
+  @@index([type])
+  @@index([isActive, isPublished])
+  @@index([legacyLessonId])
+  @@map("pages")
+}
+
+// ============================================
+// PageSection Model - Block-based content within a Page
+// ============================================
+// Each section represents one content block.
+// In Phase 1, content is always { "markdown": "..." } from JSON.
+// Future editor can produce { "imageUrl": "...", "caption": "..." } etc.
+model PageSection {
+  id              String       @id @default(cuid())
+  pageId          String
+
+  order           Int
+  type            SectionType
+  title           String?
+  content         Json
+
+  // Legacy traceability
+  sectionId       String?      // Original JSON section id (e.g. "m1-intro-a")
+  estimatedTime   Int?         // Minutes
+
+  isActive        Boolean      @default(true)
+
+  // Audit
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  page            Page         @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, order])
+  @@index([pageId])
+  @@index([type])
+  @@map("page_sections")
+}
+
+// ============================================
+// PageRevision Model - Content version snapshots
+// ============================================
+// Created on each publish. Stores full snapshot for rollback.
+model PageRevision {
+  id                 String   @id @default(cuid())
+  pageId             String
+  version            Int
+
+  title              String
+  type               PageType
+  sectionsSnapshot   Json
+
+  changeLog          String?  @db.Text
+  changedBy          String
+  changedAt          DateTime @default(now())
+
+  page               Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  changer            User     @relation("PageRevisionChanger", fields: [changedBy], references: [id])
+
+  @@unique([pageId, version])
+  @@index([pageId])
+  @@map("page_revisions")
 }
 
