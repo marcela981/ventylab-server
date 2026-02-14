@@ -170,8 +170,8 @@ export async function checkLevelCompletion(
 
   const moduleIds = level.modules.map((m) => m.id);
 
-  // Get module-level progress from LearningProgress
-  const progressRecords = await prisma.learningProgress.findMany({
+  // Get module-level progress from UserProgress (unified system)
+  const progressRecords = await prisma.userProgress.findMany({
     where: {
       userId,
       moduleId: { in: moduleIds },
@@ -179,11 +179,11 @@ export async function checkLevelCompletion(
     select: {
       moduleId: true,
       completedAt: true,
-      createdAt: true,
+      startedAt: true,
     },
   });
 
-  // Count completed modules (completedAt != null)
+  // Count completed modules (isModuleCompleted or completedAt != null)
   const completedModules = progressRecords.filter((p) => p.completedAt != null).length;
   const totalModules = level.modules.length;
   const completionPercentage = totalModules > 0
@@ -193,7 +193,7 @@ export async function checkLevelCompletion(
   const isCompleted = completedModules === totalModules && totalModules > 0;
 
   const unlockedAt = progressRecords.length > 0
-    ? new Date(Math.min(...progressRecords.map((p) => p.createdAt.getTime())))
+    ? new Date(Math.min(...progressRecords.map((p) => p.startedAt.getTime())))
     : null;
 
   const completedAt = isCompleted && progressRecords.some((p) => p.completedAt != null)

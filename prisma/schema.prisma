@@ -24,7 +24,7 @@ model User {
   accounts           Account[]
   sessions           Session[]
   // progress           Progress[]           // DEPRECATED - DISABLED to prevent phantom table errors
-  learningProgress   LearningProgress[]   // ACTIVE: Module-level progress
+  // learningProgress LearningProgress[] -- REMOVED in FASE 3 migration
   quizAttempts       QuizAttempt[]
   achievements       Achievement[]
   evaluationAttempts EvaluationAttempt[]
@@ -45,6 +45,7 @@ model User {
   createdOverrides    ContentOverride[] @relation("CreatedOverrides")
 
   // Teaching progression (UserProgress + LessonCompletion)
+  // LearningProgress/LessonProgress removed after FASE 3 migration
   userProgress       UserProgress[]
   lessonCompletions  LessonCompletion[]
 
@@ -52,6 +53,9 @@ model User {
   createdPages       Page[]          @relation("PageCreator")
   updatedPages       Page[]          @relation("PageUpdater")
   pageRevisions      PageRevision[]  @relation("PageRevisionChanger")
+
+  // Page-level progress tracking (Phase 1 - replaces LessonProgress for overview)
+  pageProgress       PageProgress[]
 
   @@map("users")
 }
@@ -331,7 +335,7 @@ model Module {
 
   level            Level?               @relation(fields: [levelId], references: [id], onDelete: SetNull)
   lessons          Lesson[]
-  learningProgress LearningProgress[]   // NEW: Track progress for this module
+  // learningProgress LearningProgress[] -- REMOVED in FASE 3 migration
 
   // Relaciones de prerequisitos
   prerequisites    ModulePrerequisite[] @relation("ModulePrerequisites")
@@ -385,7 +389,7 @@ model Lesson {
   module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   quizzes        Quiz[]
   steps          Step[]           // New: Structured lesson steps (cards)
-  lessonProgress LessonProgress[] // NEW: Track progress for this lesson
+  // lessonProgress LessonProgress[] -- REMOVED in FASE 3 migration
 
   // Teaching progression validation
   hasRequiredQuiz   Boolean            @default(false)
@@ -448,142 +452,20 @@ model Step {
 }
 
 // ============================================
-// ⚠️ DEPRECATED: Old Progress System - SCHEDULED FOR REMOVAL
+// ⚠️ REMOVED: Progress model deleted in FASE 3 migration
+// The "progress" table in the DB can be dropped via:
+//   DROP TABLE IF EXISTS progress;
 // ============================================
-// STATUS: DEPRECATED - DO NOT USE
-// REPLACEMENT: LearningProgress + LessonProgress (above)
-// REMOVAL DATE: After data migration verified (see migration script)
-//
-// WHY DEPRECATED:
-// 1. Conflicting with new LearningProgress system
-// 2. User relation disabled (orphaned data)
-// 3. Mixed module/lesson tracking causes ambiguity
-// 4. Frontend cannot reliably determine which system to use
-//
-// MIGRATION STRATEGY:
-// 1. All new code uses LearningProgress + LessonProgress
-// 2. Run migration script to copy valid data to new tables
-// 3. Verify data integrity
-// 4. Delete this model and run prisma migrate
-//
-// SAFE REMOVAL CHECKLIST:
-// [ ] All backend services use new progress system
-// [ ] No API endpoints reference Progress model
-// [ ] Migration script has been run
-// [ ] Data integrity verified in production
-// [ ] This model can then be deleted
-//
-// DO NOT add new code that references this model.
-model Progress {
-  id                   String    @id @default(cuid())
-  userId               String
-  moduleId             String?
-  lessonId             String?
-  currentStep          Int       @default(0)
-  totalSteps           Int       @default(1)
-  completed            Boolean   @default(false)
-  completionPercentage Float     @default(0)
-  progress             Float     @default(0)
-  timeSpent            Int       @default(0)
-  scrollPosition       Float?
-  lastViewedSection    String?
-  lastAccess           DateTime?
-  completedAt          DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  // ⚠️ RELATION DISABLED - This model is orphaned from User
-  // user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId], name: "progress_user_lesson_unique")
-  @@unique([userId, moduleId], name: "progress_user_module_unique")
-  @@index([userId])
-  @@index([lessonId])
-  @@index([moduleId])
-  @@map("progress")
-}
 
 // ============================================
-// NEW Progress System - Learning Progress (Module Level)
+// REMOVED: LearningProgress + LessonProgress (FASE 3 migration)
 // ============================================
-// Represents overall progress for a user within a module.
-// This is the parent table - ONE record per user per module.
-//
-// RESUME STRATEGY:
-// - lastAccessedLessonId: The lesson to resume when user clicks "Continue"
-// - lastAccessedAt: When user last interacted with this module
-// - The actual step position is stored in the child LessonProgress record
-//
-// SINGLE SOURCE OF TRUTH:
-// - Frontend MUST call GET /api/progress/resume/:moduleId to get resume state
-// - Frontend MUST NOT guess or infer progress from UI state
-model LearningProgress {
-  id                   String    @id @default(cuid())
-  userId               String
-  moduleId             String
-  lastAccessedLessonId String?   // 👈 NEW: Lesson to resume (FK-like, not enforced for flexibility)
-  lastAccessedAt       DateTime? // 👈 NEW: When user last accessed this module
-  timeSpent            Int       @default(0) // Total time in seconds across all lessons
-  score                Float?    // Optional score/grade for the module
-  completedAt          DateTime? // When all lessons were completed
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  // Relations
-  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module  Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  lessons LessonProgress[]
-
-  // Constraints: ONE progress record per user per module
-  @@unique([userId, moduleId])
-  @@index([userId])
-  @@index([moduleId])
-  @@index([lastAccessedLessonId])
-  @@index([lastAccessedAt])
-  @@map("learning_progress")
-}
-
+// These models were replaced by:
+//   - UserProgress (module-level progress)
+//   - LessonCompletion (lesson-level progress with step tracking)
+// DB tables learning_progress and lesson_progress can be dropped after
+// verifying data was fully migrated via prisma/migrations/migrate-progress-data.ts
 // ============================================
-// NEW Progress System - Lesson Progress (Lesson Level)
-// ============================================
-// Represents progress for individual lessons within a module.
-// This is the child table - ONE record per LearningProgress per Lesson.
-//
-// STEP-LEVEL TRACKING:
-// - currentStepIndex: 0-based index of the step user is currently on
-// - totalSteps: Total number of steps in this lesson (cached for fast resume)
-//
-// COMPLETION LOGIC:
-// - Lesson is complete when: completed === true
-// - Auto-complete when: currentStepIndex >= totalSteps - 1 AND user clicks "complete"
-// - NEVER auto-complete based solely on step index (user must confirm)
-//
-// RESUME CONTRACT:
-// - On resume, frontend navigates to lessonId at currentStepIndex
-// - currentStepIndex is updated on EVERY step navigation
-model LessonProgress {
-  id               String    @id @default(cuid())
-  progressId       String    // FK to LearningProgress
-  lessonId         String
-  currentStepIndex Int       @default(0)    // 👈 NEW: 0-based step index for resume
-  totalSteps       Int       @default(1)    // 👈 NEW: Total steps in lesson (cached)
-  completed        Boolean   @default(false)
-  timeSpent        Int       @default(0)    // Time spent in seconds
-  lastAccessed     DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  // Relations
-  learningProgress LearningProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
-  lesson           Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  // Constraints: ONE progress record per lesson per learning progress
-  @@unique([progressId, lessonId])
-  @@index([progressId])
-  @@index([lessonId])
-  @@index([completed])
-  @@map("lesson_progress")
-}
 
 model Quiz {
   id          String   @id @default(cuid())
@@ -772,11 +654,15 @@ model UserProgress {
 
   // Module status
   status                ProgressStatus @default(NOT_STARTED)
+  isModuleCompleted     Boolean        @default(false) // Denormalized flag for quick lookups
 
   // Denormalized counters (recalculated on each lesson completion)
   completedLessonsCount Int            @default(0)
   totalLessons          Int            @default(0)
   progressPercentage    Float          @default(0) // 0-100
+
+  // Time tracking (migrated from LearningProgress)
+  timeSpent             Int            @default(0) // Total time in seconds
 
   // Navigation
   lastAccessedLessonId  String?
@@ -795,6 +681,7 @@ model UserProgress {
   @@index([userId])
   @@index([moduleId])
   @@index([status])
+  @@index([isModuleCompleted])
   @@map("user_progress")
 }
 
@@ -802,6 +689,15 @@ model LessonCompletion {
   id              String   @id @default(cuid())
   userId          String
   lessonId        String
+
+  // Step-level tracking (migrated from LessonProgress — for resume)
+  currentStepIndex Int      @default(0)   // 0-based last viewed step
+  totalSteps       Int      @default(1)   // Total steps in lesson (cached)
+  timeSpent        Int      @default(0)   // Time spent in seconds
+  lastAccessed     DateTime?              // Last access time
+
+  // Explicit completion flag (null completedAt = in-progress)
+  isCompleted      Boolean  @default(false)
 
   // Quiz tracking (if lesson.hasRequiredQuiz = true)
   quizAttempts    Int      @default(0)
@@ -813,8 +709,8 @@ model LessonCompletion {
   bestCaseScore   Float?   // 0-100
   lastCaseScore   Float?
 
-  // Timestamps
-  completedAt     DateTime @default(now())
+  // Timestamps — nullable: null = in-progress, set = completed
+  completedAt     DateTime?
   updatedAt       DateTime @updatedAt
 
   // Relations
@@ -824,6 +720,8 @@ model LessonCompletion {
   @@unique([userId, lessonId])
   @@index([userId])
   @@index([lessonId])
+  @@index([isCompleted])
+  @@index([lastAccessed])
   @@map("lesson_completions")
 }
 
@@ -934,6 +832,7 @@ model Page {
   module             Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   sections           PageSection[]
   revisions          PageRevision[]
+  progress           PageProgress[]
 
   creator            User              @relation("PageCreator", fields: [createdBy], references: [id])
   updater            User?             @relation("PageUpdater", fields: [updatedBy], references: [id])
@@ -1006,5 +905,37 @@ model PageRevision {
   @@unique([pageId, version])
   @@index([pageId])
   @@map("page_revisions")
+}
+
+// ============================================
+// PageProgress Model - Per-Page progress tracking
+// ============================================
+// Tracks completion and XP per page per user.
+// This is the SINGLE SOURCE OF TRUTH for the progress overview.
+//
+// Replaces the old LessonProgress-based overview which required
+// the Lesson model and produced empty results for new users.
+model PageProgress {
+  id            String    @id @default(cuid())
+  userId        String
+  pageId        String
+
+  completed     Boolean   @default(false)
+  xpEarned      Int       @default(0)
+  lastVisitedAt DateTime?
+  completedAt   DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pageId])
+  @@index([userId])
+  @@index([pageId])
+  @@index([completed])
+  @@map("page_progress")
 }
 

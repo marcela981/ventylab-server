@@ -1,7 +1,6 @@
 /**
- * LEGACY Progress Service - delegates to LearningProgress / LessonProgress only.
- * Do NOT use the legacy Progress model. All operations use learningProgress.service or direct
- * prisma.learningProgress / prisma.lessonProgress.
+ * Progress Service - delegates to learningProgress.service.
+ * All operations use UserProgress + LessonCompletion (FASE 3 migration complete).
  */
 
 import * as learningProgressService from './progress/learningProgress.service';
@@ -25,6 +24,34 @@ interface ProgressResponse {
   timeSpent: number;
   lastAccess: Date | null;
   completedAt: Date | null;
+}
+
+interface UserProgressOverviewResponse {
+  overview: {
+    completedLessons: number;
+    totalLessons: number;
+    modulesCompleted: number;
+    totalModules: number;
+    xpTotal: number;
+    level: number;
+    nextLevelXp: number;
+    streakDays: number;
+    calendar: any[];
+  };
+  modules: Array<{
+    moduleId: string;
+    moduleTitle: string;
+    completedLessons: number;
+    totalLessons: number;
+    timeSpent: number;
+    completedAt: Date | null;
+    lastAccessed: Date | null;
+  }>;
+  lessons: Array<{
+    lessonId: string;
+    progress: number;
+    updatedAt: string;
+  }>;
 }
 
 async function resolveModuleId(lessonId: string): Promise<string> {
@@ -61,10 +88,9 @@ export async function getLessonProgress(
 }
 
 export async function getUserProgress(userId: string) {
-  const overview = await learningProgressService.getUserProgressOverview(userId);
-  const progresses = overview.flatMap((o) => []);
+  const progress: UserProgressOverviewResponse = await learningProgressService.getUserProgressOverview(userId);
   const byModule: Record<string, { lessons: ProgressResponse[]; completedCount: number; totalTimeSpent: number }> = {};
-  for (const o of overview) {
+  for (const o of progress.modules) {
     const mod = await learningProgressService.getModuleProgress(userId, o.moduleId);
     byModule[o.moduleId] = {
       lessons: mod.lessons.map((l) => ({

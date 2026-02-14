@@ -427,7 +427,7 @@ export const canDeleteLevel = async (levelId: string): Promise<CanDeleteResult> 
 
   if (level && level.modules.length > 0) {
     const moduleIds = level.modules.map((m) => m.id);
-    const progressCount = await prisma.learningProgress.count({
+    const progressCount = await prisma.userProgress.count({
       where: {
         moduleId: { in: moduleIds },
       },

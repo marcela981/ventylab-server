@@ -99,21 +99,15 @@ export async function checkAchievementCondition(
   try {
     switch (condition.type) {
       case 'lessons_completed': {
-        const count = await prisma.lessonProgress.count({
-          where: {
-            learningProgress: { userId },
-            completed: true,
-          },
+        const count = await prisma.lessonCompletion.count({
+          where: { userId, isCompleted: true },
         });
         return count >= condition.value;
       }
 
       case 'modules_completed': {
-        const count = await prisma.learningProgress.count({
-          where: {
-            userId,
-            completedAt: { not: null },
-          },
+        const count = await prisma.userProgress.count({
+          where: { userId, isModuleCompleted: true },
         });
         return count >= condition.value;
       }
@@ -364,21 +358,15 @@ async function getAchievementProgress(
 
     switch (condition.type) {
       case 'lessons_completed': {
-        current = await prisma.lessonProgress.count({
-          where: {
-            learningProgress: { userId },
-            completed: true,
-          },
+        current = await prisma.lessonCompletion.count({
+          where: { userId, isCompleted: true },
         });
         break;
       }
 
       case 'modules_completed': {
-        current = await prisma.learningProgress.count({
-          where: {
-            userId,
-            completedAt: { not: null },
-          },
+        current = await prisma.userProgress.count({
+          where: { userId, isModuleCompleted: true },
         });
         break;
       }

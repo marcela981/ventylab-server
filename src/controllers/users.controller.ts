@@ -29,22 +29,14 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     // Construir objeto include dinámicamente
     const include: any = {};
     if (includeProgress) {
-      include.learningProgress = {
+      include.userProgress = {
         take: 10, // Limitar a los últimos 10
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { lastAccessedAt: 'desc' },
         include: {
           module: {
             select: {
               id: true,
               title: true,
-            },
-          },
-          lessons: {
-            select: {
-              id: true,
-              lessonId: true,
-              completed: true,
-              timeSpent: true,
             },
           },
         },
@@ -69,7 +61,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
         emailVerified: true,
         createdAt: true,
         updatedAt: true,
-        ...(includeProgress && { learningProgress: include.learningProgress }),
+        ...(includeProgress && { userProgress: include.userProgress }),
         ...(includeAchievements && { achievements: include.achievements }),
         // Excluir password explícitamente
         password: false,
@@ -426,17 +418,11 @@ export const getUserStats = async (req: Request, res: Response) => {
       });
     }
 
-    // Obtener estadísticas agregadas usando learning_progress
-    const [learningProgress, totalAchievements, totalQuizAttempts, averageScore] = await Promise.all([
-      prisma.learningProgress.findMany({
+    // Obtener estadísticas agregadas usando LessonCompletion (replaces LearningProgress)
+    const [lessonCompletions, totalAchievements, totalQuizAttempts, averageScore] = await Promise.all([
+      prisma.lessonCompletion.findMany({
         where: { userId },
-        include: {
-          lessons: {
-            select: {
-              completed: true,
-            },
-          },
-        },
+        select: { isCompleted: true },
       }),
       prisma.achievement.count({
         where: { userId },
@@ -452,12 +438,9 @@ export const getUserStats = async (req: Request, res: Response) => {
       }),
     ]);
 
-    // Calculate totals from learning progress
-    const totalProgress = learningProgress.reduce((sum, lp) => sum + lp.lessons.length, 0);
-    const completedProgress = learningProgress.reduce(
-      (sum, lp) => sum + lp.lessons.filter((l) => l.completed).length,
-      0
-    );
+    // Calculate totals from lesson completions
+    const totalProgress = lessonCompletions.length;
+    const completedProgress = lessonCompletions.filter((l) => l.isCompleted).length;
 
     const stats = {
       progress: {
@@ -539,15 +522,11 @@ export const getAllStudents = async (req: Request, res: Response) => {
         role: true,
         createdAt: true,
         updatedAt: true,
-        learningProgress: {
+        lessonCompletions: {
           select: {
-            lessons: {
-              select: {
-                completed: true,
-                timeSpent: true,
-                lastAccessed: true,
-              },
-            },
+            isCompleted: true,
+            timeSpent: true,
+            lastAccessed: true,
           },
         },
       },
@@ -558,10 +537,10 @@ export const getAllStudents = async (req: Request, res: Response) => {
 
     // Compute aggregated progress for each student
     const studentsWithStats = students.map((student) => {
-      const allLessons = student.learningProgress.flatMap((lp) => lp.lessons);
-      const completedLessons = allLessons.filter((l) => l.completed).length;
-      const totalTimeSpent = allLessons.reduce((acc, l) => acc + l.timeSpent, 0);
-      const lastAccess = allLessons.reduce(
+      const completions = student.lessonCompletions;
+      const completedLessons = completions.filter((l) => l.isCompleted).length;
+      const totalTimeSpent = completions.reduce((acc, l) => acc + l.timeSpent, 0);
+      const lastAccess = completions.reduce(
         (latest: Date | null, l) => {
           if (!l.lastAccessed) return latest;
           if (!latest) return l.lastAccessed;
@@ -571,18 +550,18 @@ export const getAllStudents = async (req: Request, res: Response) => {
       );
 
       // Remove raw progress data, replace with aggregated stats
-      const { learningProgress, ...studentData } = student;
+      const { lessonCompletions, ...studentData } = student;
 
       return {
         ...studentData,
         stats: {
           completedLessons,
-          totalLessons: allLessons.length,
+          totalLessons: completions.length,
           totalTimeSpent,
           lastAccess,
           progressPercentage:
-            allLessons.length > 0
-              ? Math.round((completedLessons / allLessons.length) * 100)
+            completions.length > 0
+              ? Math.round((completedLessons / completions.length) * 100)
               : 0,
         },
       };
@@ -674,24 +653,15 @@ export const getStudentById = async (req: Request, res: Response) => {
       }
     }
 
-    // Get aggregated progress from learning_progress
-    const learningProgress = await prisma.learningProgress.findMany({
+    // Get aggregated progress from LessonCompletion (replaces LearningProgress)
+    const lessonCompletions = await prisma.lessonCompletion.findMany({
       where: { userId: id },
-      include: {
-        lessons: {
-          select: {
-            completed: true,
-            timeSpent: true,
-            lastAccessed: true,
-          },
-        },
-      },
+      select: { isCompleted: true, timeSpent: true, lastAccessed: true },
     });
 
-    const allLessons = learningProgress.flatMap((lp) => lp.lessons);
-    const completedLessons = allLessons.filter((l) => l.completed).length;
-    const totalTimeSpent = allLessons.reduce((acc, l) => acc + l.timeSpent, 0);
-    const lastAccess = allLessons.reduce(
+    const completedLessons = lessonCompletions.filter((l) => l.isCompleted).length;
+    const totalTimeSpent = lessonCompletions.reduce((acc, l) => acc + l.timeSpent, 0);
+    const lastAccess = lessonCompletions.reduce(
       (latest: Date | null, l) => {
         if (!l.lastAccessed) return latest;
         if (!latest) return l.lastAccessed;
@@ -705,12 +675,12 @@ export const getStudentById = async (req: Request, res: Response) => {
         ...student,
         stats: {
           completedLessons,
-          totalLessons: allLessons.length,
+          totalLessons: lessonCompletions.length,
           totalTimeSpent,
           lastAccess,
           progressPercentage:
-            allLessons.length > 0
-              ? Math.round((completedLessons / allLessons.length) * 100)
+            lessonCompletions.length > 0
+              ? Math.round((completedLessons / lessonCompletions.length) * 100)
               : 0,
         },
       },

@@ -1,1 +1,4 @@
-export { AppError } from '../middleware/errorHandler';
+/**
+ * @deprecated Import from '../shared/utils/errors' instead
+ */
+export { AppError } from '../shared/utils/errors';

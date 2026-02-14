@@ -18,6 +18,7 @@
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/errorHandler';
 import { HTTP_STATUS, ERROR_CODES, PAGINATION } from '../../config/constants';
+import { getColorForDifficulty } from '../../config/levelColors';
 import { logChange, getDiff } from '../changelog';
 import { canDeleteLevel as canDeleteLevelPrereq } from '../levelPrerequisites';
 
@@ -82,7 +83,7 @@ export const getAllLevels = async (
       where.isActive = true;
     }
 
-    const [levels, total] = await Promise.all([
+    const [levelsRaw, total] = await Promise.all([
       prisma.level.findMany({
         where,
         skip,
@@ -94,10 +95,23 @@ export const getAllLevels = async (
               modules: true,
             },
           },
+          modules: {
+            take: 1,
+            orderBy: { order: 'asc' },
+            select: { difficulty: true },
+          },
         },
       }),
       prisma.level.count({ where }),
     ]);
+
+    const levels = levelsRaw.map((level) => {
+      const firstModule = level.modules?.[0];
+      const difficulty = firstModule?.difficulty ?? null;
+      const color = getColorForDifficulty(difficulty);
+      const { modules: _modules, ...levelRest } = level;
+      return { ...levelRest, color };
+    });
 
     return {
       levels,
@@ -165,7 +179,9 @@ export const getLevelById = async (levelId: string): Promise<any> => {
       );
     }
 
-    return level;
+    const firstModule = level.modules?.[0];
+    const color = getColorForDifficulty(firstModule?.difficulty ?? null);
+    return { ...level, color };
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
@@ -585,7 +601,10 @@ export const getLevelModules = async (
       },
     });
 
-    return modules;
+    return modules.map((m) => ({
+      ...m,
+      levelColor: getColorForDifficulty(m.difficulty),
+    }));
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
@@ -670,15 +689,25 @@ export const reorderLevels = async (
       });
     }
 
-    // Return updated levels
-    return await prisma.level.findMany({
+    // Return updated levels with color
+    const reordered = await prisma.level.findMany({
       where: { id: { in: levelIds } },
       orderBy: { order: 'asc' },
       include: {
         _count: {
           select: { modules: true },
         },
+        modules: {
+          take: 1,
+          orderBy: { order: 'asc' },
+          select: { difficulty: true },
+        },
       },
+    });
+    return reordered.map((level) => {
+      const difficulty = level.modules?.[0]?.difficulty ?? null;
+      const { modules: _m, ...rest } = level;
+      return { ...rest, color: getColorForDifficulty(difficulty) };
     });
   } catch (error) {
     if (error instanceof AppError) {

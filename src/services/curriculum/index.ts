@@ -7,6 +7,7 @@
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../utils/errors';
 import { HTTP_STATUS, ERROR_CODES } from '../../config/constants';
+import { getColorForDifficulty } from '../../config/levelColors';
 import {
   CURRICULUM_LEVELS,
   CurriculumLevel,
@@ -40,6 +41,7 @@ export interface CurriculumModuleWithProgress extends CurriculumModule {
 
 export interface CurriculumLevelResponse {
   level: CurriculumLevel;
+  levelColor: string;
   modules: CurriculumModuleWithProgress[];
   totalModules: number;
   completedModules: number;
@@ -75,7 +77,7 @@ export async function getBeginnerCurriculumModules(
     // Fetch user progress from LearningProgress if userId provided
     let progressMap = new Map<string, { completedAt: Date | null; timeSpent: number }>();
     if (userId) {
-      const progressRecords = await prisma.learningProgress.findMany({
+      const progressRecords = await prisma.userProgress.findMany({
         where: {
           userId,
           moduleId: { in: beginnerModuleIds },
@@ -124,6 +126,7 @@ export async function getBeginnerCurriculumModules(
 
     return {
       level: CURRICULUM_LEVELS.BEGINNER,
+      levelColor: getColorForDifficulty(CURRICULUM_LEVELS.BEGINNER),
       modules,
       totalModules: modules.length,
       completedModules,
@@ -166,7 +169,7 @@ export async function getPrerequisitosModules(
 
     let progressMap = new Map<string, { completedAt: Date | null; timeSpent: number }>();
     if (userId) {
-      const progressRecords = await prisma.learningProgress.findMany({
+      const progressRecords = await prisma.userProgress.findMany({
         where: {
           userId,
           moduleId: { in: prereqModuleIds },
@@ -207,6 +210,7 @@ export async function getPrerequisitosModules(
 
     return {
       level: CURRICULUM_LEVELS.PREREQUISITOS,
+      levelColor: getColorForDifficulty(CURRICULUM_LEVELS.PREREQUISITOS),
       modules,
       totalModules: modules.length,
       completedModules,
@@ -264,7 +268,7 @@ async function getDatabaseModulesByLevel(
     let progressMap = new Map<string, { completedAt: Date | null; timeSpent: number }>();
     if (userId && dbModules.length > 0) {
       const moduleIds = dbModules.map((m) => m.id);
-      const progressRecords = await prisma.learningProgress.findMany({
+      const progressRecords = await prisma.userProgress.findMany({
         where: {
           userId,
           moduleId: { in: moduleIds },
@@ -314,6 +318,7 @@ async function getDatabaseModulesByLevel(
 
     return {
       level,
+      levelColor: getColorForDifficulty(level),
       modules,
       totalModules: modules.length,
       completedModules,
@@ -357,7 +362,7 @@ export async function isModuleUnlocked(
       return true; // No previous module means unlocked
     }
 
-    const previousProgress = await prisma.learningProgress.findUnique({
+    const previousProgress = await prisma.userProgress.findUnique({
       where: {
         userId_moduleId: { userId, moduleId: previousModule.id },
       },
@@ -399,7 +404,7 @@ export async function isModuleUnlocked(
   }
 
   const prereqIds = relevantPrereqs.map((p) => p.prerequisiteId);
-  const completedPrereqs = await prisma.learningProgress.count({
+  const completedPrereqs = await prisma.userProgress.count({
     where: {
       userId,
       moduleId: { in: prereqIds },

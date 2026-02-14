@@ -12,7 +12,7 @@
  *
  * TRANSACTION SAFETY:
  * - All writes use prisma.$transaction for atomicity
- * - Timeout: 10s (accounts for Neon cold starts)
+ * - Timeout: 10s
  * - MaxWait: 5s (queue wait before timeout)
  *
  * All reads filter by isActive to exclude deactivated content.
@@ -267,6 +267,7 @@ async function recalculateModuleProgress(
       userId,
       moduleId,
       status,
+      isModuleCompleted: moduleCompleted,
       completedLessonsCount,
       totalLessons,
       progressPercentage,
@@ -275,6 +276,7 @@ async function recalculateModuleProgress(
     },
     update: {
       status,
+      isModuleCompleted: moduleCompleted,
       completedLessonsCount,
       totalLessons,
       progressPercentage,

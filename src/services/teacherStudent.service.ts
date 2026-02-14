@@ -241,15 +241,11 @@ export async function getTeacherStudents(
           name: true,
           email: true,
           ...(includeProgress && {
-            learningProgress: {
-              include: {
-                lessons: {
-                  select: {
-                    completed: true,
-                    timeSpent: true,
-                    lastAccessed: true,
-                  },
-                },
+            lessonCompletions: {
+              select: {
+                isCompleted: true,
+                timeSpent: true,
+                lastAccessed: true,
               },
             },
           }),
@@ -268,22 +264,19 @@ export async function getTeacherStudents(
     };
 
     // Add progress data if requested
-    if (includeProgress && 'learningProgress' in rel.student) {
+    if (includeProgress && 'lessonCompletions' in rel.student) {
       // Cast through unknown due to conditional include type inference limitations
-      const learningProgress = (rel.student as unknown as {
-        learningProgress: Array<{
-          lessons: Array<{
-            completed: boolean;
-            timeSpent: number;
-            lastAccessed: Date | null;
-          }>;
+      const lessonCompletions = (rel.student as unknown as {
+        lessonCompletions: Array<{
+          isCompleted: boolean;
+          timeSpent: number;
+          lastAccessed: Date | null;
         }>;
-      }).learningProgress;
+      }).lessonCompletions;
 
-      const allLessons = learningProgress.flatMap((lp) => lp.lessons);
-      const completedLessons = allLessons.filter((l) => l.completed).length;
-      const totalTimeSpent = allLessons.reduce((acc, l) => acc + l.timeSpent, 0);
-      const lastAccess = allLessons.reduce(
+      const completedLessons = lessonCompletions.filter((l) => l.isCompleted).length;
+      const totalTimeSpent = lessonCompletions.reduce((acc, l) => acc + l.timeSpent, 0);
+      const lastAccess = lessonCompletions.reduce(
         (latest: Date | null, l) => {
           if (!l.lastAccessed) return latest;
           if (!latest) return l.lastAccessed;
@@ -402,8 +395,8 @@ export async function getStudentDetailedProgress(studentId: string): Promise<{
     throw new Error('El usuario especificado no es un estudiante');
   }
 
-  // Get all learning progress records for this student
-  const learningProgress = await prisma.learningProgress.findMany({
+  // Get all UserProgress records for this student (replaces LearningProgress)
+  const userProgressRecords = await prisma.userProgress.findMany({
     where: { userId: studentId },
     include: {
       module: {
@@ -416,22 +409,23 @@ export async function getStudentDetailedProgress(studentId: string): Promise<{
           },
         },
       },
-      lessons: {
-        select: {
-          lessonId: true,
-          completed: true,
-          timeSpent: true,
-          lastAccessed: true,
-        },
-      },
     },
   });
 
+  // Get all LessonCompletion records for this student (replaces LessonProgress)
+  const allCompletions = await prisma.lessonCompletion.findMany({
+    where: { userId: studentId },
+    select: { lessonId: true, isCompleted: true, timeSpent: true, lastAccessed: true },
+  });
+  const completionByLesson = new Map(allCompletions.map((c) => [c.lessonId, c]));
+
   // Build progress by module
-  const moduleProgress = learningProgress.map((lp) => {
-    const completedLessons = lp.lessons.filter((l) => l.completed).length;
-    const totalTimeSpent = lp.lessons.reduce((acc, l) => acc + l.timeSpent, 0);
-    const lastAccess = lp.lessons.reduce(
+  const moduleProgress = userProgressRecords.map((up) => {
+    const moduleLessonIds = new Set(up.module.lessons.map((l) => l.id));
+    const moduleCompletions = allCompletions.filter((c) => moduleLessonIds.has(c.lessonId));
+    const completedLessons = moduleCompletions.filter((l) => l.isCompleted).length;
+    const totalTimeSpent = moduleCompletions.reduce((acc, l) => acc + l.timeSpent, 0);
+    const lastAccess = moduleCompletions.reduce(
       (latest: Date | null, l) => {
         if (!l.lastAccessed) return latest;
         if (!latest) return l.lastAccessed;
@@ -440,13 +434,13 @@ export async function getStudentDetailedProgress(studentId: string): Promise<{
       null as Date | null
     );
 
-    const totalLessons = lp.module.lessons.length;
+    const totalLessons = up.module.lessons.length;
     const completionPercentage =
       totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
     return {
-      moduleId: lp.module.id,
-      moduleTitle: lp.module.title,
+      moduleId: up.module.id,
+      moduleTitle: up.module.title,
       completionPercentage,
       completedLessons,
       totalLessons,
@@ -456,10 +450,9 @@ export async function getStudentDetailedProgress(studentId: string): Promise<{
   });
 
   // Calculate overall progress
-  const allLessons = learningProgress.flatMap((lp) => lp.lessons);
-  const totalCompletedLessons = allLessons.filter((l) => l.completed).length;
-  const totalTimeSpent = allLessons.reduce((acc, l) => acc + l.timeSpent, 0);
-  const lastAccess = allLessons.reduce(
+  const totalCompletedLessons = allCompletions.filter((l) => l.isCompleted).length;
+  const totalTimeSpent = allCompletions.reduce((acc, l) => acc + l.timeSpent, 0);
+  const lastAccess = allCompletions.reduce(
     (latest: Date | null, l) => {
       if (!l.lastAccessed) return latest;
       if (!latest) return l.lastAccessed;

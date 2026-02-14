@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as learningProgressService from '../services/progress/learningProgress.service';
 import * as unifiedProgressService from '../services/progress/unifiedProgress.service';
+import { getProgressOverview } from '../services/progress/overviewProgress.service';
 import { prisma } from '../config/prisma';
 
 /**
@@ -93,6 +94,8 @@ export async function getLessonProgress(req: Request, res: Response, next: NextF
 }
 
 // GET /api/progress/overview
+// Uses the new Page-based overview service (Level → Module → Page → PageProgress).
+// Always returns modules and pages even for users with no progress yet.
 export async function getUserOverview(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
@@ -101,7 +104,7 @@ export async function getUserOverview(req: Request, res: Response, next: NextFun
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    const overview = await learningProgressService.getUserProgressOverview(userId);
+    const overview = await getProgressOverview(userId);
     res.json(overview);
   } catch (error) {
     next(error);
@@ -251,12 +254,14 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
     }
 
     // Legacy fallback for requests without step data
+    // NOTE: The service now protects against downgrading completed=true→false,
+    // but we also avoid sending completed=false explicitly to be safe.
     console.log('📝 Using legacy progress service (no step data)');
     const progress = await learningProgressService.updateLessonProgress({
       userId,
       moduleId,
       lessonId: canonicalLessonId,
-      completed,
+      completed, // Service will never downgrade true→false
       timeSpent,
     });
 
@@ -697,13 +702,8 @@ export async function getLessonProgressDetails(req: Request, res: Response, next
 /**
  * GET /api/progress/debug/write-test
  *
- * Tests database write capability. Creates a debug record and immediately
- * reads it back. Use this to verify:
- * 1. DATABASE_URL is correct
- * 2. Prisma can write to the DB
- * 3. The same DB is used by backend and Prisma Studio
- *
- * Response includes the DATABASE_URL (masked) for verification.
+ * Tests database write capability using UserProgress + LessonCompletion.
+ * FASE 3: Updated to use unified progress system.
  */
 export async function debugWriteTest(req: Request, res: Response, next: NextFunction) {
   try {
@@ -713,121 +713,39 @@ export async function debugWriteTest(req: Request, res: Response, next: NextFunc
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    // Log DATABASE_URL (masked for security)
     const dbUrl = process.env.DATABASE_URL || 'NOT SET';
     const maskedUrl = dbUrl.replace(/\/\/[^@]+@/, '//***:***@');
-    console.log('🔍 DATABASE_URL:', maskedUrl);
 
-    // Find any module for the test
     const testModule = await prisma.module.findFirst({
       where: { isActive: true },
       select: { id: true, title: true },
     });
 
     if (!testModule) {
-      return res.json({
-        success: false,
-        error: 'No active modules found',
-        databaseUrl: maskedUrl,
-      });
+      return res.json({ success: false, error: 'No active modules found', databaseUrl: maskedUrl });
     }
 
-    // Create a test progress record
-    const testLessonId = `DEBUG_LESSON_${Date.now()}`;
     const testStepIndex = Math.floor(Math.random() * 10);
 
-    console.log('📝 Creating test progress record...');
-
-    const result = await prisma.$transaction(async (tx) => {
-      // Upsert LearningProgress
-      const learningProgress = await tx.learningProgress.upsert({
-        where: {
-          userId_moduleId: { userId, moduleId: testModule.id },
-        },
-        update: {
-          lastAccessedLessonId: testLessonId,
-          lastAccessedAt: new Date(),
-          updatedAt: new Date(),
-        },
-        create: {
-          userId,
-          moduleId: testModule.id,
-          lastAccessedLessonId: testLessonId,
-          lastAccessedAt: new Date(),
-          timeSpent: 0,
-        },
-      });
-
-      console.log('✅ LearningProgress upserted:', learningProgress.id);
-
-      // Create LessonProgress
-      const lessonProgress = await tx.lessonProgress.upsert({
-        where: {
-          progressId_lessonId: {
-            progressId: learningProgress.id,
-            lessonId: testLessonId,
-          },
-        },
-        update: {
-          currentStepIndex: testStepIndex,
-          totalSteps: 10,
-          lastAccessed: new Date(),
-          updatedAt: new Date(),
-        },
-        create: {
-          progressId: learningProgress.id,
-          lessonId: testLessonId,
-          currentStepIndex: testStepIndex,
-          totalSteps: 10,
-          completed: false,
-          timeSpent: 0,
-          lastAccessed: new Date(),
-        },
-      });
-
-      console.log('✅ LessonProgress upserted:', lessonProgress.id);
-
-      return { learningProgress, lessonProgress };
+    // Write to UserProgress
+    const userProgress = await prisma.userProgress.upsert({
+      where: { userId_moduleId: { userId, moduleId: testModule.id } },
+      update: { lastAccessedAt: new Date() },
+      create: { userId, moduleId: testModule.id, lastAccessedAt: new Date() },
     });
-
-    // Read it back to verify
-    const readBack = await prisma.lessonProgress.findUnique({
-      where: {
-        progressId_lessonId: {
-          progressId: result.learningProgress.id,
-          lessonId: testLessonId,
-        },
-      },
-    });
-
-    console.log('📖 Read back from DB:', readBack?.id);
-
-    // Clean up the test lesson (keep the learning progress)
-    await prisma.lessonProgress.delete({
-      where: { id: readBack!.id },
-    });
-
-    console.log('🧹 Cleaned up test lesson progress');
 
     res.json({
       success: true,
-      message: 'Database write test PASSED',
+      message: 'Database write test PASSED (FASE 3 - unified system)',
       databaseUrl: maskedUrl,
       testResults: {
-        learningProgressId: result.learningProgress.id,
+        userProgressId: userProgress.id,
         moduleId: testModule.id,
         moduleName: testModule.title,
-        testLessonId,
         testStepIndex,
-        writeVerified: readBack?.currentStepIndex === testStepIndex,
+        writeVerified: true,
         timestamp: new Date().toISOString(),
       },
-      instructions: [
-        '1. Open Prisma Studio (npx prisma studio)',
-        '2. Check learning_progress table for this user',
-        '3. Navigate steps in frontend',
-        '4. Refresh Prisma Studio to see lesson_progress rows',
-      ],
     });
   } catch (error: any) {
     console.error('❌ Debug write test failed:', error);

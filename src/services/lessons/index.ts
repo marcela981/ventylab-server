@@ -104,7 +104,7 @@ const validateModuleAccess = async (moduleId: string, userId: string): Promise<b
       return true; // No previous module means unlocked
     }
 
-    const previousProgress = await prisma.learningProgress.findUnique({
+    const previousProgress = await prisma.userProgress.findUnique({
       where: {
         userId_moduleId: { userId, moduleId: previousModule.id },
       },
@@ -143,13 +143,14 @@ const validateModuleAccess = async (moduleId: string, userId: string): Promise<b
       continue;
     }
 
-    const progress = await prisma.learningProgress.findUnique({
+    const progress = await prisma.userProgress.findUnique({
       where: {
         userId_moduleId: {
           userId,
           moduleId: prereq.prerequisiteId,
         },
       },
+      select: { completedAt: true },
     });
 
     // User must have completed the prerequisite module
@@ -219,34 +220,16 @@ export const getLessonById = async (
       select: { role: true },
     });
 
-    // Get or create learning progress for this module
-    let learningProgress = await prisma.learningProgress.findUnique({
-      where: {
-        userId_moduleId: {
-          userId,
-          moduleId: lesson.moduleId,
-        },
-      },
+    // Ensure UserProgress record exists for this module (creates if missing)
+    await prisma.userProgress.upsert({
+      where: { userId_moduleId: { userId, moduleId: lesson.moduleId } },
+      update: { lastAccessedAt: new Date() },
+      create: { userId, moduleId: lesson.moduleId, timeSpent: 0 },
     });
 
-    if (!learningProgress) {
-      learningProgress = await prisma.learningProgress.create({
-        data: {
-          userId,
-          moduleId: lesson.moduleId,
-          timeSpent: 0,
-        },
-      });
-    }
-
-    // Get user progress for this lesson
-    const progress = await prisma.lessonProgress.findUnique({
-      where: {
-        progressId_lessonId: {
-          progressId: learningProgress.id,
-          lessonId,
-        },
-      },
+    // Get user progress for this lesson (LessonCompletion replaces LessonProgress)
+    const progress = await prisma.lessonCompletion.findUnique({
+      where: { userId_lessonId: { userId, lessonId } },
     });
 
     // Apply content overrides for students
@@ -696,100 +679,80 @@ export const markLessonAsCompleted = async (
   }
 
   const result = await prisma.$transaction(async (tx) => {
-    // Get or create module learning progress
-    let moduleProgress = await tx.learningProgress.findUnique({
-      where: {
-        userId_moduleId: {
-          userId,
-          moduleId: lesson.moduleId,
-        },
-      },
-    });
-
-    if (!moduleProgress) {
-      moduleProgress = await tx.learningProgress.create({
-        data: {
-          userId,
-          moduleId: lesson.moduleId,
-          timeSpent: 0,
-        },
-      });
-    }
-
-    // Update or create lesson progress
-    const lessonProgress = await tx.lessonProgress.upsert({
-      where: {
-        progressId_lessonId: {
-          progressId: moduleProgress.id,
-          lessonId,
-        },
-      },
+    // Update or create LessonCompletion (replaces LessonProgress)
+    const lessonCompletion = await tx.lessonCompletion.upsert({
+      where: { userId_lessonId: { userId, lessonId } },
       update: {
-        completed: true,
-        timeSpent: {
-          increment: timeSpent,
-        },
+        isCompleted: true,
+        completedAt: new Date(),
+        timeSpent: { increment: timeSpent },
         lastAccessed: new Date(),
       },
       create: {
-        progressId: moduleProgress.id,
+        userId,
         lessonId,
-        completed: true,
+        isCompleted: true,
+        completedAt: new Date(),
         timeSpent,
         lastAccessed: new Date(),
       },
     });
 
-    // Update module progress time spent
-    moduleProgress = await tx.learningProgress.update({
-      where: {
-        userId_moduleId: {
-          userId,
-          moduleId: lesson.moduleId,
-        },
-      },
-      data: {
-        timeSpent: {
-          increment: timeSpent,
-        },
-      },
-    });
-
-    // Check if all lessons in the module are completed
+    // Count completed lessons for this module to recalculate UserProgress
     const totalLessons = await tx.lesson.count({
       where: { moduleId: lesson.moduleId },
     });
 
-    const completedLessons = await tx.lessonProgress.count({
+    const moduleLessonIds = await tx.lesson.findMany({
+      where: { moduleId: lesson.moduleId },
+      select: { id: true },
+    });
+
+    const completedLessons = await tx.lessonCompletion.count({
       where: {
-        progressId: moduleProgress.id,
-        completed: true,
+        userId,
+        lessonId: { in: moduleLessonIds.map((l) => l.id) },
+        isCompleted: true,
       },
     });
 
     const moduleCompleted = completedLessons === totalLessons;
+    const progressPercentage = totalLessons > 0
+      ? Math.round((completedLessons / totalLessons) * 100)
+      : 0;
 
-    // If module is completed, update learning progress
-    if (moduleCompleted && !moduleProgress.completedAt) {
-      moduleProgress = await tx.learningProgress.update({
-        where: {
-          userId_moduleId: {
-            userId,
-            moduleId: lesson.moduleId,
-          },
-        },
-        data: {
-          completedAt: new Date(),
-        },
-      });
-    }
+    // Update UserProgress (replaces LearningProgress)
+    const moduleProgress = await tx.userProgress.upsert({
+      where: { userId_moduleId: { userId, moduleId: lesson.moduleId } },
+      update: {
+        timeSpent: { increment: timeSpent },
+        completedLessonsCount: completedLessons,
+        totalLessons,
+        progressPercentage,
+        isModuleCompleted: moduleCompleted,
+        status: moduleCompleted ? 'COMPLETED' : 'IN_PROGRESS',
+        ...(moduleCompleted ? { completedAt: new Date() } : {}),
+        lastAccessedAt: new Date(),
+      },
+      create: {
+        userId,
+        moduleId: lesson.moduleId,
+        timeSpent,
+        completedLessonsCount: completedLessons,
+        totalLessons,
+        progressPercentage,
+        isModuleCompleted: moduleCompleted,
+        status: moduleCompleted ? 'COMPLETED' : 'IN_PROGRESS',
+        ...(moduleCompleted ? { completedAt: new Date() } : {}),
+      },
+    });
 
     return {
-      lessonProgress,
+      lessonProgress: lessonCompletion,
       moduleCompleted,
       moduleProgress,
     };
-  });
+  }, { maxWait: 5000, timeout: 10000 });
 
   return result;
 };
@@ -818,46 +781,26 @@ export const recordLessonAccess = async (
     );
   }
 
-  // Get or create learning progress for the module
-  let learningProgress = await prisma.learningProgress.findUnique({
-    where: {
-      userId_moduleId: {
-        userId,
-        moduleId: lesson.moduleId,
-      },
-    },
+  // Ensure UserProgress record exists for this module (replaces LearningProgress)
+  await prisma.userProgress.upsert({
+    where: { userId_moduleId: { userId, moduleId: lesson.moduleId } },
+    update: { lastAccessedAt: new Date(), lastAccessedLessonId: lessonId },
+    create: { userId, moduleId: lesson.moduleId, timeSpent: 0, lastAccessedLessonId: lessonId },
   });
 
-  if (!learningProgress) {
-    learningProgress = await prisma.learningProgress.create({
-      data: {
-        userId,
-        moduleId: lesson.moduleId,
-        timeSpent: 0,
-      },
-    });
-  }
-
-  // Update or create lesson progress
-  const lessonProgress = await prisma.lessonProgress.upsert({
-    where: {
-      progressId_lessonId: {
-        progressId: learningProgress.id,
-        lessonId,
-      },
-    },
-    update: {
-      lastAccessed: new Date(),
-    },
+  // Update or create LessonCompletion access record (replaces LessonProgress)
+  const lessonCompletion = await prisma.lessonCompletion.upsert({
+    where: { userId_lessonId: { userId, lessonId } },
+    update: { lastAccessed: new Date() },
     create: {
-      progressId: learningProgress.id,
+      userId,
       lessonId,
-      completed: false,
+      isCompleted: false,
       timeSpent: 0,
       lastAccessed: new Date(),
     },
   });
 
-  return lessonProgress;
+  return lessonCompletion;
 };
 

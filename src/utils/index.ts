@@ -1,9 +1,6 @@
 /**
- * Utils Index
- * Re-exports all utility functions
+ * @deprecated Import from '../shared/utils' instead
  */
-
-export * from './jwt';
-export * from './password';
-export * from './response';
-
+export * from '../shared/utils/jwt';
+export * from '../shared/utils/password';
+export * from '../shared/utils/response';

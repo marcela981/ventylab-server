@@ -1,4 +1,13 @@
+/**
+ * MODULE PROGRESS SERVICE (FASE 3 - Migrated)
+ * =============================================
+ *
+ * Uses UserProgress + LessonCompletion (unified system).
+ * Legacy: LearningProgress + LessonProgress removed.
+ */
+
 import { prisma } from '../../config/prisma';
+import { ProgressStatus } from '@prisma/client';
 import { computeModuleProgress, isModuleComplete } from '../../utils/computeModuleProgress';
 
 export interface ModuleProgressResult {
@@ -37,69 +46,61 @@ export async function calculateAndSaveModuleProgress(
 ): Promise<ModuleProgressResult> {
   try {
     const lessons = await prisma.lesson.findMany({
-      where: {
-        moduleId,
-        isActive: true,
-      },
-      select: {
-        id: true,
-      },
+      where: { moduleId, isActive: true },
+      select: { id: true },
     });
 
-    const lessonIds = lessons.map((lesson) => lesson.id);
+    const lessonIds = lessons.map(l => l.id);
 
-    // Get lesson progress from LearningProgress + LessonProgress
-    const learningProgress = await prisma.learningProgress.findUnique({
-      where: {
-        userId_moduleId: { userId, moduleId },
-      },
-      include: { lessons: { where: { lessonId: { in: lessonIds } } } },
+    // Get completions from unified system
+    const completions = await prisma.lessonCompletion.findMany({
+      where: { userId, lessonId: { in: lessonIds } },
+      select: { lessonId: true, isCompleted: true },
     });
+    const completionMap = new Map(completions.map(c => [c.lessonId, c]));
 
-    const progressMap = new Map(
-      (learningProgress?.lessons ?? []).map((lp) => [lp.lessonId, lp])
-    );
-
-    const lessonsWithProgress = lessons.map((lesson) => {
-      const record = progressMap.get(lesson.id);
-      const progressValue = record?.completed ? 100 : 0;
-      return {
-        id: lesson.id,
-        progress: progressValue,
-      };
-    });
+    const lessonsWithProgress = lessons.map(lesson => ({
+      id: lesson.id,
+      progress: completionMap.get(lesson.id)?.isCompleted ? 100 : 0,
+    }));
 
     const { completedLessonsCount, totalLessonsCount, progressPercentage } =
       computeModuleProgress(lessonsWithProgress);
 
     const moduleComplete = isModuleComplete(lessonsWithProgress);
-
     const clampedProgress = Math.max(0, Math.min(100, progressPercentage));
 
     if (isDev) {
       console.log('[moduleProgress] calculateAndSaveModuleProgress', {
-        userId,
-        moduleId,
-        totalLessonsCount,
-        completedLessonsCount,
-        progressPercentage: clampedProgress,
-        moduleComplete,
+        userId, moduleId, totalLessonsCount, completedLessonsCount,
+        progressPercentage: clampedProgress, moduleComplete,
       });
     }
 
-    // Upsert LearningProgress (module-level); completedAt when all lessons done
-    const updatedProgress = await prisma.learningProgress.upsert({
-      where: {
-        userId_moduleId: { userId, moduleId },
-      },
+    const status: ProgressStatus = moduleComplete
+      ? ProgressStatus.COMPLETED
+      : clampedProgress > 0
+        ? ProgressStatus.IN_PROGRESS
+        : ProgressStatus.NOT_STARTED;
+
+    const updatedProgress = await prisma.userProgress.upsert({
+      where: { userId_moduleId: { userId, moduleId } },
       update: {
+        status,
+        isModuleCompleted: moduleComplete,
+        completedLessonsCount,
+        totalLessons: totalLessonsCount,
+        progressPercentage: clampedProgress,
         completedAt: moduleComplete ? new Date() : undefined,
-        updatedAt: new Date(),
       },
       create: {
         userId,
         moduleId,
-        timeSpent: 0,
+        status,
+        isModuleCompleted: moduleComplete,
+        completedLessonsCount,
+        totalLessons: totalLessonsCount,
+        progressPercentage: clampedProgress,
         completedAt: moduleComplete ? new Date() : undefined,
       },
     });
@@ -116,10 +117,7 @@ export async function calculateAndSaveModuleProgress(
     };
   } catch (error) {
     console.error('Error al calcular progreso del módulo:', error);
-    return {
-      success: false,
-      error: 'Error al calcular progreso del módulo',
-    };
+    return { success: false, error: 'Error al calcular progreso del módulo' };
   }
 }
 
@@ -129,89 +127,46 @@ export async function getModuleProgressStats(
 ): Promise<ModuleStats> {
   try {
     const lessons = await prisma.lesson.findMany({
-      where: {
-        moduleId,
-        isActive: true,
-      },
-      select: {
-        id: true,
-        title: true,
-        order: true,
-      },
+      where: { moduleId, isActive: true },
+      select: { id: true, title: true, order: true },
       orderBy: { order: 'asc' },
     });
 
-    const lessonIds = lessons.map((lesson) => lesson.id);
+    const lessonIds = lessons.map(l => l.id);
 
-    // Get lesson progress from LearningProgress + LessonProgress
-    const learningProgress = await prisma.learningProgress.findUnique({
-      where: {
-        userId_moduleId: { userId, moduleId },
-      },
-      include: {
-        lessons: {
-          where: { lessonId: { in: lessonIds } },
-          include: {
-            lesson: {
-              select: { id: true, title: true },
-            },
-          },
-        },
-      },
+    const completions = await prisma.lessonCompletion.findMany({
+      where: { userId, lessonId: { in: lessonIds } },
+      select: { lessonId: true, isCompleted: true, lastAccessed: true },
     });
+    const completionMap = new Map(completions.map(c => [c.lessonId, c]));
 
-    const progressMap = new Map(
-      (learningProgress?.lessons ?? []).map((lp) => [lp.lessonId, lp])
-    );
-
-    const lessonsWithProgress = lessons.map((lesson) => {
-      const record = progressMap.get(lesson.id);
-      const progressValue = record?.completed ? 100 : 0;
-      return {
-        id: lesson.id,
-        progress: progressValue,
-      };
-    });
+    const lessonsWithProgress = lessons.map(lesson => ({
+      id: lesson.id,
+      progress: completionMap.get(lesson.id)?.isCompleted ? 100 : 0,
+    }));
 
     const { completedLessonsCount, totalLessonsCount, progressPercentage } =
       computeModuleProgress(lessonsWithProgress);
 
-    // Last accessed lesson: LessonProgress with lastAccessed desc
-    const lastAccessedRecord = lessonIds.length > 0 && learningProgress
-      ? (await prisma.lessonProgress.findFirst({
-          where: {
-            progressId: learningProgress.id,
-            lessonId: { in: lessonIds },
-          },
-          include: {
-            lesson: {
-              select: { id: true, title: true },
-            },
-          },
-          orderBy: [{ lastAccessed: 'desc' }, { updatedAt: 'desc' }],
-        }))
+    // Last accessed lesson: find completion with most recent lastAccessed
+    const lastAccessedCompletion = completions
+      .filter(c => c.lastAccessed)
+      .sort((a, b) => (b.lastAccessed!.getTime()) - (a.lastAccessed!.getTime()))[0];
+
+    const lastAccessedLesson = lastAccessedCompletion
+      ? (() => {
+          const lesson = lessons.find(l => l.id === lastAccessedCompletion.lessonId);
+          return lesson
+            ? { id: lesson.id, title: lesson.title, progress: lastAccessedCompletion.isCompleted ? 100 : 0 }
+            : null;
+        })()
       : null;
 
-    const lastAccessedLesson = lastAccessedRecord?.lesson
-      ? {
-          id: lastAccessedRecord.lesson.id,
-          title: lastAccessedRecord.lesson.title,
-          progress: lastAccessedRecord.completed ? 100 : 0,
-        }
-      : null;
-
-    const nextIncompleteLesson = lessons.find((lesson) => {
-      const record = progressMap.get(lesson.id);
-      return !record?.completed;
-    }) ?? null;
+    const nextIncompleteLesson = lessons.find(lesson => !completionMap.get(lesson.id)?.isCompleted) ?? null;
 
     if (isDev) {
       console.log('[moduleProgress] getModuleProgressStats', {
-        userId,
-        moduleId,
-        totalLessonsCount,
-        completedLessonsCount,
-        progressPercentage,
+        userId, moduleId, totalLessonsCount, completedLessonsCount, progressPercentage,
       });
     }
 
@@ -221,11 +176,7 @@ export async function getModuleProgressStats(
       moduleProgress: progressPercentage,
       lastAccessedLesson,
       nextIncompleteLesson: nextIncompleteLesson
-        ? {
-            id: nextIncompleteLesson.id,
-            title: nextIncompleteLesson.title,
-            order: nextIncompleteLesson.order,
-          }
+        ? { id: nextIncompleteLesson.id, title: nextIncompleteLesson.title, order: nextIncompleteLesson.order }
         : null,
     };
   } catch (error) {

@@ -5,14 +5,16 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
-import { prisma } from './config/prisma';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { prisma } from './shared/infrastructure/database';
+import { errorHandler, notFoundHandler } from './shared/middleware/error-handler.middleware';
 
-// Importar rutas
-import authRoutes from './routes/auth';
+// Importar rutas desde módulos
+import authRoutes from './modules/auth/auth.controller';
+import evaluationRoutes from './modules/evaluation/evaluation.controller';
+
+// Importar rutas existentes (se moverán a módulos en futuras fases)
 import usersRoutes from './routes/users';
 import progressRoutes from './routes/progress';
-import evaluationRoutes from './routes/evaluation';
 import modulesRoutes from './routes/modules';
 import lessonsRoutes from './routes/lessons';
 import curriculumRoutes from './routes/curriculum';
@@ -73,42 +75,55 @@ app.set('trust proxy', 1);
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
-  FRONTEND_URL,
-];
+  process.env.FRONTEND_URL,
+  process.env.PRODUCTION_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  'https://ventylab.vercel.app', // URL principal de producción
+  'https://ventylab-git-main.vercel.app', // Branch principal
+  'https://ventilab-web.vercel.app', // URL alternativa de producción
+  'https://ventilab-web-git-main.vercel.app', // Branch principal alternativo
+].filter(Boolean);
 
-// Agregar URL de producción si está definida
-if (process.env.PRODUCTION_URL) {
-  allowedOrigins.push(process.env.PRODUCTION_URL);
-}
+// Logging para debug de CORS
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log('🌐 Request from:', req.headers.origin || 'no-origin');
+  next();
+});
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requests sin origin (mobile apps, Postman, etc) en desarrollo
-    if (!origin && NODE_ENV === 'development') {
+    // Permitir peticiones sin origin (Postman, curl, server-to-server, etc.)
+    if (!origin) return callback(null, true);
+
+    // Normalize origin (remove trailing slash)
+    const normalizedOrigin = origin.replace(/\/$/, '');
+
+    // Permitir dominios en whitelist
+    if (allowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
     }
 
-    if (origin && allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else if (!origin && NODE_ENV === 'production') {
-      // En producción, rechazar requests sin origin
-      callback(new Error('No permitido por CORS'));
-    } else {
-      callback(new Error('No permitido por CORS'));
+    // Permitir cualquier subdominio de Vercel
+    if (normalizedOrigin.match(/https:\/\/.*\.vercel\.app$/)) {
+      return callback(null, true);
     }
+
+    console.error('🚫 CORS bloqueó origen:', normalizedOrigin);
+    return callback(new Error('No permitido por CORS'));
   },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
     'Authorization',
+    'X-Requested-With',
     'x-user-id',
     'x-auth-token',
     'x-request-id',
     'cache-control'
   ],
-  exposedHeaders: ['x-user-id'],
-  credentials: true,
-  optionsSuccessStatus: 200, // Para navegadores legacy
+  exposedHeaders: ['set-cookie'],
+  optionsSuccessStatus: 200,
 }));
 
 // ============================================

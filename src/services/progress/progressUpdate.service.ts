@@ -1,4 +1,13 @@
+/**
+ * PROGRESS UPDATE SERVICE (FASE 3 - Migrated)
+ * =============================================
+ *
+ * Uses UserProgress + LessonCompletion (unified system).
+ * Legacy: LearningProgress + LessonProgress removed.
+ */
+
 import { prisma } from '../../config/prisma';
+import { ProgressStatus } from '@prisma/client';
 import { ProgressUpdateResult } from '../../types/progress';
 import { invalidateUserCache } from './progressQuery.service';
 import { calculateAndSaveModuleProgress } from './moduleProgress.service';
@@ -17,68 +26,56 @@ export async function completeLesson(
   lessonId: string
 ): Promise<ProgressUpdateResult> {
   try {
-    // Validar que la lección existe
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      include: {
-        module: {
-          select: { id: true },
-        },
-      },
+      include: { module: { select: { id: true } } },
     });
 
     if (!lesson) {
-      return {
-        success: false,
-        error: 'Lección no encontrada',
-      };
+      return { success: false, error: 'Lección no encontrada' };
     }
 
-    // Usar transacción: LearningProgress + LessonProgress
+    const moduleId = lesson.moduleId;
+
     const result = await prisma.$transaction(async (tx) => {
-      const learningProgress = await tx.learningProgress.upsert({
-        where: {
-          userId_moduleId: { userId, moduleId: lesson.moduleId },
+      const completion = await tx.lessonCompletion.upsert({
+        where: { userId_lessonId: { userId, lessonId } },
+        update: {
+          isCompleted: true,
+          completedAt: new Date(),
+          lastAccessed: new Date(),
         },
-        update: { updatedAt: new Date() },
         create: {
           userId,
-          moduleId: lesson.moduleId,
-          timeSpent: 0,
+          lessonId,
+          isCompleted: true,
+          completedAt: new Date(),
+          lastAccessed: new Date(),
         },
       });
 
-      const lessonProgress = await tx.lessonProgress.upsert({
-        where: {
-          progressId_lessonId: {
-            progressId: learningProgress.id,
-            lessonId,
-          },
-        },
+      await tx.userProgress.upsert({
+        where: { userId_moduleId: { userId, moduleId } },
         update: {
-          completed: true,
-          lastAccessed: new Date(),
+          lastAccessedLessonId: lessonId,
+          lastAccessedAt: new Date(),
+          status: ProgressStatus.IN_PROGRESS,
         },
         create: {
-          progressId: learningProgress.id,
-          lessonId,
-          completed: true,
-          timeSpent: 0,
-          lastAccessed: new Date(),
+          userId,
+          moduleId,
+          status: ProgressStatus.IN_PROGRESS,
+          lastAccessedLessonId: lessonId,
+          lastAccessedAt: new Date(),
         },
       });
 
-      await checkAndCompleteModule(userId, lesson.moduleId, tx);
+      await checkAndCompleteModule(userId, moduleId, tx);
 
-      return { learningProgress, lessonProgress };
-    }, {
-      maxWait: 5000,
-      timeout: 10000,
-    });
+      return completion;
+    }, { maxWait: 5000, timeout: 10000 });
 
     invalidateUserCache(userId);
-
-    const xpGained = 50;
 
     const { checkAndUnlockAchievements } = await import('./achievements.service');
     const achievements = await checkAndUnlockAchievements(userId, {
@@ -89,32 +86,24 @@ export async function completeLesson(
     return {
       success: true,
       progress: {
-        id: result.lessonProgress.id,
+        id: result.id,
         userId,
-        moduleId: lesson.moduleId,
+        moduleId,
         lessonId,
-        completed: result.lessonProgress.completed,
+        completed: result.isCompleted,
         progress: 100,
         completionPercentage: 100,
-        updatedAt: result.lessonProgress.updatedAt,
+        updatedAt: result.updatedAt,
       },
-      xpGained,
+      xpGained: 50,
       achievementsUnlocked: achievements,
     };
   } catch (error: any) {
-    // Manejar errores de concurrencia
     if (error.code === 'P2034') {
-      return {
-        success: false,
-        error: 'Conflicto de concurrencia. Por favor, intenta nuevamente.',
-      };
+      return { success: false, error: 'Conflicto de concurrencia. Por favor, intenta nuevamente.' };
     }
-
     console.error('Error al completar lección:', error);
-    return {
-      success: false,
-      error: 'Error al marcar la lección como completada',
-    };
+    return { success: false, error: 'Error al marcar la lección como completada' };
   }
 }
 
@@ -129,88 +118,57 @@ export async function saveLessonProgress(
   completedOverride?: boolean
 ): Promise<ProgressUpdateResult> {
   try {
-    // Validar porcentaje de progreso
     if (progressPercent < 0 || progressPercent > 100) {
-      return {
-        success: false,
-        error: 'El porcentaje de progreso debe estar entre 0 y 100',
-      };
+      return { success: false, error: 'El porcentaje de progreso debe estar entre 0 y 100' };
     }
 
-    // Validar que la lección existe
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      include: {
-        module: {
-          select: { id: true },
-        },
-      },
+      include: { module: { select: { id: true } } },
     });
 
     if (!lesson) {
-      return {
-        success: false,
-        error: 'Lección no encontrada',
-      };
+      return { success: false, error: 'Lección no encontrada' };
     }
 
     const isCompleted = completedOverride === true;
+    const moduleId = lesson.moduleId;
 
     const result = await prisma.$transaction(async (tx) => {
-      const learningProgress = await tx.learningProgress.upsert({
-        where: {
-          userId_moduleId: { userId, moduleId: lesson.moduleId },
-        },
-        update: { updatedAt: new Date() },
-        create: {
-          userId,
-          moduleId: lesson.moduleId,
-          timeSpent: 0,
-        },
-      });
-
-      const lessonProgress = await tx.lessonProgress.upsert({
-        where: {
-          progressId_lessonId: {
-            progressId: learningProgress.id,
-            lessonId,
-          },
-        },
+      const completion = await tx.lessonCompletion.upsert({
+        where: { userId_lessonId: { userId, lessonId } },
         update: {
-          completed: isCompleted,
+          isCompleted,
+          completedAt: isCompleted ? new Date() : undefined,
           lastAccessed: new Date(),
         },
         create: {
-          progressId: learningProgress.id,
+          userId,
           lessonId,
-          completed: isCompleted,
-          timeSpent: 0,
+          isCompleted,
+          completedAt: isCompleted ? new Date() : null,
           lastAccessed: new Date(),
         },
       });
 
       if (isCompleted) {
-        await checkAndCompleteModule(userId, lesson.moduleId, tx);
+        await checkAndCompleteModule(userId, moduleId, tx);
       }
 
-      return lessonProgress;
-    }, {
-      maxWait: 5000,
-      timeout: 10000,
-    });
+      return completion;
+    }, { maxWait: 5000, timeout: 10000 });
 
     invalidateUserCache(userId);
 
     const progressValue = isCompleted ? 100 : progressPercent;
-
     return {
       success: true,
       progress: {
         id: result.id,
         userId,
-        moduleId: lesson.moduleId,
+        moduleId,
         lessonId,
-        completed: result.completed,
+        completed: result.isCompleted,
         progress: progressValue,
         completionPercentage: typeof completionPercentage === 'number' ? completionPercentage : progressValue,
         updatedAt: result.updatedAt,
@@ -218,17 +176,10 @@ export async function saveLessonProgress(
     };
   } catch (error: any) {
     if (error.code === 'P2034') {
-      return {
-        success: false,
-        error: 'Conflicto de concurrencia. Por favor, intenta nuevamente.',
-      };
+      return { success: false, error: 'Conflicto de concurrencia. Por favor, intenta nuevamente.' };
     }
-
     console.error('Error al guardar progreso de lección:', error);
-    return {
-      success: false,
-      error: 'Error al guardar el progreso',
-    };
+    return { success: false, error: 'Error al guardar el progreso' };
   }
 }
 
@@ -243,121 +194,84 @@ export async function updateLessonProgress(
   try {
     const { completionPercentage, timeSpent, completed } = data;
 
-    // Validate completionPercentage only if provided
     if (completionPercentage !== undefined && (completionPercentage < 0 || completionPercentage > 100)) {
-      return {
-        success: false,
-        error: 'El porcentaje de progreso debe estar entre 0 y 100',
-      };
+      return { success: false, error: 'El porcentaje de progreso debe estar entre 0 y 100' };
     }
 
-    // Ensure we have at least completionPercentage or timeSpent
     if (completionPercentage === undefined && timeSpent === undefined) {
-      return {
-        success: false,
-        error: 'Se requiere al menos completionPercentage o timeSpent',
-      };
+      return { success: false, error: 'Se requiere al menos completionPercentage o timeSpent' };
     }
 
-    // Try to get lesson from DB, but extract moduleId from lessonId if not found
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
       select: { id: true, moduleId: true },
     });
 
-    // Extract moduleId from lessonId format: "module-01-lesson-01"
     let moduleId: string | null = lesson?.moduleId || null;
     if (!moduleId && lessonId.includes('-')) {
       const parts = lessonId.split('-');
-      if (parts.length >= 2) {
-        moduleId = `${parts[0]}-${parts[1]}`;
-      }
+      if (parts.length >= 2) moduleId = `${parts[0]}-${parts[1]}`;
     }
 
-    // Log if lesson not in DB (normal for JSON-based lessons)
     if (!lesson) {
       console.log(`[updateLessonProgress] Lesson ${lessonId} not in DB, using derived moduleId: ${moduleId}`);
     }
 
-    // IMPORTANT: Only mark as completed when explicitly requested
-    // Never auto-complete based on progress percentage
     const isCompleted = completed === true;
-
-    const timeSpentIncrement = typeof timeSpent === 'number' && timeSpent > 0
-      ? timeSpent
-      : undefined;
+    const timeSpentIncrement = typeof timeSpent === 'number' && timeSpent > 0 ? timeSpent : undefined;
 
     if (!moduleId) {
-      return {
-        success: false,
-        error: 'No se pudo determinar el módulo de la lección',
-      };
+      return { success: false, error: 'No se pudo determinar el módulo de la lección' };
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const learningProgress = await tx.learningProgress.upsert({
-        where: {
-          userId_moduleId: { userId, moduleId },
-        },
+      const completion = await tx.lessonCompletion.upsert({
+        where: { userId_lessonId: { userId, lessonId } },
         update: {
-          ...(timeSpentIncrement !== undefined && timeSpentIncrement > 0
-            ? { timeSpent: { increment: timeSpentIncrement } }
-            : {}),
-          updatedAt: new Date(),
+          isCompleted,
+          completedAt: isCompleted ? new Date() : undefined,
+          lastAccessed: new Date(),
+          ...(timeSpentIncrement ? { timeSpent: { increment: timeSpentIncrement } } : {}),
         },
         create: {
           userId,
-          moduleId,
+          lessonId,
+          isCompleted,
+          completedAt: isCompleted ? new Date() : null,
+          lastAccessed: new Date(),
           timeSpent: timeSpentIncrement ?? 0,
         },
       });
 
-      const lessonProgress = await tx.lessonProgress.upsert({
-        where: {
-          progressId_lessonId: {
-            progressId: learningProgress.id,
-            lessonId,
-          },
-        },
+      await tx.userProgress.upsert({
+        where: { userId_moduleId: { userId, moduleId: moduleId! } },
         update: {
-          completed: isCompleted,
-          ...(timeSpentIncrement !== undefined && timeSpentIncrement > 0
-            ? { timeSpent: { increment: timeSpentIncrement } }
-            : {}),
-          lastAccessed: new Date(),
+          lastAccessedLessonId: lessonId,
+          lastAccessedAt: new Date(),
+          ...(timeSpentIncrement ? { timeSpent: { increment: timeSpentIncrement } } : {}),
         },
         create: {
-          progressId: learningProgress.id,
-          lessonId,
-          completed: isCompleted,
+          userId,
+          moduleId: moduleId!,
+          status: ProgressStatus.IN_PROGRESS,
+          lastAccessedLessonId: lessonId,
+          lastAccessedAt: new Date(),
           timeSpent: timeSpentIncrement ?? 0,
-          lastAccessed: new Date(),
         },
       });
 
-      if (timeSpentIncrement !== undefined && timeSpentIncrement > 0) {
-        await tx.learningProgress.update({
-          where: { id: learningProgress.id },
-          data: { timeSpent: { increment: timeSpentIncrement } },
-        });
-      }
-
       try {
-        await calculateAndSaveModuleProgress(userId, moduleId);
-      } catch (error) {
-        console.warn(`[updateLessonProgress] Could not update module progress for ${moduleId}:`, error);
+        await calculateAndSaveModuleProgress(userId, moduleId!);
+      } catch (e) {
+        console.warn(`[updateLessonProgress] Could not update module progress for ${moduleId}:`, e);
       }
 
-      return lessonProgress;
-    }, {
-      maxWait: 5000,
-      timeout: 10000,
-    });
+      return completion;
+    }, { maxWait: 5000, timeout: 10000 });
 
     invalidateUserCache(userId);
 
     const progressValue = completionPercentage ?? (isCompleted ? 100 : 0);
-
     return {
       success: true,
       progress: {
@@ -365,7 +279,7 @@ export async function updateLessonProgress(
         userId,
         moduleId,
         lessonId,
-        completed: result.completed,
+        completed: result.isCompleted,
         progress: progressValue,
         completionPercentage: completionPercentage ?? progressValue,
         updatedAt: result.updatedAt,
@@ -373,22 +287,15 @@ export async function updateLessonProgress(
     };
   } catch (error: any) {
     if (error.code === 'P2034') {
-      return {
-        success: false,
-        error: 'Conflicto de concurrencia. Por favor, intenta nuevamente.',
-      };
+      return { success: false, error: 'Conflicto de concurrencia. Por favor, intenta nuevamente.' };
     }
-
     console.error('Error al actualizar progreso de lección:', error);
-    return {
-      success: false,
-      error: 'Error al actualizar progreso de la lección',
-    };
+    return { success: false, error: 'Error al actualizar progreso de la lección' };
   }
 }
 
 /**
- * Registrar intento de quiz
+ * Registrar intento de quiz (sin cambios - usa QuizAttempt)
  */
 export async function recordQuizAttempt(
   userId: string,
@@ -398,208 +305,126 @@ export async function recordQuizAttempt(
   answers: any
 ): Promise<ProgressUpdateResult> {
   try {
-    // Validar datos
     if (score < 0 || score > 100) {
-      return {
-        success: false,
-        error: 'El puntaje debe estar entre 0 y 100',
-      };
+      return { success: false, error: 'El puntaje debe estar entre 0 y 100' };
     }
 
-    // Validar que el quiz existe
-    const quiz = await prisma.quiz.findUnique({
-      where: { id: quizId },
-    });
+    const quiz = await prisma.quiz.findUnique({ where: { id: quizId } });
+    if (!quiz) return { success: false, error: 'Quiz no encontrado' };
 
-    if (!quiz) {
-      return {
-        success: false,
-        error: 'Quiz no encontrado',
-      };
-    }
-
-    // Usar transacción
-    const result = await prisma.$transaction(async (tx) => {
-      // Crear registro de intento
-      const attempt = await tx.quizAttempt.create({
-        data: {
-          userId,
-          quizId,
-          score,
-          passed,
-          answers,
-          completedAt: new Date(),
-        },
+    await prisma.$transaction(async (tx) => {
+      await tx.quizAttempt.create({
+        data: { userId, quizId, score, passed, answers, completedAt: new Date() },
       });
+    }, { maxWait: 5000, timeout: 10000 });
 
-      return attempt;
-    }, {
-      maxWait: 5000,
-      timeout: 10000,
-    });
-
-    // Invalidar caché
     invalidateUserCache(userId);
 
-    // Calcular XP ganado
     let xpGained = 0;
     if (passed) {
-      xpGained = 100; // XP base por pasar quiz
-      // Bonus por puntaje perfecto
-      if (score === 100) {
-        xpGained += 50;
-      }
+      xpGained = 100;
+      if (score === 100) xpGained += 50;
     }
 
-    // Verificar logros
     const { checkAndUnlockAchievements } = await import('./achievements.service');
-    const achievements = await checkAndUnlockAchievements(userId, {
-      type: passed ? 'quizzes_passed' : 'quizzes_passed',
-      value: 1,
-    });
+    const achievements = await checkAndUnlockAchievements(userId, { type: 'quizzes_passed', value: 1 });
 
-    // Logro por puntaje perfecto
     if (score === 100) {
-      const perfectScoreAchievements = await checkAndUnlockAchievements(userId, {
-        type: 'perfect_score',
-        value: 1,
-      });
-      achievements.push(...perfectScoreAchievements);
+      const perfect = await checkAndUnlockAchievements(userId, { type: 'perfect_score', value: 1 });
+      achievements.push(...perfect);
     }
 
-    return {
-      success: true,
-      xpGained,
-      achievementsUnlocked: achievements,
-    };
+    return { success: true, xpGained, achievementsUnlocked: achievements };
   } catch (error: any) {
     if (error.code === 'P2034') {
-      return {
-        success: false,
-        error: 'Conflicto de concurrencia. Por favor, intenta nuevamente.',
-      };
+      return { success: false, error: 'Conflicto de concurrencia. Por favor, intenta nuevamente.' };
     }
-
     console.error('Error al registrar intento de quiz:', error);
-    return {
-      success: false,
-      error: 'Error al registrar el intento de quiz',
-    };
+    return { success: false, error: 'Error al registrar el intento de quiz' };
   }
 }
 
 /**
- * Actualizar XP del usuario
- * Nota: Esto requeriría agregar un campo XP al modelo User
- * Por ahora, calculamos XP dinámicamente
+ * Actualizar XP del usuario (sin cambios)
  */
 export async function updateUserXP(
   userId: string,
   xpGained: number
 ): Promise<{ success: boolean; totalXP: number; levelUp?: { oldLevel: number; newLevel: number } }> {
   try {
-    if (xpGained <= 0) {
-      return {
-        success: false,
-        totalXP: 0,
-      };
-    }
+    if (xpGained <= 0) return { success: false, totalXP: 0 };
 
-    // Calcular XP total actual
     const { getUserStats } = await import('./progressQuery.service');
     const stats = await getUserStats(userId);
     const oldTotalXP = stats.totalXP;
     const newTotalXP = oldTotalXP + xpGained;
 
-    // Calcular niveles
     const { calculateLevel } = await import('./levelCalculation.service');
     const oldLevelInfo = await calculateLevel(oldTotalXP);
     const newLevelInfo = await calculateLevel(newTotalXP);
 
-    // Verificar si subió de nivel
     let levelUp;
     if (newLevelInfo.level > oldLevelInfo.level) {
-      levelUp = {
-        oldLevel: oldLevelInfo.level,
-        newLevel: newLevelInfo.level,
-      };
-
-      // Verificar logros por nivel
+      levelUp = { oldLevel: oldLevelInfo.level, newLevel: newLevelInfo.level };
       const { checkAndUnlockAchievements } = await import('./achievements.service');
-      await checkAndUnlockAchievements(userId, {
-        type: 'xp_reached',
-        value: newTotalXP,
-      });
+      await checkAndUnlockAchievements(userId, { type: 'xp_reached', value: newTotalXP });
     }
 
-    // Invalidar caché
     invalidateUserCache(userId);
-
-    return {
-      success: true,
-      totalXP: newTotalXP,
-      levelUp,
-    };
+    return { success: true, totalXP: newTotalXP, levelUp };
   } catch (error) {
     console.error('Error al actualizar XP del usuario:', error);
-    return {
-      success: false,
-      totalXP: 0,
-    };
+    return { success: false, totalXP: 0 };
   }
 }
 
-/**
- * Verificar y completar módulo si todas las lecciones están completadas (LearningProgress + LessonProgress)
- */
+// ============================================
+// INTERNAL
+// ============================================
+
 async function checkAndCompleteModule(
   userId: string,
   moduleId: string,
   tx: any
 ): Promise<void> {
-  const module = await tx.module.findUnique({
-    where: { id: moduleId },
-    include: {
-      lessons: {
-        where: { isActive: true },
-        select: { id: true },
-      },
-    },
+  const activeLessons = await tx.lesson.findMany({
+    where: { moduleId, isActive: true },
+    select: { id: true },
   });
 
-  if (!module || module.lessons.length === 0) return;
+  if (activeLessons.length === 0) return;
 
-  const lessonIds = module.lessons.map((l: { id: string }) => l.id);
-
-  const learningProgress = await tx.learningProgress.findUnique({
-    where: {
-      userId_moduleId: { userId, moduleId },
-    },
-    include: {
-      lessons: {
-        where: { lessonId: { in: lessonIds }, completed: true },
-      },
-    },
+  const lessonIds = activeLessons.map((l: { id: string }) => l.id);
+  const completedCount = await tx.lessonCompletion.count({
+    where: { userId, lessonId: { in: lessonIds }, isCompleted: true },
   });
 
-  if (!learningProgress) return;
-
-  const completedCount = learningProgress.lessons.length;
   if (completedCount !== lessonIds.length) return;
 
-  await tx.learningProgress.update({
-    where: { id: learningProgress.id },
-    data: {
+  await tx.userProgress.upsert({
+    where: { userId_moduleId: { userId, moduleId } },
+    update: {
+      status: ProgressStatus.COMPLETED,
+      isModuleCompleted: true,
+      completedLessonsCount: completedCount,
+      totalLessons: lessonIds.length,
+      progressPercentage: 100,
       completedAt: new Date(),
-      updatedAt: new Date(),
+    },
+    create: {
+      userId,
+      moduleId,
+      status: ProgressStatus.COMPLETED,
+      isModuleCompleted: true,
+      completedLessonsCount: completedCount,
+      totalLessons: lessonIds.length,
+      progressPercentage: 100,
+      completedAt: new Date(),
     },
   });
 
   const { checkAndUnlockAchievements } = await import('./achievements.service');
-  await checkAndUnlockAchievements(userId, {
-    type: 'modules_completed',
-    value: 1,
-  });
+  await checkAndUnlockAchievements(userId, { type: 'modules_completed', value: 1 });
 }
 
 export default {
@@ -609,4 +434,3 @@ export default {
   recordQuizAttempt,
   updateUserXP,
 };
-
