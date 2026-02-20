@@ -1,34 +1,142 @@
 /**
  * Teaching Controller
- * Main entry point for teaching module routes.
- * Aggregates all teaching-related sub-routes.
+ * Exposes teaching progression services via HTTP endpoints.
  *
- * Sub-routes handled:
- * - /api/teaching/* - Teaching progression (unlock + completion)
- * - /api/progress/* - Progress tracking
- * - /api/curriculum/* - Curriculum structure
- * - /api/modules/* - Module CRUD
- * - /api/lessons/* - Lesson CRUD
- * - /api/levels/* - Level CRUD
- * - /api/cards/* - Step/Card CRUD
- * - /api/pages/* - Page hierarchy
- * - /api/overrides/* - Content overrides
- * - /api/teacher-students/* - Teacher-Student relationships
- * - /api/changelog/* - Change audit trail
- *
- * NOTE: Individual route files in src/routes/ still handle specific endpoints.
- * This controller serves as the module's main documentation and future
- * consolidation point.
+ * Delegates to:
+ * - completeLesson()     from teaching/lessonProgress.service
+ * - canAccessLesson()    from teaching/lessonProgress.service
+ * - canAccessModule()    from teaching/moduleUnlock.service
+ * - getUnlockedModules() from teaching/moduleUnlock.service
  */
 
-import { Router } from 'express';
+import { Request, Response, NextFunction } from 'express';
+import {
+  completeLesson as completeLessonService,
+  canAccessLesson as canAccessLessonService,
+} from './lessonProgress.service';
+import {
+  canAccessModule as canAccessModuleService,
+  getUnlockedModules as getUnlockedModulesService,
+} from './moduleUnlock.service';
+import { sendSuccess } from '../../shared/utils/response';
+import { HTTP_STATUS } from '../../config/constants';
 
-// Re-export handler functions from existing controllers for module access
-export { completeLessonHandler, getUnlockedModulesHandler, checkModuleAccessHandler, checkLessonAccessHandler } from '../../controllers/teaching.controller';
+/**
+ * Complete a lesson (with optional quiz/case scores).
+ * POST /api/teaching/lessons/:lessonId/complete
+ * Body: { quizScore?: number, caseScore?: number }
+ */
+export const completeLessonHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { lessonId } = req.params;
+    const userId = req.user?.id;
 
-// Note: Full route consolidation will happen in Phase 7 (cleanup)
-// For now, routes are registered individually in src/index.ts
+    if (!userId) {
+      sendSuccess(res, HTTP_STATUS.UNAUTHORIZED, 'Usuario no autenticado');
+      return;
+    }
 
-const router = Router();
+    const { quizScore, caseScore } = req.body;
 
-export default router;
+    const result = await completeLessonService(
+      userId,
+      lessonId,
+      quizScore !== undefined ? Number(quizScore) : undefined,
+      caseScore !== undefined ? Number(caseScore) : undefined
+    );
+
+    sendSuccess(res, HTTP_STATUS.OK, 'Lección completada exitosamente', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get all unlocked module IDs for the authenticated user.
+ * GET /api/teaching/modules/unlocked
+ */
+export const getUnlockedModulesHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      sendSuccess(res, HTTP_STATUS.UNAUTHORIZED, 'Usuario no autenticado');
+      return;
+    }
+
+    const unlockedIds = await getUnlockedModulesService(userId);
+
+    sendSuccess(res, HTTP_STATUS.OK, 'Módulos desbloqueados obtenidos', {
+      unlockedModuleIds: unlockedIds,
+      count: unlockedIds.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Check if the authenticated user can access a specific module.
+ * GET /api/teaching/modules/:moduleId/access
+ */
+export const checkModuleAccessHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { moduleId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      sendSuccess(res, HTTP_STATUS.UNAUTHORIZED, 'Usuario no autenticado');
+      return;
+    }
+
+    const hasAccess = await canAccessModuleService(userId, moduleId);
+
+    sendSuccess(res, HTTP_STATUS.OK, 'Estado de acceso obtenido', {
+      moduleId,
+      hasAccess,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Check if the authenticated user can access a specific lesson.
+ * GET /api/teaching/lessons/:lessonId/access
+ */
+export const checkLessonAccessHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { lessonId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      sendSuccess(res, HTTP_STATUS.UNAUTHORIZED, 'Usuario no autenticado');
+      return;
+    }
+
+    const hasAccess = await canAccessLessonService(userId, lessonId);
+
+    sendSuccess(res, HTTP_STATUS.OK, 'Estado de acceso obtenido', {
+      lessonId,
+      hasAccess,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

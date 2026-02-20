@@ -11,20 +11,20 @@ import { errorHandler, notFoundHandler } from './shared/middleware/error-handler
 // Importar rutas desde módulos
 import authRoutes from './modules/auth/auth.controller';
 import evaluationRoutes from './modules/evaluation/evaluation.controller';
-
-// Importar rutas existentes (se moverán a módulos en futuras fases)
-import usersRoutes from './routes/users';
-import progressRoutes from './routes/progress';
-import modulesRoutes from './routes/modules';
-import lessonsRoutes from './routes/lessons';
-import curriculumRoutes from './routes/curriculum';
-import teacherStudentsRoutes from './routes/teacherStudents';
-import levelsRoutes from './routes/levels';
-import cardsRoutes from './routes/cards';
-import changelogRoutes from './routes/changelog';
-import overridesRoutes from './routes/overrides';
-import teachingRoutes from './routes/teaching';
-import pagesRoutes from './routes/pages';
+import usersRoutes from './modules/profile/profile.controller';
+import {
+  teachingRoutes,
+  progressRoutes,
+  modulesRoutes,
+  lessonsRoutes,
+  curriculumRoutes,
+  teacherStudentsRoutes,
+  levelsRoutes,
+  cardsRoutes,
+  changelogRoutes,
+  overridesRoutes,
+  pagesRoutes,
+} from './modules/teaching/router';
 
 // ============================================
 // ENVIRONMENT CONFIGURATION

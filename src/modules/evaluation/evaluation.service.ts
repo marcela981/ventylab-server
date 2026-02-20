@@ -1,6 +1,6 @@
 import { prisma } from '../../shared/infrastructure/database';
 import { ClinicalCaseData, ExpertConfigurationData, UserConfiguration, ConfigurationComparison, ParameterComparison, EvaluationFeedback, EvaluationAttemptData, CaseSearchCriteria } from './evaluation.types';
-import { aiServiceManager } from '../../services/ai/AIServiceManager';
+import { aiServiceManager } from '../../shared/ai/AIServiceManager';
 import { CaseDifficulty, Pathology } from '@prisma/client';
 
 /**
