@@ -80,7 +80,9 @@
       "Bash(cmd.exe /c \"where npm\")",
       "Bash(cmd /c:*)",
       "Bash(powershell -Command:*)",
-      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs\")"
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs\")",
+      "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")",
+      "Bash(/c/nvm4w/nodejs/node:*)"
     ],
     "additionalDirectories": [
       "c:\\Marcela\\TESIS\\ventilab-web\\src\\components\\auth"

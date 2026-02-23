@@ -73,7 +73,7 @@ export async function getProgressOverview(
   const modules = await prisma.module.findMany({
     where: { isActive: true },
     include: {
-      pages: {
+      lessons: {
         where: { isActive: true },
         orderBy: { order: 'asc' },
         select: { id: true, moduleId: true },
@@ -88,19 +88,19 @@ export async function getProgressOverview(
     ],
   });
 
-  // ── Query 2: All page progress for this user (single query) ──────
-  const allPageProgress = await prisma.pageProgress.findMany({
+  // ── Query 2: All lesson progress for this user (single query) ──────
+  const allCompletions = await prisma.lessonCompletion.findMany({
     where: { userId },
   });
-  const progressMap = new Map(allPageProgress.map(p => [p.pageId, p]));
+  const progressMap = new Map(allCompletions.map(c => [c.lessonId, c]));
 
   // ── Defensive log (temporary) ────────────────────────────────────
-  const totalPagesInLevel = modules.reduce((sum, m) => sum + m.pages.length, 0);
+  const totalLessonsInLevel = modules.reduce((sum, m) => sum + m.lessons.length, 0);
   console.log('[overview] Data snapshot:', {
     userId,
     modulesFound: modules.length,
-    totalPagesInLevel,
-    pagesFound: allPageProgress.length,
+    totalLessonsInLevel,
+    lessonsFound: allCompletions.length,
   });
 
   // ── Build per-module summaries ───────────────────────────────────
@@ -110,14 +110,23 @@ export async function getProgressOverview(
 
   const modulesSummary: ModuleSummary[] = modules.map((mod) => {
     const levelKey = mod.levelId ?? '__no_level__';
-    const totalPages = mod.pages.length;
-    const completedPages = mod.pages.filter(
-      p => progressMap.get(p.id)?.completed === true
-    ).length;
-    const percentComplete = totalPages > 0
-      ? Math.floor((completedPages / totalPages) * 100)
+    const totalLessons = mod.lessons.length;
+    let completedLessons = 0;
+
+    // Calculate completed lessons considering step tracking
+    mod.lessons.forEach(l => {
+      const prog = progressMap.get(l.id);
+      if (prog?.isCompleted) {
+        completedLessons++;
+      } else if (prog && prog.totalSteps > 0 && prog.currentStepIndex >= prog.totalSteps - 1) {
+        completedLessons++; // Nearly complete based on steps
+      }
+    });
+
+    const percentComplete = totalLessons > 0
+      ? Math.floor((completedLessons / totalLessons) * 100)
       : 0;
-    const isModuleComplete = totalPages > 0 && completedPages === totalPages;
+    const isModuleComplete = totalLessons > 0 && completedLessons === totalLessons;
 
     // First module in this level = always available
     const isFirstInLevel = !prevCompleteByLevel.has(levelKey);
@@ -129,45 +138,68 @@ export async function getProgressOverview(
 
     return {
       moduleId: mod.id,
+      id: mod.id,               // alias for frontend compatibility
       title: mod.title,
       levelId: mod.levelId,
       description: mod.description,
       difficulty: mod.difficulty,
       estimatedTime: mod.estimatedTime,
       order: mod.order,
-      totalPages,
-      completedPages,
+      totalPages: totalLessons, // alias
+      completedPages: completedLessons, // alias
+      totalLessons,   // alias for frontend compatibility
+      completedLessons, // alias for frontend compatibility
       isAvailable,
       percentComplete,
+      progress: percentComplete,  // alias for frontend compatibility
+      completed: isModuleComplete,
     };
   });
 
-  // ── Build lessons (pages) array ──────────────────────────────────
+  // ── Build lessons array ──────────────────────────────────
   const lessons: PageSummary[] = modules.flatMap(mod =>
-    mod.pages.map(page => {
-      const prog = progressMap.get(page.id);
+    mod.lessons.map(lesson => {
+      const prog = progressMap.get(lesson.id);
+
+      // Calculate continuous progress 0-1 based on step tracking
+      let numericProgress = 0;
+      let isCompleted = false;
+
+      if (prog?.isCompleted) {
+        numericProgress = 1;
+        isCompleted = true;
+      } else if (prog && prog.totalSteps > 0) {
+        numericProgress = (prog.currentStepIndex + 1) / prog.totalSteps;
+        // Cap at 0.99 if not explicitly completed
+        numericProgress = Math.min(0.99, numericProgress);
+        if (numericProgress >= 0.99) isCompleted = true;
+      }
+
       return {
-        pageId: page.id,
+        pageId: lesson.id,         // alias
+        lessonId: lesson.id,         // required by frontend
         moduleId: mod.id,
-        completed: prog?.completed ?? false,
-        xpEarned: prog?.xpEarned ?? 0,
-        lastVisitedAt: prog?.lastVisitedAt?.toISOString() ?? null,
+        completed: isCompleted,
+        progress: numericProgress,  // numeric progress for frontend
+        xpEarned: isCompleted ? 100 : 0, // mock xp since LessonCompletion doesn't store it
+        lastVisitedAt: prog?.lastAccessed?.toISOString() ?? null,
+        updatedAt: prog?.updatedAt?.toISOString() ?? prog?.lastAccessed?.toISOString() ?? null, // alias
       };
     })
   );
 
   // ── Aggregate overview stats ─────────────────────────────────────
-  const totalLessons = totalPagesInLevel;
-  const completedLessons = allPageProgress.filter(p => p.completed).length;
+  const totalLessons = totalLessonsInLevel;
+  const completedLessonsAll = allCompletions.filter(c => c.isCompleted).length;
   const modulesCompleted = modulesSummary.filter(
-    m => m.totalPages > 0 && m.completedPages === m.totalPages
+    m => m.totalLessons > 0 && m.completedLessons === m.totalLessons
   ).length;
-  const xpTotal = allPageProgress.reduce((sum, p) => sum + p.xpEarned, 0);
+  const xpTotal = completedLessonsAll * 100;
   const level = Math.floor(xpTotal / XP_PER_LEVEL) + 1;
 
   return {
     overview: {
-      completedLessons,
+      completedLessons: completedLessonsAll,
       totalLessons,
       modulesCompleted,
       totalModules: modules.length,

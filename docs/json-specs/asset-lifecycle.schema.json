@@ -1,0 +1,434 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "asset-lifecycle",
+  "title": "VentyLab Asset Lifecycle",
+  "description": "Full lifecycle state document for a single ventilator device managed by the Asset Lifecycle Management Module. This document is the authoritative record of device status, current session, health metrics, configuration history, and audit events.",
+  "type": "object",
+  "required": ["deviceId", "status", "lastSeen", "currentSession", "healthMetrics", "eventLog"],
+  "additionalProperties": false,
+
+  "definitions": {
+    "isoDatetime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime in UTC, e.g. '2026-02-20T14:30:00.000Z'."
+    },
+    "deviceStatus": {
+      "type": "string",
+      "enum": ["ONLINE", "OFFLINE", "MAINTENANCE", "ERROR", "DECOMMISSIONED"],
+      "description": "ONLINE: actively connected and ventilating or on standby. OFFLINE: not reachable. MAINTENANCE: intentionally taken out of service. ERROR: fault state requiring attention. DECOMMISSIONED: permanently retired."
+    }
+  },
+
+  "properties": {
+    "deviceId": {
+      "type": "string",
+      "description": "Immutable unique identifier for the physical device (serial number or UUID).",
+      "minLength": 1,
+      "maxLength": 64,
+      "examples": ["VNT-SIM-001", "VNT-DRAGER-0042"]
+    },
+
+    "displayName": {
+      "type": "string",
+      "description": "Human-readable label for the device (e.g. room assignment or asset tag).",
+      "maxLength": 128,
+      "examples": ["Simulator 1 - Sala A", "UCI Bed 3 - Dräger"]
+    },
+
+    "deviceType": {
+      "type": "string",
+      "description": "Device type or model identifier.",
+      "examples": ["simulator-v2", "draeger-evita-infinity", "maquet-servo-u"]
+    },
+
+    "firmwareVersion": {
+      "type": "string",
+      "description": "Current firmware version string reported by the device.",
+      "examples": ["2.4.1", "5.0.3-rc1"]
+    },
+
+    "status": {
+      "$ref": "#/definitions/deviceStatus"
+    },
+
+    "statusReason": {
+      "type": "string",
+      "description": "Human-readable explanation for the current status. Required when status is MAINTENANCE, ERROR, or DECOMMISSIONED.",
+      "maxLength": 512,
+      "examples": ["Scheduled annual calibration", "Fan error detected — ticket #4821", "End of service life — replaced by VNT-SIM-002"]
+    },
+
+    "lastSeen": {
+      "$ref": "#/definitions/isoDatetime",
+      "description": "Timestamp of the last telemetry frame received from this device."
+    },
+
+    "registeredAt": {
+      "$ref": "#/definitions/isoDatetime",
+      "description": "When this device was first registered in the system."
+    },
+
+    "currentSession": {
+      "description": "Active session currently occupying the device. null when device is free.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["sessionId", "userId", "reservationId", "startTime", "expiresAt"],
+          "additionalProperties": false,
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Analytics session ID that matches ventilator-analytics sessionId."
+            },
+            "userId": {
+              "type": "string",
+              "description": "User currently operating or holding the device.",
+              "minLength": 1
+            },
+            "reservationId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Reservation record that granted access to this device."
+            },
+            "startTime": {
+              "$ref": "#/definitions/isoDatetime",
+              "description": "When the current session started."
+            },
+            "expiresAt": {
+              "$ref": "#/definitions/isoDatetime",
+              "description": "Scheduled end of this session. Backend should reclaim the device after this time."
+            },
+            "context": {
+              "type": "string",
+              "description": "Optional educational context (e.g. course module, exam, free practice).",
+              "examples": ["module-03-ventilacion-mecanica", "exam-final-2026", "free-practice"]
+            }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+
+    "healthMetrics": {
+      "type": "object",
+      "description": "Runtime health indicators updated on each heartbeat (typically every 5–10 s).",
+      "required": ["uptime", "messageRate", "errorRate"],
+      "additionalProperties": false,
+      "properties": {
+        "uptime": {
+          "type": "number",
+          "description": "Seconds since the device last booted (or re-connected).",
+          "minimum": 0
+        },
+        "messageRate": {
+          "type": "number",
+          "description": "Average telemetry frames per second received in the last 10-second window. Expected: 30–60 for active ventilation, 0 when OFFLINE.",
+          "minimum": 0
+        },
+        "errorRate": {
+          "type": "number",
+          "description": "Fraction of telemetry frames that contained at least one active alarm in the last 60-second window. Range 0–1.",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "droppedFrameRate": {
+          "type": "number",
+          "description": "Fraction of expected sequence numbers that were missing (gap detection). Range 0–1.",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "latencyMs": {
+          "type": "number",
+          "description": "Average end-to-end latency (device timestamp → backend receive timestamp) in milliseconds over the last 10-second window.",
+          "minimum": 0
+        },
+        "batteryLevel": {
+          "oneOf": [
+            {
+              "type": "number",
+              "description": "Battery charge percentage (0–100). null if device is mains-only.",
+              "minimum": 0,
+              "maximum": 100
+            },
+            { "type": "null" }
+          ]
+        },
+        "lastHeartbeatAt": {
+          "$ref": "#/definitions/isoDatetime",
+          "description": "Timestamp of the last heartbeat/health-check packet received from the device."
+        }
+      }
+    },
+
+    "connectionHistory": {
+      "type": "array",
+      "description": "Rolling log of the most recent connect/disconnect events. Recommended cap: last 50 events.",
+      "items": {
+        "type": "object",
+        "required": ["event", "timestamp"],
+        "additionalProperties": false,
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": ["connected", "disconnected", "reconnected", "timeout"]
+          },
+          "timestamp": {
+            "$ref": "#/definitions/isoDatetime"
+          },
+          "durationSeconds": {
+            "type": "number",
+            "description": "For 'disconnected'/'timeout': duration of the outage in seconds.",
+            "minimum": 0
+          },
+          "remoteAddress": {
+            "type": "string",
+            "description": "IP address or hostname from which the device connected."
+          }
+        }
+      }
+    },
+
+    "reservationHistory": {
+      "type": "array",
+      "description": "Historical reservations for this device. Ordered newest-first. Recommended cap: last 100 records.",
+      "items": {
+        "type": "object",
+        "required": ["reservationId", "userId", "startTime", "endTime", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "reservationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "startTime": {
+            "$ref": "#/definitions/isoDatetime"
+          },
+          "endTime": {
+            "$ref": "#/definitions/isoDatetime"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["completed", "cancelled", "expired", "aborted"],
+            "description": "completed = session ended normally. cancelled = cancelled before start. expired = expiresAt passed without manual end. aborted = terminated early due to error."
+          },
+          "sessionId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Analytics session created during this reservation. null if session never started."
+          }
+        }
+      }
+    },
+
+    "appliedConfigurations": {
+      "type": "array",
+      "description": "Log of successfully applied Command messages on this device. Ordered newest-first. Useful for auditing parameter changes.",
+      "items": {
+        "type": "object",
+        "required": ["commandId", "appliedAt", "ventilationMode", "appliedBy"],
+        "additionalProperties": false,
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Matches commandId in the ventilator-command schema."
+          },
+          "appliedAt": {
+            "$ref": "#/definitions/isoDatetime"
+          },
+          "appliedBy": {
+            "type": "string",
+            "description": "userId or system identifier that issued the command."
+          },
+          "ventilationMode": {
+            "type": "string",
+            "enum": ["VCV", "PCV", "SIMV", "PSV"]
+          },
+          "parameterSnapshot": {
+            "type": "object",
+            "description": "Compact snapshot of the applied parameter values (values only, no units, for space efficiency).",
+            "additionalProperties": false,
+            "properties": {
+              "tidalVolume":        { "type": "number" },
+              "respiratoryRate":    { "type": "number" },
+              "peep":               { "type": "number" },
+              "fio2":               { "type": "number" },
+              "pressureLimit":      { "type": "number" },
+              "triggerSensitivity": { "type": "number" },
+              "pressureSupport":    { "type": "number" },
+              "inspiratoryTime":    { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+
+    "eventLog": {
+      "type": "array",
+      "description": "Chronological audit log of system-level events for this device. Append-only. Recommended cap: last 200 events.",
+      "items": {
+        "type": "object",
+        "required": ["event", "timestamp"],
+        "additionalProperties": false,
+        "properties": {
+          "event": {
+            "type": "string",
+            "description": "Machine-readable event type.",
+            "examples": [
+              "DEVICE_REGISTERED",
+              "STATUS_CHANGED",
+              "SESSION_STARTED",
+              "SESSION_ENDED",
+              "COMMAND_APPLIED",
+              "COMMAND_REJECTED",
+              "ALARM_TRIGGERED",
+              "ALARM_CLEARED",
+              "FIRMWARE_UPDATED",
+              "MAINTENANCE_STARTED",
+              "MAINTENANCE_ENDED",
+              "DEVICE_DECOMMISSIONED"
+            ]
+          },
+          "timestamp": {
+            "$ref": "#/definitions/isoDatetime"
+          },
+          "triggeredBy": {
+            "type": "string",
+            "description": "userId, system process, or device that caused this event.",
+            "examples": ["user-admin-01", "system:heartbeat-monitor", "device:self-report"]
+          },
+          "details": {
+            "type": "object",
+            "description": "Event-specific payload. Schema is open to accommodate any event type.",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+
+    "maintenanceSchedule": {
+      "type": "object",
+      "description": "Scheduled and last maintenance records.",
+      "additionalProperties": false,
+      "properties": {
+        "lastMaintenanceAt": {
+          "oneOf": [{ "$ref": "#/definitions/isoDatetime" }, { "type": "null" }]
+        },
+        "nextMaintenanceDue": {
+          "oneOf": [{ "$ref": "#/definitions/isoDatetime" }, { "type": "null" }]
+        },
+        "maintenanceIntervalDays": {
+          "type": "integer",
+          "description": "Configured maintenance interval in days.",
+          "minimum": 1
+        },
+        "isOverdue": {
+          "type": "boolean",
+          "description": "true if current date > nextMaintenanceDue."
+        }
+      }
+    },
+
+    "schemaVersion": {
+      "type": "string",
+      "description": "Schema version of this document.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0"]
+    }
+  },
+
+  "if": {
+    "properties": {
+      "status": { "enum": ["MAINTENANCE", "ERROR", "DECOMMISSIONED"] }
+    },
+    "required": ["status"]
+  },
+  "then": {
+    "required": ["deviceId", "status", "lastSeen", "currentSession", "healthMetrics", "eventLog", "statusReason"]
+  },
+
+  "examples": [
+    {
+      "deviceId": "VNT-SIM-001",
+      "displayName": "Simulator 1 - Sala A",
+      "deviceType": "simulator-v2",
+      "firmwareVersion": "2.4.1",
+      "status": "ONLINE",
+      "lastSeen": "2026-02-20T14:45:00.000Z",
+      "registeredAt": "2025-09-01T08:00:00.000Z",
+      "currentSession": {
+        "sessionId": "f1e2d3c4-aaaa-4bbb-8ccc-000000000001",
+        "userId": "user-student-42",
+        "reservationId": "aaaabbbb-cccc-4ddd-eeee-000000000001",
+        "startTime":  "2026-02-20T14:00:00.000Z",
+        "expiresAt":  "2026-02-20T15:00:00.000Z",
+        "context": "module-03-ventilacion-mecanica"
+      },
+      "healthMetrics": {
+        "uptime": 86400,
+        "messageRate": 45.2,
+        "errorRate": 0.002,
+        "droppedFrameRate": 0.0001,
+        "latencyMs": 8.3,
+        "batteryLevel": null,
+        "lastHeartbeatAt": "2026-02-20T14:44:55.000Z"
+      },
+      "connectionHistory": [
+        { "event": "connected", "timestamp": "2026-02-20T08:00:00.000Z", "remoteAddress": "192.168.1.42" }
+      ],
+      "reservationHistory": [
+        {
+          "reservationId": "aaaabbbb-cccc-4ddd-eeee-000000000000",
+          "userId": "user-student-41",
+          "startTime": "2026-02-20T10:00:00.000Z",
+          "endTime":   "2026-02-20T11:00:00.000Z",
+          "status": "completed",
+          "sessionId": "e0d1c2b3-9999-4888-7777-000000000000"
+        }
+      ],
+      "appliedConfigurations": [
+        {
+          "commandId": "b4e2a1c0-ffff-4abc-8000-000000000042",
+          "appliedAt": "2026-02-20T14:00:05.000Z",
+          "appliedBy": "user-student-42",
+          "ventilationMode": "VCV",
+          "parameterSnapshot": {
+            "tidalVolume": 500,
+            "respiratoryRate": 14,
+            "peep": 5,
+            "fio2": 0.40,
+            "pressureLimit": 30,
+            "triggerSensitivity": 2.0,
+            "inspiratoryTime": 1.0
+          }
+        }
+      ],
+      "eventLog": [
+        {
+          "event": "SESSION_STARTED",
+          "timestamp": "2026-02-20T14:00:00.000Z",
+          "triggeredBy": "user-student-42",
+          "details": { "sessionId": "f1e2d3c4-aaaa-4bbb-8ccc-000000000001", "reservationId": "aaaabbbb-cccc-4ddd-eeee-000000000001" }
+        },
+        {
+          "event": "COMMAND_APPLIED",
+          "timestamp": "2026-02-20T14:00:05.000Z",
+          "triggeredBy": "user-student-42",
+          "details": { "commandId": "b4e2a1c0-ffff-4abc-8000-000000000042", "mode": "VCV" }
+        }
+      ],
+      "maintenanceSchedule": {
+        "lastMaintenanceAt": "2026-01-15T09:00:00.000Z",
+        "nextMaintenanceDue": "2026-04-15T09:00:00.000Z",
+        "maintenanceIntervalDays": 90,
+        "isOverdue": false
+      },
+      "schemaVersion": "1.0.0"
+    }
+  ]
+}

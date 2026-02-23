@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ventilator-command-ack",
+  "title": "VentyLab Ventilator Command Acknowledgment",
+  "description": "Sent by the ventilator to the backend immediately after receiving and validating a command. Correlates to the original command via commandId.",
+  "type": "object",
+  "required": ["commandId", "deviceId", "ackedAt", "status"],
+  "additionalProperties": false,
+
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Echoes the commandId from the originating Command message."
+    },
+    "deviceId": {
+      "type": "string",
+      "description": "Device that processed the command.",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "ackedAt": {
+      "type": "integer",
+      "description": "Unix epoch timestamp in milliseconds when the device processed the command.",
+      "minimum": 0
+    },
+    "status": {
+      "type": "string",
+      "description": "Result of command processing. 'applied' = settings changed. 'rejected' = settings refused (see reason). 'pending' = accepted, applying asynchronously.",
+      "enum": ["applied", "rejected", "pending"]
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable explanation. Required when status='rejected'.",
+      "examples": [
+        "pressureLimit must be greater than PEEP",
+        "tidalVolume out of range for patient weight",
+        "device in alarm state — command refused until alarm cleared"
+      ]
+    },
+    "appliedParameters": {
+      "type": "object",
+      "description": "The actual parameter values the device latched onto (may differ from requested values due to rounding or device limits). Omitted when status='rejected'.",
+      "additionalProperties": true
+    }
+  },
+
+  "if": {
+    "properties": { "status": { "const": "rejected" } },
+    "required": ["status"]
+  },
+  "then": {
+    "required": ["commandId", "deviceId", "ackedAt", "status", "reason"]
+  },
+
+  "examples": [
+    {
+      "commandId": "b4e2a1c0-ffff-4abc-8000-000000000042",
+      "deviceId": "VNT-SIM-001",
+      "ackedAt": 1740000005045,
+      "status": "applied",
+      "appliedParameters": {
+        "tidalVolume": 500,
+        "respiratoryRate": 14,
+        "peep": 5,
+        "fio2": 0.40,
+        "pressureLimit": 30
+      }
+    },
+    {
+      "commandId": "d6a4c3e2-bbbb-4fab-a222-000000000077",
+      "deviceId": "VNT-SIM-001",
+      "ackedAt": 1740000008200,
+      "status": "rejected",
+      "reason": "pressureLimit (12 cmH2O) must exceed PEEP (5 cmH2O) by at least 10 cmH2O"
+    }
+  ]
+}

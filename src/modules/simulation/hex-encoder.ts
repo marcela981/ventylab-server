@@ -7,6 +7,18 @@
  * para enviar via MQTT al ventilador físico, siguiendo la estructura:
  *
  *   [START=0xFF] [TYPE=0xB1] [LENGTH] [DATA...] [CHECKSUM]
+ *
+ * Campos de datos (en orden):
+ *   [MODE]          1 byte  — código del modo de ventilación
+ *   [TV_HI][TV_LO]  2 bytes — tidalVolume en ml, uint16 BE
+ *   [RR]            1 byte  — respiratoryRate en resp/min
+ *   [PEEP]          1 byte  — PEEP en cmH₂O
+ *   [FIO2]          1 byte  — fio2 × 100 (0.40 → 40)
+ *   [PLIM]          1 byte  — pressureLimit en cmH₂O   (opcional)
+ *   [IT_HI][IT_LO]  2 bytes — inspiratoryTime × 10, uint16 BE (opcional)
+ *
+ * Checksum: XOR de todos los bytes del frame excepto el último.
+ * (Algoritmo idéntico al de HexParser.)
  */
 
 import type {
@@ -16,8 +28,17 @@ import type {
 import {
   HexMessageType,
   HEX_FRAME,
+  VentilationMode,
   VENTILATOR_SAFE_RANGES,
 } from '../../../contracts/simulation.contracts';
+
+/** Byte codes for VentilationMode, shared with the ventilator firmware. */
+const MODE_BYTE: Record<VentilationMode, number> = {
+  [VentilationMode.VCV]: 0x01,
+  [VentilationMode.PCV]: 0x02,
+  [VentilationMode.SIMV]: 0x03,
+  [VentilationMode.PSV]: 0x04,
+};
 
 export class HexEncoder implements IHexEncoder {
   // ---------------------------------------------------------------------------
@@ -25,51 +46,111 @@ export class HexEncoder implements IHexEncoder {
   // ---------------------------------------------------------------------------
 
   /**
-   * Codifica un comando del ventilador a buffer hexadecimal.
-   * @param command - Comando a codificar
-   * @returns Buffer listo para publicar via MQTT
+   * Codifica un VentilatorCommand a buffer hexadecimal listo para MQTT.
+   * @throws {RangeError} si el comando tiene parámetros fuera de rango
    */
   encode(command: VentilatorCommand): Buffer {
-    // TODO: Validar comando con this.validateCommand()
-    // TODO: Serializar campos del comando a bytes:
-    //   - mode (1 byte)
-    //   - tidalVolume (2 bytes, big-endian)
-    //   - respiratoryRate (1 byte)
-    //   - peep (1 byte)
-    //   - fio2 (1 byte, 0-100 escala)
-    //   - pressureLimit (1 byte, opcional)
-    //   - inspiratoryTime (2 bytes, opcional)
-    // TODO: Construir trama: [0xFF, 0xB1, length, ...data, checksum]
-    // TODO: Calcular checksum
-    // TODO: Retornar Buffer completo
-    throw new Error('Not implemented');
+    if (!this.validateCommand(command)) {
+      const errors = this.getValidationErrors(command);
+      throw new RangeError(`[HexEncoder] Invalid command: ${errors.join('; ')}`);
+    }
+
+    const data: number[] = [
+      this.encodeMode(command.mode),
+      ...this.writeUInt16BE(command.tidalVolume),
+      command.respiratoryRate,
+      command.peep,
+      Math.round(command.fio2 * 100), // 0.40 → 40, 1.0 → 100
+    ];
+
+    if (command.pressureLimit !== undefined) {
+      data.push(command.pressureLimit);
+    }
+
+    if (command.inspiratoryTime !== undefined) {
+      data.push(...this.writeUInt16BE(Math.round(command.inspiratoryTime * 10)));
+    }
+
+    const header = Buffer.from([
+      HEX_FRAME.START_BYTE,        // 0xFF
+      HexMessageType.COMMAND,      // 0xB1
+      data.length,
+    ]);
+    const payload = Buffer.from(data);
+    const frameWithoutChecksum = Buffer.concat([header, payload]);
+    const checksum = this.calculateChecksum(frameWithoutChecksum);
+
+    return Buffer.concat([frameWithoutChecksum, Buffer.from([checksum])]);
   }
 
   /**
-   * Valida que los parámetros del comando estén dentro de rangos seguros.
-   * @param command - Comando a validar
-   * @returns true si todos los parámetros son válidos
+   * Valida que todos los parámetros requeridos estén dentro de rangos seguros.
    */
   validateCommand(command: VentilatorCommand): boolean {
-    // TODO: Verificar cada parámetro contra VENTILATOR_SAFE_RANGES
-    // TODO: Retornar false si alguno está fuera de rango
-    throw new Error('Not implemented');
+    return this.getValidationErrors(command).length === 0;
   }
 
   /**
-   * Obtiene errores de validación detallados para un comando.
-   * @param command - Comando a validar
-   * @returns Array de mensajes de error (vacío si válido)
+   * Retorna una lista de mensajes de error, uno por cada parámetro fuera de rango.
+   * Array vacío si el comando es válido.
    */
   getValidationErrors(command: VentilatorCommand): string[] {
-    // TODO: Verificar tidalVolume contra VENTILATOR_SAFE_RANGES.TIDAL_VOLUME
-    // TODO: Verificar respiratoryRate contra VENTILATOR_SAFE_RANGES.RESPIRATORY_RATE
-    // TODO: Verificar peep contra VENTILATOR_SAFE_RANGES.PEEP
-    // TODO: Verificar fio2 contra VENTILATOR_SAFE_RANGES.FIO2
-    // TODO: Verificar pressureLimit contra VENTILATOR_SAFE_RANGES.PRESSURE_LIMIT
-    // TODO: Verificar inspiratoryTime contra VENTILATOR_SAFE_RANGES.INSPIRATORY_TIME
-    // TODO: Retornar array de strings con errores encontrados
-    throw new Error('Not implemented');
+    const errors: string[] = [];
+    const r = VENTILATOR_SAFE_RANGES;
+
+    if (
+      command.tidalVolume < r.TIDAL_VOLUME.min ||
+      command.tidalVolume > r.TIDAL_VOLUME.max
+    ) {
+      errors.push(
+        `tidalVolume ${command.tidalVolume} out of range [${r.TIDAL_VOLUME.min}, ${r.TIDAL_VOLUME.max}] ${r.TIDAL_VOLUME.unit}`,
+      );
+    }
+
+    if (
+      command.respiratoryRate < r.RESPIRATORY_RATE.min ||
+      command.respiratoryRate > r.RESPIRATORY_RATE.max
+    ) {
+      errors.push(
+        `respiratoryRate ${command.respiratoryRate} out of range [${r.RESPIRATORY_RATE.min}, ${r.RESPIRATORY_RATE.max}] ${r.RESPIRATORY_RATE.unit}`,
+      );
+    }
+
+    if (command.peep < r.PEEP.min || command.peep > r.PEEP.max) {
+      errors.push(
+        `peep ${command.peep} out of range [${r.PEEP.min}, ${r.PEEP.max}] ${r.PEEP.unit}`,
+      );
+    }
+
+    if (command.fio2 < r.FIO2.min || command.fio2 > r.FIO2.max) {
+      errors.push(
+        `fio2 ${command.fio2} out of range [${r.FIO2.min}, ${r.FIO2.max}] ${r.FIO2.unit}`,
+      );
+    }
+
+    if (command.pressureLimit !== undefined) {
+      if (
+        command.pressureLimit < r.PRESSURE_LIMIT.min ||
+        command.pressureLimit > r.PRESSURE_LIMIT.max
+      ) {
+        errors.push(
+          `pressureLimit ${command.pressureLimit} out of range [${r.PRESSURE_LIMIT.min}, ${r.PRESSURE_LIMIT.max}] ${r.PRESSURE_LIMIT.unit}`,
+        );
+      }
+    }
+
+    if (command.inspiratoryTime !== undefined) {
+      if (
+        command.inspiratoryTime < r.INSPIRATORY_TIME.min ||
+        command.inspiratoryTime > r.INSPIRATORY_TIME.max
+      ) {
+        errors.push(
+          `inspiratoryTime ${command.inspiratoryTime} out of range [${r.INSPIRATORY_TIME.min}, ${r.INSPIRATORY_TIME.max}] ${r.INSPIRATORY_TIME.unit}`,
+        );
+      }
+    }
+
+    return errors;
   }
 
   // ---------------------------------------------------------------------------
@@ -77,33 +158,32 @@ export class HexEncoder implements IHexEncoder {
   // ---------------------------------------------------------------------------
 
   /**
-   * Calcula el checksum para la trama.
-   * @param data - Bytes de la trama (sin checksum)
-   * @returns Byte de checksum
+   * Calcula el checksum de la trama (sin el byte de checksum).
+   * Algoritmo: XOR de todos los bytes del buffer recibido.
+   * Equivalente a HexParser.calculateChecksum(fullFrame) donde fullFrame
+   * = Buffer.concat([data, checksum]).
    */
   private calculateChecksum(data: Buffer): number {
-    // TODO: Implementar mismo algoritmo de checksum que HexParser
-    throw new Error('Not implemented');
+    let checksum = 0;
+    for (const byte of data) {
+      checksum ^= byte;
+    }
+    return checksum;
   }
 
   /**
-   * Codifica el modo de ventilación a su representación en byte.
-   * @param mode - Modo de ventilación (VCV, PCV, SIMV, PSV)
-   * @returns Byte representando el modo
+   * Mapea un VentilationMode a su byte de wire.
    */
-  private encodeMode(mode: string): number {
-    // TODO: Mapear VentilationMode a byte:
-    //   VCV -> 0x01, PCV -> 0x02, SIMV -> 0x03, PSV -> 0x04
-    throw new Error('Not implemented');
+  private encodeMode(mode: VentilationMode): number {
+    return MODE_BYTE[mode] ?? 0x00;
   }
 
   /**
-   * Escribe un valor de 16 bits en big-endian a un buffer.
-   * @param value - Valor numérico
-   * @returns Buffer de 2 bytes
+   * Serializa un entero sin signo a 2 bytes big-endian.
+   * @returns Tupla [high_byte, low_byte]
    */
-  private writeUInt16BE(value: number): Buffer {
-    // TODO: Crear Buffer de 2 bytes y escribir valor en big-endian
-    throw new Error('Not implemented');
+  private writeUInt16BE(value: number): [number, number] {
+    const clamped = Math.max(0, Math.min(0xffff, Math.trunc(value)));
+    return [(clamped >> 8) & 0xff, clamped & 0xff];
   }
 }

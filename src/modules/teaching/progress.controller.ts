@@ -94,8 +94,8 @@ export async function getLessonProgress(req: Request, res: Response, next: NextF
 }
 
 // GET /api/progress/overview
-// Uses the new Page-based overview service (Level → Module → Page → PageProgress).
-// Always returns modules and pages even for users with no progress yet.
+// Uses the Page/Lesson-based overview service (Level → Module → Lesson → LessonCompletion).
+// Always returns modules and lessons even for users with no progress yet.
 export async function getUserOverview(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
@@ -448,7 +448,7 @@ export async function markComplete(req: Request, res: Response, next: NextFuncti
 export async function getMilestones(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
-    
+
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
@@ -473,7 +473,7 @@ export async function getMilestones(req: Request, res: Response, next: NextFunct
 export async function getAchievements(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
-    
+
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
@@ -484,7 +484,7 @@ export async function getAchievements(req: Request, res: Response, next: NextFun
         where: { userId },
         orderBy: { unlockedAt: 'desc' },
       });
-      
+
       res.json({
         achievements: achievements.map(a => ({
           id: a.id,

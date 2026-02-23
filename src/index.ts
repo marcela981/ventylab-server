@@ -1,3 +1,4 @@
+import http from 'http';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -5,8 +6,17 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
+import { Server as SocketIOServer } from 'socket.io';
 import { prisma } from './shared/infrastructure/database';
 import { errorHandler, notFoundHandler } from './shared/middleware/error-handler.middleware';
+import {
+  createSimulationController,
+  SimulationService,
+  WSGateway,
+  MqttClient,
+  HexParser,
+  HexEncoder,
+} from './modules/simulation';
 
 // Importar rutas desde módulos
 import authRoutes from './modules/auth/auth.controller';
@@ -238,27 +248,77 @@ app.use('/api/teaching', teachingRoutes);
 // Rutas de páginas (Phase 1 - Content Hierarchy Refactoring)
 app.use('/api/pages', pagesRoutes);
 
+// Rutas de simulación (WebSocket gateway + ventilador físico)
+// NOTE: simulationRouter is registered after the HTTP server is created
+// (see startServer below) so that the Socket.io server is ready first.
+
 // TODO: Rutas de servicios de IA (cuando se implementen)
 // app.use('/api/ai', aiRoutes);
 
 // ============================================
 // Manejo de errores
 // ============================================
-
-// Capturar rutas no encontradas
-app.use(notFoundHandler);
-
-// Middleware de manejo de errores global (debe ir al final)
-app.use(errorHandler);
+// NOTE: Error handlers are registered inside startServer() AFTER the
+// simulation router, which needs the HTTP server (Socket.io) to exist.
+// Registering them here would block any routes mounted later.
 
 // ============================================
 // Configuración del servidor
 // ============================================
 
-let server: any;
+let server: http.Server;
 
-const startServer = () => {
-  server = app.listen(PORT, () => {
+const startServer = async () => {
+  // ------------------------------------------------------------------
+  // HTTP server + Socket.io
+  // ------------------------------------------------------------------
+  server = http.createServer(app);
+
+  const io = new SocketIOServer(server, {
+    cors: {
+      origin: allowedOrigins as string[],
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
+  });
+
+  // ------------------------------------------------------------------
+  // Simulation module wiring
+  // ------------------------------------------------------------------
+  const mqttBrokerUrl = process.env.MQTT_BROKER_URL ?? 'mqtt://localhost:1883';
+
+  const mqttClient = new MqttClient({ brokerUrl: mqttBrokerUrl, clientId: 'ventylab-server' });
+  const wsGateway = new WSGateway(io);
+  const hexParser = new HexParser();
+  const hexEncoder = new HexEncoder();
+  const simulationService = new SimulationService(
+    prisma,
+    wsGateway,
+    mqttClient,
+    hexParser,
+    hexEncoder,
+  );
+
+  // Register REST routes (needs the instantiated service)
+  app.use('/api/simulation', createSimulationController(simulationService));
+
+  // Error handlers MUST be registered AFTER all routes (including simulation)
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+
+  // Connect to MQTT (non-fatal – server starts even if broker is unreachable)
+  try {
+    await simulationService.initialize();
+    console.log('✅ Simulation module initialized (MQTT connected)');
+  } catch (err: any) {
+    console.warn('⚠️  Simulation module: MQTT connection failed –', err.message);
+    console.warn('    REST endpoints are available; real-time data will not stream.');
+  }
+
+  // ------------------------------------------------------------------
+  // Start listening
+  // ------------------------------------------------------------------
+  server.listen(PORT, () => {
     console.log('='.repeat(50));
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
     console.log(`📝 Entorno: ${NODE_ENV}`);
@@ -279,6 +339,8 @@ const startServer = () => {
     console.log('  - GET  /api/changelog/* - Historial de cambios (audit trail)');
     console.log('  - CRUD /api/overrides/* - Overrides de contenido por estudiante');
     console.log('  - GET  /api/pages/* - Páginas (Phase 1 - Content Hierarchy)');
+    console.log('  - WS   /socket.io - WebSocket (simulación en tiempo real)');
+    console.log('  - CRUD /api/simulation/* - Simulación ventilador');
     console.log('='.repeat(50));
   });
 };
@@ -328,6 +390,9 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 // Iniciar servidor
-startServer();
+startServer().catch((err) => {
+  console.error('❌ Error al iniciar el servidor:', err);
+  process.exit(1);
+});
 
 export default app;
