@@ -18,12 +18,16 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../../shared/middleware/auth.middleware';
 import { SimulationService } from './simulation.service';
+import { PatientSimulationService } from './patient-simulation.service';
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createSimulationController(service: SimulationService): Router {
+export function createSimulationController(
+  service: SimulationService,
+  patientService: PatientSimulationService,
+): Router {
   const router = Router();
 
   // All simulation endpoints require a valid JWT.
@@ -181,6 +185,80 @@ export function createSimulationController(service: SimulationService): Router {
       res.json({ success: true, data, count: data.length });
     } catch (error: any) {
       console.error('[SimulationController] GET /sessions error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // =========================================================================
+  // Patient simulation routes
+  // =========================================================================
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/patient/configure
+  // Body: { clinicalCaseId? } | { demographics, condition, vitalSigns?, ... }
+  // Returns: { success, patient: PatientModel }
+  // -------------------------------------------------------------------------
+  router.post('/patient/configure', (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const patient = patientService.configurePatient(userId, req.body);
+      res.json({ success: true, patient });
+    } catch (error: any) {
+      const isValidation = error.message.includes('requiere') || error.message.includes('encontrado');
+      res.status(isValidation ? 400 : 500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/patient/start
+  // Body: { command: VentilatorCommand }
+  // Returns: { success, message }
+  // -------------------------------------------------------------------------
+  router.post('/patient/start', (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const { command } = req.body;
+
+      if (!command || typeof command !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: 'Body must include a "command" object with ventilator settings',
+        });
+      }
+
+      patientService.startSimulation(userId, command);
+      res.json({ success: true, message: 'Simulation started — streaming ventilator:data via WebSocket' });
+    } catch (error: any) {
+      const isNotFound = error.message.includes('No hay paciente');
+      res.status(isNotFound ? 404 : 500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/patient/stop
+  // Returns: { success, message }
+  // -------------------------------------------------------------------------
+  router.post('/patient/stop', (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      patientService.stopSimulation(userId);
+      res.json({ success: true, message: 'Simulation stopped' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // GET /api/simulation/patient
+  // Returns: { success, patient: PatientModel | null, isSimulating: boolean }
+  // -------------------------------------------------------------------------
+  router.get('/patient', (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const patient = patientService.getActivePatient(userId);
+      const isSimulating = patientService.isSimulating(userId);
+      res.json({ success: true, patient, isSimulating });
+    } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }
   });

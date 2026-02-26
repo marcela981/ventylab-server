@@ -12,6 +12,10 @@ import { errorHandler, notFoundHandler } from './shared/middleware/error-handler
 import {
   createSimulationController,
   SimulationService,
+  PatientSimulationService,
+  PatientCalculatorService,
+  SignalGeneratorService,
+  ClinicalCasesService,
   WSGateway,
   MqttClient,
   HexParser,
@@ -299,8 +303,19 @@ const startServer = async () => {
     hexEncoder,
   );
 
-  // Register REST routes (needs the instantiated service)
-  app.use('/api/simulation', createSimulationController(simulationService));
+  // Patient simulation (signal generation from form data)
+  const calculator = new PatientCalculatorService();
+  const signalGenerator = new SignalGeneratorService();
+  const clinicalCasesService = new ClinicalCasesService(calculator);
+  const patientSimulationService = new PatientSimulationService(
+    calculator,
+    signalGenerator,
+    clinicalCasesService,
+    wsGateway,
+  );
+
+  // Register REST routes (needs the instantiated services)
+  app.use('/api/simulation', createSimulationController(simulationService, patientSimulationService));
 
   // Error handlers MUST be registered AFTER all routes (including simulation)
   app.use(notFoundHandler);

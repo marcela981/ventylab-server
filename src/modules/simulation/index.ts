@@ -4,11 +4,19 @@
  * Import order intentional: contracts → infra → service → controller
  */
 
-// Controller factory (receives SimulationService, returns Router)
+// Controller factory (receives SimulationService + PatientSimulationService, returns Router)
 export { createSimulationController } from './simulation.controller';
 
-// Main orchestrator
+// Main orchestrator (physical ventilator via MQTT)
 export { SimulationService } from './simulation.service';
+
+// Patient simulation (signal generation from patient model)
+export { PatientSimulationService } from './patient-simulation.service';
+
+// Patient sub-services (needed for wiring in src/index.ts)
+export { PatientCalculatorService } from './patient/patient-calculator.service';
+export { SignalGeneratorService } from './patient/signal-generator.service';
+export { ClinicalCasesService } from './patient/clinical-cases.service';
 
 // Infrastructure adapters
 export { WSGateway } from './ws-gateway';
