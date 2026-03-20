@@ -20,6 +20,7 @@ import {
   MqttClient,
   HexParser,
   HexEncoder,
+  InfluxTelemetryService,
 } from './modules/simulation';
 
 // Importar rutas desde módulos
@@ -75,7 +76,7 @@ if (missingEnvVars.length > 0) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4000;
 // NODE_ENV already defined above after dotenv.config()
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
@@ -89,6 +90,7 @@ app.set('trust proxy', 1);
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
+  'http://localhost:4000',
   process.env.FRONTEND_URL,
   process.env.PRODUCTION_URL,
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
@@ -158,7 +160,7 @@ app.use(compression());
 // ============================================
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // 100 requests por IP
+  max: 500, // 500 requests por IP (progress tracking fires frequently)
   message: {
     error: 'Demasiadas solicitudes',
     message: 'Has excedido el límite de solicitudes. Por favor, intenta nuevamente más tarde.',
@@ -192,6 +194,14 @@ if (NODE_ENV === 'development') {
 // ============================================
 // Rutas de API
 // ============================================
+
+// Normalize double /api prefix (e.g. /api/api/levels → /api/levels)
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace('/api/api/', '/api/');
+  }
+  next();
+});
 
 // Ruta de salud (antes de autenticación)
 app.get('/health', (req: Request, res: Response) => {
@@ -271,6 +281,7 @@ app.use('/api/pages', pagesRoutes);
 // ============================================
 
 let server: http.Server;
+let influxService: InfluxTelemetryService | null = null;
 
 const startServer = async () => {
   // ------------------------------------------------------------------
@@ -330,6 +341,16 @@ const startServer = async () => {
     console.warn('    REST endpoints are available; real-time data will not stream.');
   }
 
+  // InfluxDB telemetry persistence (optional – server starts without it)
+  influxService = InfluxTelemetryService.fromEnv();
+  if (influxService) {
+    const influx = influxService; // capture for closure narrowing
+    mqttClient.subscribeTelemetryJson((payload) => {
+      influx.writeTelemetry(payload);
+    });
+    console.log('✅ InfluxDB telemetry writer attached to MQTT stream');
+  }
+
   // ------------------------------------------------------------------
   // Start listening
   // ------------------------------------------------------------------
@@ -372,6 +393,16 @@ const gracefulShutdown = async (signal: string) => {
     server.close(() => {
       console.log('✅ Servidor HTTP cerrado');
     });
+  }
+
+  // Flush y cerrar InfluxDB WriteApi
+  if (influxService) {
+    try {
+      await influxService.close();
+      console.log('✅ InfluxDB WriteApi cerrado');
+    } catch (err) {
+      console.error('❌ Error cerrando InfluxDB:', err);
+    }
   }
 
   // Cerrar conexión de Prisma

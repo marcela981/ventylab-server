@@ -97,16 +97,18 @@ export async function updateStepProgress(
     }
 
     const clampedStep = Math.min(currentStepIndex, totalSteps - 1);
+    // Auto-complete when the user reaches the last step
+    const isLastStep = clampedStep >= totalSteps - 1;
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Upsert UserProgress (module-level)
+      // 1. Upsert UserProgress (module-level) — mark as in-progress; completion is
+      //    recalculated by updateModuleProgress after the transaction.
       await tx.userProgress.upsert({
         where: { userId_moduleId: { userId, moduleId } },
         update: {
           lastAccessedLessonId: lessonId,
           lastAccessedAt: new Date(),
           timeSpent: { increment: timeSpentDelta },
-          // Only transition to IN_PROGRESS if currently NOT_STARTED
           status: ProgressStatus.IN_PROGRESS,
         },
         create: {
@@ -120,11 +122,15 @@ export async function updateStepProgress(
       });
 
       // 2. Upsert LessonCompletion (lesson+step level)
-      // NEVER downgrade isCompleted true → false
+      // - On last step: auto-complete (isCompleted=true, set completedAt)
+      // - Otherwise: update currentStepIndex but NEVER downgrade isCompleted true→false
       const existing = await tx.lessonCompletion.findUnique({
         where: { userId_lessonId: { userId, lessonId } },
         select: { isCompleted: true },
       });
+
+      const alreadyCompleted = existing?.isCompleted === true;
+      const shouldComplete = isLastStep || alreadyCompleted;
 
       const lessonCompletion = await tx.lessonCompletion.upsert({
         where: { userId_lessonId: { userId, lessonId } },
@@ -133,8 +139,8 @@ export async function updateStepProgress(
           totalSteps,
           timeSpent: { increment: timeSpentDelta },
           lastAccessed: new Date(),
-          // Never downgrade completion
-          ...(existing?.isCompleted ? {} : { isCompleted: false }),
+          isCompleted: shouldComplete,
+          ...(shouldComplete && !alreadyCompleted ? { completedAt: new Date() } : {}),
         },
         create: {
           userId,
@@ -143,8 +149,8 @@ export async function updateStepProgress(
           totalSteps,
           timeSpent: timeSpentDelta,
           lastAccessed: new Date(),
-          isCompleted: false,
-          completedAt: null,
+          isCompleted: isLastStep,
+          completedAt: isLastStep ? new Date() : null,
         },
       });
 
@@ -152,6 +158,14 @@ export async function updateStepProgress(
     }, { maxWait: 5000, timeout: 10000 });
 
     invalidateUserCache(userId);
+
+    // Fix Común: ALWAYS recalculate module progress after every LessonCompletion write
+    // Runs outside the transaction to avoid lengthening it; errors are non-fatal.
+    try {
+      await updateModuleProgress(userId, moduleId);
+    } catch (e: any) {
+      console.warn(`[updateStepProgress] updateModuleProgress failed (non-fatal): ${e?.message}`);
+    }
 
     const progressPercentage = Math.floor(((clampedStep + 1) / totalSteps) * 100);
 
@@ -376,6 +390,71 @@ export async function getLessonProgressDetails(
 // ============================================
 // INTERNAL HELPERS
 // ============================================
+
+/**
+ * updateModuleProgress (Fix Común)
+ *
+ * Recalculates UserProgress denormalized counters from LessonCompletion
+ * and persists them to the database. Must be called after EVERY
+ * LessonCompletion write to keep the module progress in sync.
+ *
+ * @internal Called by updateStepProgress, markLessonComplete, etc.
+ */
+async function updateModuleProgress(
+  userId: string,
+  moduleId: string
+): Promise<void> {
+  const totalLessons = await prisma.lesson.count({
+    where: { moduleId, isActive: true },
+  });
+
+  if (totalLessons === 0) return;
+
+  const lessonIds: string[] = (await prisma.lesson.findMany({
+    where: { moduleId, isActive: true },
+    select: { id: true },
+  })).map((l: { id: string }) => l.id);
+
+  const completedLessonsCount = await prisma.lessonCompletion.count({
+    where: { userId, lessonId: { in: lessonIds }, isCompleted: true },
+  });
+
+  const progressPercentage = Math.round((completedLessonsCount / totalLessons) * 100);
+  const moduleCompleted = completedLessonsCount >= totalLessons;
+  const status: ProgressStatus = moduleCompleted
+    ? ProgressStatus.COMPLETED
+    : completedLessonsCount > 0
+      ? ProgressStatus.IN_PROGRESS
+      : ProgressStatus.NOT_STARTED;
+
+  await prisma.userProgress.upsert({
+    where: { userId_moduleId: { userId, moduleId } },
+    update: {
+      status,
+      isModuleCompleted: moduleCompleted,
+      completedLessonsCount,
+      totalLessons,
+      progressPercentage,
+      completedAt: moduleCompleted ? new Date() : undefined,
+      lastAccessedAt: new Date(),
+    },
+    create: {
+      userId,
+      moduleId,
+      status,
+      isModuleCompleted: moduleCompleted,
+      completedLessonsCount,
+      totalLessons,
+      progressPercentage,
+      completedAt: moduleCompleted ? new Date() : null,
+    },
+  });
+
+  console.log(
+    `[updateModuleProgress] userId=${userId} moduleId=${moduleId} ` +
+    `completed=${completedLessonsCount}/${totalLessons} (${progressPercentage}%)`
+  );
+}
 
 /**
  * Recalculate UserProgress counters after a lesson completion.

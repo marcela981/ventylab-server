@@ -7,6 +7,10 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    // Prisma 7: datasource url is no longer read from schema.prisma.
+    // Pass the connection string directly so the client always has it,
+    // regardless of the schema file contents.
+    datasourceUrl: process.env.DATABASE_URL,
     log:
       process.env.NODE_ENV === 'development'
         ? ['query', 'error', 'warn']

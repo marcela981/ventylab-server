@@ -21,9 +21,10 @@ export { ClinicalCasesService } from './patient/clinical-cases.service';
 // Infrastructure adapters
 export { WSGateway } from './ws-gateway';
 export { MqttClient } from './mqtt-client';
-export type { MqttClientOptions } from './mqtt-client';
+export type { MqttClientOptions, TelemetryPayload } from './mqtt-client';
 export { HexParser } from './hex-parser';
 export { HexEncoder } from './hex-encoder';
+export { InfluxTelemetryService } from './influx-service';
 
 // Legacy local types (kept for backwards compat; prefer contracts/simulation.contracts.ts)
 export * from './simulation.types';

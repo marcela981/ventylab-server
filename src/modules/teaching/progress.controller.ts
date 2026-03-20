@@ -56,6 +56,25 @@ async function resolveIdsForProgress(
     if (exists) return { moduleId: moduleIdHint, lessonId: frontendLessonId };
   }
 
+  // 5. frontendLessonId IS a Module.id (beginner level: frontend sends module ID as lesson ID).
+  //    Return the first active lesson in that module.
+  const moduleWithLesson = await prisma.module.findUnique({
+    where: { id: frontendLessonId },
+    select: {
+      id: true,
+      lessons: {
+        where: { isActive: true },
+        orderBy: { order: 'asc' },
+        take: 1,
+        select: { id: true },
+      },
+    },
+  });
+  if (moduleWithLesson?.lessons?.[0]) {
+    console.log(`[resolveIdsForProgress] 🔀 Step 5 match: "${frontendLessonId}" is a Module.id → lesson "${moduleWithLesson.lessons[0].id}"`);
+    return { moduleId: moduleWithLesson.id, lessonId: moduleWithLesson.lessons[0].id };
+  }
+
   return null;
 }
 
@@ -73,11 +92,16 @@ export async function getLessonProgress(req: Request, res: Response, next: NextF
 
     const resolved = await resolveIdsForProgress(lessonId, moduleIdFromQuery);
     if (!resolved) {
+      // ID could not be mapped — return a safe zero-state with all expected fields so
+      // the frontend does not crash or silently treat undefined as a non-zero value.
       return res.json({
         lessonId,
         completed: false,
         timeSpent: 0,
         lastAccessed: null,
+        completionPercentage: 0,
+        currentStep: 0,
+        totalSteps: 0,
       });
     }
 
@@ -86,6 +110,12 @@ export async function getLessonProgress(req: Request, res: Response, next: NextF
       resolved.moduleId,
       resolved.lessonId
     );
+
+    // Normalise: if the service returned the DB lessonId, replace it with the
+    // original frontend lessonId so the frontend can correlate with its own state.
+    if (progress && progress.lessonId !== lessonId) {
+      progress.lessonId = lessonId;
+    }
 
     res.json(progress);
   } catch (error) {
@@ -603,10 +633,20 @@ export async function updateStepProgress(req: Request, res: Response, next: Next
       });
     }
 
+    // Resolve canonical IDs: frontend may send a legacyJsonId as lessonId
+    // (e.g. "module-01-inversion-fisiologica" instead of "lesson-inversion-fisiologica").
+    // resolveIdsForProgress maps through the Page table to the real DB Lesson.id.
+    const resolved = await resolveIdsForProgress(lessonId, moduleId);
+    const canonicalLessonId = resolved?.lessonId ?? lessonId;
+    const canonicalModuleId = resolved?.moduleId ?? moduleId;
+    if (canonicalLessonId !== lessonId) {
+      console.log(`[updateStepProgress] 🔀 Mapped "${lessonId}" → "${canonicalLessonId}" (module: ${canonicalModuleId})`);
+    }
+
     const result = await unifiedProgressService.updateStepProgress({
       userId,
-      moduleId,
-      lessonId,
+      moduleId: canonicalModuleId,
+      lessonId: canonicalLessonId,
       currentStepIndex,
       totalSteps,
       timeSpentDelta,

@@ -132,6 +132,185 @@ export const getAllLevels = async (
   }
 };
 
+// ── Slug mapping: DB level IDs → frontend-compatible keys ───────────────────
+// DB uses 'level-beginner', frontend uses 'beginner'. This map normalises them.
+const LEVEL_SLUG_MAP: Record<string, string> = {
+  'level-prerequisitos': 'prerequisitos',
+  'level-beginner':      'beginner',
+  'level-intermedio':    'intermediate',
+  'level-avanzado':      'advanced',
+};
+
+// Hardcoded emojis for each level slug (DB has no emoji column).
+const LEVEL_EMOJIS: Record<string, string> = {
+  prerequisitos: '🔬',
+  beginner:      '🌱',
+  intermediate:  '⚡',
+  advanced:      '🎯',
+};
+
+export interface LevelCurriculumModule {
+  id: string;
+  title: string;
+  description: string | null;
+  difficulty: string | null;
+  estimatedTime: number | null;
+  order: number;
+  progressPercentage: number;  // 0–100 from UserProgress (0 if no record)
+  isCompleted: boolean;
+  lessonCount: number;
+}
+
+export interface LevelCurriculumItem {
+  id: string;         // slug ('beginner') — frontend-compatible key for LevelStepper
+  dbId: string;       // actual DB Level.id ('level-beginner')
+  title: string;
+  description: string | null;
+  color: string;
+  emoji: string;
+  order: number;
+  modules: LevelCurriculumModule[];
+  totalModules: number;
+  completedModules: number;
+  progressPercentage: number; // strict average: sum(module.pct) / totalModules
+  isCompleted: boolean;       // true when ALL modules are COMPLETED
+  isUnlocked: boolean;        // true when all prerequisite levels are completed (or no prerequisites)
+}
+
+/**
+ * Get all active levels with their modules and user progress.
+ * Uses DB Module.levelId grouping — the totalModules count is the source of truth.
+ * progressPercentage = strict average of UserProgress.progressPercentage for the level.
+ *
+ * GET /api/levels/curriculum
+ */
+export const getLevelsCurriculum = async (
+  userId?: string
+): Promise<LevelCurriculumItem[]> => {
+  try {
+    const levelsWithModules = await prisma.level.findMany({
+      where: { isActive: true },
+      orderBy: { order: 'asc' },
+      include: {
+        modules: {
+          where: { isActive: true },
+          orderBy: { order: 'asc' },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            difficulty: true,
+            estimatedTime: true,
+            order: true,
+            _count: { select: { lessons: { where: { isActive: true } } } },
+          },
+        },
+      },
+    });
+
+    const allLevelIds = levelsWithModules.map(l => l.id);
+    const allModuleIds = levelsWithModules.flatMap(l => l.modules.map(m => m.id));
+
+    // Fetch UserProgress and LevelPrerequisites in parallel
+    const [progressRecords, prereqRecords] = await Promise.all([
+      userId && allModuleIds.length > 0
+        ? prisma.userProgress.findMany({
+            where: { userId, moduleId: { in: allModuleIds } },
+            select: { moduleId: true, progressPercentage: true, status: true },
+          })
+        : Promise.resolve([]),
+      prisma.levelPrerequisite.findMany({
+        where: { levelId: { in: allLevelIds } },
+        select: { levelId: true, prerequisiteLevelId: true },
+      }),
+    ]);
+
+    // moduleId → { progressPercentage, isCompleted }
+    const progressMap = new Map<string, number>();
+    const moduleCompletedMap = new Map<string, boolean>();
+    for (const r of progressRecords) {
+      progressMap.set(r.moduleId, r.progressPercentage);
+      moduleCompletedMap.set(r.moduleId, r.status === 'COMPLETED');
+    }
+
+    // levelId → prerequisiteLevelIds[]
+    const prereqsByLevel = new Map<string, string[]>();
+    for (const p of prereqRecords) {
+      const existing = prereqsByLevel.get(p.levelId) ?? [];
+      existing.push(p.prerequisiteLevelId);
+      prereqsByLevel.set(p.levelId, existing);
+    }
+
+    // levelId → moduleIds[] (for completion checks)
+    const levelModuleIds = new Map<string, string[]>();
+    for (const level of levelsWithModules) {
+      levelModuleIds.set(level.id, level.modules.map(m => m.id));
+    }
+
+    // A level is "completed" when ALL its modules are COMPLETED
+    const isLevelCompleted = (levelId: string): boolean => {
+      const mIds = levelModuleIds.get(levelId) ?? [];
+      if (mIds.length === 0) return false;
+      return mIds.every(mId => moduleCompletedMap.get(mId) === true);
+    };
+
+    // A level is "unlocked" when it has no prerequisites OR all prerequisites are completed
+    const isLevelUnlocked = (levelId: string): boolean => {
+      const prereqs = prereqsByLevel.get(levelId) ?? [];
+      if (prereqs.length === 0) return true;
+      return prereqs.every(prereqId => isLevelCompleted(prereqId));
+    };
+
+    return levelsWithModules.map(level => {
+      const slug = LEVEL_SLUG_MAP[level.id] ?? level.id.replace(/^level-/, '');
+      const color = getColorForDifficulty(slug);
+      const emoji = LEVEL_EMOJIS[slug] ?? '📚';
+
+      const modules: LevelCurriculumModule[] = level.modules.map(mod => ({
+        id: mod.id,
+        title: mod.title,
+        description: mod.description,
+        difficulty: mod.difficulty,
+        estimatedTime: mod.estimatedTime,
+        order: mod.order,
+        progressPercentage: progressMap.get(mod.id) ?? 0,
+        isCompleted: moduleCompletedMap.get(mod.id) ?? false,
+        lessonCount: (mod as any)._count?.lessons ?? 0,
+      }));
+
+      const totalModules = modules.length;
+      const completedModules = modules.filter(m => m.isCompleted).length;
+      const progressPercentage = totalModules > 0
+        ? Math.round(modules.reduce((sum, m) => sum + m.progressPercentage, 0) / totalModules)
+        : 0;
+      const levelCompleted = isLevelCompleted(level.id);
+
+      return {
+        id: slug,
+        dbId: level.id,
+        title: level.title,
+        description: level.description,
+        color,
+        emoji,
+        order: level.order,
+        modules,
+        totalModules,
+        completedModules,
+        progressPercentage,
+        isCompleted: levelCompleted,
+        isUnlocked: isLevelUnlocked(level.id),
+      };
+    });
+  } catch (error) {
+    console.error('Error in getLevelsCurriculum:', error);
+    throw new AppError(
+      'Error al obtener el currículo de niveles',
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_CODES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
 /**
  * Get a single level by ID
  *

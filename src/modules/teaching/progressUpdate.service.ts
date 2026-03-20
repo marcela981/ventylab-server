@@ -77,6 +77,13 @@ export async function completeLesson(
 
     invalidateUserCache(userId);
 
+    // Fix Común 3: always recalculate module progress after every LessonCompletion write
+    try {
+      await calculateAndSaveModuleProgress(userId, moduleId);
+    } catch (e: any) {
+      console.warn(`[completeLesson] calculateAndSaveModuleProgress failed (non-fatal): ${e?.message}`);
+    }
+
     const { checkAndUnlockAchievements } = await import('./achievements.service');
     const achievements = await checkAndUnlockAchievements(userId, {
       type: 'lessons_completed',
@@ -159,6 +166,13 @@ export async function saveLessonProgress(
     }, { maxWait: 5000, timeout: 10000 });
 
     invalidateUserCache(userId);
+
+    // Fix Común: ALWAYS recalculate module progress after every LessonCompletion write
+    try {
+      await calculateAndSaveModuleProgress(userId, moduleId);
+    } catch (e: any) {
+      console.warn(`[saveLessonProgress] calculateAndSaveModuleProgress failed (non-fatal): ${e?.message}`);
+    }
 
     const progressValue = isCompleted ? 100 : progressPercent;
     return {
@@ -260,16 +274,18 @@ export async function updateLessonProgress(
         },
       });
 
-      try {
-        await calculateAndSaveModuleProgress(userId, moduleId!);
-      } catch (e) {
-        console.warn(`[updateLessonProgress] Could not update module progress for ${moduleId}:`, e);
-      }
-
       return completion;
     }, { maxWait: 5000, timeout: 10000 });
 
     invalidateUserCache(userId);
+
+    // Must run AFTER the transaction commits so the global prisma client
+    // reads the newly written LessonCompletion row.
+    try {
+      await calculateAndSaveModuleProgress(userId, moduleId!);
+    } catch (e: any) {
+      console.warn(`[updateLessonProgress] calculateAndSaveModuleProgress failed (non-fatal): ${e?.message}`);
+    }
 
     const progressValue = completionPercentage ?? (isCompleted ? 100 : 0);
     return {

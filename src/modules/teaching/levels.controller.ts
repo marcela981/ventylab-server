@@ -17,6 +17,29 @@ import { sendSuccess, sendCreated, sendPaginatedSuccess } from '../../shared/uti
 import { HTTP_STATUS, SUCCESS_MESSAGES } from '../../config/constants';
 import { AppError } from '../../shared/middleware/error-handler.middleware';
 
+interface AuthenticatedRequest extends Request {
+  user?: { id: string; email: string; role: string };
+}
+
+/**
+ * Get all levels with modules and user progress for the curriculum view.
+ * GET /api/levels/curriculum
+ * Optional auth: returns progress data when authenticated.
+ */
+export const getLevelsCurriculum = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const levels = await levelService.getLevelsCurriculum(userId);
+    sendSuccess(res, HTTP_STATUS.OK, 'Currículo de niveles obtenido exitosamente', levels);
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * Get all levels
  * GET /api/levels

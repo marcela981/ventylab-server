@@ -26,7 +26,7 @@
 
 import { Router } from 'express';
 import * as levelsController from './levels.controller';
-import { authenticate, requireAdmin, requireTeacherPlus } from '../../shared/middleware/auth.middleware';
+import { authenticate, optionalAuth, requireAdmin, requireTeacherPlus } from '../../shared/middleware/auth.middleware';
 import { validateRequest } from '../../shared/middleware/validator.middleware';
 import {
   createLevelValidator,
@@ -51,6 +51,15 @@ router.get(
   readLimiter,
   validateRequest(paginationValidator),
   levelsController.getAllLevels
+);
+
+// GET /api/levels/curriculum - All levels with modules + user progress (optional auth)
+// Must be BEFORE /:id routes to avoid "curriculum" being treated as an ID.
+router.get(
+  '/curriculum',
+  readLimiter,
+  optionalAuth,
+  levelsController.getLevelsCurriculum
 );
 
 // ============================================

@@ -40,6 +40,8 @@ interface ModuleSummary {
   order: number;
   totalPages: number;
   completedPages: number;
+  totalLessons: number;
+  completedLessons: number;
   isAvailable: boolean;
   percentComplete: number;
 }
@@ -52,10 +54,32 @@ interface PageSummary {
   lastVisitedAt: string | null;
 }
 
+// Maps DB level IDs → frontend-compatible slugs (matches curriculumData.levels[].id).
+const LEVEL_SLUG_MAP: Record<string, string> = {
+  'level-prerequisitos': 'prerequisitos',
+  'level-beginner':      'beginner',
+  'level-intermedio':    'intermediate',
+  'level-avanzado':      'advanced',
+};
+
+interface LevelSummary {
+  levelId: string;   // DB Level.id (e.g., 'level-beginner')
+  slug: string;      // frontend-compatible key (e.g., 'beginner') — matches curriculumData.levels[].id
+  title: string;
+  order: number;
+  modules: string[];          // moduleId[]
+  totalModules: number;       // count of modules (cards) in this level
+  completedModules: number;   // count of fully completed modules
+  progressPercentage: number; // average of UserProgress.progressPercentage for all modules
+  totalLessons: number;       // sum of all lessons across all modules in this level
+  completedLessons: number;   // sum of completed lessons across all modules
+}
+
 export interface ProgressOverviewResponse {
   overview: OverviewStats;
   modules: ModuleSummary[];
   lessons: PageSummary[];
+  levels: LevelSummary[];
 }
 
 // ── Constants ───────────────────────────────────────────────────────
@@ -88,11 +112,21 @@ export async function getProgressOverview(
     ],
   });
 
-  // ── Query 2: All lesson progress for this user (single query) ──────
+  // ── Query 2: All lesson completions for this user (single query) ───
   const allCompletions = await prisma.lessonCompletion.findMany({
     where: { userId },
   });
   const progressMap = new Map(allCompletions.map(c => [c.lessonId, c]));
+
+  // ── Query 3: UserProgress records — authoritative module percentages ─
+  // calculateAndSaveModuleProgress writes progressPercentage here after
+  // every LessonCompletion write (Fix Común 3). We read it back so the
+  // overview is always consistent with the stored module state.
+  const userProgressRecords = await prisma.userProgress.findMany({
+    where: { userId },
+    select: { moduleId: true, progressPercentage: true, status: true },
+  });
+  const userProgressMap = new Map(userProgressRecords.map(p => [p.moduleId, p]));
 
   // ── Defensive log (temporary) ────────────────────────────────────
   const totalLessonsInLevel = modules.reduce((sum, m) => sum + m.lessons.length, 0);
@@ -111,21 +145,18 @@ export async function getProgressOverview(
   const modulesSummary: ModuleSummary[] = modules.map((mod) => {
     const levelKey = mod.levelId ?? '__no_level__';
     const totalLessons = mod.lessons.length;
-    let completedLessons = 0;
 
-    // Calculate completed lessons considering step tracking
-    mod.lessons.forEach(l => {
-      const prog = progressMap.get(l.id);
-      if (prog?.isCompleted) {
-        completedLessons++;
-      } else if (prog && prog.totalSteps > 0 && prog.currentStepIndex >= prog.totalSteps - 1) {
-        completedLessons++; // Nearly complete based on steps
-      }
-    });
+    // Count only lessons with isCompleted=true — consistent with calculateAndSaveModuleProgress.
+    const completedLessons = mod.lessons.filter(l => progressMap.get(l.id)?.isCompleted === true).length;
 
-    const percentComplete = totalLessons > 0
-      ? Math.floor((completedLessons / totalLessons) * 100)
-      : 0;
+    // Use stored UserProgress.progressPercentage as the authoritative value.
+    // Falls back to a direct count only for brand-new users (no UserProgress row yet).
+    const storedProgress = userProgressMap.get(mod.id);
+    const percentComplete = storedProgress
+      ? storedProgress.progressPercentage
+      : totalLessons > 0
+        ? Math.floor((completedLessons / totalLessons) * 100)
+        : 0;
     const isModuleComplete = totalLessons > 0 && completedLessons === totalLessons;
 
     // First module in this level = always available
@@ -157,9 +188,13 @@ export async function getProgressOverview(
   });
 
   // ── Build lessons array ──────────────────────────────────
+  // NOTE: lessonId is set to lesson.moduleId (the DB Module.id) because in the
+  // current content structure every module has exactly one lesson, and the frontend
+  // curriculum uses the Module.id as the lesson identifier (e.g. "module-01-inversion-fisiologica").
+  // This ensures LearningProgressContext can match the key when building its lessonProgressMap.
   const lessons: PageSummary[] = modules.flatMap(mod =>
     mod.lessons.map(lesson => {
-      const prog = progressMap.get(lesson.id);
+      const prog = progressMap.get(lesson.id); // internal lookup still uses DB lesson ID
 
       // Calculate continuous progress 0-1 based on step tracking
       let numericProgress = 0;
@@ -170,23 +205,85 @@ export async function getProgressOverview(
         isCompleted = true;
       } else if (prog && prog.totalSteps > 0) {
         numericProgress = (prog.currentStepIndex + 1) / prog.totalSteps;
-        // Cap at 0.99 if not explicitly completed
         numericProgress = Math.min(0.99, numericProgress);
-        if (numericProgress >= 0.99) isCompleted = true;
       }
 
       return {
-        pageId: lesson.id,         // alias
-        lessonId: lesson.id,         // required by frontend
+        pageId: lesson.id,           // canonical DB lesson ID (for internal reference)
+        lessonId: lesson.moduleId,   // frontend-compatible ID (Module.id = curriculum lessonId)
+        dbLessonId: lesson.id,       // explicit DB ID alias
         moduleId: mod.id,
         completed: isCompleted,
-        progress: numericProgress,  // numeric progress for frontend
-        xpEarned: isCompleted ? 100 : 0, // mock xp since LessonCompletion doesn't store it
+        progress: numericProgress,
+        xpEarned: isCompleted ? 100 : 0,
         lastVisitedAt: prog?.lastAccessed?.toISOString() ?? null,
-        updatedAt: prog?.updatedAt?.toISOString() ?? prog?.lastAccessed?.toISOString() ?? null, // alias
+        updatedAt: prog?.updatedAt?.toISOString() ?? prog?.lastAccessed?.toISOString() ?? null,
       };
     })
   );
+
+  // ── Build hierarchical level progress ────────────────────────────
+  // Group modules by levelId:
+  //   progressPercentage = average of UserProgress.progressPercentage across all modules
+  //   totalLessons / completedLessons = sums across all modules
+  const levelMap = new Map<string, {
+    title: string;
+    order: number;
+    moduleIds: string[];
+    totalPct: number;
+    completedModules: number;
+    totalLessons: number;
+    completedLessons: number;
+  }>();
+
+  for (const mod of modules) {
+    if (!mod.levelId || !mod.level) continue;
+    const existing = levelMap.get(mod.levelId);
+    // Use persisted UserProgress.progressPercentage (0 if module never accessed).
+    const modProgress = userProgressMap.get(mod.id);
+    const pct = modProgress?.progressPercentage ?? 0;
+    const isModCompleted = modProgress?.status === 'COMPLETED';
+    // Count lessons from LessonCompletion.isCompleted (consistent with updateModuleProgress).
+    const modCompletedLessons = mod.lessons.filter(l => progressMap.get(l.id)?.isCompleted === true).length;
+    const modTotalLessons = mod.lessons.length;
+
+    if (existing) {
+      existing.moduleIds.push(mod.id);
+      existing.totalPct += pct;
+      if (isModCompleted) existing.completedModules += 1;
+      existing.totalLessons += modTotalLessons;
+      existing.completedLessons += modCompletedLessons;
+    } else {
+      levelMap.set(mod.levelId, {
+        title: mod.level.title,
+        order: mod.level.order,
+        moduleIds: [mod.id],
+        totalPct: pct,
+        completedModules: isModCompleted ? 1 : 0,
+        totalLessons: modTotalLessons,
+        completedLessons: modCompletedLessons,
+      });
+    }
+  }
+
+  const levels: LevelSummary[] = Array.from(levelMap.entries())
+    .map(([levelId, data]) => ({
+      levelId,
+      slug: LEVEL_SLUG_MAP[levelId] ?? levelId.replace(/^level-/, ''),
+      title: data.title,
+      order: data.order,
+      modules: data.moduleIds,
+      totalModules: data.moduleIds.length,
+      completedModules: data.completedModules,
+      // Strict average: sum of all module progressPercentage / total module count.
+      // Example: 4 modules, only 1st at 100% → (100+0+0+0)/4 = 25%
+      progressPercentage: data.moduleIds.length > 0
+        ? Math.round(data.totalPct / data.moduleIds.length)
+        : 0,
+      totalLessons: data.totalLessons,
+      completedLessons: data.completedLessons,
+    }))
+    .sort((a, b) => a.order - b.order);
 
   // ── Aggregate overview stats ─────────────────────────────────────
   const totalLessons = totalLessonsInLevel;
@@ -211,5 +308,6 @@ export async function getProgressOverview(
     },
     modules: modulesSummary,
     lessons,
+    levels,
   };
 }

@@ -19,6 +19,31 @@ import type {
 } from '../../../contracts/simulation.contracts';
 import { VentilatorStatus, MQTT_TOPICS } from '../../../contracts/simulation.contracts';
 
+// ============================================================================
+// Telemetry JSON payload (ESP simulation)
+// ============================================================================
+
+/**
+ * Shape of the JSON telemetry payload published by the ESP simulator
+ * at 5–60 Hz on the telemetry topic.
+ */
+export interface TelemetryPayload {
+  /** Airway pressure in cmH₂O */
+  pressure: number;
+  /** Flow rate in L/min */
+  flow: number;
+  /** Volume in ml */
+  volume: number;
+  /** Timestamp in milliseconds (epoch) */
+  timestamp: number;
+  /** Device identifier */
+  deviceId: string;
+  /** Partial pressure of CO₂ in mmHg (optional) */
+  pco2?: number;
+  /** SpO₂ percentage (optional) */
+  spo2?: number;
+}
+
 /** Opciones de configuración del cliente MQTT */
 export interface MqttClientOptions {
   /** URL del broker MQTT (e.g., mqtt://localhost:1883) */
@@ -49,7 +74,7 @@ export class MqttClient implements IVentilatorConnection {
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private intentionalDisconnect = false;
-  private telemetryCallback: ((data: Buffer) => void) | null = null;
+  private telemetryCallbacks: Array<(data: Buffer) => void> = [];
 
   constructor(private readonly options: MqttClientOptions) {}
 
@@ -127,10 +152,12 @@ export class MqttClient implements IVentilatorConnection {
 
       this.client.on('message', (topic: string, payload: Buffer) => {
         if (
-          this.telemetryCallback &&
+          this.telemetryCallbacks.length > 0 &&
           (topic === MQTT_TOPICS.TELEMETRY || topic === MQTT_TOPICS.ALARM)
         ) {
-          this.telemetryCallback(payload);
+          for (const cb of this.telemetryCallbacks) {
+            cb(payload);
+          }
         }
       });
     });
@@ -191,9 +218,49 @@ export class MqttClient implements IVentilatorConnection {
    * @param callback - Función a invocar con cada buffer recibido
    */
   subscribeTelemetry(callback: (data: Buffer) => void): void {
-    this.telemetryCallback = callback;
+    this.telemetryCallbacks.push(callback);
     this.subscribeToTopic(MQTT_TOPICS.TELEMETRY, 1);
     this.subscribeToTopic(MQTT_TOPICS.ALARM, 1);
+  }
+
+  /**
+   * Convenience wrapper over subscribeTelemetry that parses each incoming
+   * buffer as JSON and delivers a typed TelemetryPayload.
+   *
+   * Parse errors are logged via console.warn and silently discarded so the
+   * server never crashes due to a malformed frame.
+   *
+   * @param callback - Invoked with each successfully-parsed telemetry object
+   */
+  subscribeTelemetryJson(callback: (data: TelemetryPayload) => void): void {
+    this.subscribeTelemetry((raw: Buffer) => {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw.toString('utf-8'));
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[MqttClient] JSON parse error – discarding frame: ${msg}`);
+        return;
+      }
+
+      // Validate required fields
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        typeof (parsed as any).pressure !== 'number' ||
+        typeof (parsed as any).flow !== 'number' ||
+        typeof (parsed as any).volume !== 'number' ||
+        typeof (parsed as any).timestamp !== 'number' ||
+        typeof (parsed as any).deviceId !== 'string'
+      ) {
+        console.warn(
+          '[MqttClient] Telemetry JSON missing required fields – discarding frame',
+        );
+        return;
+      }
+
+      callback(parsed as TelemetryPayload);
+    });
   }
 
   /**
@@ -219,7 +286,7 @@ export class MqttClient implements IVentilatorConnection {
    * Cada intento duplica el intervalo base, con un máximo de 60 s.
    */
   private handleReconnect(): void {
-    const max = this.options.maxReconnectAttempts ?? 10;
+    const max = this.options.maxReconnectAttempts ?? 5;
     this.reconnectAttempts++;
 
     if (this.reconnectAttempts > max) {
@@ -253,7 +320,7 @@ export class MqttClient implements IVentilatorConnection {
 
   /** Re-suscribe a telemetría y alarmas tras reconexión. */
   private resubscribe(): void {
-    if (!this.telemetryCallback) return;
+    if (this.telemetryCallbacks.length === 0) return;
     this.subscribeToTopic(MQTT_TOPICS.TELEMETRY, 1);
     this.subscribeToTopic(MQTT_TOPICS.ALARM, 1);
   }

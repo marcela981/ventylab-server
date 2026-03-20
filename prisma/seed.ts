@@ -362,8 +362,6 @@ async function truncateContentTables() {
     TRUNCATE TABLE
       lesson_completions,
       user_progress,
-      lesson_progress,
-      learning_progress,
       steps,
       lessons,
       module_prerequisites,

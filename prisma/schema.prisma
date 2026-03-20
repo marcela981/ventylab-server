@@ -15,7 +15,7 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   name          String?
-  password      String?   // Nullable for OAuth-only users
+  password      String? // Nullable for OAuth-only users
   role          UserRole  @default(STUDENT)
   image         String?
   createdAt     DateTime  @default(now())
@@ -31,31 +31,35 @@ model User {
 
   // Teacher-Student relationships
   // When user is a teacher: their assigned students
-  studentsAsTeacher  TeacherStudent[] @relation("TeacherToStudents")
+  studentsAsTeacher TeacherStudent[] @relation("TeacherToStudents")
   // When user is a student: their assigned teachers
-  teachersAsStudent  TeacherStudent[] @relation("StudentToTeachers")
+  teachersAsStudent TeacherStudent[] @relation("StudentToTeachers")
 
   // Audit trail relations
   changeLogs ChangeLog[]
 
   // Content override relations
   // When user is a student: their personalized content overrides
-  contentOverrides    ContentOverride[] @relation("StudentOverrides")
+  contentOverrides ContentOverride[] @relation("StudentOverrides")
   // When user is a teacher/admin: overrides they created for students
-  createdOverrides    ContentOverride[] @relation("CreatedOverrides")
+  createdOverrides ContentOverride[] @relation("CreatedOverrides")
 
   // Teaching progression (UserProgress + LessonCompletion)
   // LearningProgress/LessonProgress removed after FASE 3 migration
-  userProgress       UserProgress[]
-  lessonCompletions  LessonCompletion[]
+  userProgress      UserProgress[]
+  lessonCompletions LessonCompletion[]
 
   // Page content authoring (Phase 1 - Content Hierarchy Refactoring)
-  createdPages       Page[]          @relation("PageCreator")
-  updatedPages       Page[]          @relation("PageUpdater")
-  pageRevisions      PageRevision[]  @relation("PageRevisionChanger")
+  createdPages  Page[]         @relation("PageCreator")
+  updatedPages  Page[]         @relation("PageUpdater")
+  pageRevisions PageRevision[] @relation("PageRevisionChanger")
 
   // Page-level progress tracking (Phase 1 - replaces LessonProgress for overview)
-  pageProgress       PageProgress[]
+  pageProgress PageProgress[]
+
+  // Simulation module
+  ventilatorReservations VentilatorReservation[]
+  simulatorSessions      SimulatorSession[]
 
   @@map("users")
 }
@@ -77,14 +81,14 @@ model User {
 // - Add per-student content overrides tracking (add studentId field)
 // - Add metadata for IP address, user agent for security auditing
 model ChangeLog {
-  id          String   @id @default(cuid())
-  entityType  String   // "Level" | "Module" | "Lesson" | "Step"
-  entityId    String   // ID of the changed entity
-  action      String   // "create" | "update" | "delete" | "reorder"
-  changedBy   String   // User ID who made the change
-  changedAt   DateTime @default(now())
-  diff        Json?    // { "field": { "before": old, "after": new } } - only for updates
-  metadata    Json?    // Additional context (IP, userAgent, etc.)
+  id         String   @id @default(cuid())
+  entityType String // "Level" | "Module" | "Lesson" | "Step"
+  entityId   String // ID of the changed entity
+  action     String // "create" | "update" | "delete" | "reorder"
+  changedBy  String // User ID who made the change
+  changedAt  DateTime @default(now())
+  diff       Json? // { "field": { "before": old, "after": new } } - only for updates
+  metadata   Json? // Additional context (IP, userAgent, etc.)
 
   // Relation to User (onDelete: SetNull to preserve audit history if user deleted)
   user User @relation(fields: [changedBy], references: [id], onDelete: SetNull)
@@ -159,31 +163,29 @@ model TeacherStudent {
 // - Add variantId for A/B testing support (Phase 3)
 // - Add priority field for override precedence when multiple apply
 model ContentOverride {
-  id            String             @id @default(cuid())
-  studentId     String
-  entityType    OverrideEntityType
-  entityId      String             // ID of the Level, Lesson, or Step being overridden
-  overrideData  Json               // { fieldOverrides?, extraCards?, hiddenCardIds? }
+  id           String             @id @default(cuid())
+  studentId    String
+  entityType   OverrideEntityType
+  entityId     String // ID of the Level, Lesson, or Step being overridden
+  overrideData Json // { fieldOverrides?, extraCards?, hiddenCardIds? }
 
   // Audit fields
-  createdBy     String             // Teacher/Admin who created the override
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  isActive      Boolean            @default(true)
+  createdBy String // Teacher/Admin who created the override
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isActive  Boolean  @default(true)
 
   // Relations
-  student       User               @relation("StudentOverrides", fields: [studentId], references: [id], onDelete: Cascade)
-  creator       User               @relation("CreatedOverrides", fields: [createdBy], references: [id], onDelete: SetNull)
+  student User @relation("StudentOverrides", fields: [studentId], references: [id], onDelete: Cascade)
+  creator User @relation("CreatedOverrides", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // Each student can have only one active override per entity
   @@unique([studentId, entityType, entityId], name: "override_student_entity_unique")
-
   // Indexes for efficient queries
   @@index([studentId])
   @@index([entityType, entityId])
   @@index([createdBy])
   @@index([isActive])
-
   @@map("content_overrides")
 }
 
@@ -250,7 +252,7 @@ model Level {
   updatedAt   DateTime @updatedAt
 
   // Audit trail fields
-  lastModifiedBy String?   // User ID who last modified this level
+  lastModifiedBy String? // User ID who last modified this level
   lastModifiedAt DateTime? // Timestamp of last modification
 
   modules Module[]
@@ -258,8 +260,8 @@ model Level {
   // Level prerequisite relations (same pattern as ModulePrerequisite)
   // prerequisites: Levels that must be completed before accessing THIS level
   // dependentLevels: Levels that depend on THIS level being completed
-  prerequisites    LevelPrerequisite[] @relation("LevelPrerequisites")
-  dependentLevels  LevelPrerequisite[] @relation("DependentLevels")
+  prerequisites   LevelPrerequisite[] @relation("LevelPrerequisites")
+  dependentLevels LevelPrerequisite[] @relation("DependentLevels")
 
   @@index([order])
   @@index([isActive])
@@ -293,8 +295,8 @@ model Level {
 // - validUntil DateTime?                // Expiration for time-limited paths
 model LevelPrerequisite {
   id                  String   @id @default(cuid())
-  levelId             String   // Level that requires the prerequisite
-  prerequisiteLevelId String   // Level that must be completed first
+  levelId             String // Level that requires the prerequisite
+  prerequisiteLevelId String // Level that must be completed first
   createdAt           DateTime @default(now())
 
   // Self-referencing relations (like ModulePrerequisite pattern)
@@ -303,17 +305,15 @@ model LevelPrerequisite {
 
   // Prevent duplicate prerequisite relationships
   @@unique([levelId, prerequisiteLevelId], name: "level_prerequisite_unique")
-
   // Indexes for efficient queries
   @@index([levelId])
   @@index([prerequisiteLevelId])
-
   @@map("level_prerequisites")
 }
 
 model Module {
   id            String   @id @default(cuid())
-  levelId       String?  // Optional: Module can belong to a Level
+  levelId       String? // Optional: Module can belong to a Level
   title         String
   description   String?  @db.Text
   category      String?
@@ -326,15 +326,15 @@ model Module {
   updatedAt     DateTime @updatedAt
 
   // Audit trail fields
-  lastModifiedBy String?   // User ID who last modified this module
+  lastModifiedBy String? // User ID who last modified this module
   lastModifiedAt DateTime? // Timestamp of last modification
 
   // FUTURE EXTENSIONS:
   // - Add `version` Int for content versioning
   // - Add `publishedAt` DateTime for draft/publish workflow
 
-  level            Level?               @relation(fields: [levelId], references: [id], onDelete: SetNull)
-  lessons          Lesson[]
+  level   Level?   @relation(fields: [levelId], references: [id], onDelete: SetNull)
+  lessons Lesson[]
   // learningProgress LearningProgress[] -- REMOVED in FASE 3 migration
 
   // Relaciones de prerequisitos
@@ -342,10 +342,10 @@ model Module {
   dependentModules ModulePrerequisite[] @relation("DependentModules")
 
   // Teaching progression
-  userProgress     UserProgress[]
+  userProgress UserProgress[]
 
   // Phase 1: Pages belong to Module directly (will migrate to Book in Phase 2)
-  pages            Page[]
+  pages Page[]
 
   @@index([levelId])
   @@index([order])
@@ -372,8 +372,8 @@ model Lesson {
   id            String   @id @default(cuid())
   moduleId      String
   title         String
-  slug          String?          // Human-readable identifier for URL mapping
-  content       String?  @db.Text   // Legacy: JSON content, kept for backwards compatibility
+  slug          String? // Human-readable identifier for URL mapping
+  content       String?  @db.Text // Legacy: JSON content, kept for backwards compatibility
   order         Int      @default(0)
   estimatedTime Int?     @default(0) // en minutos
   aiGenerated   Boolean  @default(false)
@@ -383,19 +383,19 @@ model Lesson {
   updatedAt     DateTime @updatedAt
 
   // Audit trail fields
-  lastModifiedBy String?   // User ID who last modified this lesson
+  lastModifiedBy String? // User ID who last modified this lesson
   lastModifiedAt DateTime? // Timestamp of last modification
 
-  module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  quizzes        Quiz[]
-  steps          Step[]           // New: Structured lesson steps (cards)
+  module  Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quizzes Quiz[]
+  steps   Step[] // New: Structured lesson steps (cards)
   // lessonProgress LessonProgress[] -- REMOVED in FASE 3 migration
 
   // Teaching progression validation
-  hasRequiredQuiz   Boolean            @default(false)
-  hasRequiredCase   Boolean            @default(false)
-  completions       LessonCompletion[]
-  lastAccessedBy    UserProgress[]     @relation("LastAccessedLesson")
+  hasRequiredQuiz Boolean            @default(false)
+  hasRequiredCase Boolean            @default(false)
+  completions     LessonCompletion[]
+  lastAccessedBy  UserProgress[]     @relation("LastAccessedLesson")
 
   @@unique([moduleId, slug])
   @@index([moduleId])
@@ -427,8 +427,8 @@ model Lesson {
 model Step {
   id          String   @id @default(cuid())
   lessonId    String
-  title       String?  // Optional title for the step
-  content     String   @db.Text  // Step content (can be JSON or HTML)
+  title       String? // Optional title for the step
+  content     String   @db.Text // Step content (can be JSON or HTML)
   contentType String   @default("text") // text, image, video, quiz, simulation, code
   order       Int      @default(0)
   isActive    Boolean  @default(true)
@@ -436,7 +436,7 @@ model Step {
   updatedAt   DateTime @updatedAt
 
   // Audit trail fields
-  lastModifiedBy String?   // User ID who last modified this step
+  lastModifiedBy String? // User ID who last modified this step
   lastModifiedAt DateTime? // Timestamp of last modification
 
   // FUTURE EXTENSIONS:
@@ -468,37 +468,37 @@ model Step {
 // ============================================
 
 model Quiz {
-  id          String   @id @default(cuid())
-  title       String
-  description String?  @db.Text
-  moduleId    String?
-  lessonId    String?
-  questions   Json     // Array of questions stored as JSON
-  passingScore Float   @default(70.0)
-  timeLimit   Int?     // Time limit in minutes
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  moduleId     String?
+  lessonId     String?
+  questions    Json // Array of questions stored as JSON
+  passingScore Float    @default(70.0)
+  timeLimit    Int? // Time limit in minutes
+  order        Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  lesson      Lesson?  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  attempts    QuizAttempt[]
+  lesson   Lesson?       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  attempts QuizAttempt[]
 
   @@map("quizzes")
 }
 
 model QuizAttempt {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
   quizId      String
   score       Float
   passed      Boolean
-  answers     Json     // User's answers stored as JSON
-  startedAt   DateTime @default(now())
+  answers     Json // User's answers stored as JSON
+  startedAt   DateTime  @default(now())
   completedAt DateTime?
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@map("quiz_attempts")
 }
@@ -511,23 +511,23 @@ model Achievement {
   icon        String?
   unlockedAt  DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("achievements")
 }
 
 enum UserRole {
   STUDENT
-  TEACHER      // Renamed from INSTRUCTOR - migration maps existing users
+  TEACHER // Renamed from INSTRUCTOR - migration maps existing users
   ADMIN
-  SUPERUSER    // Full access to all routes (implicit in middleware)
+  SUPERUSER // Full access to all routes (implicit in middleware)
 }
 
 // Entity types that support per-student overrides
 enum OverrideEntityType {
   LEVEL
   LESSON
-  CARD       // Step/Card content
+  CARD // Step/Card content
 }
 
 enum CaseDifficulty {
@@ -556,24 +556,33 @@ enum ParameterPriority {
   OPCIONAL
 }
 
+// Status of a ventilator reservation
+enum ReservationStatus {
+  ACTIVE // Reserva actualmente vigente
+  COMPLETED // Reserva terminada normalmente (usuario liberó)
+  CANCELLED // Reserva cancelada manualmente
+  EXPIRED // Reserva expirada por tiempo
+}
+
 model ClinicalCase {
-  id                String            @id @default(cuid())
-  title             String
-  description       String            @db.Text
-  patientAge        Int
-  patientWeight     Float             // En kg
-  mainDiagnosis     String
-  comorbidities     String[]          // Array de strings
-  labData           Json?             // Datos de laboratorio (gasometría, etc)
-  difficulty        CaseDifficulty
-  pathology         Pathology
-  educationalGoal   String            @db.Text
-  isActive          Boolean           @default(true)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id              String         @id @default(cuid())
+  title           String
+  description     String         @db.Text
+  patientAge      Int
+  patientWeight   Float // En kg
+  mainDiagnosis   String
+  comorbidities   String[] // Array de strings
+  labData         Json? // Datos de laboratorio (gasometría, etc)
+  difficulty      CaseDifficulty
+  pathology       Pathology
+  educationalGoal String         @db.Text
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   expertConfiguration ExpertConfiguration?
-  evaluationAttempts EvaluationAttempt[]
+  evaluationAttempts  EvaluationAttempt[]
+  simulatorSessions   SimulatorSession[]
 
   @@index([difficulty])
   @@index([pathology])
@@ -582,41 +591,96 @@ model ClinicalCase {
 }
 
 model ExpertConfiguration {
-  id                    String          @id @default(cuid())
-  clinicalCaseId        String          @unique
-  ventilationMode       String          // volume, pressure, etc
-  tidalVolume           Float?          // Vt en ml
-  respiratoryRate       Int?            // FR en resp/min
-  peep                  Float?          // PEEP en cmH2O
-  fio2                  Float?          // FiO2 en porcentaje (0-100)
-  maxPressure           Float?          // Presión máxima en cmH2O
-  iERatio               String?         // Relación I:E (ej: "1:2")
-  justification         String          @db.Text // Justificación de cada parámetro
-  acceptableRanges      Json?           // Rangos aceptables {param: {min, max}}
-  parameterPriorities    Json?           // Prioridades {param: CRITICO|IMPORTANTE|OPCIONAL}
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  id                  String   @id @default(cuid())
+  clinicalCaseId      String   @unique
+  ventilationMode     String // volume, pressure, etc
+  tidalVolume         Float? // Vt en ml
+  respiratoryRate     Int? // FR en resp/min
+  peep                Float? // PEEP en cmH2O
+  fio2                Float? // FiO2 en porcentaje (0-100)
+  maxPressure         Float? // Presión máxima en cmH2O
+  iERatio             String? // Relación I:E (ej: "1:2")
+  justification       String   @db.Text // Justificación de cada parámetro
+  acceptableRanges    Json? // Rangos aceptables {param: {min, max}}
+  parameterPriorities Json? // Prioridades {param: CRITICO|IMPORTANTE|OPCIONAL}
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  clinicalCase          ClinicalCase    @relation(fields: [clinicalCaseId], references: [id], onDelete: Cascade)
+  clinicalCase ClinicalCase @relation(fields: [clinicalCaseId], references: [id], onDelete: Cascade)
 
   @@map("expert_configurations")
 }
 
-model EvaluationAttempt {
-  id                    String          @id @default(cuid())
-  userId                String
-  clinicalCaseId        String
-  userConfiguration     Json            // Configuración ingresada por el usuario
-  score                 Float            // Score calculado (0-100)
-  differences           Json?           // Diferencias detectadas con la configuración experta
-  aiFeedback            String?         @db.Text // Retroalimentación generada por IA
-  completionTime        Int?            // Tiempo en segundos
-  isSuccessful          Boolean         @default(false)
-  startedAt             DateTime        @default(now())
-  completedAt           DateTime?
+// ============================================
+// SIMULATION MODULE
+// ============================================
+// VentilatorReservation: tracks which user has the physical ventilator reserved.
+// Only one active reservation allowed at a time (enforced at service level).
+//
+// SimulatorSession: persists one simulation run including all parameters and
+// telemetry readings collected during the session.
+// ============================================
 
-  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clinicalCase          ClinicalCase    @relation(fields: [clinicalCaseId], references: [id], onDelete: Cascade)
+model VentilatorReservation {
+  id              String            @id @default(cuid())
+  userId          String
+  userRole        UserRole // Snapshot del rol del usuario al momento de reservar
+  deviceId        String            @default("ventilab-device-001")
+  status          ReservationStatus @default(ACTIVE)
+  durationMinutes Int // Duración solicitada en minutos
+  startTime       DateTime          @default(now())
+  endTime         DateTime // Hora programada de finalización
+  releasedAt      DateTime? // Cuándo se liberó o canceló (null si aún activa)
+  purpose         String? // Motivo de uso (práctica, evaluación, etc.)
+  cancelReason    String? // Razón de cancelación (si aplica)
+
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+  @@index([deviceId, status])
+  @@map("ventilator_reservations")
+}
+
+model SimulatorSession {
+  id               String    @id @default(cuid())
+  userId           String
+  clinicalCaseId   String?
+  isRealVentilator Boolean   @default(false)
+  parametersLog    Json // VentilatorCommand[]
+  ventilatorData   Json // VentilatorReading[]
+  notes            String?   @db.Text
+  startedAt        DateTime  @default(now())
+  completedAt      DateTime?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinicalCase ClinicalCase? @relation(fields: [clinicalCaseId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([clinicalCaseId])
+  @@index([startedAt])
+  @@map("simulator_sessions")
+}
+
+model EvaluationAttempt {
+  id                String    @id @default(cuid())
+  userId            String
+  clinicalCaseId    String
+  userConfiguration Json // Configuración ingresada por el usuario
+  score             Float // Score calculado (0-100)
+  differences       Json? // Diferencias detectadas con la configuración experta
+  aiFeedback        String?   @db.Text // Retroalimentación generada por IA
+  completionTime    Int? // Tiempo en segundos
+  isSuccessful      Boolean   @default(false)
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinicalCase ClinicalCase @relation(fields: [clinicalCaseId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([clinicalCaseId])
@@ -642,40 +706,40 @@ model EvaluationAttempt {
 // ============================================
 
 enum ProgressStatus {
-  NOT_STARTED  // Module not yet started
-  IN_PROGRESS  // At least one lesson completed
-  COMPLETED    // All lessons completed (100%)
+  NOT_STARTED // Module not yet started
+  IN_PROGRESS // At least one lesson completed
+  COMPLETED // All lessons completed (100%)
 }
 
 model UserProgress {
-  id                    String         @id @default(cuid())
-  userId                String
-  moduleId              String
+  id       String @id @default(cuid())
+  userId   String
+  moduleId String
 
   // Module status
-  status                ProgressStatus @default(NOT_STARTED)
-  isModuleCompleted     Boolean        @default(false) // Denormalized flag for quick lookups
+  status            ProgressStatus @default(NOT_STARTED)
+  isModuleCompleted Boolean        @default(false) // Denormalized flag for quick lookups
 
   // Denormalized counters (recalculated on each lesson completion)
-  completedLessonsCount Int            @default(0)
-  totalLessons          Int            @default(0)
-  progressPercentage    Float          @default(0) // 0-100
+  completedLessonsCount Int   @default(0)
+  totalLessons          Int   @default(0)
+  progressPercentage    Float @default(0) // 0-100
 
   // Time tracking (migrated from LearningProgress)
-  timeSpent             Int            @default(0) // Total time in seconds
+  timeSpent Int @default(0) // Total time in seconds
 
   // Navigation
-  lastAccessedLessonId  String?
-  lastAccessedAt        DateTime       @default(now())
+  lastAccessedLessonId String?
+  lastAccessedAt       DateTime @default(now())
 
   // Lifecycle
-  startedAt             DateTime       @default(now())
-  completedAt           DateTime?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
 
   // Relations
-  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module                Module         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  lastAccessedLesson    Lesson?        @relation("LastAccessedLesson", fields: [lastAccessedLessonId], references: [id], onDelete: SetNull)
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module             Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lastAccessedLesson Lesson? @relation("LastAccessedLesson", fields: [lastAccessedLessonId], references: [id], onDelete: SetNull)
 
   @@unique([userId, moduleId])
   @@index([userId])
@@ -686,36 +750,36 @@ model UserProgress {
 }
 
 model LessonCompletion {
-  id              String   @id @default(cuid())
-  userId          String
-  lessonId        String
+  id       String @id @default(cuid())
+  userId   String
+  lessonId String
 
   // Step-level tracking (migrated from LessonProgress — for resume)
-  currentStepIndex Int      @default(0)   // 0-based last viewed step
-  totalSteps       Int      @default(1)   // Total steps in lesson (cached)
-  timeSpent        Int      @default(0)   // Time spent in seconds
-  lastAccessed     DateTime?              // Last access time
+  currentStepIndex Int       @default(0) // 0-based last viewed step
+  totalSteps       Int       @default(1) // Total steps in lesson (cached)
+  timeSpent        Int       @default(0) // Time spent in seconds
+  lastAccessed     DateTime? // Last access time
 
   // Explicit completion flag (null completedAt = in-progress)
-  isCompleted      Boolean  @default(false)
+  isCompleted Boolean @default(false)
 
   // Quiz tracking (if lesson.hasRequiredQuiz = true)
-  quizAttempts    Int      @default(0)
-  bestQuizScore   Float?   // 0-100
-  lastQuizScore   Float?
+  quizAttempts  Int    @default(0)
+  bestQuizScore Float? // 0-100
+  lastQuizScore Float?
 
   // Case study tracking (if lesson.hasRequiredCase = true)
-  caseAttempts    Int      @default(0)
-  bestCaseScore   Float?   // 0-100
-  lastCaseScore   Float?
+  caseAttempts  Int    @default(0)
+  bestCaseScore Float? // 0-100
+  lastCaseScore Float?
 
   // Timestamps — nullable: null = in-progress, set = completed
-  completedAt     DateTime?
-  updatedAt       DateTime @updatedAt
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
 
   // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson          Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([userId, lessonId])
   @@index([userId])
@@ -779,22 +843,22 @@ enum SectionType {
 // - legacyLessonId: links to existing Lesson record (if one exists)
 // - legacyJsonId: original JSON file id (e.g. "module-01-inversion-fisiologica")
 model Page {
-  id                 String            @id @default(cuid())
+  id String @id @default(cuid())
 
   // Hierarchy FK (Phase 1: Module, Phase 2: Book)
-  moduleId           String
+  moduleId String
 
   // Identity
-  title              String
-  slug               String
-  order              Int
-  type               PageType          @default(THEORY)
+  title String
+  slug  String
+  order Int
+  type  PageType @default(THEORY)
 
   // Metadata
-  description        String?           @db.Text
-  difficulty         ContentDifficulty @default(INTERMEDIATE)
-  bloomLevel         String?
-  estimatedMinutes   Int?
+  description      String?           @db.Text
+  difficulty       ContentDifficulty @default(INTERMEDIATE)
+  bloomLevel       String?
+  estimatedMinutes Int?
 
   // Learning metadata
   learningObjectives String[]
@@ -803,39 +867,39 @@ model Page {
   tags               String[]
 
   // Completion requirements
-  hasRequiredQuiz    Boolean           @default(false)
-  minQuizScore       Float?
+  hasRequiredQuiz Boolean @default(false)
+  minQuizScore    Float?
 
   // Rich JSON fields (from original JSON)
-  aiConfig           Json?
-  resources          Json?
+  aiConfig  Json?
+  resources Json?
 
   // Content versioning
-  version            Int               @default(1)
+  version Int @default(1)
 
   // Editorial state
-  isActive           Boolean           @default(true)
-  isPublished        Boolean           @default(false)
+  isActive    Boolean @default(true)
+  isPublished Boolean @default(false)
 
   // Migration traceability
-  legacyLessonId     String?           @unique
-  legacyJsonId       String?           @unique
+  legacyLessonId String? @unique
+  legacyJsonId   String? @unique
 
   // Audit
-  createdBy          String
-  updatedBy          String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  publishedAt        DateTime?
+  createdBy   String
+  updatedBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
 
   // Relations
-  module             Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  sections           PageSection[]
-  revisions          PageRevision[]
-  progress           PageProgress[]
+  module    Module         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  sections  PageSection[]
+  revisions PageRevision[]
+  progress  PageProgress[]
 
-  creator            User              @relation("PageCreator", fields: [createdBy], references: [id])
-  updater            User?             @relation("PageUpdater", fields: [updatedBy], references: [id])
+  creator User  @relation("PageCreator", fields: [createdBy], references: [id])
+  updater User? @relation("PageUpdater", fields: [updatedBy], references: [id])
 
   @@unique([moduleId, slug])
   @@unique([moduleId, order])
@@ -853,28 +917,28 @@ model Page {
 // In Phase 1, content is always { "markdown": "..." } from JSON.
 // Future editor can produce { "imageUrl": "...", "caption": "..." } etc.
 model PageSection {
-  id              String       @id @default(cuid())
-  pageId          String
+  id     String @id @default(cuid())
+  pageId String
 
-  order           Int
-  type            SectionType
-  title           String?
-  content         Json
+  order   Int
+  type    SectionType
+  title   String?
+  content Json
 
   // Legacy traceability
-  sectionId       String?      // Original JSON section id (e.g. "m1-intro-a")
-  estimatedTime   Int?         // Minutes
+  sectionId     String? // Original JSON section id (e.g. "m1-intro-a")
+  estimatedTime Int? // Minutes
 
-  isActive        Boolean      @default(true)
+  isActive Boolean @default(true)
 
   // Audit
-  createdBy       String?
-  updatedBy       String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdBy String?
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  page            Page         @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@unique([pageId, order])
   @@index([pageId])
@@ -887,20 +951,20 @@ model PageSection {
 // ============================================
 // Created on each publish. Stores full snapshot for rollback.
 model PageRevision {
-  id                 String   @id @default(cuid())
-  pageId             String
-  version            Int
+  id      String @id @default(cuid())
+  pageId  String
+  version Int
 
-  title              String
-  type               PageType
-  sectionsSnapshot   Json
+  title            String
+  type             PageType
+  sectionsSnapshot Json
 
-  changeLog          String?  @db.Text
-  changedBy          String
-  changedAt          DateTime @default(now())
+  changeLog String?  @db.Text
+  changedBy String
+  changedAt DateTime @default(now())
 
-  page               Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  changer            User     @relation("PageRevisionChanger", fields: [changedBy], references: [id])
+  page    Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  changer User @relation("PageRevisionChanger", fields: [changedBy], references: [id])
 
   @@unique([pageId, version])
   @@index([pageId])
@@ -916,21 +980,21 @@ model PageRevision {
 // Replaces the old LessonProgress-based overview which required
 // the Lesson model and produced empty results for new users.
 model PageProgress {
-  id            String    @id @default(cuid())
-  userId        String
-  pageId        String
+  id     String @id @default(cuid())
+  userId String
+  pageId String
 
   completed     Boolean   @default(false)
   xpEarned      Int       @default(0)
   lastVisitedAt DateTime?
   completedAt   DateTime?
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@unique([userId, pageId])
   @@index([userId])
@@ -938,4 +1002,3 @@ model PageProgress {
   @@index([completed])
   @@map("page_progress")
 }
-
