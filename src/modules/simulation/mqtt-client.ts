@@ -66,6 +66,14 @@ export interface MqttClientOptions {
 
   /** Keep-alive interval en segundos (default: 60) */
   keepAlive?: number;
+
+  /**
+   * Topic MQTT del que se recibe telemetría del ventilador.
+   * Sobrescribe MQTT_TOPICS.TELEMETRY cuando se especifica.
+   * Útil para usar un broker público con un topic propio
+   * (e.g., process.env.MQTT_TOPIC).
+   */
+  telemetryTopic?: string;
 }
 
 export class MqttClient implements IVentilatorConnection {
@@ -77,6 +85,11 @@ export class MqttClient implements IVentilatorConnection {
   private telemetryCallbacks: Array<(data: Buffer) => void> = [];
 
   constructor(private readonly options: MqttClientOptions) {}
+
+  /** Telemetry topic resolved from options or the default contract constant. */
+  private get telemetryTopic(): string {
+    return this.options.telemetryTopic ?? MQTT_TOPICS.TELEMETRY;
+  }
 
   // ---------------------------------------------------------------------------
   // IVentilatorConnection implementation
@@ -153,7 +166,7 @@ export class MqttClient implements IVentilatorConnection {
       this.client.on('message', (topic: string, payload: Buffer) => {
         if (
           this.telemetryCallbacks.length > 0 &&
-          (topic === MQTT_TOPICS.TELEMETRY || topic === MQTT_TOPICS.ALARM)
+          (topic === this.telemetryTopic || topic === MQTT_TOPICS.ALARM)
         ) {
           for (const cb of this.telemetryCallbacks) {
             cb(payload);
@@ -219,7 +232,7 @@ export class MqttClient implements IVentilatorConnection {
    */
   subscribeTelemetry(callback: (data: Buffer) => void): void {
     this.telemetryCallbacks.push(callback);
-    this.subscribeToTopic(MQTT_TOPICS.TELEMETRY, 1);
+    this.subscribeToTopic(this.telemetryTopic, 1);
     this.subscribeToTopic(MQTT_TOPICS.ALARM, 1);
   }
 
@@ -321,7 +334,7 @@ export class MqttClient implements IVentilatorConnection {
   /** Re-suscribe a telemetría y alarmas tras reconexión. */
   private resubscribe(): void {
     if (this.telemetryCallbacks.length === 0) return;
-    this.subscribeToTopic(MQTT_TOPICS.TELEMETRY, 1);
+    this.subscribeToTopic(this.telemetryTopic, 1);
     this.subscribeToTopic(MQTT_TOPICS.ALARM, 1);
   }
 

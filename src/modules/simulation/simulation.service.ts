@@ -83,13 +83,18 @@ export class SimulationService {
   /**
    * Inicializa el servicio: conecta MQTT y suscribe a telemetría.
    * Debe llamarse una vez al iniciar el servidor.
+   *
+   * EXCEPCIÓN TEMPORAL: El hardware envía JSON en lugar de trama hex.
+   * Se bypasea el HexParser y se parsea el payload directamente como JSON.
+   * Cuando el hardware implemente el protocolo hex, restaurar la línea:
+   *   this.ventilatorConnection.subscribeTelemetry(buf => this.handleTelemetryBuffer(buf));
    */
   async initialize(): Promise<void> {
     await this.ventilatorConnection.connect();
     this.ventilatorConnection.subscribeTelemetry((data: Buffer) => {
-      this.handleTelemetryBuffer(data);
+      this.handleTelemetryJson(data);
     });
-    console.log('[SimulationService] Initialized and subscribed to telemetry');
+    console.log('[SimulationService] Initialized and subscribed to telemetry (JSON mode)');
   }
 
   /**
@@ -152,6 +157,70 @@ export class SimulationService {
       timestamp: parsed.timestamp,
       deviceId: DEVICE_ID,
     };
+    this.gateway.broadcastData('ventilator:data', reading);
+  }
+
+  // ---------------------------------------------------------------------------
+  // JSON telemetry handler (temporary bypass of HexParser)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Parsea un buffer MQTT directamente como JSON y emite un VentilatorReading.
+   *
+   * Acepta el subconjunto mínimo { pressure, flow, volume } que envía el
+   * hardware en las pruebas con broker público, y añade timestamp/deviceId
+   * cuando no vienen en el payload.
+   *
+   * Errores de parseo o campos faltantes se loguean y descartan sin crashear.
+   *
+   * @param rawBuffer - Buffer crudo recibido por MQTT
+   */
+  private handleTelemetryJson(rawBuffer: Buffer): void {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawBuffer.toString('utf-8'));
+    } catch (err) {
+      console.warn(
+        '[SimulationService] JSON parse error – discarding frame:',
+        err instanceof Error ? err.message : String(err),
+      );
+      return;
+    }
+
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof (parsed as any).pressure !== 'number' ||
+      typeof (parsed as any).flow !== 'number' ||
+      typeof (parsed as any).volume !== 'number'
+    ) {
+      console.warn(
+        '[SimulationService] Telemetry missing required fields (pressure/flow/volume) – discarding',
+      );
+      return;
+    }
+
+    const raw = parsed as {
+      pressure: number;
+      flow: number;
+      volume: number;
+      timestamp?: number;
+      deviceId?: string;
+      pco2?: number;
+      spo2?: number;
+    };
+
+    const reading: VentilatorReading = {
+      pressure: raw.pressure,
+      flow: raw.flow,
+      volume: raw.volume,
+      ...(raw.pco2 !== undefined ? { pco2: raw.pco2 } : {}),
+      ...(raw.spo2 !== undefined ? { spo2: raw.spo2 } : {}),
+      timestamp: raw.timestamp ?? Date.now(),
+      deviceId: raw.deviceId ?? DEVICE_ID,
+    };
+
+    this.lastDataTimestamp = Date.now();
     this.gateway.broadcastData('ventilator:data', reading);
   }
 

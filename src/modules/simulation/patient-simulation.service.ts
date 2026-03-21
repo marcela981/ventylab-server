@@ -54,11 +54,11 @@ interface SimulationSession {
 // Constantes
 // ---------------------------------------------------------------------------
 
-/** Intervalo entre muestras en ms (20 Hz) */
-const TICK_MS = 50;
+/** Intervalo entre muestras en ms (~30 Hz) */
+const TICK_MS = 33;
 
-/** Cada cuántos ticks se recalcula SpO2 (1 s = 20 ticks a 20 Hz) */
-const SPO2_UPDATE_TICKS = 20;
+/** Cada cuántos ticks se recalcula SpO2 (1 s ≈ 30 ticks a ~30 Hz) */
+const SPO2_UPDATE_TICKS = 30;
 
 const SIMULATED_DEVICE_PREFIX = 'simulated';
 
@@ -207,11 +207,26 @@ export class PatientSimulationService {
         deviceId,
       };
 
-      this.gateway.broadcastData('ventilator:data', reading);
+      this.gateway.sendToUser(userId, 'ventilator:data', reading);
     }, TICK_MS);
 
     this.sessions.set(userId, session);
     console.log(`[PatientSimulationService] Simulation started for user ${userId}`);
+  }
+
+  /**
+   * Actualiza los parámetros del ventilador en una simulación en curso.
+   * El loop de señales toma el nuevo comando en el siguiente tick.
+   * No-op si no hay sesión activa.
+   *
+   * @param userId - Usuario cuya simulación se actualiza
+   * @param command - Nuevos parámetros del ventilador
+   */
+  updateCommand(userId: string, command: VentilatorCommand): void {
+    const session = this.sessions.get(userId);
+    if (!session) return;
+    session.ventSettings = command;
+    console.log(`[PatientSimulationService] Command updated for user ${userId}`);
   }
 
   /**

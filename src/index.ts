@@ -301,8 +301,13 @@ const startServer = async () => {
   // Simulation module wiring
   // ------------------------------------------------------------------
   const mqttBrokerUrl = process.env.MQTT_BROKER_URL ?? 'mqtt://localhost:1883';
+  const mqttTelemetryTopic = process.env.MQTT_TOPIC; // undefined → MqttClient uses MQTT_TOPICS.TELEMETRY
 
-  const mqttClient = new MqttClient({ brokerUrl: mqttBrokerUrl, clientId: 'ventylab-server' });
+  const mqttClient = new MqttClient({
+    brokerUrl: mqttBrokerUrl,
+    clientId: `ventylab-server-${Math.random().toString(16).slice(2, 8)}`,
+    telemetryTopic: mqttTelemetryTopic,
+  });
   const wsGateway = new WSGateway(io);
   const hexParser = new HexParser();
   const hexEncoder = new HexEncoder();

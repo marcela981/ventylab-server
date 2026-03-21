@@ -53,6 +53,13 @@ export function createSimulationController(
   // POST /api/simulation/command
   // Body: { command: VentilatorCommand }
   // Returns: SendCommandResponse  (success:true or success:false + errors[])
+  //
+  // Dual-mode routing:
+  //   • isRealVentilator=false (synthetic simulation running)
+  //       → updates PatientSimulationService math; no MQTT publish
+  //   • isRealVentilator=true (physical ventilator)
+  //       → encodes and publishes via MQTT as usual
+  // The frontend receives a transparent VentilatorReading via WebSocket either way.
   // -------------------------------------------------------------------------
   router.post('/command', async (req: Request, res: Response) => {
     try {
@@ -66,6 +73,31 @@ export function createSimulationController(
       }
 
       const userId = req.user?.id;
+
+      // --- Synthetic mode: loop already running → adjust math on the fly ---
+      if (userId && patientService.isSimulating(userId)) {
+        patientService.updateCommand(userId, command);
+        return res.json({
+          success: true,
+          message: 'Command applied to synthetic simulation',
+          timestamp: Date.now(),
+          commandId: `sim-cmd-${Date.now()}`,
+        });
+      }
+
+      // --- Auto-start: patient configured but loop not yet running ---
+      // First command from the control panel kicks off the 30 Hz synthetic loop.
+      if (userId && patientService.getActivePatient(userId)) {
+        patientService.startSimulation(userId, command);
+        return res.json({
+          success: true,
+          message: 'Synthetic simulation started with initial command',
+          timestamp: Date.now(),
+          commandId: `sim-start-${Date.now()}`,
+        });
+      }
+
+      // --- Physical mode: publish command to physical ventilator via MQTT ---
       const result = await service.sendCommand({ command, userId });
 
       // 422 Unprocessable Entity when the command itself fails validation
