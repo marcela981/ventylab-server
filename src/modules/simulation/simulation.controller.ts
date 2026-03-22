@@ -11,7 +11,8 @@
  *   POST   /api/simulation/command        → send a command to the physical ventilator
  *   POST   /api/simulation/reserve        → reserve the physical ventilator
  *   DELETE /api/simulation/reserve        → release the current reservation
- *   POST   /api/simulation/session/save   → persist a simulation session
+ *   POST   /api/simulation/session        → create a new session (simulated or real)
+ *   POST   /api/simulation/session/save   → persist a completed simulation session
  *   GET    /api/simulation/sessions       → list authenticated user's saved sessions
  */
 
@@ -152,6 +153,71 @@ export function createSimulationController(
         success: false,
         message: error.message,
       });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/session
+  // Body: {
+  //   isRealVentilator: boolean,
+  //   patientData?:     object   ← demographics + condition + vitalSigns (simulated only)
+  //   parametersLog?:  any[]
+  //   ventilatorData?: any[]
+  //   notes?:          string
+  //   clinicalCaseId?: string
+  // }
+  // Returns: { success, sessionId, message, timestamp }
+  //
+  // Orchestration:
+  //   isRealVentilator=false → create DB record, then configurePatient() (NO MqttClient)
+  //   isRealVentilator=true  → create DB record only (MQTT already initialised at startup)
+  // -------------------------------------------------------------------------
+  router.post('/session', async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const {
+        isRealVentilator = false,
+        patientData,
+        parametersLog,
+        ventilatorData,
+        notes,
+        clinicalCaseId,
+      } = req.body;
+
+      // Persist the session record (service never touches MqttClient here)
+      const result = await service.createSession({
+        userId,
+        isRealVentilator,
+        parametersLog,
+        ventilatorData,
+        notes,
+        clinicalCaseId,
+      });
+
+      // Simulated patient: initialise physiological model (no MQTT)
+      if (!isRealVentilator) {
+        if (!patientData || typeof patientData !== 'object') {
+          return res.status(400).json({
+            success: false,
+            message: '"patientData" is required when isRealVentilator is false',
+          });
+        }
+        try {
+          patientService.configurePatient(userId, patientData);
+        } catch (configErr: any) {
+          // Session was already created; surface the config error with context
+          return res.status(422).json({
+            success: false,
+            sessionId: result.sessionId,
+            message: `Session created but patient configuration failed: ${configErr.message}`,
+          });
+        }
+      }
+
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error('[SimulationController] POST /session error:', error);
+      res.status(500).json({ success: false, message: error.message });
     }
   });
 

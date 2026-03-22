@@ -428,6 +428,48 @@ export class SimulationService {
   }
 
   /**
+   * Crea un nuevo registro de SimulatorSession al inicio de una sesión.
+   *
+   * Si isRealVentilator es false el servicio sólo persiste el registro y
+   * devuelve el sessionId — el controlador se encarga de invocar al
+   * PatientSimulationService (no se toca el MqttClient).
+   *
+   * Si isRealVentilator es true el registro también se crea aquí; la
+   * conexión MQTT ya fue inicializada en initialize() al arrancar el servidor.
+   *
+   * @param request - Datos iniciales de la sesión
+   * @returns sessionId + mensaje indicando el modo
+   */
+  async createSession(request: {
+    userId: string;
+    isRealVentilator: boolean;
+    parametersLog?: unknown[];
+    ventilatorData?: unknown[];
+    notes?: string;
+    clinicalCaseId?: string;
+  }): Promise<{ success: boolean; sessionId: string; message: string; timestamp: number }> {
+    const db = this.prisma as any;
+    const session = await db.simulatorSession.create({
+      data: {
+        userId: request.userId,
+        isRealVentilator: request.isRealVentilator,
+        parametersLog: request.parametersLog ?? [],
+        ventilatorData: request.ventilatorData ?? [],
+        notes: request.notes ?? null,
+        clinicalCaseId: request.clinicalCaseId ?? null,
+      },
+    });
+
+    const message = request.isRealVentilator
+      ? 'Session created – real ventilator mode'
+      : 'Session created – simulated patient mode (no MQTT connection)';
+
+    console.log(`[SimulationService] createSession → ${session.id} | isReal=${request.isRealVentilator}`);
+
+    return { success: true, sessionId: session.id, message, timestamp: Date.now() };
+  }
+
+  /**
    * Obtiene sesiones de simulador de un usuario.
    * @param userId - ID del usuario
    * @param limit - Límite de resultados (opcional)

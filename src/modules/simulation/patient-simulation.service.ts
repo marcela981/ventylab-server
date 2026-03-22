@@ -4,7 +4,7 @@
  *
  * Conecta el formulario de paciente con el loop de generación de señales:
  *   1. configurePatient() → construye PatientModel (con IBW, mecánica resp.)
- *   2. startSimulation()  → inicia loop a 20 Hz, emite 'ventilator:data' por WS
+ *   2. startSimulation()  → inicia loop a ~30 Hz (TICK_MS=33 ms), emite 'ventilator:data' por WS
  *   3. stopSimulation()   → detiene el loop
  *
  * Cada usuario tiene su propia sesión independiente en el Map de sesiones.

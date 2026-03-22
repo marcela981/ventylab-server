@@ -103,8 +103,12 @@ export interface VentilatorCommand {
   /** Flow rate in L/min */
   flowRate?: number;
 
-  /** Timestamp when command was created */
-  timestamp: number;
+  /**
+   * Timestamp when command was created (ms).
+   * Optional — the backend sets it server-side when persisting sessions.
+   * Clients are not required to supply this field.
+   */
+  timestamp?: number;
 }
 
 /**
