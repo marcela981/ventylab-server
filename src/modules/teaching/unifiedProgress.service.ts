@@ -20,6 +20,7 @@
 import { prisma } from '../../shared/infrastructure/database';
 import { ProgressStatus } from '@prisma/client';
 import { invalidateUserCache } from './progressQuery.service';
+import { AppError } from '../../shared/utils/errors';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -178,11 +179,12 @@ export async function updateStepProgress(
       progressPercentage: result.isCompleted ? 100 : progressPercentage,
     };
   } catch (error: any) {
+    if (error instanceof AppError) throw error;
     console.error('[updateStepProgress] Error:', error);
     if (error.code === 'P2034') {
-      return { success: false, lessonId, currentStepIndex, totalSteps, completed: false, progressPercentage: 0, error: 'Concurrency conflict. Please retry.' };
+      throw new AppError('Conflicto de concurrencia. Por favor, intenta nuevamente.', 409, 'CONCURRENCY_CONFLICT');
     }
-    return { success: false, lessonId, currentStepIndex, totalSteps, completed: false, progressPercentage: 0, error: 'Failed to update progress' };
+    throw new AppError('Error al actualizar progreso de la lección', 500, 'INTERNAL_SERVER_ERROR');
   }
 }
 

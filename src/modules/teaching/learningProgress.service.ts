@@ -141,11 +141,23 @@ export async function getLessonProgress(
   lessonId: string
 ): Promise<LessonProgressResponse | null> {
   // Ensure UserProgress exists
-  await prisma.userProgress.upsert({
-    where: { userId_moduleId: { userId, moduleId } },
-    update: {},
-    create: { userId, moduleId, status: ProgressStatus.NOT_STARTED },
-  });
+  let userProgress;
+  try {
+    userProgress = await prisma.userProgress.upsert({
+      where: { userId_moduleId: { userId, moduleId } },
+      update: {},
+      create: { userId, moduleId, status: ProgressStatus.NOT_STARTED },
+    });
+  } catch (error: any) {
+    if (error.code === 'P2002' || error.code === 'P2025' || error.code === 'P2034') {
+      userProgress = await prisma.userProgress.findUnique({
+        where: { userId_moduleId: { userId, moduleId } },
+      });
+      if (!userProgress) throw error;
+    } else {
+      throw error;
+    }
+  }
 
   const completion = await prisma.lessonCompletion.findUnique({
     where: { userId_lessonId: { userId, lessonId } },
@@ -180,11 +192,23 @@ export async function getModuleProgress(
   moduleId: string
 ): Promise<ModuleProgressResponse> {
   // Ensure UserProgress exists
-  const userProgress = await prisma.userProgress.upsert({
-    where: { userId_moduleId: { userId, moduleId } },
-    update: {},
-    create: { userId, moduleId, status: ProgressStatus.NOT_STARTED },
-  });
+  let userProgress;
+  try {
+    userProgress = await prisma.userProgress.upsert({
+      where: { userId_moduleId: { userId, moduleId } },
+      update: {},
+      create: { userId, moduleId, status: ProgressStatus.NOT_STARTED },
+    });
+  } catch (error: any) {
+    if (error.code === 'P2002' || error.code === 'P2025' || error.code === 'P2034') {
+      userProgress = await prisma.userProgress.findUnique({
+        where: { userId_moduleId: { userId, moduleId } },
+      });
+      if (!userProgress) throw error;
+    } else {
+      throw error;
+    }
+  }
 
   // Get all active lessons
   const allModuleLessons = await prisma.lesson.findMany({

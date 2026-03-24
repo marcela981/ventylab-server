@@ -776,6 +776,29 @@ export const removePrerequisite = async (
 };
 
 /**
+ * Get lesson count for a module
+ *
+ * @param moduleId - Module ID
+ * @returns Number of lessons
+ */
+export const getModuleLessonsCount = async (moduleId: string): Promise<number> => {
+  try {
+    const count = await prisma.lesson.count({
+      where: { moduleId },
+    });
+    return count;
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    console.error('Error in getModuleLessonsCount:', error);
+    throw new AppError(
+      'Error al obtener el conteo de lecciones',
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_CODES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+/**
  * Get all lessons for a module
  *
  * @param moduleId - Module ID

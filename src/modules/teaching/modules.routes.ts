@@ -39,6 +39,14 @@ router.get(
   modulesController.getModuleById
 );
 
+// GET /api/modules/:id/lessons/count - Get lesson count of a module
+router.get(
+  '/:id/lessons/count',
+  readLimiter,
+  validateRequest(idValidator),
+  modulesController.getModuleLessonsCount
+);
+
 // GET /api/modules/:id/lessons - Get all lessons of a module
 router.get(
   '/:id/lessons',

@@ -135,6 +135,24 @@ export const deleteModule = async (
 };
 
 /**
+ * Get lesson count of a module
+ * GET /api/modules/:id/lessons/count
+ */
+export const getModuleLessonsCount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const count = await moduleService.getModuleLessonsCount(id);
+    sendSuccess(res, HTTP_STATUS.OK, 'Conteo de lecciones obtenido exitosamente', { count });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get lessons of a module
  * GET /api/modules/:id/lessons
  */
