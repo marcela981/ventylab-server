@@ -15,6 +15,7 @@
  */
 
 import { prisma } from '../../shared/infrastructure/database';
+import { DEFAULT_LEVEL_TRACK } from '../../config/levelTrack';
 
 // ── Response types ──────────────────────────────────────────────────
 
@@ -95,7 +96,13 @@ export async function getProgressOverview(
   // Ordered by level.order, then module.order so that the sequential
   // availability logic works correctly within each level.
   const modules = await prisma.module.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      OR: [
+        { levelId: null },
+        { level: { isActive: true, track: DEFAULT_LEVEL_TRACK } },
+      ],
+    },
     include: {
       lessons: {
         where: { isActive: true },

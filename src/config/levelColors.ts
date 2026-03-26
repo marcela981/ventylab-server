@@ -9,6 +9,10 @@ export const DIFFICULTY_COLORS = {
   intermediate: '#FF9800',
   advanced: '#F44336',
   prerequisitos: '#9E9E9E',
+  // ventylab track levels (purple palette)
+  'ventylab-principiante': '#7B1FA2',
+  'ventylab-intermedio':   '#6A1B9A',
+  'ventylab-avanzado':     '#4A148C',
 } as const;
 
 const DEFAULT_LEVEL_COLOR = '#4CAF50';

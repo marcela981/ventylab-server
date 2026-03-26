@@ -35,6 +35,7 @@ import {
   paginationValidator,
   levelPrerequisiteValidator,
   levelPrerequisitePairValidator,
+  levelsCurriculumQueryValidator,
 } from '../../shared/middleware/validators';
 import { readLimiter, writeLimiter } from '../../shared/middleware/rate-limiter.middleware';
 
@@ -58,6 +59,7 @@ router.get(
 router.get(
   '/curriculum',
   readLimiter,
+  validateRequest(levelsCurriculumQueryValidator),
   optionalAuth,
   levelsController.getLevelsCurriculum
 );

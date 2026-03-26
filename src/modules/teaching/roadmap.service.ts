@@ -22,6 +22,7 @@
  */
 
 import { prisma } from '../../shared/infrastructure/database';
+import { DEFAULT_LEVEL_TRACK } from '../../config/levelTrack';
 import { AppError } from '../../shared/middleware/error-handler.middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../../config/constants';
 
@@ -359,7 +360,7 @@ export async function getUserRoadmap(userId: string): Promise<LevelRoadmapNode[]
   return getCached(cacheKey, async () => {
     // Get all active levels ordered
     const levels = await prisma.level.findMany({
-      where: { isActive: true },
+      where: { isActive: true, track: DEFAULT_LEVEL_TRACK },
       orderBy: { order: 'asc' },
       include: {
         modules: {

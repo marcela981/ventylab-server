@@ -25,26 +25,52 @@ const LEVELS = [
   {
     id: 'level-prerequisitos',
     title: 'Prerequisitos',
+    track: 'mecanica',
     description: 'Contenido fundamental opcional para reforzar bases antes de iniciar el currículo principal',
     order: 1,
   },
   {
     id: 'level-beginner',
     title: 'Nivel Principiante',
+    track: 'mecanica',
     description: 'Fundamentos fisiológicos y conceptos básicos de ventilación mecánica',
     order: 2,
   },
   {
     id: 'level-intermedio',
     title: 'Nivel Intermedio',
+    track: 'mecanica',
     description: 'Modalidades ventilatorias y manejo de parámetros críticos',
     order: 3,
   },
   {
     id: 'level-avanzado',
     title: 'Nivel Avanzado',
+    track: 'mecanica',
     description: 'Estrategias especializadas y casos clínicos complejos',
     order: 4,
+  },
+  // --- VENTYLAB TRACK ---
+  {
+    id: 'ventylab-principiante',
+    title: 'Principiante',
+    track: 'ventylab',
+    description: 'Primeros pasos con la plataforma: navegación, simulador y configuración básica',
+    order: 1,
+  },
+  {
+    id: 'ventylab-intermedio',
+    title: 'Intermedio',
+    track: 'ventylab',
+    description: 'Interpretación de datos del simulador y uso de casos clínicos',
+    order: 2,
+  },
+  {
+    id: 'ventylab-avanzado',
+    title: 'Avanzado',
+    track: 'ventylab',
+    description: 'Escenarios complejos, evaluación y personalización del flujo de trabajo',
+    order: 3,
   },
 ];
 
@@ -265,6 +291,90 @@ const MODULES: ModuleDef[] = [
   },
 
   // ========================================
+  // VENTYLAB PRINCIPIANTE (2 modules, 2 lessons)
+  // ========================================
+  {
+    id: 'ventylab-module-01-historia-fisiologia',
+    levelId: 'ventylab-principiante',
+    title: 'Historia y Fisiología Aplicada',
+    description: 'Historia de la educación médica y fisiología aplicada al aprendizaje: SDL/TBL y estrategias de recuperación espaciada',
+    difficulty: 'beginner',
+    order: 1,
+    estimatedTime: 75,
+    lessons: [
+      { id: 'vl-historia-fisiologia-aplicada', title: 'Historia y fisiología aplicada: SDL/TBL y estrategias de recuperación', slug: 'historia-fisiologia-aplicada', order: 1, estimatedTime: 75 },
+    ],
+  },
+  {
+    id: 'ventylab-module-02-ventilador-componentes',
+    levelId: 'ventylab-principiante',
+    title: 'El Ventilador y sus Componentes',
+    description: 'Aprendizaje autodirigido con SDL/TBL usando la metáfora del ventilador: autonomía, lectura activa, recuperación espaciada y soporte colaborativo',
+    difficulty: 'beginner',
+    order: 2,
+    estimatedTime: 70,
+    lessons: [
+      { id: 'vl-ventilador-componentes', title: 'El Ventilador y sus Componentes: Aprendizaje autodirigido con SDL/TBL', slug: 'ventilador-componentes', order: 1, estimatedTime: 70 },
+    ],
+  },
+
+  // ========================================
+  // VENTYLAB INTERMEDIO (2 modules, 2 lessons)
+  // ========================================
+  {
+    id: 'ventylab-module-03-programacion-modos',
+    levelId: 'ventylab-intermedio',
+    title: 'Programación de Modos Clásicos',
+    description: 'Arquitectura del aprendizaje activo y estructuración con JSON: recuperación, memoria y estandarización para interoperabilidad con herramientas como Anki y flujos TBL',
+    difficulty: 'intermediate',
+    order: 1,
+    estimatedTime: 65,
+    lessons: [
+      { id: 'vl-programacion-modos-clasicos', title: 'Arquitectura del Aprendizaje Activo y Estructuración con JSON (Programación de modos clásicos)', slug: 'programacion-modos-clasicos', order: 1, estimatedTime: 65 },
+    ],
+  },
+  {
+    id: 'ventylab-module-04-vni-destete',
+    levelId: 'ventylab-intermedio',
+    title: 'Ventilación No Invasiva y Destete',
+    description: 'Guía maestra de estrategias de aprendizaje para VNI y destete: SDL, neurobiología de la memoria, lectura activa, recuperación espaciada y TBL/simulación',
+    difficulty: 'intermediate',
+    order: 2,
+    estimatedTime: 68,
+    lessons: [
+      { id: 'vl-vni-destete', title: 'Guía maestra de estrategias de aprendizaje para ventilación no invasiva y destete', slug: 'vni-destete', order: 1, estimatedTime: 68 },
+    ],
+  },
+
+  // ========================================
+  // VENTYLAB AVANZADO (2 modules, 2 lessons)
+  // ========================================
+  {
+    id: 'ventylab-module-05-raciocinio-clinico',
+    levelId: 'ventylab-avanzado',
+    title: 'Raciocinio Clínico en Patologías Críticas',
+    description: 'Fundamentos neurobiológicos del juicio clínico, lectura activa, recuperación espaciada, TBL/simulación y gestión de protocolos con JSON para patologías críticas',
+    difficulty: 'advanced',
+    order: 1,
+    estimatedTime: 72,
+    lessons: [
+      { id: 'vl-raciocinio-clinico-patologias', title: 'Raciocinio clínico en patologías críticas: neurobiología, recuperación y arquitectura de datos', slug: 'raciocinio-clinico-patologias', order: 1, estimatedTime: 72 },
+    ],
+  },
+  {
+    id: 'ventylab-module-06-innovacion-tecnologia',
+    levelId: 'ventylab-avanzado',
+    title: 'Innovación, Tecnología y Gestión del Aprendizaje',
+    description: 'Neurobiología del aprendizaje, lectura activa, recuperación espaciada, Anki, TBL, simulación y gestión técnica con JSON/Python/jq para una práctica clínica eficiente y escalable',
+    difficulty: 'advanced',
+    order: 2,
+    estimatedTime: 88,
+    lessons: [
+      { id: 'vl-innovacion-tecnologia-gestion', title: 'Innovación, tecnología y gestión del aprendizaje clínico', slug: 'innovacion-tecnologia-gestion', order: 1, estimatedTime: 88 },
+    ],
+  },
+
+  // ========================================
   // ADVANCED (4 modules, 7 lessons)
   // ========================================
   {
@@ -327,6 +437,9 @@ const LEVEL_PREREQUISITES = [
   { levelId: 'level-avanzado', prerequisiteLevelId: 'level-intermedio' },
   // Note: level-prerequisitos has no prerequisites (always accessible)
   // Note: level-beginner has no prerequisites (always accessible)
+  // VentyLab track
+  { levelId: 'ventylab-intermedio', prerequisiteLevelId: 'ventylab-principiante' },
+  { levelId: 'ventylab-avanzado', prerequisiteLevelId: 'ventylab-intermedio' },
 ];
 
 // --- MODULE PREREQUISITES (within-level sequential chains) ---
@@ -343,6 +456,12 @@ const MODULE_PREREQUISITES = [
   { moduleId: 'clinical-cases', prerequisiteId: 'asthma-crisis' },
   // Beginner: no module prerequisites (sequential access enforced by order)
   // Prerequisitos: no module prerequisites (all accessible)
+  // VentyLab Principiante: sequential
+  { moduleId: 'ventylab-module-02-ventilador-componentes', prerequisiteId: 'ventylab-module-01-historia-fisiologia' },
+  // VentyLab Intermedio: sequential
+  { moduleId: 'ventylab-module-04-vni-destete', prerequisiteId: 'ventylab-module-03-programacion-modos' },
+  // VentyLab Avanzado: sequential
+  { moduleId: 'ventylab-module-06-innovacion-tecnologia', prerequisiteId: 'ventylab-module-05-raciocinio-clinico' },
 ];
 
 // ============================================
@@ -385,6 +504,7 @@ async function seedLevels() {
       data: {
         id: level.id,
         title: level.title,
+        track: level.track,
         description: level.description,
         order: level.order,
         isActive: true,

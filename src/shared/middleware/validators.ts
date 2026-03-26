@@ -5,6 +5,7 @@
 
 import { body, param, query, ValidationChain } from 'express-validator';
 import { VALIDATION, USER_ROLES, MODULE_DIFFICULTIES, STEP_CONTENT_TYPES } from '../../config/constants';
+import { LEVEL_TRACK_VALUES } from '../../config/levelTrack';
 
 // ============================================
 // Auth Validators
@@ -218,15 +219,30 @@ export const updateLessonValidator: ValidationChain[] = [
 
 export const createLevelValidator: ValidationChain[] = [
   body('title').trim().notEmpty().withMessage('El título del nivel es requerido').isLength({ min: 2, max: 100 }).withMessage('El título debe tener entre 2 y 100 caracteres'),
+  body('track')
+    .optional()
+    .isIn([...LEVEL_TRACK_VALUES])
+    .withMessage(`track debe ser uno de: ${LEVEL_TRACK_VALUES.join(', ')}`),
   body('description').optional().trim().isLength({ max: 1000 }).withMessage('La descripción no debe exceder 1000 caracteres'),
   body('order').optional().isInt({ min: 0 }).withMessage('El orden debe ser un número no negativo').toInt(),
 ];
 
 export const updateLevelValidator: ValidationChain[] = [
   body('title').optional().trim().isLength({ min: 2, max: 100 }).withMessage('El título debe tener entre 2 y 100 caracteres'),
+  body('track')
+    .optional()
+    .isIn([...LEVEL_TRACK_VALUES])
+    .withMessage(`track debe ser uno de: ${LEVEL_TRACK_VALUES.join(', ')}`),
   body('description').optional().trim().isLength({ max: 1000 }).withMessage('La descripción no debe exceder 1000 caracteres'),
   body('order').optional().isInt({ min: 0 }).withMessage('El orden debe ser un número no negativo').toInt(),
   body('isActive').optional().isBoolean().withMessage('isActive debe ser un booleano'),
+];
+
+export const levelsCurriculumQueryValidator: ValidationChain[] = [
+  query('track')
+    .optional()
+    .isIn([...LEVEL_TRACK_VALUES])
+    .withMessage(`track debe ser uno de: ${LEVEL_TRACK_VALUES.join(', ')}`),
 ];
 
 export const levelIdQueryValidator: ValidationChain[] = [

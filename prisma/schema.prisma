@@ -245,6 +245,8 @@ model VerificationToken {
 model Level {
   id          String   @id @default(cuid())
   title       String   @unique
+  /// Currículo: mecanica (ruta principal) | ventylab (aprendizaje de plataforma)
+  track       String   @default("mecanica")
   description String?  @db.Text
   order       Int      @default(0)
   isActive    Boolean  @default(true)
@@ -265,6 +267,7 @@ model Level {
 
   @@index([order])
   @@index([isActive])
+  @@index([track])
   @@index([lastModifiedBy])
   @@map("levels")
 }

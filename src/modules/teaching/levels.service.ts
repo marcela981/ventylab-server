@@ -21,6 +21,7 @@ import { HTTP_STATUS, ERROR_CODES, PAGINATION } from '../../config/constants';
 import { getColorForDifficulty } from '../../config/levelColors';
 import { logChange, getDiff } from './changelog.service';
 import { canDeleteLevel as canDeleteLevelPrereq } from './levelPrerequisites.service';
+import { DEFAULT_LEVEL_TRACK, type LevelTrackId } from '../../config/levelTrack';
 
 // ============================================
 // Type Definitions
@@ -44,12 +45,15 @@ interface GetAllLevelsResult {
 
 interface CreateLevelData {
   title: string;
+  /** @default mecanica */
+  track?: LevelTrackId;
   description?: string;
   order?: number;
 }
 
 interface UpdateLevelData {
   title?: string;
+  track?: LevelTrackId;
   description?: string;
   order?: number;
   isActive?: boolean;
@@ -135,18 +139,26 @@ export const getAllLevels = async (
 // ── Slug mapping: DB level IDs → frontend-compatible keys ───────────────────
 // DB uses 'level-beginner', frontend uses 'beginner'. This map normalises them.
 const LEVEL_SLUG_MAP: Record<string, string> = {
-  'level-prerequisitos': 'prerequisitos',
-  'level-beginner':      'beginner',
-  'level-intermedio':    'intermediate',
-  'level-avanzado':      'advanced',
+  // mecanica
+  'level-prerequisitos':   'prerequisitos',
+  'level-beginner':        'beginner',
+  'level-intermedio':      'intermediate',
+  'level-avanzado':        'advanced',
+  // ventylab — keep DB ids as slugs (already unique with ventylab- prefix)
+  'ventylab-principiante': 'ventylab-principiante',
+  'ventylab-intermedio':   'ventylab-intermedio',
+  'ventylab-avanzado':     'ventylab-avanzado',
 };
 
 // Hardcoded emojis for each level slug (DB has no emoji column).
 const LEVEL_EMOJIS: Record<string, string> = {
-  prerequisitos: '🔬',
-  beginner:      '🌱',
-  intermediate:  '⚡',
-  advanced:      '🎯',
+  prerequisitos:          '🔬',
+  beginner:               '🌱',
+  intermediate:           '⚡',
+  advanced:               '🎯',
+  'ventylab-principiante': '💡',
+  'ventylab-intermedio':   '🖥️',
+  'ventylab-avanzado':     '🚀',
 };
 
 export interface LevelCurriculumModule {
@@ -164,6 +176,7 @@ export interface LevelCurriculumModule {
 export interface LevelCurriculumItem {
   id: string;         // slug ('beginner') — frontend-compatible key for LevelStepper
   dbId: string;       // actual DB Level.id ('level-beginner')
+  track: string;
   title: string;
   description: string | null;
   color: string;
@@ -182,14 +195,15 @@ export interface LevelCurriculumItem {
  * Uses DB Module.levelId grouping — the totalModules count is the source of truth.
  * progressPercentage = strict average of UserProgress.progressPercentage for the level.
  *
- * GET /api/levels/curriculum
+ * GET /api/levels/curriculum?track=mecanica|ventylab
  */
 export const getLevelsCurriculum = async (
-  userId?: string
+  userId?: string,
+  track?: LevelTrackId
 ): Promise<LevelCurriculumItem[]> => {
   try {
     const levelsWithModules = await prisma.level.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...(track ? { track } : {}) },
       orderBy: { order: 'asc' },
       include: {
         modules: {
@@ -288,6 +302,7 @@ export const getLevelsCurriculum = async (
       return {
         id: slug,
         dbId: level.id,
+        track: level.track,
         title: level.title,
         description: level.description,
         color,
@@ -386,7 +401,8 @@ export const createLevel = async (
   userId?: string
 ): Promise<any> => {
   try {
-    const { title, description, order } = data;
+    const { title, description, order, track: trackInput } = data;
+    const track = trackInput ?? DEFAULT_LEVEL_TRACK;
 
     // Validate that no level with same title exists
     const existingLevel = await prisma.level.findFirst({
@@ -437,6 +453,7 @@ export const createLevel = async (
     const level = await prisma.level.create({
       data: {
         title,
+        track,
         description,
         order: finalOrder,
         // Audit fields

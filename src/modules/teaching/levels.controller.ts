@@ -16,6 +16,7 @@ import * as roadmapService from './roadmap.service';
 import { sendSuccess, sendCreated, sendPaginatedSuccess } from '../../shared/utils/response';
 import { HTTP_STATUS, SUCCESS_MESSAGES } from '../../config/constants';
 import { AppError } from '../../shared/middleware/error-handler.middleware';
+import { isLevelTrack, type LevelTrackId } from '../../config/levelTrack';
 
 interface AuthenticatedRequest extends Request {
   user?: { id: string; email: string; role: string };
@@ -33,7 +34,12 @@ export const getLevelsCurriculum = async (
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const levels = await levelService.getLevelsCurriculum(userId);
+    const trackParam = req.query.track;
+    const track: LevelTrackId | undefined =
+      typeof trackParam === 'string' && isLevelTrack(trackParam)
+        ? trackParam
+        : undefined;
+    const levels = await levelService.getLevelsCurriculum(userId, track);
     sendSuccess(res, HTTP_STATUS.OK, 'Currículo de niveles obtenido exitosamente', levels);
   } catch (error) {
     next(error);
