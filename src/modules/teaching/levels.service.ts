@@ -168,6 +168,7 @@ export interface LevelCurriculumModule {
   difficulty: string | null;
   estimatedTime: number | null;
   order: number;
+  category: string | null;
   progressPercentage: number;  // 0–100 from UserProgress (0 if no record)
   isCompleted: boolean;
   lessonCount: number;
@@ -216,6 +217,7 @@ export const getLevelsCurriculum = async (
             difficulty: true,
             estimatedTime: true,
             order: true,
+            category: true,
             _count: { select: { lessons: { where: { isActive: true } } } },
           },
         },
@@ -280,17 +282,28 @@ export const getLevelsCurriculum = async (
       const color = getColorForDifficulty(slug);
       const emoji = LEVEL_EMOJIS[slug] ?? '📚';
 
-      const modules: LevelCurriculumModule[] = level.modules.map(mod => ({
-        id: mod.id,
-        title: mod.title,
-        description: mod.description,
-        difficulty: mod.difficulty,
-        estimatedTime: mod.estimatedTime,
-        order: mod.order,
-        progressPercentage: progressMap.get(mod.id) ?? 0,
-        isCompleted: moduleCompletedMap.get(mod.id) ?? false,
-        lessonCount: (mod as any)._count?.lessons ?? 0,
-      }));
+      // Pathology modules in level-avanzado are identified by category field or by order >= 5
+      // (modules 05-08 are the specialised pathology sub-group shown in the nested accordion)
+      const isAdvancedLevel = level.id === 'level-avanzado';
+
+      const modules: LevelCurriculumModule[] = level.modules.map(mod => {
+        // Prefer the DB category value; fall back to order-based detection for level-avanzado
+        const rawCategory = (mod as any).category as string | null ?? null;
+        const category = rawCategory ?? (isAdvancedLevel && mod.order >= 5 ? 'pathologies' : null);
+
+        return {
+          id: mod.id,
+          title: mod.title,
+          description: mod.description,
+          difficulty: mod.difficulty,
+          estimatedTime: mod.estimatedTime,
+          order: mod.order,
+          category,
+          progressPercentage: progressMap.get(mod.id) ?? 0,
+          isCompleted: moduleCompletedMap.get(mod.id) ?? false,
+          lessonCount: (mod as any)._count?.lessons ?? 0,
+        };
+      });
 
       const totalModules = modules.length;
       const completedModules = modules.filter(m => m.isCompleted).length;
