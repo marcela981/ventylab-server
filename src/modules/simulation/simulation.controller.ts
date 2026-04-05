@@ -117,7 +117,7 @@ export function createSimulationController(
   // -------------------------------------------------------------------------
   router.post('/reserve', async (req: Request, res: Response) => {
     try {
-      const { durationMinutes, purpose } = req.body;
+      const { durationMinutes, purpose, groupId, leaderId } = req.body;
 
       if (typeof durationMinutes !== 'number' || durationMinutes <= 0) {
         return res.status(400).json({
@@ -127,7 +127,13 @@ export function createSimulationController(
       }
 
       const userId = req.user!.id;
-      const result = await service.reserveVentilator({ userId, durationMinutes, purpose });
+      const result = await service.reserveVentilator({
+        userId,
+        durationMinutes,
+        purpose,
+        groupId,
+        leaderId,
+      } as any);
 
       // Return 409 Conflict when ventilator is already reserved by someone else
       const statusCode = result.success ? 200 : 409;

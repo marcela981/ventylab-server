@@ -445,6 +445,12 @@ export interface GetVentilatorStatusResponse {
   /** Current user if reserved */
   currentUser?: string;
 
+  /** Group ID if the reservation is for a group */
+  groupId?: string | null;
+
+  /** Leader ID who receives simulator data */
+  leaderId?: string | null;
+
   /** Reservation end time if reserved */
   reservationEndsAt?: number;
 

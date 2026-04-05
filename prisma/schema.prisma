@@ -61,6 +61,14 @@ model User {
   ventilatorReservations VentilatorReservation[]
   simulatorSessions      SimulatorSession[]
 
+  // Groups
+  groupMembers     GroupMember[]
+  ledGroups        Group[]                 @relation("GroupLeader")
+  createdGroups    Group[]                 @relation("GroupCreator")
+  scoresReceived   Score[]                 @relation("StudentScores")
+  scoresGiven      Score[]                 @relation("GraderScores")
+  reservationsAsLead VentilatorReservation[] @relation("ReservationLead")
+
   @@map("users")
 }
 
@@ -629,6 +637,8 @@ model VentilatorReservation {
   userId          String
   userRole        UserRole // Snapshot del rol del usuario al momento de reservar
   deviceId        String            @default("ventilab-device-001")
+  groupId         String? // Grupo para el cual se reservó
+  leaderId        String? // Usuario designado para recibir la trama del simulador
   status          ReservationStatus @default(ACTIVE)
   durationMinutes Int // Duración solicitada en minutos
   startTime       DateTime          @default(now())
@@ -641,11 +651,14 @@ model VentilatorReservation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group  Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  leader User?  @relation("ReservationLead", fields: [leaderId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([userId])
   @@index([deviceId, status])
+  @@index([groupId])
   @@map("ventilator_reservations")
 }
 
@@ -1004,4 +1017,84 @@ model PageProgress {
   @@index([pageId])
   @@index([completed])
   @@map("page_progress")
+}
+
+// ============================================
+// GROUP MANAGEMENT SYSTEM
+// ============================================
+// Supports up to 3 levels: root (depth=0) → sub (depth=1) → sub-sub (depth=2).
+// Depth limit enforced at service layer.
+// ============================================
+model Group {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?  @db.Text
+  parentGroupId     String?
+  depth             Int      @default(0) // 0 | 1 | 2  (enforced in GroupService)
+  simulatorLeaderId String? // User who receives real-time ventilator data
+  isActive          Boolean  @default(true)
+  maxStudents       Int?
+  enrollmentCode    String?  @unique
+  semester          String?
+  academicYear      String?
+  createdBy         String? // userId of teacher/admin who created it
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  parentGroup  Group?                  @relation("SubGroups", fields: [parentGroupId], references: [id])
+  subGroups    Group[]                 @relation("SubGroups")
+  leader       User?                   @relation("GroupLeader", fields: [simulatorLeaderId], references: [id])
+  creator      User?                   @relation("GroupCreator", fields: [createdBy], references: [id])
+  members      GroupMember[]
+  reservations VentilatorReservation[]
+
+  @@index([parentGroupId])
+  @@index([depth])
+  @@index([isActive])
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  role     String   @default("STUDENT") // "STUDENT" | "TEACHER"
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_members")
+}
+
+// ============================================
+// STUDENT SCORE MODEL
+// ============================================
+// Teacher-assigned grades per student per entity.
+// entityType: "MODULE" | "LESSON" | "QUIZ" | "CASE" | "CUSTOM"
+// entityId: the referenced entity's DB id (or a custom label)
+// ============================================
+model Score {
+  id         String   @id @default(cuid())
+  userId     String // Student who received the score
+  graderId   String // Teacher who assigned the score
+  entityType String   @default("CUSTOM") // MODULE | LESSON | QUIZ | CASE | CUSTOM
+  entityId   String // moduleId, lessonId, quizId, caseId, or custom label
+  points     Float
+  maxPoints  Float    @default(100)
+  comments   String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user   User @relation("StudentScores", fields: [userId], references: [id], onDelete: Cascade)
+  grader User @relation("GraderScores", fields: [graderId], references: [id], onDelete: Cascade)
+
+  @@unique([graderId, userId, entityType, entityId])
+  @@index([userId])
+  @@index([graderId])
+  @@index([entityType, entityId])
+  @@map("scores")
 }

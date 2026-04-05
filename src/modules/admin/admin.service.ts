@@ -1,228 +1,282 @@
 /**
- * @module AdminService
- * @description Servicio principal del módulo de administración.
- * Gestiona usuarios, grupos y asignaciones profesor-estudiante.
+ * AdminService — student list, student progress, role management, statistics.
  *
- * Responsabilidades:
- * - CRUD de usuarios (crear, actualizar, eliminar, listar)
- * - CRUD de grupos (crear, actualizar, eliminar)
- * - Asignar estudiantes a grupos
- * - Asignar profesores a estudiantes
- * - Listar estudiantes con progreso y filtros
- * - Obtener detalle de progreso de un estudiante
- *
- * Control de acceso:
- * - GET: TEACHER+
- * - POST/PUT: TEACHER+ (su grupo) o ADMIN+
- * - DELETE: ADMIN+
+ * Field names align with actual Prisma schema:
+ *   User.groupMembers   (not groupMemberships)
+ *   User.scoresReceived / scoresGiven
+ *   User.ledGroups / createdGroups
  */
 
-import type { PrismaClient } from '@prisma/client';
-import type {
-  User,
-  Group,
-  StudentWithProgress,
-  StudentDetailedProgress,
-  GetStudentsRequest,
-  GetStudentsResponse,
-  GetStudentProgressRequest,
-  GetStudentProgressResponse,
-  CreateUserRequest,
-  CreateUserResponse,
-  UpdateUserRequest,
-  UpdateUserResponse,
-  DeleteUserRequest,
-  DeleteUserResponse,
-  CreateGroupRequest,
-  CreateGroupResponse,
-  UpdateGroupRequest,
-  UpdateGroupResponse,
-  DeleteGroupRequest,
-  DeleteGroupResponse,
-  AssignStudentsToGroupRequest,
-  AssignStudentsToGroupResponse,
-  AssignTeacherRequest,
-  AssignTeacherResponse,
-} from '../../../contracts/admin.contracts';
-import { ADMIN_VALIDATION } from '../../../contracts/admin.contracts';
+import { prisma } from '../../shared/infrastructure/database';
+import { UserRole } from '@prisma/client';
 
-export class AdminService {
-  constructor(private readonly prisma: PrismaClient) {}
+// ---------------------------------------------------------------------------
+// Student list
+// ---------------------------------------------------------------------------
 
-  // ---------------------------------------------------------------------------
-  // Users - CRUD
-  // ---------------------------------------------------------------------------
+export interface GetStudentsOptions {
+  groupId?: string;
+  teacherId?: string;   // filter by teacher's groups
+  myGroups?: boolean;   // alias for teacherId = caller
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: 'name' | 'email' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
 
-  /**
-   * Crea un nuevo usuario en la plataforma.
-   * @param request - Datos del usuario
-   * @returns Usuario creado (sin password)
-   */
-  async createUser(request: CreateUserRequest): Promise<CreateUserResponse> {
-    // TODO: Validar email con ADMIN_VALIDATION.EMAIL_REGEX
-    // TODO: Validar nombre (ADMIN_VALIDATION.NAME)
-    // TODO: Validar password (ADMIN_VALIDATION.PASSWORD)
-    // TODO: Verificar que email no está duplicado
-    // TODO: Hash de password con bcrypt
-    // TODO: Crear registro User en BD
-    // TODO: Si groupId, asociar al grupo
-    // TODO: Si assignedTeacherId, asociar profesor
-    // TODO: Retornar usuario sin password
-    throw new Error('Not implemented');
+export async function getStudents(options: GetStudentsOptions = {}) {
+  const { groupId, teacherId, search, page = 1, limit = 20, sortBy = 'name', sortOrder = 'asc' } = options;
+  const skip = (page - 1) * limit;
+
+  const where: any = { role: UserRole.STUDENT };
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+  if (groupId) {
+    where.groupMembers = { some: { groupId } };
+  } else if (teacherId) {
+    const teacherGroupIds = (await prisma.groupMember.findMany({
+      where: { userId: teacherId, role: 'TEACHER' },
+      select: { groupId: true },
+    })).map((m) => m.groupId);
+    if (teacherGroupIds.length > 0) {
+      where.groupMembers = { some: { groupId: { in: teacherGroupIds } } };
+    }
   }
 
-  /**
-   * Actualiza un usuario existente.
-   * @param request - ID y campos a actualizar
-   * @returns Usuario actualizado
-   */
-  async updateUser(request: UpdateUserRequest): Promise<UpdateUserResponse> {
-    // TODO: Verificar que el usuario existe
-    // TODO: Validar campos actualizados
-    // TODO: Si cambia email, verificar que no está duplicado
-    // TODO: Actualizar registro en BD
-    // TODO: Retornar usuario actualizado
-    throw new Error('Not implemented');
-  }
+  const orderBy: any =
+    sortBy === 'name' ? { name: sortOrder } :
+    sortBy === 'email' ? { email: sortOrder } :
+    { createdAt: sortOrder };
 
-  /**
-   * Elimina un usuario y opcionalmente sus datos relacionados.
-   * @param request - ID del usuario y opción deleteRelatedData
-   * @returns Resultado de la eliminación
-   */
-  async deleteUser(request: DeleteUserRequest): Promise<DeleteUserResponse> {
-    // TODO: Verificar que el usuario existe
-    // TODO: Si deleteRelatedData, eliminar progreso, completions, sessions
-    // TODO: Eliminar usuario
-    // TODO: Retornar conteo de registros eliminados
-    throw new Error('Not implemented');
-  }
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      select: {
+        id: true, name: true, email: true, role: true, image: true, createdAt: true,
+        groupMembers: {
+          select: {
+            role: true,
+            joinedAt: true,
+            group: { select: { id: true, name: true, depth: true } },
+          },
+        },
+        userProgress: {
+          select: { status: true, progressPercentage: true, isModuleCompleted: true, timeSpent: true, lastAccessedAt: true },
+        },
+        _count: { select: { evaluationAttempts: true, simulatorSessions: true } },
+      },
+    }),
+    prisma.user.count({ where }),
+  ]);
 
-  // ---------------------------------------------------------------------------
-  // Students - List & Details
-  // ---------------------------------------------------------------------------
+  const students = users.map((s) => {
+    const prog = s.userProgress;
+    const totalMods = prog.length;
+    const completedMods = prog.filter((p) => p.isModuleCompleted).length;
+    const overallProgress = totalMods > 0
+      ? Math.round(prog.reduce((sum, p) => sum + p.progressPercentage, 0) / totalMods)
+      : 0;
+    const totalTime = prog.reduce((sum, p) => sum + p.timeSpent, 0);
+    const lastActivity = prog.map((p) => p.lastAccessedAt).sort((a, b) => b.getTime() - a.getTime())[0];
 
-  /**
-   * Obtiene lista de estudiantes con progreso y filtros.
-   * Soporta paginación, búsqueda y ordenamiento.
-   * @param request - Filtros, paginación y orden
-   * @returns Estudiantes con progreso
-   */
-  async getStudents(request: GetStudentsRequest): Promise<GetStudentsResponse> {
-    // TODO: Construir WHERE clause con filtros (groupId, teacherId, status, search)
-    // TODO: search: buscar en name y email con ILIKE
-    // TODO: Paginar con skip/take (page * limit)
-    // TODO: Ordenar por sortBy + sortOrder
-    // TODO: LEFT JOIN con UserProgress para overallProgress
-    // TODO: LEFT JOIN con EvaluationAttempt para scores
-    // TODO: Calcular completedModules, totalModules, evaluationsTaken, evaluationsPassed
-    // TODO: Retornar GetStudentsResponse con total, page, limit
-    throw new Error('Not implemented');
-  }
+    return {
+      id: s.id, name: s.name, email: s.email, role: s.role, image: s.image, createdAt: s.createdAt,
+      groups: s.groupMembers.map((m) => ({ ...m.group, memberRole: m.role, joinedAt: m.joinedAt })),
+      progress: { overallProgress, completedModules: completedMods, totalModules: totalMods, totalTimeSpentSeconds: totalTime, lastActivityAt: lastActivity ?? null },
+      evaluationsTaken: s._count.evaluationAttempts,
+      simulatorSessions: s._count.simulatorSessions,
+    };
+  });
 
-  /**
-   * Obtiene el progreso detallado de un estudiante.
-   * Incluye progreso por módulo, intentos de evaluación y sesiones de simulador.
-   * @param request - ID del estudiante
-   * @returns Progreso detallado
-   */
-  async getStudentProgress(request: GetStudentProgressRequest): Promise<GetStudentProgressResponse> {
-    // TODO: Obtener datos del usuario
-    // TODO: Consultar UserProgress con join a Module (título)
-    // TODO: Consultar EvaluationAttempt con join a Evaluation (título)
-    // TODO: Consultar SimulatorSession
-    // TODO: Calcular statistics: totalTimeSpent, averageScore, completionRate, etc.
-    // TODO: Retornar StudentDetailedProgress
-    throw new Error('Not implemented');
-  }
+  return { students, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
 
-  // ---------------------------------------------------------------------------
-  // Groups - CRUD
-  // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Detailed student progress
+// ---------------------------------------------------------------------------
 
-  /**
-   * Crea un nuevo grupo/clase.
-   * Genera un código de inscripción único.
-   * @param request - Datos del grupo
-   * @returns Grupo creado con código de inscripción
-   */
-  async createGroup(request: CreateGroupRequest): Promise<CreateGroupResponse> {
-    // TODO: Validar nombre (ADMIN_VALIDATION.GROUP_NAME)
-    // TODO: Verificar que teacherId existe y tiene rol TEACHER+
-    // TODO: Generar enrollmentCode único (6 chars alfanumérico)
-    // TODO: Crear registro Group en BD
-    // TODO: Retornar grupo con enrollmentCode
-    throw new Error('Not implemented');
-  }
+export async function getStudentProgress(studentId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: studentId },
+    select: {
+      id: true, name: true, email: true, role: true, image: true, createdAt: true,
+      groupMembers: {
+        select: { role: true, group: { select: { id: true, name: true, depth: true } } },
+      },
+    },
+  });
+  if (!user) throw new Error('Usuario no encontrado');
+  if (user.role !== UserRole.STUDENT) throw new Error('El usuario no es un estudiante');
 
-  /**
-   * Actualiza un grupo existente.
-   * @param request - ID y campos a actualizar
-   * @returns Grupo actualizado
-   */
-  async updateGroup(request: UpdateGroupRequest): Promise<UpdateGroupResponse> {
-    // TODO: Verificar que el grupo existe
-    // TODO: Validar campos actualizados
-    // TODO: Actualizar registro en BD
-    // TODO: Retornar grupo actualizado
-    throw new Error('Not implemented');
-  }
+  const [moduleProgress, lessonCompletions, evaluationAttempts, simulatorSessions, quizAttempts, achievementCount, scores] =
+    await Promise.all([
+      prisma.userProgress.findMany({
+        where: { userId: studentId },
+        include: { module: { select: { id: true, title: true, description: true, level: { select: { id: true, title: true } } } } },
+        orderBy: { lastAccessedAt: 'desc' },
+      }),
+      prisma.lessonCompletion.findMany({
+        where: { userId: studentId },
+        include: { lesson: { select: { id: true, title: true, moduleId: true } } },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+      }),
+      prisma.evaluationAttempt.findMany({
+        where: { userId: studentId },
+        include: { clinicalCase: { select: { id: true, title: true, difficulty: true, pathology: true } } },
+        orderBy: { startedAt: 'desc' },
+      }),
+      prisma.simulatorSession.findMany({
+        where: { userId: studentId },
+        select: { id: true, isRealVentilator: true, startedAt: true, completedAt: true, clinicalCaseId: true },
+        orderBy: { startedAt: 'desc' },
+      }),
+      prisma.quizAttempt.findMany({
+        where: { userId: studentId },
+        include: { quiz: { select: { id: true, title: true, passingScore: true } } },
+        orderBy: { startedAt: 'desc' },
+        take: 30,
+      }),
+      prisma.achievement.count({ where: { userId: studentId } }),
+      prisma.score.findMany({
+        where: { userId: studentId },
+        include: { grader: { select: { id: true, name: true, email: true } } },
+        orderBy: [{ entityType: 'asc' }, { createdAt: 'desc' }],
+      }),
+    ]);
 
-  /**
-   * Elimina un grupo y gestiona estudiantes huérfanos.
-   * @param request - ID del grupo y acción para estudiantes
-   * @returns Resultado de la eliminación
-   */
-  async deleteGroup(request: DeleteGroupRequest): Promise<DeleteGroupResponse> {
-    // TODO: Verificar que el grupo existe
-    // TODO: Contar estudiantes afectados
-    // TODO: Si studentAction === 'reassign', mover a newGroupId
-    // TODO: Si studentAction === 'unassign', poner groupId = null
-    // TODO: Eliminar grupo
-    // TODO: Retornar conteo de estudiantes afectados
-    throw new Error('Not implemented');
-  }
+  const completedModules = moduleProgress.filter((p) => p.isModuleCompleted).length;
+  const totalModules = moduleProgress.length;
+  const overallProgress = totalModules > 0
+    ? Math.round(moduleProgress.reduce((sum, p) => sum + p.progressPercentage, 0) / totalModules)
+    : 0;
+  const totalTimeSpent = moduleProgress.reduce((sum, p) => sum + p.timeSpent, 0);
+  const passedEvals = evaluationAttempts.filter((e) => e.isSuccessful).length;
+  const avgScore = evaluationAttempts.length > 0
+    ? Math.round(evaluationAttempts.reduce((sum, e) => sum + e.score, 0) / evaluationAttempts.length)
+    : 0;
 
-  /**
-   * Obtiene todos los grupos, opcionalmente filtrados por profesor.
-   * @param teacherId - Filtro opcional por profesor
-   * @returns Lista de grupos
-   */
-  async getGroups(teacherId?: string): Promise<Group[]> {
-    // TODO: Consultar grupos, filtrar por teacherId si proporcionado
-    // TODO: Incluir conteo de estudiantes por grupo
-    // TODO: Ordenar por nombre ASC
-    throw new Error('Not implemented');
-  }
+  return {
+    user: { ...user, groups: user.groupMembers.map((m) => ({ ...m.group, memberRole: m.role })) },
+    moduleProgress: moduleProgress.map((p) => ({
+      moduleId: p.moduleId, moduleTitle: p.module.title, levelTitle: p.module.level?.title ?? null,
+      status: p.status, progressPercentage: p.progressPercentage,
+      completedLessons: p.completedLessonsCount, totalLessons: p.totalLessons,
+      timeSpentSeconds: p.timeSpent, lastAccessedAt: p.lastAccessedAt, completedAt: p.completedAt,
+    })),
+    lessonCompletions: lessonCompletions.map((lc) => ({
+      lessonId: lc.lessonId, lessonTitle: lc.lesson.title, moduleId: lc.lesson.moduleId,
+      isCompleted: lc.isCompleted, currentStepIndex: lc.currentStepIndex, totalSteps: lc.totalSteps,
+      timeSpentSeconds: lc.timeSpent, completedAt: lc.completedAt,
+    })),
+    evaluationAttempts: evaluationAttempts.map((e) => ({
+      attemptId: e.id, caseId: e.clinicalCaseId, caseTitle: e.clinicalCase.title,
+      difficulty: e.clinicalCase.difficulty, pathology: e.clinicalCase.pathology,
+      score: e.score, isSuccessful: e.isSuccessful, startedAt: e.startedAt, completedAt: e.completedAt,
+    })),
+    quizAttempts: quizAttempts.map((q) => ({
+      quizId: q.quizId, quizTitle: q.quiz.title, score: q.score, passed: q.passed, startedAt: q.startedAt,
+    })),
+    simulatorSessions: simulatorSessions.map((s) => ({
+      sessionId: s.id, isRealVentilator: s.isRealVentilator,
+      startedAt: s.startedAt, completedAt: s.completedAt, clinicalCaseId: s.clinicalCaseId,
+    })),
+    scores: scores.map((sc) => ({
+      id: sc.id, entityType: sc.entityType, entityId: sc.entityId,
+      points: sc.points, maxPoints: sc.maxPoints, comments: sc.comments,
+      grader: sc.grader, createdAt: sc.createdAt,
+    })),
+    statistics: {
+      totalTimeSpentSeconds: totalTimeSpent, completedModules, totalModules, overallProgress,
+      evaluationsTaken: evaluationAttempts.length, evaluationsPassed: passedEvals,
+      evaluationsPassRate: evaluationAttempts.length > 0 ? Math.round((passedEvals / evaluationAttempts.length) * 100) : 0,
+      averageEvaluationScore: avgScore,
+      simulatorSessions: simulatorSessions.length,
+      quizzesTaken: quizAttempts.length,
+      achievementsUnlocked: achievementCount,
+    },
+  };
+}
 
-  // ---------------------------------------------------------------------------
-  // Assignments
-  // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Role management (ADMIN+)
+// ---------------------------------------------------------------------------
 
-  /**
-   * Asigna estudiantes a un grupo.
-   * @param request - ID del grupo e IDs de estudiantes
-   * @returns Resultado de la asignación
-   */
-  async assignStudentsToGroup(request: AssignStudentsToGroupRequest): Promise<AssignStudentsToGroupResponse> {
-    // TODO: Verificar que el grupo existe
-    // TODO: Verificar que no excede MAX_STUDENTS_PER_GROUP
-    // TODO: Verificar que todos los studentIds existen y son STUDENT
-    // TODO: Actualizar groupId de cada estudiante
-    // TODO: Retornar conteo de asignados
-    throw new Error('Not implemented');
-  }
+export async function updateUserRole(targetUserId: string, newRole: UserRole, requesterId: string) {
+  if (targetUserId === requesterId) throw new Error('No puedes cambiar tu propio rol');
+  if (newRole === UserRole.SUPERUSER) throw new Error('No se puede asignar SUPERUSER por esta vía');
+  const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!target) throw new Error('Usuario no encontrado');
+  return prisma.user.update({
+    where: { id: targetUserId },
+    data: { role: newRole },
+    select: { id: true, name: true, email: true, role: true },
+  });
+}
 
-  /**
-   * Asigna un profesor a un conjunto de estudiantes.
-   * @param request - ID del profesor e IDs de estudiantes
-   * @returns Resultado de la asignación
-   */
-  async assignTeacher(request: AssignTeacherRequest): Promise<AssignTeacherResponse> {
-    // TODO: Verificar que teacherId existe y tiene rol TEACHER+
-    // TODO: Verificar que todos los studentIds existen y son STUDENT
-    // TODO: Actualizar assignedTeacherId de cada estudiante
-    // TODO: Retornar conteo de asignados
-    throw new Error('Not implemented');
-  }
+// ---------------------------------------------------------------------------
+// Teachers list
+// ---------------------------------------------------------------------------
+
+export async function getTeachers(search?: string) {
+  const where: any = { role: { in: [UserRole.TEACHER, UserRole.ADMIN] } };
+  if (search) where.OR = [
+    { name: { contains: search, mode: 'insensitive' } },
+    { email: { contains: search, mode: 'insensitive' } },
+  ];
+
+  return prisma.user.findMany({
+    where,
+    select: {
+      id: true, name: true, email: true, role: true, image: true, createdAt: true,
+      groupMembers: {
+        where: { role: 'TEACHER' },
+        select: { group: { select: { id: true, name: true } } },
+      },
+      _count: { select: { createdGroups: true } },
+    },
+    orderBy: { name: 'asc' },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Platform statistics (ADMIN+)
+// ---------------------------------------------------------------------------
+
+export async function getPlatformStatistics() {
+  const [students, teachers, admins, groups, modules, lessons, evaluations, sessions, activeRes] =
+    await Promise.all([
+      prisma.user.count({ where: { role: UserRole.STUDENT } }),
+      prisma.user.count({ where: { role: UserRole.TEACHER } }),
+      prisma.user.count({ where: { role: UserRole.ADMIN } }),
+      prisma.group.count({ where: { isActive: true } }),
+      prisma.module.count({ where: { isActive: true } }),
+      prisma.lesson.count({ where: { isActive: true } }),
+      prisma.clinicalCase.count({ where: { isActive: true } }),
+      prisma.simulatorSession.count(),
+      prisma.ventilatorReservation.findFirst({ where: { status: 'ACTIVE' } }),
+    ]);
+
+  return {
+    users: { students, teachers, admins },
+    groups: { total: groups },
+    content: { modules, lessons, evaluations },
+    simulator: {
+      totalSessions: sessions,
+      hasActiveReservation: !!activeRes,
+      activeReservationUserId: activeRes?.userId ?? null,
+      activeReservationGroupId: activeRes?.groupId ?? null,
+      activeReservationLeaderId: activeRes?.leaderId ?? null,
+    },
+    generatedAt: new Date(),
+  };
 }

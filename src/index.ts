@@ -27,6 +27,9 @@ import {
 import authRoutes from './modules/auth/auth.controller';
 import evaluationRoutes from './modules/evaluation/evaluation.controller';
 import usersRoutes from './modules/profile/profile.controller';
+import adminRoutes from './modules/admin/admin.controller';
+import groupsRoutes from './modules/admin/groups.controller';
+import scoresRoutes from './modules/admin/scores.controller';
 import {
   teachingRoutes,
   progressRoutes,
@@ -262,6 +265,15 @@ app.use('/api/teaching', teachingRoutes);
 // Rutas de páginas (Phase 1 - Content Hierarchy Refactoring)
 app.use('/api/pages', pagesRoutes);
 
+// Rutas de administración (TEACHER+ para ver estudiantes, ADMIN+ para gestión)
+app.use('/api/admin', adminRoutes);
+
+// Rutas de grupos (TEACHER+)
+app.use('/api/groups', groupsRoutes);
+
+// Rutas de calificaciones del profesor (TEACHER+)
+app.use('/api/scores', scoresRoutes);
+
 // Rutas de simulación (WebSocket gateway + ventilador físico)
 // NOTE: simulationRouter is registered after the HTTP server is created
 // (see startServer below) so that the Socket.io server is ready first.
@@ -380,6 +392,9 @@ const startServer = async () => {
     console.log('  - GET  /api/changelog/* - Historial de cambios (audit trail)');
     console.log('  - CRUD /api/overrides/* - Overrides de contenido por estudiante');
     console.log('  - GET  /api/pages/* - Páginas (Phase 1 - Content Hierarchy)');
+    console.log('  - CRUD /api/admin/* - Dashboard profesor/admin');
+    console.log('  - CRUD /api/groups/* - Gestión de grupos');
+    console.log('  - CRUD /api/scores/* - Calificaciones por estudiante');
     console.log('  - WS   /socket.io - WebSocket (simulación en tiempo real)');
     console.log('  - CRUD /api/simulation/* - Simulación ventilador');
     console.log('='.repeat(50));

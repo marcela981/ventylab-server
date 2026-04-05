@@ -2,8 +2,9 @@
  * Admin Module - Barrel Exports
  */
 
-export * from './admin.types';
-export { AdminService } from './admin.service';
-export { AnalyticsService } from './analytics.service';
-export { GroupManagerService } from './group-manager.service';
+export * from './admin.service';
+export * from './group.service';
+export * from './score.service';
 export { default as adminRouter } from './admin.controller';
+export { default as groupsRouter } from './groups.controller';
+export { default as scoresRouter } from './scores.controller';

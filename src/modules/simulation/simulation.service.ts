@@ -157,7 +157,7 @@ export class SimulationService {
       timestamp: parsed.timestamp,
       deviceId: DEVICE_ID,
     };
-    this.gateway.broadcastData('ventilator:data', reading);
+    void this.sendTelemetryToLeader(reading);
   }
 
   // ---------------------------------------------------------------------------
@@ -221,7 +221,39 @@ export class SimulationService {
     };
 
     this.lastDataTimestamp = Date.now();
-    this.gateway.broadcastData('ventilator:data', reading);
+    void this.sendTelemetryToLeader(reading);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Telemetry routing: sends only to the active reservation leader
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Enruta la trama de telemetría al usuario correcto:
+   *   - Si hay reserva activa con leaderId → solo al líder
+   *   - Si hay reserva activa sin líder → solo al userId que reservó
+   *   - Sin reserva activa → broadcast a todos (modo demo/libre)
+   */
+  private async sendTelemetryToLeader(reading: VentilatorReading): Promise<void> {
+    try {
+      const db = this.prisma as any;
+      const active = await db.ventilatorReservation.findFirst({
+        where: { status: 'ACTIVE', deviceId: DEVICE_ID },
+        select: { userId: true, leaderId: true, groupId: true },
+      });
+
+      if (!active) {
+        // No active reservation — broadcast freely (dev / demo mode)
+        this.gateway.broadcastData('ventilator:data', reading);
+        return;
+      }
+
+      const recipientId: string = active.leaderId ?? active.userId;
+      this.gateway.sendToUser(recipientId, 'ventilator:data', reading);
+    } catch {
+      // If DB is unreachable, fall back to broadcast so clients aren't left blind
+      this.gateway.broadcastData('ventilator:data', reading);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -323,12 +355,18 @@ export class SimulationService {
         startTime,
         endTime,
         purpose: request.purpose,
+        groupId: (request as any).groupId ?? null,
+        leaderId: (request as any).leaderId ?? null,
       },
     });
 
+    // Notify ALL connected clients that the ventilator is now reserved
+    // (so other teachers can see the "occupied" status)
     this.gateway.broadcastData('ventilator:reserved', {
       userId: request.userId,
       reservationId: reservation.id,
+      groupId: (request as any).groupId ?? null,
+      leaderId: (request as any).leaderId ?? null,
       endTime: endTime.getTime(),
     });
 
@@ -390,6 +428,8 @@ export class SimulationService {
       isReserved: !!activeReservation,
       reservationId: activeReservation?.id,
       currentUser: activeReservation?.userId,
+      groupId: activeReservation?.groupId ?? null,
+      leaderId: activeReservation?.leaderId ?? null,
       reservationEndsAt: activeReservation?.endTime?.getTime(),
       lastDataTimestamp: this.lastDataTimestamp ?? undefined,
       activeAlarms: Array.from(this.activeAlarms.values()),
