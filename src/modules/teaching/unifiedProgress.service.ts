@@ -33,6 +33,8 @@ export interface UpdateStepProgressInput {
   currentStepIndex: number;  // 0-based
   totalSteps: number;
   timeSpentDelta?: number;   // seconds
+  quizScore?: number;
+  caseScore?: number;
 }
 
 export interface UpdateStepProgressResult {
@@ -66,6 +68,8 @@ export interface MarkLessonCompleteInput {
   lessonId: string;
   totalSteps: number;
   timeSpentDelta?: number;
+  quizScore?: number;
+  caseScore?: number;
 }
 
 // ============================================
@@ -87,6 +91,8 @@ export async function updateStepProgress(
     currentStepIndex,
     totalSteps,
     timeSpentDelta = 0,
+    quizScore,
+    caseScore,
   } = input;
 
   try {
@@ -127,11 +133,16 @@ export async function updateStepProgress(
       // - Otherwise: update currentStepIndex but NEVER downgrade isCompleted true→false
       const existing = await tx.lessonCompletion.findUnique({
         where: { userId_lessonId: { userId, lessonId } },
-        select: { isCompleted: true },
+        select: { isCompleted: true, bestQuizScore: true, bestCaseScore: true, quizAttempts: true, caseAttempts: true },
       });
 
       const alreadyCompleted = existing?.isCompleted === true;
       const shouldComplete = isLastStep || alreadyCompleted;
+
+      const hasQuizScore = quizScore !== undefined && quizScore !== null;
+      const hasCaseScore = caseScore !== undefined && caseScore !== null;
+      const bestQuizScoreToSet = hasQuizScore ? Math.max(quizScore, existing?.bestQuizScore ?? 0) : existing?.bestQuizScore;
+      const bestCaseScoreToSet = hasCaseScore ? Math.max(caseScore, existing?.bestCaseScore ?? 0) : existing?.bestCaseScore;
 
       const lessonCompletion = await tx.lessonCompletion.upsert({
         where: { userId_lessonId: { userId, lessonId } },
@@ -142,6 +153,16 @@ export async function updateStepProgress(
           lastAccessed: new Date(),
           isCompleted: shouldComplete,
           ...(shouldComplete && !alreadyCompleted ? { completedAt: new Date() } : {}),
+          ...(hasQuizScore ? { 
+            bestQuizScore: bestQuizScoreToSet,
+            lastQuizScore: quizScore,
+            quizAttempts: { increment: 1 }
+          } : {}),
+          ...(hasCaseScore ? { 
+            bestCaseScore: bestCaseScoreToSet,
+            lastCaseScore: caseScore,
+            caseAttempts: { increment: 1 }
+          } : {}),
         },
         create: {
           userId,
@@ -152,6 +173,8 @@ export async function updateStepProgress(
           lastAccessed: new Date(),
           isCompleted: isLastStep,
           completedAt: isLastStep ? new Date() : null,
+          ...(hasQuizScore ? { bestQuizScore: quizScore, lastQuizScore: quizScore, quizAttempts: 1 } : {}),
+          ...(hasCaseScore ? { bestCaseScore: caseScore, lastCaseScore: caseScore, caseAttempts: 1 } : {}),
         },
       });
 
@@ -276,11 +299,21 @@ export async function getResumeState(
 export async function markLessonComplete(
   input: MarkLessonCompleteInput
 ): Promise<UpdateStepProgressResult> {
-  const { userId, moduleId, lessonId, totalSteps, timeSpentDelta = 0 } = input;
+  const { userId, moduleId, lessonId, totalSteps, timeSpentDelta = 0, quizScore, caseScore } = input;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Upsert LessonCompletion as completed
+      const existing = await tx.lessonCompletion.findUnique({
+        where: { userId_lessonId: { userId, lessonId } },
+        select: { bestQuizScore: true, bestCaseScore: true },
+      });
+
+      const hasQuizScore = quizScore !== undefined && quizScore !== null;
+      const hasCaseScore = caseScore !== undefined && caseScore !== null;
+      const bestQuizScoreToSet = hasQuizScore ? Math.max(quizScore, existing?.bestQuizScore ?? 0) : existing?.bestQuizScore;
+      const bestCaseScoreToSet = hasCaseScore ? Math.max(caseScore, existing?.bestCaseScore ?? 0) : existing?.bestCaseScore;
+
       const lessonCompletion = await tx.lessonCompletion.upsert({
         where: { userId_lessonId: { userId, lessonId } },
         update: {
@@ -290,6 +323,16 @@ export async function markLessonComplete(
           lastAccessed: new Date(),
           isCompleted: true,
           completedAt: new Date(),
+          ...(hasQuizScore ? { 
+            bestQuizScore: bestQuizScoreToSet,
+            lastQuizScore: quizScore,
+            quizAttempts: { increment: 1 }
+          } : {}),
+          ...(hasCaseScore ? { 
+            bestCaseScore: bestCaseScoreToSet,
+            lastCaseScore: caseScore,
+            caseAttempts: { increment: 1 }
+          } : {}),
         },
         create: {
           userId,
@@ -300,6 +343,8 @@ export async function markLessonComplete(
           lastAccessed: new Date(),
           isCompleted: true,
           completedAt: new Date(),
+          ...(hasQuizScore ? { bestQuizScore: quizScore, lastQuizScore: quizScore, quizAttempts: 1 } : {}),
+          ...(hasCaseScore ? { bestCaseScore: caseScore, lastCaseScore: caseScore, caseAttempts: 1 } : {}),
         },
       });
 

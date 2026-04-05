@@ -191,8 +191,55 @@ export async function getModuleProgress(req: Request, res: Response, next: NextF
         });
         const totalLessons = subModuleIds.length;
         const completedLessons = subProgresses.filter(p => p.isModuleCompleted).length;
-        // Weighted average of individual sub-module percentages (reflects partial progress)
-        const totalPct = subProgresses.reduce((sum, p) => sum + (p.progressPercentage ?? 0), 0);
+
+        // For each sub-module, calculate fractional progress including in-progress step data.
+        // We look up the LessonCompletion record for the lesson inside each sub-module so that
+        // partial step navigation (e.g. 2/80 steps) is reflected on the card.
+        const subLessonsData = await prisma.lesson.findMany({
+          where: { moduleId: { in: subModuleIds }, isActive: true },
+          select: { id: true, moduleId: true },
+        });
+        const lessonCompletions = await prisma.lessonCompletion.findMany({
+          where: {
+            userId,
+            lessonId: { in: subLessonsData.map(l => l.id) },
+          },
+          select: { lessonId: true, currentStepIndex: true, totalSteps: true, isCompleted: true },
+        });
+        const completionByLessonId = new Map(lessonCompletions.map(c => [c.lessonId, c]));
+        // Build a map: moduleId → fractional progress (0-100)
+        const lessonsBySubModule = new Map<string, typeof subLessonsData[0][]>();
+        for (const l of subLessonsData) {
+          if (!lessonsBySubModule.has(l.moduleId)) lessonsBySubModule.set(l.moduleId, []);
+          lessonsBySubModule.get(l.moduleId)!.push(l);
+        }
+
+        let totalPct = 0;
+        for (const subModId of subModuleIds) {
+          const stored = subProgresses.find(p => p.moduleId === subModId);
+          if (stored?.isModuleCompleted) {
+            totalPct += 100;
+            continue;
+          }
+          const lessons = lessonsBySubModule.get(subModId) || [];
+          if (lessons.length === 0) {
+            totalPct += stored?.progressPercentage ?? 0;
+            continue;
+          }
+          // Sum fractional completion across all lessons in this sub-module
+          let lessonPctSum = 0;
+          for (const lesson of lessons) {
+            const c = completionByLessonId.get(lesson.id);
+            if (!c) continue;
+            if (c.isCompleted) {
+              lessonPctSum += 100;
+            } else if (c.totalSteps > 0) {
+              lessonPctSum += Math.min(99, ((c.currentStepIndex + 1) / c.totalSteps) * 100);
+            }
+          }
+          totalPct += lessonPctSum / lessons.length;
+        }
+
         const completionPercentage = totalLessons > 0 ? Math.round(totalPct / totalLessons) : 0;
         const timeSpent = subProgresses.reduce((sum, p) => sum + (p.timeSpent ?? 0), 0);
         const isCompleted = completedLessons === totalLessons && totalLessons > 0;
@@ -293,6 +340,8 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
       totalSteps,
       completionPercentage,
       scrollPosition,
+      quizScore,
+      caseScore,
     } = req.body;
 
     const moduleIdFromQuery = req.query.moduleId as string | undefined;
@@ -306,6 +355,8 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
       completionPercentage,
       completed,
       timeSpent,
+      quizScore,
+      caseScore,
     });
 
     if (!userId) {
@@ -344,6 +395,8 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
         currentStepIndex,
         totalSteps,
         timeSpentDelta: timeSpent,
+        quizScore,
+        caseScore,
       });
 
       if (!result.success) {
@@ -391,6 +444,8 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
       lessonId: canonicalLessonId,
       completed, // Service will never downgrade true→false
       timeSpent,
+      quizScore,
+      caseScore,
     });
 
     let nextLessonId: string | null = null;
@@ -419,7 +474,7 @@ export async function markComplete(req: Request, res: Response, next: NextFuncti
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
     const { lessonId } = req.params;
-    const { timeSpent = 0 } = req.body;
+    const { timeSpent = 0, quizScore, caseScore } = req.body;
     const moduleIdFromQuery = req.query.moduleId as string | undefined;
 
     if (!userId) {
@@ -444,7 +499,9 @@ export async function markComplete(req: Request, res: Response, next: NextFuncti
       userId,
       moduleId,
       canonicalLessonId,
-      timeSpent
+      timeSpent,
+      quizScore,
+      caseScore
     );
 
     const nextLessonId = await learningProgressService.getNextLesson(
@@ -734,7 +791,7 @@ export async function markLessonCompleteUnified(req: Request, res: Response, nex
   try {
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
     const { lessonId } = req.params;
-    const { moduleId, totalSteps, timeSpentDelta = 0 } = req.body;
+    const { moduleId, totalSteps, timeSpentDelta = 0, quizScore, caseScore } = req.body;
 
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
@@ -760,6 +817,8 @@ export async function markLessonCompleteUnified(req: Request, res: Response, nex
       lessonId,
       totalSteps,
       timeSpentDelta,
+      quizScore,
+      caseScore,
     });
 
     if (!result.success) {

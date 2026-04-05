@@ -48,15 +48,22 @@ export async function updateLessonProgress(input: {
   lessonId: string;
   completed?: boolean;
   timeSpent?: number;
+  quizScore?: number;
+  caseScore?: number;
 }): Promise<LessonProgressResponse> {
-  const { userId, moduleId, lessonId, completed = false, timeSpent = 0 } = input;
+  const { userId, moduleId, lessonId, completed = false, timeSpent = 0, quizScore, caseScore } = input;
 
   const existing = await prisma.lessonCompletion.findUnique({
     where: { userId_lessonId: { userId, lessonId } },
-    select: { isCompleted: true },
+    select: { isCompleted: true, bestQuizScore: true, bestCaseScore: true, quizAttempts: true, caseAttempts: true },
   });
 
   const finalCompleted = existing?.isCompleted === true ? true : completed;
+
+  const hasQuizScore = quizScore !== undefined && quizScore !== null;
+  const hasCaseScore = caseScore !== undefined && caseScore !== null;
+  const bestQuizScoreToSet = hasQuizScore ? Math.max(quizScore, existing?.bestQuizScore ?? 0) : existing?.bestQuizScore;
+  const bestCaseScoreToSet = hasCaseScore ? Math.max(caseScore, existing?.bestCaseScore ?? 0) : existing?.bestCaseScore;
 
   const completion = await prisma.lessonCompletion.upsert({
     where: { userId_lessonId: { userId, lessonId } },
@@ -65,6 +72,16 @@ export async function updateLessonProgress(input: {
       timeSpent: { increment: timeSpent },
       lastAccessed: new Date(),
       completedAt: finalCompleted ? new Date() : undefined,
+      ...(hasQuizScore ? { 
+        bestQuizScore: bestQuizScoreToSet,
+        lastQuizScore: quizScore,
+        quizAttempts: { increment: 1 }
+      } : {}),
+      ...(hasCaseScore ? { 
+        bestCaseScore: bestCaseScoreToSet,
+        lastCaseScore: caseScore,
+        caseAttempts: { increment: 1 }
+      } : {}),
     },
     create: {
       userId,
@@ -73,6 +90,8 @@ export async function updateLessonProgress(input: {
       timeSpent,
       lastAccessed: new Date(),
       completedAt: finalCompleted ? new Date() : null,
+      ...(hasQuizScore ? { bestQuizScore: quizScore, lastQuizScore: quizScore, quizAttempts: 1 } : {}),
+      ...(hasCaseScore ? { bestCaseScore: caseScore, lastCaseScore: caseScore, caseAttempts: 1 } : {}),
     },
   });
 
@@ -127,9 +146,11 @@ export async function markLessonComplete(
   userId: string,
   moduleId: string,
   lessonId: string,
-  timeSpent: number = 0
+  timeSpent: number = 0,
+  quizScore?: number,
+  caseScore?: number
 ): Promise<LessonProgressResponse> {
-  return updateLessonProgress({ userId, moduleId, lessonId, completed: true, timeSpent });
+  return updateLessonProgress({ userId, moduleId, lessonId, completed: true, timeSpent, quizScore, caseScore });
 }
 
 /**

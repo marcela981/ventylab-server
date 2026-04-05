@@ -75,6 +75,11 @@ const LEVELS = [
 ];
 
 // --- MODULES WITH EMBEDDED LESSONS ---
+// IMPORTANT: Module IDs and Lesson IDs must match the frontend curriculum data
+// (curriculumData.js / ensenanzaRespiratoria/modules.js). This alignment is required
+// for progress tracking: the frontend sends lessonId=<curriculum lesson id> and
+// moduleId=<curriculum module id> to /api/progress/step/update. The backend
+// resolveIdsForProgress() resolves those IDs via the Lesson table (Step 1 direct lookup).
 interface LessonDef {
   id: string;
   title: string;
@@ -128,80 +133,80 @@ const MODULES: ModuleDef[] = [
   },
 
   // ========================================
-  // BEGINNER (6 modules, 1 lesson each)
-  // Each module = 1 "book" with one monolithic lesson.
-  // Sections within the JSON are content-level, not DB entities.
+  // BEGINNER (6 modules, 1 lesson each — mirrors level01-principiante JSON files)
+  // Module IDs = Lesson IDs so resolveIdsForProgress can resolve them via direct
+  // Lesson lookup.  Frontend sends lessonId = moduleId = e.g. 'module-01-inversion-fisiologica'.
   // ========================================
   {
     id: 'module-01-inversion-fisiologica',
     levelId: 'level-beginner',
-    title: 'Inversión Fisiológica',
-    description: 'Fundamentos de la inversión fisiológica en ventilación mecánica',
+    title: 'La Inversión Fisiológica: De la Presión Negativa a la Positiva',
+    description: 'Fundamentos del paso de la respiración espontánea a la ventilación mecánica con presión positiva.',
     difficulty: 'beginner',
     order: 1,
     estimatedTime: 211,
     lessons: [
-      { id: 'lesson-inversion-fisiologica', title: 'La Inversión Fisiológica: De la Presión Negativa a la Positiva', slug: 'inversion-fisiologica', order: 1, estimatedTime: 211 },
+      { id: 'module-01-inversion-fisiologica', title: 'La Inversión Fisiológica: De la Presión Negativa a la Positiva', slug: 'inversion-fisiologica', order: 1, estimatedTime: 211 },
     ],
   },
   {
     id: 'module-02-ecuacion-movimiento',
     levelId: 'level-beginner',
-    title: 'Ecuación de Movimiento',
-    description: 'Principios de la ecuación de movimiento respiratorio',
+    title: 'El Santo Grial – La Ecuación del Movimiento Respiratorio',
+    description: 'La ecuación fundamental que gobierna la interacción ventilador-pulmón.',
     difficulty: 'beginner',
     order: 2,
     estimatedTime: 50,
     lessons: [
-      { id: 'lesson-ecuacion-movimiento', title: 'El Santo Grial – La Ecuación del Movimiento Respiratorio', slug: 'ecuacion-movimiento', order: 1, estimatedTime: 50 },
+      { id: 'module-02-ecuacion-movimiento', title: 'El Santo Grial – La Ecuación del Movimiento Respiratorio', slug: 'ecuacion-movimiento', order: 1, estimatedTime: 50 },
     ],
   },
   {
     id: 'module-03-variables-fase',
     levelId: 'level-beginner',
-    title: 'Variables de Fase',
-    description: 'Análisis de las variables de fase en el ciclo ventilatorio',
+    title: 'Variables de Fase y el Ciclo Respiratorio',
+    description: 'La lógica del ventilador: cómo las variables de fase determinan el ciclo respiratorio.',
     difficulty: 'beginner',
     order: 3,
     estimatedTime: 54,
     lessons: [
-      { id: 'lesson-variables-fase', title: 'La Lógica de la Máquina: Variables de Fase y el Ciclo Respiratorio', slug: 'variables-fase', order: 1, estimatedTime: 54 },
+      { id: 'module-03-variables-fase', title: 'La Lógica de la Máquina: Variables de Fase y el Ciclo Respiratorio', slug: 'variables-fase', order: 1, estimatedTime: 54 },
     ],
   },
   {
     id: 'module-04-modos-ventilatorios',
     levelId: 'level-beginner',
-    title: 'Modos Ventilatorios',
-    description: 'Comprensión de los diferentes modos de ventilación mecánica',
+    title: 'Taxonomía de los Modos Ventilatorios',
+    description: 'Clasificación y selección de modos ventilatorios: volumen vs. presión, control vs. asistencia.',
     difficulty: 'beginner',
     order: 4,
     estimatedTime: 114,
     lessons: [
-      { id: 'lesson-modos-ventilatorios', title: 'Taxonomía de los Modos: Volumen vs. Presión (Control y Asistencia)', slug: 'modos-ventilatorios', order: 1, estimatedTime: 114 },
+      { id: 'module-04-modos-ventilatorios', title: 'Taxonomía de los Modos: Volumen vs. Presión (Control y Asistencia)', slug: 'modos-ventilatorios', order: 1, estimatedTime: 114 },
     ],
   },
   {
     id: 'module-05-monitorizacion-grafica',
     levelId: 'level-beginner',
-    title: 'Monitorización Gráfica',
-    description: 'Interpretación de curvas y gráficos ventilatorios',
+    title: 'Monitorización Gráfica I: Escalares y Bucles',
+    description: 'Interpretación de curvas gráficas del ventilador e identificación de asincronías básicas.',
     difficulty: 'beginner',
     order: 5,
     estimatedTime: 480,
     lessons: [
-      { id: 'lesson-monitorizacion-grafica', title: 'Monitorización Gráfica I: Escalares, Bucles y Asincronías básicas', slug: 'monitorizacion-grafica', order: 1, estimatedTime: 480 },
+      { id: 'module-05-monitorizacion-grafica', title: 'Monitorización Gráfica I: Escalares, Bucles y Asincronías básicas', slug: 'monitorizacion-grafica', order: 1, estimatedTime: 480 },
     ],
   },
   {
     id: 'module-06-efectos-sistemicos',
     levelId: 'level-beginner',
-    title: 'Efectos Sistémicos',
-    description: 'Efectos sistémicos de la ventilación mecánica',
+    title: 'Efectos Sistémicos y VILI',
+    description: 'Efectos sistémicos de la presión positiva y estrategias para prevenir la lesión pulmonar por ventilación (VILI).',
     difficulty: 'beginner',
     order: 6,
     estimatedTime: 600,
     lessons: [
-      { id: 'lesson-efectos-sistemicos', title: 'Efectos Sistémicos y Lesión Inducida por la Ventilación (VILI)', slug: 'efectos-sistemicos', order: 1, estimatedTime: 600 },
+      { id: 'module-06-efectos-sistemicos', title: 'Efectos Sistémicos y Lesión Inducida por la Ventilación (VILI)', slug: 'efectos-sistemicos', order: 1, estimatedTime: 600 },
     ],
   },
 

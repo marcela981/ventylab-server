@@ -131,7 +131,7 @@ export async function getProgressOverview(
   // overview is always consistent with the stored module state.
   const userProgressRecords = await prisma.userProgress.findMany({
     where: { userId },
-    select: { moduleId: true, progressPercentage: true, status: true },
+    select: { moduleId: true, progressPercentage: true, status: true, isModuleCompleted: true },
   });
   const userProgressMap = new Map(userProgressRecords.map(p => [p.moduleId, p]));
 
@@ -156,14 +156,32 @@ export async function getProgressOverview(
     // Count only lessons with isCompleted=true — consistent with calculateAndSaveModuleProgress.
     const completedLessons = mod.lessons.filter(l => progressMap.get(l.id)?.isCompleted === true).length;
 
-    // Use stored UserProgress.progressPercentage as the authoritative value.
-    // Falls back to a direct count only for brand-new users (no UserProgress row yet).
+    // Use stored UserProgress.progressPercentage as the authoritative base, but
+    // blend in partial step progress so the card reflects real-time progress
+    // even before a lesson is fully completed.
+    //
+    // Formula: (completedLessons + fractionOfInProgressLesson) / totalLessons * 100
+    // The in-progress fraction is capped at 0.99 so only a real completion
+    // triggers the 100% mark on the card.
     const storedProgress = userProgressMap.get(mod.id);
-    const percentComplete = storedProgress
-      ? storedProgress.progressPercentage
-      : totalLessons > 0
-        ? Math.floor((completedLessons / totalLessons) * 100)
-        : 0;
+
+    // Sum fractional progress from lessons that are started but not complete
+    const inProgressFraction = mod.lessons.reduce((sum, l) => {
+      const prog = progressMap.get(l.id);
+      if (!prog || prog.isCompleted) return sum; // skip: not started or already counted
+      if (prog.totalSteps > 0) {
+        // currentStepIndex is 0-based; +1 gives the human-readable step reached
+        return sum + Math.min(0.99, (prog.currentStepIndex + 1) / prog.totalSteps);
+      }
+      return sum;
+    }, 0);
+
+    const percentComplete = totalLessons > 0
+      ? Math.min(
+          storedProgress?.isModuleCompleted ? 100 : 99,
+          Math.floor(((completedLessons + inProgressFraction) / totalLessons) * 100)
+        )
+      : 0;
     const isModuleComplete = totalLessons > 0 && completedLessons === totalLessons;
 
     // First module in this level = always available
