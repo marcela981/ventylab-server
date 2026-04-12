@@ -1,3 +1,4 @@
+import http from 'http';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -5,24 +6,46 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
-import { prisma } from './config/prisma';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { Server as SocketIOServer } from 'socket.io';
+import { prisma } from './shared/infrastructure/database';
+import { errorHandler, notFoundHandler } from './shared/middleware/error-handler.middleware';
+import {
+  createSimulationController,
+  SimulationService,
+  PatientSimulationService,
+  PatientCalculatorService,
+  SignalGeneratorService,
+  ClinicalCasesService,
+  WSGateway,
+  MqttClient,
+  HexParser,
+  HexEncoder,
+  InfluxTelemetryService,
+} from './modules/simulation';
 
-// Importar rutas
-import authRoutes from './routes/auth';
-import usersRoutes from './routes/users';
-import progressRoutes from './routes/progress';
-import evaluationRoutes from './routes/evaluation';
-import modulesRoutes from './routes/modules';
-import lessonsRoutes from './routes/lessons';
-import curriculumRoutes from './routes/curriculum';
-import teacherStudentsRoutes from './routes/teacherStudents';
-import levelsRoutes from './routes/levels';
-import cardsRoutes from './routes/cards';
-import changelogRoutes from './routes/changelog';
-import overridesRoutes from './routes/overrides';
-import teachingRoutes from './routes/teaching';
-import pagesRoutes from './routes/pages';
+// Importar rutas desde módulos
+import authRoutes from './modules/auth/auth.controller';
+import evaluationRoutes from './modules/evaluation/evaluation.controller';
+import usersRoutes from './modules/profile/profile.controller';
+import adminRoutes from './modules/admin/admin.controller';
+import groupsRoutes from './modules/admin/groups.controller';
+import scoresRoutes from './modules/admin/scores.controller';
+import activityRoutes from './modules/activities/activity.controller';
+import activityAssignmentsRoutes from './modules/activities/assignment.controller';
+import activitySubmissionsRoutes from './modules/activities/submission.controller';
+import {
+  teachingRoutes,
+  progressRoutes,
+  modulesRoutes,
+  lessonsRoutes,
+  curriculumRoutes,
+  teacherStudentsRoutes,
+  levelsRoutes,
+  cardsRoutes,
+  changelogRoutes,
+  overridesRoutes,
+  pagesRoutes,
+} from './modules/teaching/router';
 
 // ============================================
 // ENVIRONMENT CONFIGURATION
@@ -59,7 +82,7 @@ if (missingEnvVars.length > 0) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4000;
 // NODE_ENV already defined above after dotenv.config()
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
@@ -73,42 +96,56 @@ app.set('trust proxy', 1);
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
-  FRONTEND_URL,
-];
+  'http://localhost:4000',
+  process.env.FRONTEND_URL,
+  process.env.PRODUCTION_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  'https://ventylab.vercel.app', // URL principal de producción
+  'https://ventylab-git-main.vercel.app', // Branch principal
+  'https://ventilab-web.vercel.app', // URL alternativa de producción
+  'https://ventilab-web-git-main.vercel.app', // Branch principal alternativo
+].filter(Boolean);
 
-// Agregar URL de producción si está definida
-if (process.env.PRODUCTION_URL) {
-  allowedOrigins.push(process.env.PRODUCTION_URL);
-}
+// Logging para debug de CORS
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log('🌐 Request from:', req.headers.origin || 'no-origin');
+  next();
+});
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requests sin origin (mobile apps, Postman, etc) en desarrollo
-    if (!origin && NODE_ENV === 'development') {
+    // Permitir peticiones sin origin (Postman, curl, server-to-server, etc.)
+    if (!origin) return callback(null, true);
+
+    // Normalize origin (remove trailing slash)
+    const normalizedOrigin = origin.replace(/\/$/, '');
+
+    // Permitir dominios en whitelist
+    if (allowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
     }
 
-    if (origin && allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else if (!origin && NODE_ENV === 'production') {
-      // En producción, rechazar requests sin origin
-      callback(new Error('No permitido por CORS'));
-    } else {
-      callback(new Error('No permitido por CORS'));
+    // Permitir cualquier subdominio de Vercel
+    if (normalizedOrigin.match(/https:\/\/.*\.vercel\.app$/)) {
+      return callback(null, true);
     }
+
+    console.error('🚫 CORS bloqueó origen:', normalizedOrigin);
+    return callback(new Error('No permitido por CORS'));
   },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
     'Authorization',
+    'X-Requested-With',
     'x-user-id',
     'x-auth-token',
     'x-request-id',
     'cache-control'
   ],
-  exposedHeaders: ['x-user-id'],
-  credentials: true,
-  optionsSuccessStatus: 200, // Para navegadores legacy
+  exposedHeaders: ['set-cookie'],
+  optionsSuccessStatus: 200,
 }));
 
 // ============================================
@@ -129,7 +166,7 @@ app.use(compression());
 // ============================================
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // 100 requests por IP
+  max: 500, // 500 requests por IP (progress tracking fires frequently)
   message: {
     error: 'Demasiadas solicitudes',
     message: 'Has excedido el límite de solicitudes. Por favor, intenta nuevamente más tarde.',
@@ -163,6 +200,14 @@ if (NODE_ENV === 'development') {
 // ============================================
 // Rutas de API
 // ============================================
+
+// Normalize double /api prefix (e.g. /api/api/levels → /api/levels)
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace('/api/api/', '/api/');
+  }
+  next();
+});
 
 // Ruta de salud (antes de autenticación)
 app.get('/health', (req: Request, res: Response) => {
@@ -223,27 +268,118 @@ app.use('/api/teaching', teachingRoutes);
 // Rutas de páginas (Phase 1 - Content Hierarchy Refactoring)
 app.use('/api/pages', pagesRoutes);
 
+// Rutas de administración (TEACHER+ para ver estudiantes, ADMIN+ para gestión)
+app.use('/api/admin', adminRoutes);
+
+// Rutas de grupos (TEACHER+)
+app.use('/api/groups', groupsRoutes);
+
+// Rutas de calificaciones del profesor (TEACHER+)
+app.use('/api/scores', scoresRoutes);
+
+// Rutas de actividades (evaluaciones: exámenes/quizzes/talleres)
+app.use('/api/activities', activityRoutes);
+app.use('/api/activity-assignments', activityAssignmentsRoutes);
+app.use('/api/activity-submissions', activitySubmissionsRoutes);
+
+// Rutas de simulación (WebSocket gateway + ventilador físico)
+// NOTE: simulationRouter is registered after the HTTP server is created
+// (see startServer below) so that the Socket.io server is ready first.
+
 // TODO: Rutas de servicios de IA (cuando se implementen)
 // app.use('/api/ai', aiRoutes);
 
 // ============================================
 // Manejo de errores
 // ============================================
-
-// Capturar rutas no encontradas
-app.use(notFoundHandler);
-
-// Middleware de manejo de errores global (debe ir al final)
-app.use(errorHandler);
+// NOTE: Error handlers are registered inside startServer() AFTER the
+// simulation router, which needs the HTTP server (Socket.io) to exist.
+// Registering them here would block any routes mounted later.
 
 // ============================================
 // Configuración del servidor
 // ============================================
 
-let server: any;
+let server: http.Server;
+let influxService: InfluxTelemetryService | null = null;
 
-const startServer = () => {
-  server = app.listen(PORT, () => {
+const startServer = async () => {
+  // ------------------------------------------------------------------
+  // HTTP server + Socket.io
+  // ------------------------------------------------------------------
+  server = http.createServer(app);
+
+  const io = new SocketIOServer(server, {
+    cors: {
+      origin: allowedOrigins as string[],
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
+  });
+
+  // ------------------------------------------------------------------
+  // Simulation module wiring
+  // ------------------------------------------------------------------
+  const mqttBrokerUrl = process.env.MQTT_BROKER_URL ?? 'mqtt://localhost:1883';
+  const mqttTelemetryTopic = process.env.MQTT_TOPIC; // undefined → MqttClient uses MQTT_TOPICS.TELEMETRY
+
+  const mqttClient = new MqttClient({
+    brokerUrl: mqttBrokerUrl,
+    clientId: `ventylab-server-${Math.random().toString(16).slice(2, 8)}`,
+    telemetryTopic: mqttTelemetryTopic,
+  });
+  const wsGateway = new WSGateway(io);
+  const hexParser = new HexParser();
+  const hexEncoder = new HexEncoder();
+  const simulationService = new SimulationService(
+    prisma,
+    wsGateway,
+    mqttClient,
+    hexParser,
+    hexEncoder,
+  );
+
+  // Patient simulation (signal generation from form data)
+  const calculator = new PatientCalculatorService();
+  const signalGenerator = new SignalGeneratorService();
+  const clinicalCasesService = new ClinicalCasesService(calculator);
+  const patientSimulationService = new PatientSimulationService(
+    calculator,
+    signalGenerator,
+    clinicalCasesService,
+    wsGateway,
+  );
+
+  // Register REST routes (needs the instantiated services)
+  app.use('/api/simulation', createSimulationController(simulationService, patientSimulationService));
+
+  // Error handlers MUST be registered AFTER all routes (including simulation)
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+
+  // Connect to MQTT (non-fatal – server starts even if broker is unreachable)
+  try {
+    await simulationService.initialize();
+    console.log('✅ Simulation module initialized (MQTT connected)');
+  } catch (err: any) {
+    console.warn('⚠️  Simulation module: MQTT connection failed –', err.message);
+    console.warn('    REST endpoints are available; real-time data will not stream.');
+  }
+
+  // InfluxDB telemetry persistence (optional – server starts without it)
+  influxService = InfluxTelemetryService.fromEnv();
+  if (influxService) {
+    const influx = influxService; // capture for closure narrowing
+    mqttClient.subscribeTelemetryJson((payload) => {
+      influx.writeTelemetry(payload);
+    });
+    console.log('✅ InfluxDB telemetry writer attached to MQTT stream');
+  }
+
+  // ------------------------------------------------------------------
+  // Start listening
+  // ------------------------------------------------------------------
+  server.listen(PORT, () => {
     console.log('='.repeat(50));
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
     console.log(`📝 Entorno: ${NODE_ENV}`);
@@ -264,6 +400,11 @@ const startServer = () => {
     console.log('  - GET  /api/changelog/* - Historial de cambios (audit trail)');
     console.log('  - CRUD /api/overrides/* - Overrides de contenido por estudiante');
     console.log('  - GET  /api/pages/* - Páginas (Phase 1 - Content Hierarchy)');
+    console.log('  - CRUD /api/admin/* - Dashboard profesor/admin');
+    console.log('  - CRUD /api/groups/* - Gestión de grupos');
+    console.log('  - CRUD /api/scores/* - Calificaciones por estudiante');
+    console.log('  - WS   /socket.io - WebSocket (simulación en tiempo real)');
+    console.log('  - CRUD /api/simulation/* - Simulación ventilador');
     console.log('='.repeat(50));
   });
 };
@@ -280,6 +421,16 @@ const gracefulShutdown = async (signal: string) => {
     server.close(() => {
       console.log('✅ Servidor HTTP cerrado');
     });
+  }
+
+  // Flush y cerrar InfluxDB WriteApi
+  if (influxService) {
+    try {
+      await influxService.close();
+      console.log('✅ InfluxDB WriteApi cerrado');
+    } catch (err) {
+      console.error('❌ Error cerrando InfluxDB:', err);
+    }
   }
 
   // Cerrar conexión de Prisma
@@ -313,6 +464,9 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 // Iniciar servidor
-startServer();
+startServer().catch((err) => {
+  console.error('❌ Error al iniciar el servidor:', err);
+  process.exit(1);
+});
 
 export default app;

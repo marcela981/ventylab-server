@@ -1,0 +1,303 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ventilator-command",
+  "title": "VentyLab Ventilator Command",
+  "description": "Configuration command sent from the backend to the ventilator. The ventilator must acknowledge each command with a CommandAck message. Commands are idempotent: re-sending the same commandId is a no-op.",
+  "type": "object",
+  "required": ["commandId", "deviceId", "issuedAt", "ventilationMode", "parameters"],
+  "additionalProperties": false,
+
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "description": "UUID v4 uniquely identifying this command. Used for deduplication and ACK correlation.",
+      "format": "uuid",
+      "examples": ["b4e2a1c0-ffff-4abc-8000-000000000042"]
+    },
+
+    "deviceId": {
+      "type": "string",
+      "description": "Target ventilator device ID. Must match the deviceId in telemetry frames.",
+      "minLength": 1,
+      "maxLength": 64
+    },
+
+    "issuedAt": {
+      "type": "integer",
+      "description": "Unix epoch timestamp in milliseconds when the backend issued this command.",
+      "minimum": 0
+    },
+
+    "issuedBy": {
+      "type": "string",
+      "description": "Optional: userId or system identifier of the operator/session that triggered this command. Useful for audit logs.",
+      "maxLength": 128
+    },
+
+    "ventilationMode": {
+      "type": "string",
+      "description": "Requested ventilation mode. Determines which parameters in 'parameters' are active and which the device should ignore.",
+      "enum": ["VCV", "PCV", "SIMV", "PSV"],
+      "$comment": "VCV=Volume-Controlled Ventilation, PCV=Pressure-Controlled Ventilation, SIMV=Synchronized Intermittent Mandatory Ventilation, PSV=Pressure-Support Ventilation"
+    },
+
+    "parameters": {
+      "type": "object",
+      "description": "Ventilator parameter set. All fields are present in every command even if not applicable to the current mode — the ventilator uses 'ventilationMode' to determine which fields to apply. This avoids partial-update ambiguity.",
+      "required": [
+        "tidalVolume",
+        "respiratoryRate",
+        "peep",
+        "fio2",
+        "pressureLimit",
+        "triggerSensitivity"
+      ],
+      "additionalProperties": false,
+
+      "properties": {
+        "tidalVolume": {
+          "type": "object",
+          "description": "Target tidal volume. Active in VCV and SIMV modes.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "Tidal volume in mL. Safe range: 200–800 mL. Below 200 mL risks alveolar hypoventilation; above 800 mL risks volutrauma.",
+              "minimum": 200,
+              "maximum": 800
+            },
+            "unit": { "type": "string", "const": "mL" }
+          }
+        },
+
+        "respiratoryRate": {
+          "type": "object",
+          "description": "Mandatory breath rate. Active in VCV, PCV, and SIMV modes. In PSV mode the device uses this as a backup apnea rate.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "Breaths per minute. Below 5 risks apnea; above 40 risks auto-PEEP from insufficient expiratory time.",
+              "minimum": 5,
+              "maximum": 40
+            },
+            "unit": { "type": "string", "const": "rpm" }
+          }
+        },
+
+        "peep": {
+          "type": "object",
+          "description": "Positive End-Expiratory Pressure. Applied in all modes. Maintains alveolar recruitment between breaths.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "PEEP in cmH₂O. 0 = no PEEP (not recommended). Maximum 20 cmH₂O to avoid haemodynamic compromise.",
+              "minimum": 0,
+              "maximum": 20
+            },
+            "unit": { "type": "string", "const": "cmH2O" }
+          }
+        },
+
+        "fio2": {
+          "type": "object",
+          "description": "Fraction of inspired oxygen. 0.21 = room air, 1.0 = 100 % O₂.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "FiO₂ as a fraction (0.21–1.0). Values are rounded to nearest 0.01 by the device.",
+              "minimum": 0.21,
+              "maximum": 1.0,
+              "multipleOf": 0.01
+            },
+            "unit": { "type": "string", "const": "fraction" }
+          }
+        },
+
+        "pressureLimit": {
+          "type": "object",
+          "description": "Peak inspiratory pressure limit (Ppeak). The ventilator will terminate or limit inspiration if this threshold is reached. Active in all modes.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "Pressure limit in cmH₂O. Must always be > PEEP. Below 10 may prevent adequate ventilation; above 50 risks barotrauma.",
+              "minimum": 10,
+              "maximum": 50
+            },
+            "unit": { "type": "string", "const": "cmH2O" }
+          }
+        },
+
+        "triggerSensitivity": {
+          "type": "object",
+          "description": "Patient trigger threshold. Lower (more negative) values require more patient effort to trigger a breath.",
+          "required": ["value", "unit", "type"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "Trigger threshold. For flow-trigger: 1–15 L/min (positive). For pressure-trigger: -5 to -0.5 cmH₂O (negative). The 'type' field determines the unit and sign convention.",
+              "minimum": -5,
+              "maximum": 15
+            },
+            "unit": {
+              "type": "string",
+              "enum": ["L/min", "cmH2O"],
+              "description": "Unit matches the trigger type: L/min for flow trigger, cmH2O for pressure trigger."
+            },
+            "type": {
+              "type": "string",
+              "enum": ["flow", "pressure"],
+              "description": "Trigger mechanism. 'flow' is preferred for most clinical scenarios as it is more sensitive."
+            }
+          }
+        },
+
+        "inspiratoryTime": {
+          "type": "object",
+          "description": "Fixed inspiratory time. Required for PCV mode; optional (informational) for VCV.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "Inspiratory time in seconds.",
+              "minimum": 0.2,
+              "maximum": 3.0
+            },
+            "unit": { "type": "string", "const": "s" }
+          }
+        },
+
+        "pressureSupport": {
+          "type": "object",
+          "description": "Pressure support above PEEP. Active in PSV and SIMV+PS modes. The delivered pressure = PEEP + pressureSupport.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "Pressure support in cmH₂O above PEEP baseline.",
+              "minimum": 0,
+              "maximum": 30
+            },
+            "unit": { "type": "string", "const": "cmH2O" }
+          }
+        },
+
+        "ieRatio": {
+          "type": "object",
+          "description": "Inspiratory-to-expiratory time ratio. Used as an alternative to explicit inspiratoryTime in VCV mode.",
+          "required": ["inspiratory", "expiratory"],
+          "additionalProperties": false,
+          "properties": {
+            "inspiratory": {
+              "type": "number",
+              "description": "Numerator of I:E ratio (typically 1).",
+              "minimum": 1,
+              "maximum": 4
+            },
+            "expiratory": {
+              "type": "number",
+              "description": "Denominator of I:E ratio (e.g. 2 for 1:2).",
+              "minimum": 1,
+              "maximum": 8
+            }
+          }
+        }
+      }
+    },
+
+    "safetyOverrides": {
+      "type": "object",
+      "description": "Explicit alarm threshold overrides. If omitted, the device uses its own defaults derived from the parameter set.",
+      "additionalProperties": false,
+      "properties": {
+        "highPressureAlarm": {
+          "type": "number",
+          "description": "High airway pressure alarm threshold in cmH₂O. Recommended: pressureLimit + 5.",
+          "minimum": 10,
+          "maximum": 60
+        },
+        "lowVolumeAlarm": {
+          "type": "number",
+          "description": "Low tidal volume alarm threshold in mL. Recommended: tidalVolume × 0.8.",
+          "minimum": 50,
+          "maximum": 800
+        },
+        "apneaTimeout": {
+          "type": "number",
+          "description": "Duration in seconds without a breath before apnea alarm triggers.",
+          "minimum": 10,
+          "maximum": 60
+        }
+      }
+    },
+
+    "priority": {
+      "type": "string",
+      "description": "Delivery priority. 'urgent' commands should be processed ahead of any queued normal commands.",
+      "enum": ["normal", "urgent"],
+      "default": "normal"
+    }
+  },
+
+  "if": {
+    "properties": { "ventilationMode": { "const": "PCV" } }
+  },
+  "then": {
+    "required": ["commandId", "deviceId", "issuedAt", "ventilationMode", "parameters"],
+    "$comment": "In PCV mode, parameters.inspiratoryTime is strongly recommended."
+  },
+
+  "examples": [
+    {
+      "commandId": "b4e2a1c0-ffff-4abc-8000-000000000042",
+      "deviceId": "VNT-SIM-001",
+      "issuedAt": 1740000005000,
+      "issuedBy": "user-student-42",
+      "ventilationMode": "VCV",
+      "parameters": {
+        "tidalVolume":          { "value": 500,  "unit": "mL" },
+        "respiratoryRate":      { "value": 14,   "unit": "rpm" },
+        "peep":                 { "value": 5,    "unit": "cmH2O" },
+        "fio2":                 { "value": 0.40, "unit": "fraction" },
+        "pressureLimit":        { "value": 30,   "unit": "cmH2O" },
+        "triggerSensitivity":   { "value": 2.0,  "unit": "L/min", "type": "flow" },
+        "inspiratoryTime":      { "value": 1.0,  "unit": "s" },
+        "ieRatio":              { "inspiratory": 1, "expiratory": 2 }
+      },
+      "safetyOverrides": {
+        "highPressureAlarm": 35,
+        "lowVolumeAlarm":    400,
+        "apneaTimeout":      20
+      },
+      "priority": "normal"
+    },
+    {
+      "commandId": "c5f3b2d1-aaaa-4def-9111-000000000099",
+      "deviceId": "VNT-SIM-001",
+      "issuedAt": 1740000010000,
+      "issuedBy": "user-student-42",
+      "ventilationMode": "PSV",
+      "parameters": {
+        "tidalVolume":          { "value": 500,  "unit": "mL" },
+        "respiratoryRate":      { "value": 8,    "unit": "rpm" },
+        "peep":                 { "value": 5,    "unit": "cmH2O" },
+        "fio2":                 { "value": 0.35, "unit": "fraction" },
+        "pressureLimit":        { "value": 25,   "unit": "cmH2O" },
+        "triggerSensitivity":   { "value": -1.5, "unit": "cmH2O", "type": "pressure" },
+        "pressureSupport":      { "value": 10,   "unit": "cmH2O" }
+      },
+      "priority": "normal"
+    }
+  ]
+}

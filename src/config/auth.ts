@@ -4,7 +4,7 @@ import type { User, Account, Profile, Session } from '@auth/core/types';
 import type { JWT } from '@auth/core/jwt';
 import Google from '@auth/core/providers/google';
 import Credentials from '@auth/core/providers/credentials';
-import { prisma } from './prisma';
+import { prisma } from '../shared/infrastructure/database';
 import * as bcrypt from 'bcryptjs';
 import { UserRole } from '@prisma/client';
 

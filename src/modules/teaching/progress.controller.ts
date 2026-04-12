@@ -1,0 +1,955 @@
+import { Request, Response, NextFunction } from 'express';
+import * as learningProgressService from './learningProgress.service';
+import * as unifiedProgressService from './unifiedProgress.service';
+import { getProgressOverview } from './overviewProgress.service';
+import { prisma } from '../../shared/infrastructure/database';
+
+/**
+ * Resolve canonical moduleId AND lessonId for a progress operation.
+ *
+ * The frontend may send a legacyJsonId (e.g. "module-01-inversion-fisiologica")
+ * instead of the real Lesson.id (e.g. "lesson-inversion-fisiologica").
+ * This function maps through the Page table to find the correct DB IDs.
+ *
+ * Resolution order:
+ *   1. Direct Lesson lookup by frontendLessonId
+ *   2. Page lookup by legacyJsonId → use page.legacyLessonId + page.moduleId
+ *   3. Page lookup by legacyLessonId → use frontendLessonId + page.moduleId
+ *   4. Module hint from query parameter
+ *   5. null (no match)
+ */
+async function resolveIdsForProgress(
+  frontendLessonId: string,
+  moduleIdHint?: string
+): Promise<{ moduleId: string; lessonId: string } | null> {
+  // 1. Direct Lesson lookup (works for non-migrated content)
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: frontendLessonId },
+    select: { id: true, moduleId: true },
+  });
+  if (lesson) return { moduleId: lesson.moduleId, lessonId: lesson.id };
+
+  // 2. Page lookup by legacyJsonId (frontend sends JSON file IDs as lessonId)
+  const pageByJson = await prisma.page.findFirst({
+    where: { legacyJsonId: frontendLessonId, isActive: true },
+    select: { moduleId: true, legacyLessonId: true },
+  });
+  if (pageByJson?.legacyLessonId) {
+    return { moduleId: pageByJson.moduleId, lessonId: pageByJson.legacyLessonId };
+  }
+
+  // 3. Page lookup by legacyLessonId
+  const pageByLesson = await prisma.page.findFirst({
+    where: { legacyLessonId: frontendLessonId, isActive: true },
+    select: { moduleId: true, legacyLessonId: true },
+  });
+  if (pageByLesson) {
+    return { moduleId: pageByLesson.moduleId, lessonId: frontendLessonId };
+  }
+
+  // 4. Module hint from query parameter
+  if (moduleIdHint) {
+    const exists = await prisma.module.findUnique({
+      where: { id: moduleIdHint, isActive: true },
+      select: { id: true },
+    });
+    if (exists) return { moduleId: moduleIdHint, lessonId: frontendLessonId };
+  }
+
+  // 5. frontendLessonId IS a Module.id (beginner level: frontend sends module ID as lesson ID).
+  //    Return the first active lesson in that module.
+  const moduleWithLesson = await prisma.module.findUnique({
+    where: { id: frontendLessonId },
+    select: {
+      id: true,
+      lessons: {
+        where: { isActive: true },
+        orderBy: { order: 'asc' },
+        take: 1,
+        select: { id: true },
+      },
+    },
+  });
+  if (moduleWithLesson?.lessons?.[0]) {
+    console.log(`[resolveIdsForProgress] 🔀 Step 5 match: "${frontendLessonId}" is a Module.id → lesson "${moduleWithLesson.lessons[0].id}"`);
+    return { moduleId: moduleWithLesson.id, lessonId: moduleWithLesson.lessons[0].id };
+  }
+
+  return null;
+}
+
+// GET /api/progress/lesson/:lessonId
+// Never 404: progress is created on access (upsert)
+export async function getLessonProgress(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    const { lessonId } = req.params;
+    const moduleIdFromQuery = req.query.moduleId as string | undefined;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const resolved = await resolveIdsForProgress(lessonId, moduleIdFromQuery);
+    if (!resolved) {
+      // ID could not be mapped — return a safe zero-state with all expected fields so
+      // the frontend does not crash or silently treat undefined as a non-zero value.
+      return res.json({
+        lessonId,
+        completed: false,
+        timeSpent: 0,
+        lastAccessed: null,
+        completionPercentage: 0,
+        currentStep: 0,
+        totalSteps: 0,
+      });
+    }
+
+    const progress = await learningProgressService.getLessonProgress(
+      userId,
+      resolved.moduleId,
+      resolved.lessonId
+    );
+
+    // Normalise: if the service returned the DB lessonId, replace it with the
+    // original frontend lessonId so the frontend can correlate with its own state.
+    if (progress && progress.lessonId !== lessonId) {
+      progress.lessonId = lessonId;
+    }
+
+    res.json(progress);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// GET /api/progress/overview
+// Uses the Page/Lesson-based overview service (Level → Module → Lesson → LessonCompletion).
+// Always returns modules and lessons even for users with no progress yet.
+export async function getUserOverview(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const overview = await getProgressOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Maps frontend display module IDs (from curriculumData.js) to the DB module IDs
+ * that they aggregate. These "composite" modules group several DB modules (each
+ * corresponding to one lesson) under a single curriculum card.
+ *
+ * Keep this in sync with ventilab-web/src/features/teaching/data/curriculumData.js
+ */
+const COMPOSITE_MODULES: Record<string, string[]> = {
+  'module-01-fundamentals': [
+    'module-01-inversion-fisiologica',
+    'module-02-ecuacion-movimiento',
+    'module-03-variables-fase',
+    'module-04-modos-ventilatorios',
+    'module-05-monitorizacion-grafica',
+    'module-06-efectos-sistemicos',
+  ],
+  'respiratory-physiology': [
+    'module-01-inversion-fisiologica',
+    'module-02-ecuacion-movimiento',
+    'module-03-variables-fase',
+  ],
+};
+
+// GET /api/progress/module/:moduleId - Progreso agregado del módulo
+// Strategy 1: read from persisted UserProgress (O(1), populated by recalculateAndSaveUserProgress)
+// Strategy 2: real-time calculation from LessonCompletion (fallback, writes back to UserProgress async)
+// Strategy 3: composite module aggregation (for frontend modules that group multiple DB modules)
+export async function getModuleProgress(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    const { moduleId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const moduleExists = await prisma.module.findUnique({
+      where: { id: moduleId, isActive: true },
+      select: { id: true },
+    });
+
+    if (!moduleExists) {
+      // Strategy 3: composite module (frontend groups multiple DB modules under one card)
+      const subModuleIds = COMPOSITE_MODULES[moduleId];
+      if (subModuleIds?.length) {
+        const subProgresses = await prisma.userProgress.findMany({
+          where: { userId, moduleId: { in: subModuleIds } },
+        });
+        const totalLessons = subModuleIds.length;
+        const completedLessons = subProgresses.filter(p => p.isModuleCompleted).length;
+
+        // For each sub-module, calculate fractional progress including in-progress step data.
+        // We look up the LessonCompletion record for the lesson inside each sub-module so that
+        // partial step navigation (e.g. 2/80 steps) is reflected on the card.
+        const subLessonsData = await prisma.lesson.findMany({
+          where: { moduleId: { in: subModuleIds }, isActive: true },
+          select: { id: true, moduleId: true },
+        });
+        const lessonCompletions = await prisma.lessonCompletion.findMany({
+          where: {
+            userId,
+            lessonId: { in: subLessonsData.map(l => l.id) },
+          },
+          select: { lessonId: true, currentStepIndex: true, totalSteps: true, isCompleted: true },
+        });
+        const completionByLessonId = new Map(lessonCompletions.map(c => [c.lessonId, c]));
+        // Build a map: moduleId → fractional progress (0-100)
+        const lessonsBySubModule = new Map<string, typeof subLessonsData[0][]>();
+        for (const l of subLessonsData) {
+          if (!lessonsBySubModule.has(l.moduleId)) lessonsBySubModule.set(l.moduleId, []);
+          lessonsBySubModule.get(l.moduleId)!.push(l);
+        }
+
+        let totalPct = 0;
+        for (const subModId of subModuleIds) {
+          const stored = subProgresses.find(p => p.moduleId === subModId);
+          if (stored?.isModuleCompleted) {
+            totalPct += 100;
+            continue;
+          }
+          const lessons = lessonsBySubModule.get(subModId) || [];
+          if (lessons.length === 0) {
+            totalPct += stored?.progressPercentage ?? 0;
+            continue;
+          }
+          // Sum fractional completion across all lessons in this sub-module
+          let lessonPctSum = 0;
+          for (const lesson of lessons) {
+            const c = completionByLessonId.get(lesson.id);
+            if (!c) continue;
+            if (c.isCompleted) {
+              lessonPctSum += 100;
+            } else if (c.totalSteps > 0) {
+              lessonPctSum += Math.min(99, ((c.currentStepIndex + 1) / c.totalSteps) * 100);
+            }
+          }
+          totalPct += lessonPctSum / lessons.length;
+        }
+
+        const completionPercentage = totalLessons > 0 ? Math.round(totalPct / totalLessons) : 0;
+        const timeSpent = subProgresses.reduce((sum, p) => sum + (p.timeSpent ?? 0), 0);
+        const isCompleted = completedLessons === totalLessons && totalLessons > 0;
+        return res.json({
+          moduleId,
+          totalLessons,
+          completedLessons,
+          completionPercentage,
+          isModuleCompleted: isCompleted,
+          timeSpent,
+          score: null,
+          lessons: [],
+          completedAt: isCompleted
+            ? (subProgresses.find(p => p.completedAt)?.completedAt ?? null)
+            : null,
+          source: 'composite_aggregate',
+        });
+      }
+
+      return res.json({
+        moduleId,
+        totalLessons: 0,
+        completedLessons: 0,
+        completionPercentage: 0,
+        timeSpent: 0,
+        score: null,
+        lessons: [],
+        completedAt: null,
+        source: 'not_found',
+      });
+    }
+
+    // Strategy 1: persisted UserProgress (fast path, O(1))
+    const userProgress = await prisma.userProgress.findUnique({
+      where: { userId_moduleId: { userId, moduleId } },
+    });
+
+    if (userProgress && userProgress.totalLessons > 0) {
+      return res.json({
+        moduleId,
+        totalLessons: userProgress.totalLessons,
+        completedLessons: userProgress.completedLessonsCount,
+        completionPercentage: userProgress.progressPercentage,
+        isModuleCompleted: userProgress.isModuleCompleted,
+        timeSpent: userProgress.timeSpent,
+        score: null,
+        lessons: [],
+        completedAt: userProgress.completedAt,
+        source: 'user_progress',
+      });
+    }
+
+    // Strategy 2: real-time calculation (first visit or stale data)
+    const moduleProgress = await learningProgressService.getModuleProgress(userId, moduleId);
+
+    // Persist async so next request uses the fast path
+    prisma.userProgress.upsert({
+      where: { userId_moduleId: { userId, moduleId } },
+      update: {
+        completedLessonsCount: moduleProgress.completedLessons,
+        totalLessons: moduleProgress.totalLessons,
+        progressPercentage: moduleProgress.completionPercentage,
+        isModuleCompleted: moduleProgress.isModuleCompleted,
+        lastAccessedAt: new Date(),
+      },
+      create: {
+        userId,
+        moduleId,
+        completedLessonsCount: moduleProgress.completedLessons,
+        totalLessons: moduleProgress.totalLessons,
+        progressPercentage: moduleProgress.completionPercentage,
+        isModuleCompleted: moduleProgress.isModuleCompleted,
+      },
+    }).catch((e: Error) => console.warn('[getModuleProgress] persist failed:', e?.message));
+
+    res.json({ ...moduleProgress, source: 'realtime_calculation' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// PUT /api/progress/lesson/:lessonId
+// Update lesson progress - never 404, progress created on access (upsert)
+//
+// IMPORTANT: This endpoint now routes to the unified progress system when
+// step data (currentStep, totalSteps) is provided. This ensures step-level
+// tracking is persisted to the database.
+export async function updateLessonProgress(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    const { lessonId } = req.params;
+
+    // Extract ALL fields from body (frontend sends these)
+    const {
+      completed = false,
+      timeSpent = 0,
+      currentStep,      // 1-based from frontend
+      totalSteps,
+      completionPercentage,
+      scrollPosition,
+      quizScore,
+      caseScore,
+    } = req.body;
+
+    const moduleIdFromQuery = req.query.moduleId as string | undefined;
+
+    // Debug logging
+    console.log('🔥 PUT /api/progress/lesson/:lessonId HIT', {
+      userId: userId?.substring(0, 8) + '...',
+      lessonId,
+      currentStep,
+      totalSteps,
+      completionPercentage,
+      completed,
+      timeSpent,
+      quizScore,
+      caseScore,
+    });
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // Resolve canonical IDs (maps frontend legacyJsonId → DB Lesson ID via Page table)
+    const resolved = await resolveIdsForProgress(lessonId, moduleIdFromQuery);
+    if (!resolved) {
+      console.log('⚠️ Could not resolve IDs for lesson:', lessonId);
+      return res.json({
+        lessonId,
+        completed,
+        timeSpent,
+        lastAccessed: new Date().toISOString(),
+        nextLessonId: null,
+      });
+    }
+
+    const { moduleId, lessonId: canonicalLessonId } = resolved;
+    if (canonicalLessonId !== lessonId) {
+      console.log(`🔀 Mapped frontend ID "${lessonId}" → canonical "${canonicalLessonId}" (module: ${moduleId})`);
+    }
+
+    // If step data is provided, use unified progress service
+    if (typeof currentStep === 'number' && typeof totalSteps === 'number') {
+      console.log('📝 Using unified progress service for step tracking');
+
+      // Convert 1-based currentStep from frontend to 0-based for DB
+      const currentStepIndex = Math.max(0, currentStep - 1);
+
+      const result = await unifiedProgressService.updateStepProgress({
+        userId,
+        moduleId,
+        lessonId: canonicalLessonId,
+        currentStepIndex,
+        totalSteps,
+        timeSpentDelta: timeSpent,
+        quizScore,
+        caseScore,
+      });
+
+      if (!result.success) {
+        console.error('❌ Unified progress update failed:', result.error);
+        // Fall through to legacy behavior on error
+      } else {
+        console.log('✅ Step progress saved:', {
+          lessonId: result.lessonId,
+          currentStepIndex: result.currentStepIndex,
+          totalSteps: result.totalSteps,
+          completed: result.completed,
+        });
+
+        // If marked as completed, get next lesson
+        let nextLessonId: string | null = null;
+        if (completed || result.completed) {
+          nextLessonId = await learningProgressService.getNextLesson(
+            userId,
+            moduleId,
+            canonicalLessonId
+          );
+        }
+
+        return res.json({
+          lessonId, // Return original frontend ID for state consistency
+          completed: result.completed,
+          timeSpent,
+          lastAccessed: new Date().toISOString(),
+          currentStep: result.currentStepIndex + 1, // Convert back to 1-based
+          totalSteps: result.totalSteps,
+          completionPercentage: result.progressPercentage, // frontend expects this field name
+          progressPercentage: result.progressPercentage,
+          nextLessonId,
+        });
+      }
+    }
+
+    // Legacy fallback for requests without step data
+    // NOTE: The service now protects against downgrading completed=true→false,
+    // but we also avoid sending completed=false explicitly to be safe.
+    console.log('📝 Using legacy progress service (no step data)');
+    const progress = await learningProgressService.updateLessonProgress({
+      userId,
+      moduleId,
+      lessonId: canonicalLessonId,
+      completed, // Service will never downgrade true→false
+      timeSpent,
+      quizScore,
+      caseScore,
+    });
+
+    let nextLessonId: string | null = null;
+    if (completed) {
+      nextLessonId = await learningProgressService.getNextLesson(
+        userId,
+        moduleId,
+        canonicalLessonId
+      );
+    }
+
+    res.json({
+      ...progress,
+      lessonId, // Return original frontend ID
+      nextLessonId,
+    });
+  } catch (error) {
+    console.error('❌ updateLessonProgress error:', error);
+    next(error);
+  }
+}
+
+// POST /api/progress/lesson/:lessonId/complete
+// Never 404, progress created on access (upsert)
+export async function markComplete(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    const { lessonId } = req.params;
+    const { timeSpent = 0, quizScore, caseScore } = req.body;
+    const moduleIdFromQuery = req.query.moduleId as string | undefined;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const resolved = await resolveIdsForProgress(lessonId, moduleIdFromQuery);
+    if (!resolved) {
+      return res.json({
+        lessonId,
+        completed: true,
+        timeSpent,
+        lastAccessed: new Date().toISOString(),
+        nextLessonId: null,
+        message: 'Lección completada.',
+      });
+    }
+
+    const { moduleId, lessonId: canonicalLessonId } = resolved;
+
+    const progress = await learningProgressService.markLessonComplete(
+      userId,
+      moduleId,
+      canonicalLessonId,
+      timeSpent,
+      quizScore,
+      caseScore
+    );
+
+    const nextLessonId = await learningProgressService.getNextLesson(
+      userId,
+      moduleId,
+      canonicalLessonId
+    );
+
+    res.json({
+      ...progress,
+      lessonId, // Return original frontend ID
+      nextLessonId,
+      message: nextLessonId
+        ? 'Lección completada. Avanzando a la siguiente.'
+        : 'Lección completada. Has terminado este módulo.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ============================================
+// STUBS PARA RUTAS NUEVAS
+// TODO: Implementar funcionalidad completa cuando haya tiempo
+// ============================================
+
+/**
+ * GET /api/progress/milestones
+ * Obtener milestones/hitos del usuario
+ */
+export async function getMilestones(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // TODO: Implementar lógica de milestones
+    // Por ahora retornar estructura vacía para no romper el frontend
+    res.json({
+      milestones: [],
+      totalCompleted: 0,
+      totalAvailable: 0,
+      nextMilestone: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/progress/achievements
+ * Obtener logros del usuario
+ */
+export async function getAchievements(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // Intentar obtener achievements de la BD si existen
+    try {
+      const achievements = await prisma.achievement.findMany({
+        where: { userId },
+        orderBy: { unlockedAt: 'desc' },
+      });
+
+      res.json({
+        achievements: achievements.map(a => ({
+          id: a.id,
+          title: a.title,
+          description: a.description,
+          icon: a.icon,
+          unlockedAt: a.unlockedAt,
+        })),
+        totalUnlocked: achievements.length,
+      });
+    } catch {
+      // Si falla, retornar vacío
+      res.json({
+        achievements: [],
+        totalUnlocked: 0,
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/progress/skills
+ * Obtener habilidades/competencias del usuario
+ */
+export async function getSkills(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // TODO: Implementar sistema de skills basado en progreso
+    // Por ahora retornar estructura vacía
+    res.json({
+      skills: [],
+      categories: [
+        { id: 'physiology', name: 'Fisiología Respiratoria', progress: 0 },
+        { id: 'ventilation', name: 'Ventilación Mecánica', progress: 0 },
+        { id: 'clinical', name: 'Casos Clínicos', progress: 0 },
+      ],
+      overallLevel: 'beginner',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ============================================
+// UNIFIED PROGRESS ENDPOINTS (NEW - USE THESE)
+// ============================================
+// These endpoints implement the consolidated progress system.
+// The database is the SINGLE source of truth.
+
+/**
+ * POST /api/progress/step/update
+ *
+ * Update step progress - call on EVERY step navigation.
+ * This is the PRIMARY endpoint for tracking user position.
+ *
+ * Request Body:
+ * {
+ *   "moduleId": "module-01",
+ *   "lessonId": "lesson-01",
+ *   "currentStepIndex": 5,     // 0-based
+ *   "totalSteps": 10,
+ *   "timeSpentDelta": 30       // seconds (optional)
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "lessonId": "lesson-01",
+ *   "currentStepIndex": 5,
+ *   "totalSteps": 10,
+ *   "completed": false,
+ *   "progressPercentage": 60
+ * }
+ */
+export async function updateStepProgress(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+
+    // Debug logging for POST /api/progress/step/update
+    console.log('🔥 POST /api/progress/step/update HIT', {
+      userId: userId?.substring(0, 8) + '...',
+      body: req.body,
+    });
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const {
+      moduleId,
+      lessonId,
+      currentStepIndex,
+      totalSteps,
+      timeSpentDelta = 0,
+    } = req.body;
+
+    // Validate required fields
+    if (!moduleId || !lessonId) {
+      return res.status(400).json({
+        success: false,
+        error: 'moduleId and lessonId are required',
+      });
+    }
+
+    if (typeof currentStepIndex !== 'number' || typeof totalSteps !== 'number') {
+      return res.status(400).json({
+        success: false,
+        error: 'currentStepIndex and totalSteps must be numbers',
+      });
+    }
+
+    // Resolve canonical IDs: frontend may send a legacyJsonId as lessonId
+    // (e.g. "module-01-inversion-fisiologica" instead of "lesson-inversion-fisiologica").
+    // resolveIdsForProgress maps through the Page table to the real DB Lesson.id.
+    const resolved = await resolveIdsForProgress(lessonId, moduleId);
+    const canonicalLessonId = resolved?.lessonId ?? lessonId;
+    const canonicalModuleId = resolved?.moduleId ?? moduleId;
+    if (canonicalLessonId !== lessonId) {
+      console.log(`[updateStepProgress] 🔀 Mapped "${lessonId}" → "${canonicalLessonId}" (module: ${canonicalModuleId})`);
+    }
+
+    const result = await unifiedProgressService.updateStepProgress({
+      userId,
+      moduleId: canonicalModuleId,
+      lessonId: canonicalLessonId,
+      currentStepIndex,
+      totalSteps,
+      timeSpentDelta,
+    });
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/progress/resume/:moduleId
+ *
+ * Get resume state for a module - call when user clicks "Continue Module".
+ * Returns the EXACT position (lesson + step) to resume.
+ *
+ * Response:
+ * {
+ *   "moduleId": "module-01",
+ *   "moduleName": "Introduction",
+ *   "currentLessonId": "lesson-03",
+ *   "currentLessonTitle": "Basics",
+ *   "currentLessonOrder": 2,
+ *   "currentStepIndex": 5,        // Resume HERE
+ *   "totalStepsInLesson": 10,
+ *   "moduleProgress": 40,
+ *   "totalLessons": 5,
+ *   "completedLessons": 2,
+ *   "isModuleComplete": false,
+ *   "lastAccessedAt": "2026-02-04T..."
+ * }
+ */
+export async function getResumeState(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    const { moduleId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    if (!moduleId) {
+      return res.status(400).json({ error: 'moduleId is required' });
+    }
+
+    const resumeState = await unifiedProgressService.getResumeState(userId, moduleId);
+    res.json(resumeState);
+  } catch (error: any) {
+    if (error.message?.includes('not found')) {
+      return res.status(404).json({ error: error.message });
+    }
+    next(error);
+  }
+}
+
+/**
+ * POST /api/progress/lesson/:lessonId/complete-unified
+ *
+ * Mark a lesson as complete with step tracking.
+ * Call when user clicks "Complete" on the last step.
+ *
+ * Request Body:
+ * {
+ *   "moduleId": "module-01",
+ *   "totalSteps": 10,
+ *   "timeSpentDelta": 60
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "lessonId": "lesson-01",
+ *   "currentStepIndex": 9,
+ *   "totalSteps": 10,
+ *   "completed": true,
+ *   "progressPercentage": 100
+ * }
+ */
+export async function markLessonCompleteUnified(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    const { lessonId } = req.params;
+    const { moduleId, totalSteps, timeSpentDelta = 0, quizScore, caseScore } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    if (!moduleId || !lessonId) {
+      return res.status(400).json({
+        success: false,
+        error: 'moduleId and lessonId are required',
+      });
+    }
+
+    if (typeof totalSteps !== 'number' || totalSteps < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'totalSteps must be a positive number',
+      });
+    }
+
+    const result = await unifiedProgressService.markLessonComplete({
+      userId,
+      moduleId,
+      lessonId,
+      totalSteps,
+      timeSpentDelta,
+      quizScore,
+      caseScore,
+    });
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    // Get next lesson for navigation
+    const nextLessonId = await learningProgressService.getNextLesson(
+      userId,
+      moduleId,
+      lessonId
+    );
+
+    res.json({
+      ...result,
+      nextLessonId,
+      message: nextLessonId
+        ? 'Lección completada. Avanzando a la siguiente.'
+        : 'Lección completada. Has terminado este módulo.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/progress/lesson/:lessonId/details
+ *
+ * Get detailed progress for a specific lesson including step info.
+ *
+ * Query params:
+ * - moduleId: string (required)
+ *
+ * Response:
+ * {
+ *   "lessonId": "lesson-01",
+ *   "currentStepIndex": 5,
+ *   "totalSteps": 10,
+ *   "completed": false,
+ *   "timeSpent": 300,
+ *   "lastAccessed": "2026-02-04T...",
+ *   "progressPercentage": 60
+ * }
+ */
+export async function getLessonProgressDetails(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+    const { lessonId } = req.params;
+    const moduleId = req.query.moduleId as string;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    if (!moduleId) {
+      return res.status(400).json({ error: 'moduleId query parameter is required' });
+    }
+
+    const details = await unifiedProgressService.getLessonProgressDetails(
+      userId,
+      moduleId,
+      lessonId
+    );
+
+    if (!details) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    res.json(details);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ============================================
+// DEBUG ENDPOINT - REMOVE IN PRODUCTION
+// ============================================
+/**
+ * GET /api/progress/debug/write-test
+ *
+ * Tests database write capability using UserProgress + LessonCompletion.
+ * FASE 3: Updated to use unified progress system.
+ */
+export async function debugWriteTest(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const dbUrl = process.env.DATABASE_URL || 'NOT SET';
+    const maskedUrl = dbUrl.replace(/\/\/[^@]+@/, '//***:***@');
+
+    const testModule = await prisma.module.findFirst({
+      where: { isActive: true },
+      select: { id: true, title: true },
+    });
+
+    if (!testModule) {
+      return res.json({ success: false, error: 'No active modules found', databaseUrl: maskedUrl });
+    }
+
+    const testStepIndex = Math.floor(Math.random() * 10);
+
+    // Write to UserProgress
+    const userProgress = await prisma.userProgress.upsert({
+      where: { userId_moduleId: { userId, moduleId: testModule.id } },
+      update: { lastAccessedAt: new Date() },
+      create: { userId, moduleId: testModule.id, lastAccessedAt: new Date() },
+    });
+
+    res.json({
+      success: true,
+      message: 'Database write test PASSED (FASE 3 - unified system)',
+      databaseUrl: maskedUrl,
+      testResults: {
+        userProgressId: userProgress.id,
+        moduleId: testModule.id,
+        moduleName: testModule.title,
+        testStepIndex,
+        writeVerified: true,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Debug write test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      databaseUrl: process.env.DATABASE_URL?.replace(/\/\/[^@]+@/, '//***:***@') || 'NOT SET',
+    });
+  }
+}

@@ -1,0 +1,371 @@
+/**
+ * @module SimulationController
+ * @description REST endpoints for the simulation module.
+ *
+ * All routes require authentication (Bearer JWT).
+ * The router is created via a factory that receives the already-initialised
+ * SimulationService as a dependency, keeping the controller free of wiring logic.
+ *
+ * Routes:
+ *   GET    /api/simulation/status         → ventilator status (MQTT + reservation + alarms)
+ *   POST   /api/simulation/command        → send a command to the physical ventilator
+ *   POST   /api/simulation/reserve        → reserve the physical ventilator
+ *   DELETE /api/simulation/reserve        → release the current reservation
+ *   POST   /api/simulation/session        → create a new session (simulated or real)
+ *   POST   /api/simulation/session/save   → persist a completed simulation session
+ *   GET    /api/simulation/sessions       → list authenticated user's saved sessions
+ */
+
+import { Router, Request, Response } from 'express';
+import { authenticate } from '../../shared/middleware/auth.middleware';
+import { SimulationService } from './simulation.service';
+import { PatientSimulationService } from './patient-simulation.service';
+
+// ---------------------------------------------------------------------------
+// Factory
+// ---------------------------------------------------------------------------
+
+export function createSimulationController(
+  service: SimulationService,
+  patientService: PatientSimulationService,
+): Router {
+  const router = Router();
+
+  // All simulation endpoints require a valid JWT.
+  router.use(authenticate);
+
+  // -------------------------------------------------------------------------
+  // GET /api/simulation/status
+  // Returns: { success, data: GetVentilatorStatusResponse }
+  // Optional query param: ?deviceId=<id>
+  // -------------------------------------------------------------------------
+  router.get('/status', async (req: Request, res: Response) => {
+    try {
+      const deviceId = req.query.deviceId as string | undefined;
+      const data = await service.getVentilatorStatus(deviceId);
+      res.json({ success: true, data });
+    } catch (error: any) {
+      console.error('[SimulationController] GET /status error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/command
+  // Body: { command: VentilatorCommand }
+  // Returns: SendCommandResponse  (success:true or success:false + errors[])
+  //
+  // Dual-mode routing:
+  //   • isRealVentilator=false (synthetic simulation running)
+  //       → updates PatientSimulationService math; no MQTT publish
+  //   • isRealVentilator=true (physical ventilator)
+  //       → encodes and publishes via MQTT as usual
+  // The frontend receives a transparent VentilatorReading via WebSocket either way.
+  // -------------------------------------------------------------------------
+  router.post('/command', async (req: Request, res: Response) => {
+    try {
+      const { command } = req.body;
+
+      if (!command || typeof command !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: 'Body must include a "command" object',
+        });
+      }
+
+      const userId = req.user?.id;
+
+      // --- Synthetic mode: loop already running → adjust math on the fly ---
+      if (userId && patientService.isSimulating(userId)) {
+        patientService.updateCommand(userId, command);
+        return res.json({
+          success: true,
+          message: 'Command applied to synthetic simulation',
+          timestamp: Date.now(),
+          commandId: `sim-cmd-${Date.now()}`,
+        });
+      }
+
+      // --- Auto-start: patient configured but loop not yet running ---
+      // First command from the control panel kicks off the 30 Hz synthetic loop.
+      if (userId && patientService.getActivePatient(userId)) {
+        patientService.startSimulation(userId, command);
+        return res.json({
+          success: true,
+          message: 'Synthetic simulation started with initial command',
+          timestamp: Date.now(),
+          commandId: `sim-start-${Date.now()}`,
+        });
+      }
+
+      // --- Physical mode: publish command to physical ventilator via MQTT ---
+      const result = await service.sendCommand({ command, userId });
+
+      // 422 Unprocessable Entity when the command itself fails validation
+      const statusCode = result.success ? 200 : 422;
+      res.status(statusCode).json(result);
+    } catch (error: any) {
+      console.error('[SimulationController] POST /command error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/reserve
+  // Body: { durationMinutes: number, purpose?: string }
+  // Returns: ReserveVentilatorResponse
+  // -------------------------------------------------------------------------
+  router.post('/reserve', async (req: Request, res: Response) => {
+    try {
+      const { durationMinutes, purpose, groupId, leaderId } = req.body;
+
+      if (typeof durationMinutes !== 'number' || durationMinutes <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: '"durationMinutes" must be a positive number',
+        });
+      }
+
+      const userId = req.user!.id;
+      const result = await service.reserveVentilator({
+        userId,
+        durationMinutes,
+        purpose,
+        groupId,
+        leaderId,
+      } as any);
+
+      // Return 409 Conflict when ventilator is already reserved by someone else
+      const statusCode = result.success ? 200 : 409;
+      res.status(statusCode).json(result);
+    } catch (error: any) {
+      console.error('[SimulationController] POST /reserve error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // DELETE /api/simulation/reserve
+  // Returns: { success: true, message }
+  // -------------------------------------------------------------------------
+  router.delete('/reserve', async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      await service.releaseVentilator(userId);
+      res.json({ success: true, message: 'Reservation released' });
+    } catch (error: any) {
+      const isNotFound = error.message.includes('No active reservation');
+      res.status(isNotFound ? 404 : 500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/session
+  // Body: {
+  //   isRealVentilator: boolean,
+  //   patientData?:     object   ← demographics + condition + vitalSigns (simulated only)
+  //   parametersLog?:  any[]
+  //   ventilatorData?: any[]
+  //   notes?:          string
+  //   clinicalCaseId?: string
+  // }
+  // Returns: { success, sessionId, message, timestamp }
+  //
+  // Orchestration:
+  //   isRealVentilator=false → create DB record, then configurePatient() (NO MqttClient)
+  //   isRealVentilator=true  → create DB record only (MQTT already initialised at startup)
+  // -------------------------------------------------------------------------
+  router.post('/session', async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const {
+        isRealVentilator = false,
+        patientData,
+        parametersLog,
+        ventilatorData,
+        notes,
+        clinicalCaseId,
+      } = req.body;
+
+      // Persist the session record (service never touches MqttClient here)
+      const result = await service.createSession({
+        userId,
+        isRealVentilator,
+        parametersLog,
+        ventilatorData,
+        notes,
+        clinicalCaseId,
+      });
+
+      // Simulated patient: initialise physiological model (no MQTT)
+      if (!isRealVentilator) {
+        if (!patientData || typeof patientData !== 'object') {
+          return res.status(400).json({
+            success: false,
+            message: '"patientData" is required when isRealVentilator is false',
+          });
+        }
+        try {
+          patientService.configurePatient(userId, patientData);
+        } catch (configErr: any) {
+          // Session was already created; surface the config error with context
+          return res.status(422).json({
+            success: false,
+            sessionId: result.sessionId,
+            message: `Session created but patient configuration failed: ${configErr.message}`,
+          });
+        }
+      }
+
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error('[SimulationController] POST /session error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/session/save
+  // Body: SaveSimulatorSessionRequest (minus userId, which comes from JWT)
+  // Returns: SaveSimulatorSessionResponse
+  // -------------------------------------------------------------------------
+  router.post('/session/save', async (req: Request, res: Response) => {
+    try {
+      const { isRealVentilator, parametersLog, ventilatorData, notes, clinicalCaseId } = req.body;
+
+      if (!Array.isArray(parametersLog)) {
+        return res.status(400).json({
+          success: false,
+          message: '"parametersLog" must be an array',
+        });
+      }
+      if (!Array.isArray(ventilatorData)) {
+        return res.status(400).json({
+          success: false,
+          message: '"ventilatorData" must be an array',
+        });
+      }
+
+      const userId = req.user!.id;
+      const result = await service.saveSession({
+        userId,
+        isRealVentilator: isRealVentilator ?? false,
+        parametersLog,
+        ventilatorData,
+        notes,
+        clinicalCaseId,
+      });
+
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error('[SimulationController] POST /session/save error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // GET /api/simulation/sessions
+  // Optional query param: ?limit=<n>
+  // Returns: { success, data: SimulatorSession[], count }
+  //
+  // Note: returns sessions for the authenticated user only.
+  // -------------------------------------------------------------------------
+  router.get('/sessions', async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const limit = req.query.limit !== undefined ? Number(req.query.limit) : undefined;
+
+      if (limit !== undefined && (isNaN(limit) || limit < 1)) {
+        return res.status(400).json({
+          success: false,
+          message: '"limit" must be a positive integer',
+        });
+      }
+
+      const data = await service.getUserSessions(userId, limit);
+      res.json({ success: true, data, count: data.length });
+    } catch (error: any) {
+      console.error('[SimulationController] GET /sessions error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // =========================================================================
+  // Patient simulation routes
+  // =========================================================================
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/patient/configure
+  // Body: { clinicalCaseId? } | { demographics, condition, vitalSigns?, ... }
+  // Returns: { success, patient: PatientModel }
+  // -------------------------------------------------------------------------
+  router.post('/patient/configure', (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const patient = patientService.configurePatient(userId, req.body);
+      res.json({ success: true, patient });
+    } catch (error: any) {
+      const isValidation = error.message.includes('requiere') || error.message.includes('encontrado');
+      res.status(isValidation ? 400 : 500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/patient/start
+  // Body: { command: VentilatorCommand }
+  // Returns: { success, message }
+  // -------------------------------------------------------------------------
+  router.post('/patient/start', (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const { command } = req.body;
+
+      if (!command || typeof command !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: 'Body must include a "command" object with ventilator settings',
+        });
+      }
+
+      patientService.startSimulation(userId, command);
+      res.json({ success: true, message: 'Simulation started — streaming ventilator:data via WebSocket' });
+    } catch (error: any) {
+      const isNotFound = error.message.includes('No hay paciente');
+      res.status(isNotFound ? 404 : 500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /api/simulation/patient/stop
+  // Returns: { success, message }
+  // -------------------------------------------------------------------------
+  router.post('/patient/stop', (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      patientService.stopSimulation(userId);
+      res.json({ success: true, message: 'Simulation stopped' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // GET /api/simulation/patient
+  // Returns: { success, patient: PatientModel | null, isSimulating: boolean }
+  // -------------------------------------------------------------------------
+  router.get('/patient', (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const patient = patientService.getActivePatient(userId);
+      const isSimulating = patientService.isSimulating(userId);
+      res.json({ success: true, patient, isSimulating });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  return router;
+}

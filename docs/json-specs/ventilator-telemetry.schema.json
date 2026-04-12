@@ -1,0 +1,235 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ventilator-telemetry",
+  "title": "VentyLab Ventilator Telemetry",
+  "description": "Real-time telemetry frame sent from the ventilator to the backend at 30–60 Hz. Each frame represents a single point-in-time snapshot of waveform and vital sign data.",
+  "type": "object",
+  "required": ["deviceId", "timestamp", "waveforms"],
+  "additionalProperties": false,
+
+  "properties": {
+    "deviceId": {
+      "type": "string",
+      "description": "Unique identifier of the ventilator device (e.g. serial number or UUID).",
+      "minLength": 1,
+      "maxLength": 64,
+      "examples": ["VNT-SIM-001", "a3f2c1d0-8b4e-4f2a-9e1c-000000000001"]
+    },
+
+    "timestamp": {
+      "type": "integer",
+      "description": "Unix epoch timestamp in milliseconds (UTC). Used to align waveform samples on the frontend timeline.",
+      "minimum": 0,
+      "examples": [1740000000000]
+    },
+
+    "sequenceNumber": {
+      "type": "integer",
+      "description": "Monotonically increasing counter per device, reset to 0 on device boot. Used to detect dropped frames on the receiver side.",
+      "minimum": 0
+    },
+
+    "waveforms": {
+      "type": "object",
+      "description": "Core ventilatory waveform values sampled at this instant. All three channels are required.",
+      "required": ["pressure", "flow", "volume"],
+      "additionalProperties": false,
+
+      "properties": {
+        "pressure": {
+          "type": "object",
+          "description": "Airway pressure at the patient circuit.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "Airway pressure in cmH₂O. Negative values indicate sub-atmospheric pressure (e.g. during spontaneous effort).",
+              "minimum": -5,
+              "maximum": 60
+            },
+            "unit": {
+              "type": "string",
+              "const": "cmH2O"
+            }
+          }
+        },
+
+        "flow": {
+          "type": "object",
+          "description": "Gas flow at the patient circuit. Positive = inspiratory, negative = expiratory.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "Flow in L/min. Convention: positive = inspiratory flow, negative = expiratory flow.",
+              "minimum": -100,
+              "maximum": 100
+            },
+            "unit": {
+              "type": "string",
+              "const": "L/min"
+            }
+          }
+        },
+
+        "volume": {
+          "type": "object",
+          "description": "Integrated tidal volume (running integral of flow over the current breath cycle, reset at each exhalation start).",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "description": "Tidal volume in millilitres.",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "unit": {
+              "type": "string",
+              "const": "mL"
+            }
+          }
+        }
+      }
+    },
+
+    "vitals": {
+      "type": "object",
+      "description": "Optional slow-rate physiological parameters (typically updated at 1–2 Hz by co-located monitoring devices). Set fields to null if sensor is absent or reading is invalid.",
+      "additionalProperties": false,
+
+      "properties": {
+        "pco2": {
+          "type": "object",
+          "description": "End-tidal or arterial CO₂ partial pressure.",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "oneOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "PCO₂ in mmHg."
+                },
+                { "type": "null" }
+              ]
+            },
+            "unit": {
+              "type": "string",
+              "const": "mmHg"
+            }
+          }
+        },
+
+        "spo2": {
+          "type": "object",
+          "description": "Peripheral oxygen saturation (pulse oximetry).",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "oneOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "SpO₂ as a percentage (0–100)."
+                },
+                { "type": "null" }
+              ]
+            },
+            "unit": {
+              "type": "string",
+              "const": "%"
+            }
+          }
+        },
+
+        "heartRate": {
+          "type": "object",
+          "description": "Heart rate derived from ECG or plethysmography (optional).",
+          "required": ["value", "unit"],
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "oneOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 300
+                },
+                { "type": "null" }
+              ]
+            },
+            "unit": {
+              "type": "string",
+              "const": "bpm"
+            }
+          }
+        }
+      }
+    },
+
+    "breathPhase": {
+      "type": "string",
+      "description": "Current phase of the respiratory cycle at the time this frame was sampled. Useful for waveform annotation on the frontend.",
+      "enum": ["inspiration", "expiration", "plateau", "trigger", "unknown"]
+    },
+
+    "alarms": {
+      "type": "array",
+      "description": "Active alarm flags at the moment of this telemetry frame. Empty array = no active alarms.",
+      "items": {
+        "type": "object",
+        "required": ["code", "severity"],
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Machine-readable alarm identifier.",
+            "examples": ["HIGH_PRESSURE", "LOW_VOLUME", "APNEA", "DISCONNECT"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable alarm description (optional, for logging)."
+          }
+        }
+      }
+    },
+
+    "deviceStatus": {
+      "type": "string",
+      "description": "Operational state of the ventilator at frame time.",
+      "enum": ["ventilating", "standby", "alarm", "selftest", "error"]
+    }
+  },
+
+  "examples": [
+    {
+      "deviceId": "VNT-SIM-001",
+      "timestamp": 1740000000000,
+      "sequenceNumber": 4821,
+      "waveforms": {
+        "pressure": { "value": 18.4, "unit": "cmH2O" },
+        "flow":     { "value": 42.1, "unit": "L/min" },
+        "volume":   { "value": 387.0, "unit": "mL" }
+      },
+      "vitals": {
+        "pco2":  { "value": 38.5, "unit": "mmHg" },
+        "spo2":  { "value": 97.0, "unit": "%" },
+        "heartRate": { "value": 72, "unit": "bpm" }
+      },
+      "breathPhase": "inspiration",
+      "alarms": [],
+      "deviceStatus": "ventilating"
+    }
+  ]
+}

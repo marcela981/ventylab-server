@@ -37,7 +37,14 @@ yarn-error.log*
 # Prisma
 prisma/migrations/
 
+# Database backups
+*.dump
+*.sql
+neon_backup*
+
 # Testing
 coverage/
 .nyc_output/
 
+.vercel
+.env*.local
