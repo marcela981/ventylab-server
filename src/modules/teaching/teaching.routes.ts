@@ -1,14 +1,22 @@
 /**
  * Teaching Routes
- * Exposes the teaching progression services (module unlock + lesson completion).
+ * Exposes teaching progression services + Notion-style CMS editor endpoints.
  *
  * All routes require authentication.
  *
- * Endpoints:
- * POST /api/teaching/lessons/:lessonId/complete  - Complete a lesson (quiz/case optional)
+ * --- Progression (any authenticated role) ---
+ * POST /api/teaching/lessons/:lessonId/complete  - Complete a lesson
  * GET  /api/teaching/modules/unlocked             - List unlocked module IDs
  * GET  /api/teaching/modules/:moduleId/access     - Check module access
- * GET  /api/teaching/lessons/:lessonId/access     - Check lesson access (sequential)
+ * GET  /api/teaching/lessons/:lessonId/access     - Check lesson access
+ *
+ * --- Curriculum Editor (TEACHER / ADMIN only) ---
+ * GET    /api/teaching/tree                       - Full recursive curriculum tree
+ * POST   /api/teaching/node                       - Create level / sublevel / module
+ * PUT    /api/teaching/node/:id?type=level|module - Update node
+ * DELETE /api/teaching/node/:id?type=level|module - Delete node + descendants
+ * GET    /api/teaching/lesson/:id/content         - Get lesson Notion blocks
+ * PUT    /api/teaching/lesson/:id/content         - Save Notion blocks to lesson
  */
 
 import { Router } from 'express';
@@ -18,7 +26,15 @@ import {
   checkModuleAccessHandler,
   checkLessonAccessHandler,
 } from './teaching.controller';
-import { authenticate } from '../../shared/middleware/auth.middleware';
+import {
+  getCurriculumTree,
+  createNode,
+  updateNode,
+  deleteNode,
+  getLessonContent,
+  saveLessonContent,
+} from './curriculum-editor.controller';
+import { authenticate, requireTeacherPlus } from '../../shared/middleware/auth.middleware';
 import { readLimiter, writeLimiter } from '../../shared/middleware/rate-limiter.middleware';
 
 const router = Router();
@@ -51,6 +67,58 @@ router.get(
   '/lessons/:lessonId/access',
   readLimiter,
   checkLessonAccessHandler
+);
+
+// ============================================
+// Curriculum Editor Routes (TEACHER / ADMIN)
+// ============================================
+
+// GET /api/teaching/tree  — recursive curriculum tree
+router.get(
+  '/tree',
+  readLimiter,
+  requireTeacherPlus,
+  getCurriculumTree
+);
+
+// POST /api/teaching/node  — create level / sublevel / module
+router.post(
+  '/node',
+  writeLimiter,
+  requireTeacherPlus,
+  createNode
+);
+
+// PUT /api/teaching/node/:id?type=level|module  — update node
+router.put(
+  '/node/:id',
+  writeLimiter,
+  requireTeacherPlus,
+  updateNode
+);
+
+// DELETE /api/teaching/node/:id?type=level|module  — recursive delete
+router.delete(
+  '/node/:id',
+  writeLimiter,
+  requireTeacherPlus,
+  deleteNode
+);
+
+// GET /api/teaching/lesson/:id/content  — get lesson blocks
+router.get(
+  '/lesson/:id/content',
+  readLimiter,
+  requireTeacherPlus,
+  getLessonContent
+);
+
+// PUT /api/teaching/lesson/:id/content  — save Notion blocks
+router.put(
+  '/lesson/:id/content',
+  writeLimiter,
+  requireTeacherPlus,
+  saveLessonContent
 );
 
 export default router;

@@ -234,7 +234,7 @@ export async function getTeachers(search?: string) {
     { email: { contains: search, mode: 'insensitive' } },
   ];
 
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     where,
     select: {
       id: true, name: true, email: true, role: true, image: true, createdAt: true,
@@ -246,6 +246,32 @@ export async function getTeachers(search?: string) {
     },
     orderBy: { name: 'asc' },
   });
+
+  // Count students in each teacher's groups
+  const teacherIds = users.map(u => u.id);
+  const studentCounts = await Promise.all(
+    teacherIds.map(async (teacherId) => {
+      const groupIds = (await prisma.groupMember.findMany({
+        where: { userId: teacherId, role: 'TEACHER' },
+        select: { groupId: true },
+      })).map(m => m.groupId);
+
+      if (!groupIds.length) return { teacherId, count: 0 };
+
+      const count = await prisma.groupMember.count({
+        where: { groupId: { in: groupIds }, role: 'STUDENT' },
+      });
+      return { teacherId, count };
+    })
+  );
+  const studentCountMap = Object.fromEntries(studentCounts.map(s => [s.teacherId, s.count]));
+
+  return users.map(u => ({
+    id: u.id, name: u.name, email: u.email, role: u.role, image: u.image, createdAt: u.createdAt,
+    groups: u.groupMembers.map(m => m.group),
+    studentCount: studentCountMap[u.id] ?? 0,
+    groupsCreated: u._count.createdGroups,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -253,7 +279,10 @@ export async function getTeachers(search?: string) {
 // ---------------------------------------------------------------------------
 
 export async function getPlatformStatistics() {
-  const [students, teachers, admins, groups, modules, lessons, evaluations, sessions, activeRes] =
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [students, teachers, admins, groups, modules, lessons, evaluations, sessions, completionsToday, activeRes] =
     await Promise.all([
       prisma.user.count({ where: { role: UserRole.STUDENT } }),
       prisma.user.count({ where: { role: UserRole.TEACHER } }),
@@ -263,20 +292,26 @@ export async function getPlatformStatistics() {
       prisma.lesson.count({ where: { isActive: true } }),
       prisma.clinicalCase.count({ where: { isActive: true } }),
       prisma.simulatorSession.count(),
+      prisma.lessonCompletion.count({
+        where: { isCompleted: true, completedAt: { gte: todayStart } },
+      }),
       prisma.ventilatorReservation.findFirst({ where: { status: 'ACTIVE' } }),
     ]);
 
   return {
-    users: { students, teachers, admins },
-    groups: { total: groups },
-    content: { modules, lessons, evaluations },
-    simulator: {
-      totalSessions: sessions,
-      hasActiveReservation: !!activeRes,
-      activeReservationUserId: activeRes?.userId ?? null,
-      activeReservationGroupId: activeRes?.groupId ?? null,
-      activeReservationLeaderId: activeRes?.leaderId ?? null,
-    },
+    totalStudents: students,
+    totalTeachers: teachers,
+    totalAdmins: admins,
+    totalGroups: groups,
+    totalModules: modules,
+    totalLessons: lessons,
+    totalEvaluations: evaluations,
+    totalSimulatorSessions: sessions,
+    completionsToday,
+    hasActiveReservation: !!activeRes,
+    activeReservationUserId: activeRes?.userId ?? null,
+    activeReservationGroupId: activeRes?.groupId ?? null,
+    activeReservationLeaderId: activeRes?.leaderId ?? null,
     generatedAt: new Date(),
   };
 }

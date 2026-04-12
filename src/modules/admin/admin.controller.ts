@@ -69,7 +69,7 @@ router.get('/teachers', requireAdmin, async (req: Request, res: Response) => {
   try {
     const search = req.query.search ? String(req.query.search) : undefined;
     const teachers = await AdminService.getTeachers(search);
-    res.json({ success: true, teachers });
+    res.json({ success: true, teachers, total: teachers.length });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -94,7 +94,8 @@ router.patch('/users/:id/role', requireAdmin, async (req: Request, res: Response
 router.get('/statistics', requireAdmin, async (_req: Request, res: Response) => {
   try {
     const stats = await AdminService.getPlatformStatistics();
-    res.json({ success: true, statistics: stats });
+    // Spread stats at top-level so frontend can access e.g. data.totalStudents directly
+    res.json({ success: true, ...stats });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });
   }

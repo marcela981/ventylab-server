@@ -69,6 +69,12 @@ model User {
   scoresGiven      Score[]                 @relation("GraderScores")
   reservationsAsLead VentilatorReservation[] @relation("ReservationLead")
 
+  // Evaluation activities
+  createdActivities   Activity[]           @relation("ActivityCreator")
+  activityAssignments ActivityAssignment[] @relation("ActivityAssigner")
+  activitySubmissions ActivitySubmission[] @relation("StudentSubmissions")
+  gradedSubmissions   ActivitySubmission[] @relation("GraderSubmissions")
+
   @@map("users")
 }
 
@@ -261,21 +267,29 @@ model Level {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Aesthetic / UI fields
+  color String? // Hex color for the level card (e.g. "#3B82F6")
+  tags  String[] // Labels or tags for filtering/display
+
+  // Recursive hierarchy (Árbol Adyacente — soporta Track → Nivel → SubnivelN)
+  parentId String?
+  parent   Level?  @relation("LevelHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Level[] @relation("LevelHierarchy")
+
   // Audit trail fields
-  lastModifiedBy String? // User ID who last modified this level
-  lastModifiedAt DateTime? // Timestamp of last modification
+  lastModifiedBy String?
+  lastModifiedAt DateTime?
 
   modules Module[]
 
   // Level prerequisite relations (same pattern as ModulePrerequisite)
-  // prerequisites: Levels that must be completed before accessing THIS level
-  // dependentLevels: Levels that depend on THIS level being completed
   prerequisites   LevelPrerequisite[] @relation("LevelPrerequisites")
   dependentLevels LevelPrerequisite[] @relation("DependentLevels")
 
   @@index([order])
   @@index([isActive])
   @@index([track])
+  @@index([parentId])
   @@index([lastModifiedBy])
   @@map("levels")
 }
@@ -336,9 +350,13 @@ model Module {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Aesthetic / UI fields
+  color String?
+  tags  String[]
+
   // Audit trail fields
-  lastModifiedBy String? // User ID who last modified this module
-  lastModifiedAt DateTime? // Timestamp of last modification
+  lastModifiedBy String?
+  lastModifiedAt DateTime?
 
   // FUTURE EXTENSIONS:
   // - Add `version` Int for content versioning
@@ -393,9 +411,16 @@ model Lesson {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Aesthetic / UI fields
+  color String?
+  tags  String[]
+
+  // Notion-style document: array of content blocks (text, image, quiz, video…)
+  blocks Json?
+
   // Audit trail fields
-  lastModifiedBy String? // User ID who last modified this lesson
-  lastModifiedAt DateTime? // Timestamp of last modification
+  lastModifiedBy String?
+  lastModifiedAt DateTime?
 
   module  Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   quizzes Quiz[]
@@ -1020,6 +1045,109 @@ model PageProgress {
 }
 
 // ============================================
+// EVALUATION ACTIVITIES SYSTEM
+// ============================================
+// Activity: an exam, quiz, workshop or taller created by TEACHER/ADMIN
+// ActivityAssignment: links an activity to a group (one per group)
+// ActivitySubmission: one submission per student per activity
+// ============================================
+
+enum ActivityType {
+  EXAM
+  QUIZ
+  WORKSHOP
+  TALLER
+}
+
+enum SubmissionStatus {
+  DRAFT      // Student opened the activity but has not submitted yet
+  SUBMITTED  // Student submitted — pending grading
+  GRADED     // Teacher assigned a score
+  LATE       // Submitted after due date
+}
+
+model Activity {
+  id           String       @id @default(cuid())
+  title        String
+  description  String?      @db.Text
+  instructions String?      @db.Text
+  type         ActivityType
+  maxScore     Float        @default(100)
+  timeLimit    Int? // minutes
+  dueDate      DateTime?
+
+  isPublished Boolean @default(false)
+  isActive    Boolean @default(true)
+
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator     User                 @relation("ActivityCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  assignments ActivityAssignment[]
+  submissions ActivitySubmission[]
+
+  @@index([createdBy])
+  @@index([type])
+  @@index([isPublished, isActive])
+  @@index([dueDate])
+  @@map("activities")
+}
+
+model ActivityAssignment {
+  id         String    @id @default(cuid())
+  activityId String
+  groupId    String
+  assignedBy String
+  visibleFrom DateTime?
+  dueDate    DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  assigner User     @relation("ActivityAssigner", fields: [assignedBy], references: [id], onDelete: SetNull)
+
+  @@unique([activityId, groupId])
+  @@index([activityId])
+  @@index([groupId])
+  @@index([assignedBy])
+  @@map("activity_assignments")
+}
+
+model ActivitySubmission {
+  id         String           @id @default(cuid())
+  activityId String
+  userId     String
+  groupId    String
+  status     SubmissionStatus @default(DRAFT)
+  content    Json?
+
+  submittedAt DateTime?
+  score       Float?
+  maxScore    Float?
+  feedback    String?  @db.Text
+  gradedBy    String?
+  gradedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  student  User     @relation("StudentSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  grader   User?    @relation("GraderSubmissions", fields: [gradedBy], references: [id], onDelete: SetNull)
+
+  @@unique([activityId, userId])
+  @@index([activityId])
+  @@index([userId])
+  @@index([groupId])
+  @@index([status])
+  @@index([gradedBy])
+  @@map("activity_submissions")
+}
+
+// ============================================
 // GROUP MANAGEMENT SYSTEM
 // ============================================
 // Supports up to 3 levels: root (depth=0) → sub (depth=1) → sub-sub (depth=2).
@@ -1045,8 +1173,10 @@ model Group {
   subGroups    Group[]                 @relation("SubGroups")
   leader       User?                   @relation("GroupLeader", fields: [simulatorLeaderId], references: [id])
   creator      User?                   @relation("GroupCreator", fields: [createdBy], references: [id])
-  members      GroupMember[]
-  reservations VentilatorReservation[]
+  members             GroupMember[]
+  reservations        VentilatorReservation[]
+  activityAssignments ActivityAssignment[]
+  activitySubmissions ActivitySubmission[]
 
   @@index([parentGroupId])
   @@index([depth])

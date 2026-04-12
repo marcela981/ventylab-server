@@ -30,6 +30,9 @@ import usersRoutes from './modules/profile/profile.controller';
 import adminRoutes from './modules/admin/admin.controller';
 import groupsRoutes from './modules/admin/groups.controller';
 import scoresRoutes from './modules/admin/scores.controller';
+import activityRoutes from './modules/activities/activity.controller';
+import activityAssignmentsRoutes from './modules/activities/assignment.controller';
+import activitySubmissionsRoutes from './modules/activities/submission.controller';
 import {
   teachingRoutes,
   progressRoutes,
@@ -273,6 +276,11 @@ app.use('/api/groups', groupsRoutes);
 
 // Rutas de calificaciones del profesor (TEACHER+)
 app.use('/api/scores', scoresRoutes);
+
+// Rutas de actividades (evaluaciones: exámenes/quizzes/talleres)
+app.use('/api/activities', activityRoutes);
+app.use('/api/activity-assignments', activityAssignmentsRoutes);
+app.use('/api/activity-submissions', activitySubmissionsRoutes);
 
 // Rutas de simulación (WebSocket gateway + ventilador físico)
 // NOTE: simulationRouter is registered after the HTTP server is created
