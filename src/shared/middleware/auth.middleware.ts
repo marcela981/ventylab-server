@@ -46,10 +46,10 @@ export const authenticate = async (
     }
 
     // Verificar y decodificar el token
-    const secret = process.env.NEXTAUTH_SECRET;
+    const secret = process.env.JWT_SECRET;
 
     if (!secret) {
-      console.error('NEXTAUTH_SECRET no está configurado');
+      console.error('JWT_SECRET no está configurado');
       return res.status(500).json({
         error: 'Error de configuración del servidor',
       });
@@ -132,7 +132,7 @@ export const optionalAuth = async (
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      const secret = process.env.NEXTAUTH_SECRET;
+      const secret = process.env.JWT_SECRET;
 
       if (secret) {
         try {

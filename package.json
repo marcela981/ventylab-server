@@ -2,11 +2,11 @@
   "name": "ventylab-server",
   "version": "1.0.0",
   "description": "Servidor backend para Ventylab",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "dev": "npm run prisma:generate && tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "postinstall": "prisma generate",
     "prebuild": "prisma generate",
     "prisma:generate": "prisma generate",

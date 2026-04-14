@@ -72,6 +72,7 @@ const requiredEnvVars = [
   'DATABASE_URL',
   'NEXTAUTH_SECRET',
   'NEXTAUTH_URL',
+  'JWT_SECRET',
 ];
 
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
