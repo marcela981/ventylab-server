@@ -15,6 +15,7 @@
     "prisma:reset": "prisma migrate reset --force",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
+    "seed:evaluation": "tsx prisma/seed-evaluation.ts",
     "test": "jest",
     "test:watch": "jest --watch"
   },

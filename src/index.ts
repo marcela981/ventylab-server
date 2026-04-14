@@ -26,6 +26,7 @@ import {
 // Importar rutas desde módulos
 import authRoutes from './modules/auth/auth.controller';
 import evaluationRoutes from './modules/evaluation/evaluation.controller';
+import quizRoutes from './modules/evaluation/quiz.router';
 import usersRoutes from './modules/profile/profile.controller';
 import adminRoutes from './modules/admin/admin.controller';
 import groupsRoutes from './modules/admin/groups.controller';
@@ -234,6 +235,9 @@ app.use('/progress', progressRoutes);
 
 // Rutas de casos clínicos (evaluación)
 app.use('/api/cases', evaluationRoutes);
+
+// Rutas de quizzes, exámenes y talleres (contenido educativo)
+app.use('/api/evaluation', quizRoutes);
 
 // Rutas de módulos educativos
 app.use('/api/modules', modulesRoutes);
