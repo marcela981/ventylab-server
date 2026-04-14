@@ -270,6 +270,8 @@ app.use('/api/pages', pagesRoutes);
 
 // Rutas de administración (TEACHER+ para ver estudiantes, ADMIN+ para gestión)
 app.use('/api/admin', adminRoutes);
+// También sin prefijo /api para compatibilidad con frontend
+app.use('/admin', adminRoutes);
 
 // Rutas de grupos (TEACHER+)
 app.use('/api/groups', groupsRoutes);

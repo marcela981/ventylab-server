@@ -47,7 +47,7 @@ router.get('/students', requireTeacherPlus, async (req: Request, res: Response) 
     }
 
     const result = await AdminService.getStudents(options);
-    res.json({ success: true, ...result });
+    res.json({ success: true, data: result });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -91,11 +91,11 @@ router.patch('/users/:id/role', requireAdmin, async (req: Request, res: Response
 });
 
 // ── Platform statistics ───────────────────────────────────────────────────────
-router.get('/statistics', requireAdmin, async (_req: Request, res: Response) => {
+// TEACHER+ can read platform stats (not just ADMIN)
+router.get('/statistics', requireTeacherPlus, async (_req: Request, res: Response) => {
   try {
     const stats = await AdminService.getPlatformStatistics();
-    // Spread stats at top-level so frontend can access e.g. data.totalStudents directly
-    res.json({ success: true, ...stats });
+    res.json({ success: true, data: stats });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });
   }

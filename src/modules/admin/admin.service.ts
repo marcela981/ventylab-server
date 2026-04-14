@@ -21,14 +21,37 @@ export interface GetStudentsOptions {
   search?: string;
   page?: number;
   limit?: number;
-  sortBy?: 'name' | 'email' | 'createdAt';
+  /** Supported: 'name' | 'email' | 'lastActivity' | 'progress' */
+  sortBy?: 'name' | 'email' | 'lastActivity' | 'progress';
   sortOrder?: 'asc' | 'desc';
 }
 
-export async function getStudents(options: GetStudentsOptions = {}) {
-  const { groupId, teacherId, search, page = 1, limit = 20, sortBy = 'name', sortOrder = 'asc' } = options;
+/** Shape returned per student — matches the admin panel API contract */
+export interface StudentListDTO {
+  id: string;
+  name: string | null;
+  email: string;
+  lastActivity: Date | null;
+  overallProgress: number;
+  completedModules: number;
+  totalModules: number;
+  groupName: string | null;
+}
+
+export interface StudentListResult {
+  students: StudentListDTO[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export async function getStudents(options: GetStudentsOptions = {}): Promise<StudentListResult> {
+  const {
+    groupId, teacherId, search,
+    page = 1, limit = 20,
+    sortBy = 'name', sortOrder = 'asc',
+  } = options;
   const skip = (page - 1) * limit;
 
+  // ── where clause ──────────────────────────────────────────────────────────
   const where: any = { role: UserRole.STUDENT };
 
   if (search) {
@@ -49,55 +72,78 @@ export async function getStudents(options: GetStudentsOptions = {}) {
     }
   }
 
-  const orderBy: any =
-    sortBy === 'name' ? { name: sortOrder } :
-    sortBy === 'email' ? { email: sortOrder } :
-    { createdAt: sortOrder };
+  // ── sorting strategy ──────────────────────────────────────────────────────
+  // lastActivity and progress sort on computed/relation fields → sort in memory.
+  // name and email sort are handled directly in DB for efficiency.
+  const needsMemorySort = sortBy === 'lastActivity' || sortBy === 'progress';
 
-  const [users, total] = await Promise.all([
+  const dbOrderBy: any = needsMemorySort
+    ? { name: 'asc' }                             // stable fallback during fetch
+    : sortBy === 'email' ? { email: sortOrder }
+    : { name: sortOrder };                         // default: name
+
+  // ── fetch ─────────────────────────────────────────────────────────────────
+  const [rawUsers, total] = await Promise.all([
     prisma.user.findMany({
       where,
-      skip,
-      take: limit,
-      orderBy,
+      // For memory-sorted queries, fetch ALL matching rows then slice.
+      // Admin dashboards typically have < 1 000 students — acceptable.
+      ...(needsMemorySort ? {} : { skip, take: limit }),
+      orderBy: dbOrderBy,
       select: {
-        id: true, name: true, email: true, role: true, image: true, createdAt: true,
+        id: true,
+        name: true,
+        email: true,
         groupMembers: {
-          select: {
-            role: true,
-            joinedAt: true,
-            group: { select: { id: true, name: true, depth: true } },
-          },
+          select: { group: { select: { name: true } } },
         },
         userProgress: {
-          select: { status: true, progressPercentage: true, isModuleCompleted: true, timeSpent: true, lastAccessedAt: true },
+          select: {
+            progressPercentage: true,
+            isModuleCompleted: true,
+            lastAccessedAt: true,
+          },
         },
-        _count: { select: { evaluationAttempts: true, simulatorSessions: true } },
       },
     }),
     prisma.user.count({ where }),
   ]);
 
-  const students = users.map((s) => {
+  // ── map to DTO ────────────────────────────────────────────────────────────
+  let students: StudentListDTO[] = rawUsers.map((s) => {
     const prog = s.userProgress;
-    const totalMods = prog.length;
-    const completedMods = prog.filter((p) => p.isModuleCompleted).length;
-    const overallProgress = totalMods > 0
-      ? Math.round(prog.reduce((sum, p) => sum + p.progressPercentage, 0) / totalMods)
+    const totalModules = prog.length;
+    const completedModules = prog.filter((p) => p.isModuleCompleted).length;
+    const overallProgress = totalModules > 0
+      ? Math.round(prog.reduce((sum, p) => sum + p.progressPercentage, 0) / totalModules)
       : 0;
-    const totalTime = prog.reduce((sum, p) => sum + p.timeSpent, 0);
-    const lastActivity = prog.map((p) => p.lastAccessedAt).sort((a, b) => b.getTime() - a.getTime())[0];
+    const lastActivity = prog
+      .map((p) => p.lastAccessedAt)
+      .filter((d): d is Date => d != null)
+      .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+    const groupName = s.groupMembers[0]?.group?.name ?? null;
 
-    return {
-      id: s.id, name: s.name, email: s.email, role: s.role, image: s.image, createdAt: s.createdAt,
-      groups: s.groupMembers.map((m) => ({ ...m.group, memberRole: m.role, joinedAt: m.joinedAt })),
-      progress: { overallProgress, completedModules: completedMods, totalModules: totalMods, totalTimeSpentSeconds: totalTime, lastActivityAt: lastActivity ?? null },
-      evaluationsTaken: s._count.evaluationAttempts,
-      simulatorSessions: s._count.simulatorSessions,
-    };
+    return { id: s.id, name: s.name, email: s.email, lastActivity, overallProgress, completedModules, totalModules, groupName };
   });
 
-  return { students, total, page, limit, totalPages: Math.ceil(total / limit) };
+  // ── memory sort + paginate (for relation-based sorts) ─────────────────────
+  if (needsMemorySort) {
+    students.sort((a, b) => {
+      const va = sortBy === 'lastActivity'
+        ? (a.lastActivity?.getTime() ?? 0)
+        : a.overallProgress;
+      const vb = sortBy === 'lastActivity'
+        ? (b.lastActivity?.getTime() ?? 0)
+        : b.overallProgress;
+      return sortOrder === 'asc' ? va - vb : vb - va;
+    });
+    students = students.slice(skip, skip + limit);
+  }
+
+  return {
+    students,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -275,39 +321,106 @@ export async function getTeachers(search?: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Platform statistics (ADMIN+)
+// Platform statistics (TEACHER+ can read, ADMIN+ for full access)
 // ---------------------------------------------------------------------------
 
 export async function getPlatformStatistics() {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [students, teachers, admins, groups, modules, lessons, evaluations, sessions, completionsToday, activeRes] =
-    await Promise.all([
-      prisma.user.count({ where: { role: UserRole.STUDENT } }),
-      prisma.user.count({ where: { role: UserRole.TEACHER } }),
-      prisma.user.count({ where: { role: UserRole.ADMIN } }),
-      prisma.group.count({ where: { isActive: true } }),
-      prisma.module.count({ where: { isActive: true } }),
-      prisma.lesson.count({ where: { isActive: true } }),
-      prisma.clinicalCase.count({ where: { isActive: true } }),
-      prisma.simulatorSession.count(),
-      prisma.lessonCompletion.count({
-        where: { isCompleted: true, completedAt: { gte: todayStart } },
-      }),
-      prisma.ventilatorReservation.findFirst({ where: { status: 'ACTIVE' } }),
-    ]);
+  // "Active" = accessed the platform in the last 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const [
+    totalStudents,
+    totalTeachers,
+    totalAdmins,
+    totalGroups,
+    totalModules,
+    totalLessons,
+    totalEvaluations,
+    totalSimulatorSessions,
+    completionsToday,
+    activeRes,
+    // New computed fields
+    activeStudents,
+    studentsWithAnyCompletion,
+    avgProgressAgg,
+    recentCompletions,
+  ] = await Promise.all([
+    prisma.user.count({ where: { role: UserRole.STUDENT } }),
+    prisma.user.count({ where: { role: UserRole.TEACHER } }),
+    prisma.user.count({ where: { role: UserRole.ADMIN } }),
+    prisma.group.count({ where: { isActive: true } }),
+    prisma.module.count({ where: { isActive: true } }),
+    prisma.lesson.count({ where: { isActive: true } }),
+    prisma.clinicalCase.count({ where: { isActive: true } }),
+    prisma.simulatorSession.count(),
+    prisma.lessonCompletion.count({
+      where: { isCompleted: true, completedAt: { gte: todayStart } },
+    }),
+    prisma.ventilatorReservation.findFirst({ where: { status: 'ACTIVE' } }),
+    // Students who accessed the platform in the last 30 days
+    prisma.user.count({
+      where: {
+        role: UserRole.STUDENT,
+        userProgress: { some: { lastAccessedAt: { gte: thirtyDaysAgo } } },
+      },
+    }),
+    // Students who have completed at least one module
+    prisma.user.count({
+      where: {
+        role: UserRole.STUDENT,
+        userProgress: { some: { isModuleCompleted: true } },
+      },
+    }),
+    // Average progress across all student module records
+    prisma.userProgress.aggregate({ _avg: { progressPercentage: true } }),
+    // Last 10 lesson completions with actor info
+    prisma.lessonCompletion.findMany({
+      where: { isCompleted: true },
+      orderBy: { completedAt: 'desc' },
+      take: 10,
+      select: {
+        userId: true,
+        completedAt: true,
+        user: { select: { name: true } },
+        lesson: { select: { title: true } },
+      },
+    }),
+  ]);
+
+  const averageProgress = Math.round(avgProgressAgg._avg.progressPercentage ?? 0);
+  const completionRate = totalStudents > 0
+    ? Math.round((studentsWithAnyCompletion / totalStudents) * 100)
+    : 0;
+
+  const recentActivity = recentCompletions.map((c) => ({
+    userId: c.userId,
+    userName: c.user.name,
+    action: `Completó la lección: ${c.lesson.title}`,
+    timestamp: c.completedAt,
+  }));
 
   return {
-    totalStudents: students,
-    totalTeachers: teachers,
-    totalAdmins: admins,
-    totalGroups: groups,
-    totalModules: modules,
-    totalLessons: lessons,
-    totalEvaluations: evaluations,
-    totalSimulatorSessions: sessions,
+    // Core counts
+    totalStudents,
+    activeStudents,
+    totalTeachers,
+    totalAdmins,
+    totalGroups,
+    totalModules,
+    publishedModules: totalModules,   // isActive === published in this schema
+    totalLessons,
+    totalEvaluations,
+    totalSimulatorSessions,
+    // Derived metrics
+    averageProgress,
+    completionRate,
     completionsToday,
+    recentActivity,
+    // Ventilator reservation status
     hasActiveReservation: !!activeRes,
     activeReservationUserId: activeRes?.userId ?? null,
     activeReservationGroupId: activeRes?.groupId ?? null,
