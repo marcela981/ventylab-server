@@ -51,6 +51,25 @@ export interface AttemptResult {
   gradedQuestions: GradedQuestion[];
 }
 
+// ─── List all active quizzes ──────────────────────────────────────────────────
+
+export async function getAllQuizzes() {
+  return prisma.quiz.findMany({
+    where:   { isActive: true },
+    select:  {
+      id:          true,
+      title:       true,
+      description: true,
+      moduleId:    true,
+      passingScore: true,
+      timeLimit:   true,
+      order:       true,
+      createdAt:   true,
+    },
+    orderBy: [{ moduleId: 'asc' }, { order: 'asc' }],
+  });
+}
+
 // ─── List quizzes for a module ────────────────────────────────────────────────
 
 export async function getQuizzesByModule(moduleId: string) {

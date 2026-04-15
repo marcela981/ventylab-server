@@ -21,21 +21,17 @@ const router = Router();
 router.use(authenticate);
 
 // ─── GET /api/evaluation/quizzes?moduleId=X ───────────────────────────────────
+// moduleId is optional — omit to get all active quizzes
 
 router.get('/quizzes', readLimiter, async (req: Request, res: Response) => {
   try {
-    const { moduleId } = req.query;
+    const moduleId = typeof req.query.moduleId === 'string' ? req.query.moduleId : undefined;
 
-    if (!moduleId || typeof moduleId !== 'string') {
-      return res.status(400).json({
-        success: false,
-        message: 'Se requiere el parámetro moduleId',
-      });
-    }
+    const data = moduleId
+      ? await QuizService.getQuizzesByModule(moduleId)
+      : await QuizService.getAllQuizzes();
 
-    const quizzes = await QuizService.getQuizzesByModule(moduleId);
-
-    return res.json({ success: true, quizzes });
+    return res.json({ success: true, data });
   } catch (err: any) {
     console.error('[GET /quizzes]', err.message);
     return res.status(500).json({ success: false, message: 'Error al obtener quizzes' });
@@ -56,7 +52,7 @@ router.get('/quizzes/:quizId', readLimiter, async (req: Request, res: Response) 
       return res.status(403).json({ success: false, message: 'Quiz inactivo' });
     }
 
-    return res.json({ success: true, quiz });
+    return res.json({ success: true, data: quiz });
   } catch (err: any) {
     console.error('[GET /quizzes/:id]', err.message);
     return res.status(500).json({ success: false, message: 'Error al obtener quiz' });
@@ -124,7 +120,7 @@ router.get('/activities', readLimiter, async (req: Request, res: Response) => {
       where.isPublished = true;
     }
 
-    const activities = await prisma.activity.findMany({
+    const data = await prisma.activity.findMany({
       where,
       select: {
         id:           true,
@@ -140,7 +136,7 @@ router.get('/activities', readLimiter, async (req: Request, res: Response) => {
       orderBy: { createdAt: 'asc' },
     });
 
-    return res.json({ success: true, activities });
+    return res.json({ success: true, data });
   } catch (err: any) {
     console.error('[GET /activities]', err.message);
     return res.status(500).json({ success: false, message: 'Error al obtener actividades' });
