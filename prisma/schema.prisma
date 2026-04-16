@@ -1120,7 +1120,7 @@ model ActivitySubmission {
   id         String           @id @default(cuid())
   activityId String
   userId     String
-  groupId    String
+  groupId    String?
   status     SubmissionStatus @default(DRAFT)
   content    Json?
 
@@ -1136,7 +1136,7 @@ model ActivitySubmission {
 
   activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   student  User     @relation("StudentSubmissions", fields: [userId], references: [id], onDelete: Cascade)
-  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group    Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   grader   User?    @relation("GraderSubmissions", fields: [gradedBy], references: [id], onDelete: SetNull)
 
   @@unique([activityId, userId])

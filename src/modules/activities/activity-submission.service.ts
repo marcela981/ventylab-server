@@ -16,14 +16,20 @@ export async function getOrCreateSubmission(activityId: string, userId: string) 
 
   const memberships = await prisma.groupMember.findMany({ where: { userId }, select: { groupId: true } });
   const groupIds = memberships.map((m) => m.groupId);
-  if (groupIds.length === 0) throw new Error('El estudiante no pertenece a ningún grupo');
 
-  const assignment = await prisma.activityAssignment.findFirst({
-    where: { activityId, groupId: { in: groupIds }, isActive: true },
-    select: { groupId: true, dueDate: true, visibleFrom: true },
-  });
-  if (!assignment) throw new Error('Actividad no asignada a tu grupo');
-  if (assignment.visibleFrom && new Date() < assignment.visibleFrom) throw new Error('Actividad aún no disponible');
+  // Group membership is optional: students without a group can still submit.
+  // Students in a group must have the activity assigned to that group.
+  let resolvedGroupId: string | null = null;
+
+  if (groupIds.length > 0) {
+    const assignment = await prisma.activityAssignment.findFirst({
+      where: { activityId, groupId: { in: groupIds }, isActive: true },
+      select: { groupId: true, dueDate: true, visibleFrom: true },
+    });
+    if (!assignment) throw new Error('Actividad no asignada a tu grupo');
+    if (assignment.visibleFrom && new Date() < assignment.visibleFrom) throw new Error('Actividad aún no disponible');
+    resolvedGroupId = assignment.groupId;
+  }
 
   const existing = await prisma.activitySubmission.findUnique({
     where: { activityId_userId: { activityId, userId } },
@@ -34,7 +40,7 @@ export async function getOrCreateSubmission(activityId: string, userId: string) 
     data: {
       activityId,
       userId,
-      groupId: assignment.groupId,
+      groupId: resolvedGroupId,
       status: 'DRAFT' as any,
       maxScore: activity.maxScore,
     },
