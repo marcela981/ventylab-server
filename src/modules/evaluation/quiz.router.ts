@@ -8,6 +8,7 @@
  *   GET  /api/evaluation/quizzes               ?moduleId=X
  *   GET  /api/evaluation/quizzes/:quizId
  *   POST /api/evaluation/quizzes/:quizId/attempt
+ *   GET  /api/evaluation/activities/:id
  *   GET  /api/evaluation/activities            ?type=EXAM|TALLER
  */
 
@@ -93,6 +94,45 @@ router.post('/quizzes/:quizId/attempt', writeLimiter, async (req: Request, res: 
     }
     console.error('[POST /quizzes/:id/attempt]', err.message);
     return res.status(500).json({ success: false, message: 'Error al procesar intento' });
+  }
+});
+
+// ─── GET /api/evaluation/activities/:id ──────────────────────────────────────
+
+router.get('/activities/:id', readLimiter, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const activity = await prisma.activity.findUnique({
+      where: { id },
+      select: {
+        id:           true,
+        title:        true,
+        description:  true,
+        instructions: true,
+        type:         true,
+        maxScore:     true,
+        timeLimit:    true,
+        dueDate:      true,
+        isPublished:  true,
+        isActive:     true,
+        createdAt:    true,
+      },
+    });
+
+    if (!activity || !activity.isActive) {
+      return res.status(404).json({ success: false, message: 'Actividad no encontrada' });
+    }
+
+    // Students may only access published activities
+    if (req.user!.role === 'STUDENT' && !activity.isPublished) {
+      return res.status(403).json({ success: false, message: 'Actividad no disponible' });
+    }
+
+    return res.json({ success: true, activity });
+  } catch (err: any) {
+    console.error('[GET /activities/:id]', err.message);
+    return res.status(500).json({ success: false, message: 'Error al obtener actividad' });
   }
 });
 
