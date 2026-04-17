@@ -206,7 +206,6 @@ export async function unlockAchievement(
     invalidateUserCache(userId);
 
     // Log de logro desbloqueado
-    console.log(`[${new Date().toISOString()}] Usuario ${userId} desbloqueó logro: ${achievementDef.title}`);
 
     return {
       id: result.id,

@@ -94,7 +94,6 @@ export class SimulationService {
     this.ventilatorConnection.subscribeTelemetry((data: Buffer) => {
       this.handleTelemetryJson(data);
     });
-    console.log('[SimulationService] Initialized and subscribed to telemetry (JSON mode)');
   }
 
   /**
@@ -104,7 +103,6 @@ export class SimulationService {
     await this.ventilatorConnection.disconnect();
     this.activeAlarms.clear();
     this.lastDataTimestamp = null;
-    console.log('[SimulationService] Shut down');
   }
 
   // ---------------------------------------------------------------------------
@@ -503,8 +501,6 @@ export class SimulationService {
     const message = request.isRealVentilator
       ? 'Session created – real ventilator mode'
       : 'Session created – simulated patient mode (no MQTT connection)';
-
-    console.log(`[SimulationService] createSession → ${session.id} | isReal=${request.isRealVentilator}`);
 
     return { success: true, sessionId: session.id, message, timestamp: Date.now() };
   }

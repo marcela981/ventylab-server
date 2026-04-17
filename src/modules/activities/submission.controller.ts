@@ -17,6 +17,19 @@ router.get('/my', readLimiter, async (req: Request, res: Response) => {
   }
 });
 
+// ── Student: get my submission for a specific activity ────────────────────────
+router.get('/for-activity/:activityId', readLimiter, async (req: Request, res: Response) => {
+  try {
+    const submission = await ActivitySubmissionService.getSubmissionByActivity(
+      req.params.activityId,
+      req.user!.id,
+    );
+    return res.json({ success: true, submission: submission ?? null });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+});
+
 // ── Get submission by id (student owner or TEACHER+) ────────────────────────
 router.get('/:id', readLimiter, async (req: Request, res: Response) => {
   try {
@@ -41,6 +54,17 @@ router.post('/', writeLimiter, async (req: Request, res: Response) => {
     }
     const { activityId } = req.body;
     if (!activityId) return res.status(400).json({ success: false, message: 'activityId es requerido' });
+
+    // One-attempt policy: if a completed submission exists, return 409 with it
+    const existing = await ActivitySubmissionService.getSubmissionByActivity(String(activityId), req.user!.id);
+    if (existing && (existing.status === 'SUBMITTED' || existing.status === 'GRADED')) {
+      return res.status(409).json({
+        success: false,
+        message: 'Ya completaste esta actividad. Contacta a tu docente para repetirla.',
+        submission: existing,
+      });
+    }
+
     const submission = await ActivitySubmissionService.getOrCreateSubmission(String(activityId), req.user!.id);
     return res.status(201).json({ success: true, submission });
   } catch (err: any) {
@@ -82,6 +106,16 @@ router.put('/:id/grade', writeLimiter, requireTeacherPlus, async (req: Request, 
     if (score === undefined) return res.status(400).json({ success: false, message: 'score es requerido' });
     const submission = await ActivitySubmissionService.gradeSubmission(req.params.id, req.user!.id, Number(score), feedback);
     return res.json({ success: true, submission });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// ── Admin/Teacher: reset (delete) a student's attempt ────────────────────────
+router.delete('/:id/reset', writeLimiter, requireTeacherPlus, async (req: Request, res: Response) => {
+  try {
+    await ActivitySubmissionService.resetSubmission(req.params.id);
+    return res.json({ success: true, message: 'Intento reiniciado' });
   } catch (err: any) {
     return res.status(400).json({ success: false, message: err.message });
   }

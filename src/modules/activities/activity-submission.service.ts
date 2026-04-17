@@ -147,3 +147,18 @@ export async function getSubmissionById(submissionId: string) {
   });
 }
 
+export async function getSubmissionByActivity(activityId: string, userId: string) {
+  return prisma.activitySubmission.findUnique({
+    where: { activityId_userId: { activityId, userId } },
+    include: {
+      activity: { select: { id: true, title: true, type: true, maxScore: true } },
+    },
+  });
+}
+
+export async function resetSubmission(submissionId: string) {
+  const record = await prisma.activitySubmission.findUnique({ where: { id: submissionId } });
+  if (!record) throw new Error('Entrega no encontrada');
+  await prisma.activitySubmission.delete({ where: { id: submissionId } });
+}
+

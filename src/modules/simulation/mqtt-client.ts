@@ -314,10 +314,6 @@ export class MqttClient implements IVentilatorConnection {
     const baseMs = this.options.reconnectInterval ?? 5_000;
     const delay = Math.min(baseMs * 2 ** (this.reconnectAttempts - 1), 60_000);
 
-    console.log(
-      `[MqttClient] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${max})`,
-    );
-
     this.reconnectTimer = setTimeout(() => {
       this.status = VentilatorStatus.CONNECTING;
       this.client?.reconnect();
@@ -353,7 +349,6 @@ export class MqttClient implements IVentilatorConnection {
           err.message,
         );
       } else {
-        console.log(`[MqttClient] Subscribed to ${topic} (QoS ${qos})`);
       }
     });
   }

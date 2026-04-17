@@ -402,7 +402,6 @@ export async function generateFeedback(
     const feedback = parseFeedbackResponse(aiResponse.response, differences);
 
     // Log de generación de feedback
-    console.log(`[${new Date().toISOString()}] Feedback generado para caso ${clinicalCase.id}`);
 
     return feedback;
   } catch (error: any) {
@@ -608,7 +607,6 @@ export async function saveEvaluationAttempt(
     });
 
     // Log de intento guardado
-    console.log(`[${new Date().toISOString()}] Intento de evaluación guardado: Usuario ${userId}, Caso ${caseId}, Score: ${score}`);
 
     // Validar y convertir userConfiguration
     const userConfigData = attempt.userConfiguration;

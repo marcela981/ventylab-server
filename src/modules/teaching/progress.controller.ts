@@ -71,7 +71,6 @@ async function resolveIdsForProgress(
     },
   });
   if (moduleWithLesson?.lessons?.[0]) {
-    console.log(`[resolveIdsForProgress] 🔀 Step 5 match: "${frontendLessonId}" is a Module.id → lesson "${moduleWithLesson.lessons[0].id}"`);
     return { moduleId: moduleWithLesson.id, lessonId: moduleWithLesson.lessons[0].id };
   }
 
@@ -347,17 +346,6 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
     const moduleIdFromQuery = req.query.moduleId as string | undefined;
 
     // Debug logging
-    console.log('🔥 PUT /api/progress/lesson/:lessonId HIT', {
-      userId: userId?.substring(0, 8) + '...',
-      lessonId,
-      currentStep,
-      totalSteps,
-      completionPercentage,
-      completed,
-      timeSpent,
-      quizScore,
-      caseScore,
-    });
 
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
@@ -366,7 +354,6 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
     // Resolve canonical IDs (maps frontend legacyJsonId → DB Lesson ID via Page table)
     const resolved = await resolveIdsForProgress(lessonId, moduleIdFromQuery);
     if (!resolved) {
-      console.log('⚠️ Could not resolve IDs for lesson:', lessonId);
       return res.json({
         lessonId,
         completed,
@@ -378,7 +365,6 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
 
     const { moduleId, lessonId: canonicalLessonId } = resolved;
     if (canonicalLessonId !== lessonId) {
-      console.log(`🔀 Mapped frontend ID "${lessonId}" → canonical "${canonicalLessonId}" (module: ${moduleId})`);
     }
 
     // If step data is provided, use unified progress service
@@ -403,12 +389,6 @@ export async function updateLessonProgress(req: Request, res: Response, next: Ne
         console.error('❌ Unified progress update failed:', result.error);
         // Fall through to legacy behavior on error
       } else {
-        console.log('✅ Step progress saved:', {
-          lessonId: result.lessonId,
-          currentStepIndex: result.currentStepIndex,
-          totalSteps: result.totalSteps,
-          completed: result.completed,
-        });
 
         // If marked as completed, get next lesson
         let nextLessonId: string | null = null;
@@ -658,10 +638,6 @@ export async function updateStepProgress(req: Request, res: Response, next: Next
     const userId = req.headers['x-user-id'] as string || (req.user as any)?.id;
 
     // Debug logging for POST /api/progress/step/update
-    console.log('🔥 POST /api/progress/step/update HIT', {
-      userId: userId?.substring(0, 8) + '...',
-      body: req.body,
-    });
 
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
@@ -697,7 +673,6 @@ export async function updateStepProgress(req: Request, res: Response, next: Next
     const canonicalLessonId = resolved?.lessonId ?? lessonId;
     const canonicalModuleId = resolved?.moduleId ?? moduleId;
     if (canonicalLessonId !== lessonId) {
-      console.log(`[updateStepProgress] 🔀 Mapped "${lessonId}" → "${canonicalLessonId}" (module: ${canonicalModuleId})`);
     }
 
     const result = await unifiedProgressService.updateStepProgress({

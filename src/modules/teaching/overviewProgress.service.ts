@@ -137,12 +137,6 @@ export async function getProgressOverview(
 
   // ── Defensive log (temporary) ────────────────────────────────────
   const totalLessonsInLevel = modules.reduce((sum, m) => sum + m.lessons.length, 0);
-  console.log('[overview] Data snapshot:', {
-    userId,
-    modulesFound: modules.length,
-    totalLessonsInLevel,
-    lessonsFound: allCompletions.length,
-  });
 
   // ── Build per-module summaries ───────────────────────────────────
   // Track the previous module's completion state per level so that

@@ -21,6 +21,29 @@ import * as QuizService from './quiz.service';
 const router = Router();
 router.use(authenticate);
 
+// ─── GET /api/evaluation/quizzes/my-attempts ─────────────────────────────────
+// Must be declared BEFORE /quizzes/:quizId to avoid route shadowing
+
+router.get('/quizzes/my-attempts', readLimiter, async (req: Request, res: Response) => {
+  try {
+    const attempts = await prisma.quizAttempt.findMany({
+      where: { userId: req.user!.id },
+      select: {
+        id: true,
+        quizId: true,
+        score: true,
+        passed: true,
+        completedAt: true,
+      },
+      orderBy: { completedAt: 'desc' },
+    });
+    return res.json({ success: true, attempts });
+  } catch (err: any) {
+    console.error('[GET /quizzes/my-attempts]', err.message);
+    return res.status(500).json({ success: false, message: 'Error al obtener intentos' });
+  }
+});
+
 // ─── GET /api/evaluation/quizzes?moduleId=X ───────────────────────────────────
 // moduleId is optional — omit to get all active quizzes
 
@@ -60,6 +83,22 @@ router.get('/quizzes/:quizId', readLimiter, async (req: Request, res: Response) 
   }
 });
 
+// ─── GET /api/evaluation/quizzes/:quizId/my-attempt ──────────────────────────
+
+router.get('/quizzes/:quizId/my-attempt', readLimiter, async (req: Request, res: Response) => {
+  try {
+    const attempt = await prisma.quizAttempt.findFirst({
+      where: { quizId: req.params.quizId, userId: req.user!.id },
+      orderBy: { completedAt: 'desc' },
+      select: { id: true, quizId: true, score: true, passed: true, completedAt: true },
+    });
+    return res.json({ success: true, attempt: attempt ?? null });
+  } catch (err: any) {
+    console.error('[GET /quizzes/:quizId/my-attempt]', err.message);
+    return res.status(500).json({ success: false, message: 'Error al obtener intento' });
+  }
+});
+
 // ─── POST /api/evaluation/quizzes/:quizId/attempt ────────────────────────────
 
 router.post('/quizzes/:quizId/attempt', writeLimiter, async (req: Request, res: Response) => {
@@ -67,6 +106,16 @@ router.post('/quizzes/:quizId/attempt', writeLimiter, async (req: Request, res: 
     const userId  = req.user!.id;
     const quizId  = req.params.quizId;
     const answers = req.body?.answers;
+
+    // One-attempt policy
+    const existing = await prisma.quizAttempt.findFirst({ where: { quizId, userId } });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: 'Ya completaste este quiz. Contacta a tu docente para repetirlo.',
+        attempt: { id: existing.id, score: existing.score, passed: existing.passed, completedAt: existing.completedAt },
+      });
+    }
 
     if (!Array.isArray(answers) || answers.length === 0) {
       return res.status(400).json({

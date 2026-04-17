@@ -497,10 +497,6 @@ async function updateModuleProgress(
     },
   });
 
-  console.log(
-    `[updateModuleProgress] userId=${userId} moduleId=${moduleId} ` +
-    `completed=${completedLessonsCount}/${totalLessons} (${progressPercentage}%)`
-  );
 }
 
 /**

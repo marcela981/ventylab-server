@@ -59,7 +59,6 @@ export class GeminiProvider {
       }
       
       // Intentar obtener lista de modelos (esto puede no estar disponible en todas las versiones)
-      console.log('Verificando modelos disponibles...');
       return [
         'gemini-2.0-flash',
         'gemini-2.5-flash', 
@@ -101,7 +100,6 @@ export class GeminiProvider {
       
       for (const modelName of modelsToTry) {
         try {
-          console.log(`Intentando inicializar modelo: ${modelName}`);
           
           this.model = this.genAI.getGenerativeModel({ 
             model: modelName,
@@ -112,11 +110,9 @@ export class GeminiProvider {
           });
           
           // Hacer una prueba simple para verificar que el modelo funciona
-          console.log(`🧪 Probando modelo ${modelName}...`);
           try {
             const testResult = await this.model.generateContent('Test');
             await testResult.response.text(); // Verificar que responde
-            console.log(`✅ Modelo ${modelName} responde correctamente`);
           } catch (testError: any) {
             console.warn(`⚠️ Modelo ${modelName} inicializado pero falló en test:`, testError.message);
             // Continuar de todos modos si la inicialización funcionó
@@ -124,7 +120,6 @@ export class GeminiProvider {
           
           // Actualizar configuración con el modelo que funcionó
           this.config.modelName = modelName;
-          console.log(`✅ Gemini Provider inicializado y probado correctamente con modelo: ${modelName}`);
           return true;
           
         } catch (modelError: any) {

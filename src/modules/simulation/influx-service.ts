@@ -63,9 +63,6 @@ export class InfluxTelemetryService {
     // Default tags applied to every point written through this API
     this.writeApi.useDefaultTags({ source: 'ventylab-server' });
 
-    console.log(
-      `[InfluxTelemetryService] Initialized → ${options.url} / org="${options.org}" / bucket="${options.bucket}"`,
-    );
   }
 
   // -------------------------------------------------------------------------
@@ -105,7 +102,6 @@ export class InfluxTelemetryService {
   async close(): Promise<void> {
     try {
       await this.writeApi.close();
-      console.log('[InfluxTelemetryService] WriteApi closed – all points flushed');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[InfluxTelemetryService] Error closing WriteApi: ${msg}`);

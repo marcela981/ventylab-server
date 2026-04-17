@@ -45,7 +45,6 @@ export class AIServiceManager {
       
       if (geminiInitialized) {
         this.providers.set('gemini', geminiProvider);
-        console.log('✅ Gemini Provider inicializado');
       } else {
         console.warn('⚠️ Gemini Provider no pudo inicializarse');
       }
@@ -60,7 +59,6 @@ export class AIServiceManager {
     // Establecer provider actual
     this.setCurrentProvider(this.preferredProvider);
     
-    console.log(`🎯 Provider actual: ${this.currentProvider?.name || 'ninguno'}`);
   }
 
   /**
@@ -69,7 +67,6 @@ export class AIServiceManager {
   setCurrentProvider(providerName: string): boolean {
     if (this.providers.has(providerName)) {
       this.currentProvider = this.providers.get(providerName);
-      console.log(`🔄 Cambiado a provider: ${providerName}`);
       return true;
     }
     
@@ -84,7 +81,6 @@ export class AIServiceManager {
     const success = this.setCurrentProvider(newProvider);
     
     if (success) {
-      console.log(`✅ Cambiado exitosamente a ${newProvider}`);
       return {
         success: true,
         provider: newProvider,
@@ -170,7 +166,6 @@ export class AIServiceManager {
       }
 
       try {
-        console.log(`🔄 Intentando fallback con ${providerName}...`);
         const result = await provider.generateResponse(prompt, options);
         
         // Registrar solicitud exitosa
@@ -500,7 +495,6 @@ Responde en español.`;
    */
   resetRateLimit(providerName: string) {
     this.rateLimits.delete(providerName);
-    console.log(`🔄 Rate limit reiniciado para ${providerName}`);
   }
 
   /**

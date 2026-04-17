@@ -63,8 +63,6 @@ if (envResult.error) {
   console.error('Falling back to .env file...');
   dotenv.config(); // Fallback to .env
 } else {
-  console.log(`✅ Loaded environment from: ${envFile}`);
-  console.log(`🔧 NODE_ENV: ${NODE_ENV}`);
 }
 
 // Validar variables de entorno requeridas
@@ -110,7 +108,6 @@ const allowedOrigins = [
 
 // Logging para debug de CORS
 app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log('🌐 Request from:', req.headers.origin || 'no-origin');
   next();
 });
 
@@ -387,11 +384,9 @@ const startServer = async () => {
   // Start listening
   // ------------------------------------------------------------------
   server.listen(PORT, () => {
-    console.log('='.repeat(50));
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
     console.log(`📝 Entorno: ${NODE_ENV}`);
     console.log(`🌐 Frontend URL: ${FRONTEND_URL}`);
-    console.log('='.repeat(50));
     console.log('📋 Endpoints disponibles:');
     console.log('  - GET  /health - Health check');
     console.log('  - POST /api/auth/* - Autenticación');
@@ -412,7 +407,6 @@ const startServer = async () => {
     console.log('  - CRUD /api/scores/* - Calificaciones por estudiante');
     console.log('  - WS   /socket.io - WebSocket (simulación en tiempo real)');
     console.log('  - CRUD /api/simulation/* - Simulación ventilador');
-    console.log('='.repeat(50));
   });
 };
 
@@ -421,12 +415,10 @@ const startServer = async () => {
 // ============================================
 
 const gracefulShutdown = async (signal: string) => {
-  console.log(`\n${signal} recibido. Iniciando cierre graceful...`);
 
   // Cerrar servidor HTTP
   if (server) {
     server.close(() => {
-      console.log('✅ Servidor HTTP cerrado');
     });
   }
 
@@ -443,7 +435,6 @@ const gracefulShutdown = async (signal: string) => {
   // Cerrar conexión de Prisma
   try {
     await prisma.$disconnect();
-    console.log('✅ Conexión de base de datos cerrada');
   } catch (error) {
     console.error('❌ Error al cerrar conexión de base de datos:', error);
   }

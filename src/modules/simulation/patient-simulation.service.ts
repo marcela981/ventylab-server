@@ -147,7 +147,6 @@ export class PatientSimulationService {
     }
 
     this.sessions.set(userId, session);
-    console.log(`[PatientSimulationService] Patient configured for user ${userId}: ${patient.condition}`);
     return patient;
   }
 
@@ -211,7 +210,6 @@ export class PatientSimulationService {
     }, TICK_MS);
 
     this.sessions.set(userId, session);
-    console.log(`[PatientSimulationService] Simulation started for user ${userId}`);
   }
 
   /**
@@ -226,7 +224,6 @@ export class PatientSimulationService {
     const session = this.sessions.get(userId);
     if (!session) return;
     session.ventSettings = command;
-    console.log(`[PatientSimulationService] Command updated for user ${userId}`);
   }
 
   /**
@@ -242,7 +239,6 @@ export class PatientSimulationService {
       session.intervalId = null;
     }
 
-    console.log(`[PatientSimulationService] Simulation stopped for user ${userId}`);
   }
 
   // -------------------------------------------------------------------------
@@ -275,7 +271,6 @@ export class PatientSimulationService {
     for (const [userId, session] of this.sessions) {
       if (session.intervalId !== null) {
         clearInterval(session.intervalId);
-        console.log(`[PatientSimulationService] Stopped simulation for user ${userId} (shutdown)`);
       }
     }
     this.sessions.clear();

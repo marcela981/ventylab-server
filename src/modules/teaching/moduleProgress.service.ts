@@ -71,10 +71,6 @@ export async function calculateAndSaveModuleProgress(
     const clampedProgress = Math.max(0, Math.min(100, progressPercentage));
 
     if (isDev) {
-      console.log('[moduleProgress] calculateAndSaveModuleProgress', {
-        userId, moduleId, totalLessonsCount, completedLessonsCount,
-        progressPercentage: clampedProgress, moduleComplete,
-      });
     }
 
     const status: ProgressStatus = moduleComplete
@@ -165,9 +161,6 @@ export async function getModuleProgressStats(
     const nextIncompleteLesson = lessons.find(lesson => !completionMap.get(lesson.id)?.isCompleted) ?? null;
 
     if (isDev) {
-      console.log('[moduleProgress] getModuleProgressStats', {
-        userId, moduleId, totalLessonsCount, completedLessonsCount, progressPercentage,
-      });
     }
 
     return {

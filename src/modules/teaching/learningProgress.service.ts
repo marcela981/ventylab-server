@@ -476,10 +476,6 @@ async function recalculateAndSaveUserProgress(
     },
   });
 
-  console.log(
-    `[recalculateAndSaveUserProgress] userId=${userId} moduleId=${moduleId} ` +
-    `completed=${completedLessonsCount}/${totalLessons} (${progressPercentage}%)`
-  );
 }
 
 async function checkAndUpdateModuleCompletion(

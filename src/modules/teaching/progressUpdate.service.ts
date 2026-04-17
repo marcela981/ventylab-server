@@ -228,7 +228,6 @@ export async function updateLessonProgress(
     }
 
     if (!lesson) {
-      console.log(`[updateLessonProgress] Lesson ${lessonId} not in DB, using derived moduleId: ${moduleId}`);
     }
 
     const isCompleted = completed === true;

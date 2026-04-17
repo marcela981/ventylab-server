@@ -45,12 +45,6 @@ export const validateRequest = (validations: ValidationChain[]) => {
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('[Validation Middleware] Running validations...');
-    console.log('[Validation Middleware] URL:', req.url);
-    console.log('[Validation Middleware] Params:', req.params);
-    console.log('[Validation Middleware] Body:', req.body);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     // Run all validations
     await Promise.all(validations.map((validation) => validation.run(req)));
@@ -81,7 +75,6 @@ export const validateRequest = (validations: ValidationChain[]) => {
       );
     }
 
-    console.log('[Validation Middleware] ✅ Validation passed');
     next();
   };
 };

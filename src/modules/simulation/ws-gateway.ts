@@ -71,7 +71,6 @@ export class WSGateway implements ISimulationGateway {
 
   private setupConnectionHandlers(): void {
     this.io.on('connection', (socket: Socket) => {
-      console.log(`[WSGateway] Socket connected: ${socket.id}`);
 
       socket.on('authenticate', (token: string) => {
         try {
@@ -80,11 +79,9 @@ export class WSGateway implements ISimulationGateway {
 
           this.connectedUsers.set(userId, socket);
           socket.emit('authenticated', { userId });
-          console.log(`[WSGateway] User authenticated: ${userId} (socket ${socket.id})`);
 
           socket.on('disconnect', () => {
             this.connectedUsers.delete(userId);
-            console.log(`[WSGateway] User disconnected: ${userId}`);
           });
         } catch {
           socket.emit('auth_error', { message: 'Invalid token' });

@@ -199,7 +199,6 @@ export const getCases = async (req: Request, res: Response) => {
     }));
 
     // Log de consulta
-    console.log(`[${new Date().toISOString()}] Usuario ${userId} consultó casos clínicos (filtros: ${JSON.stringify(criteria)})`);
 
     res.status(200).json({
       cases: casesWithAttempts,
@@ -321,7 +320,6 @@ export const getCaseById = async (req: Request, res: Response) => {
     };
 
     // Log de acceso
-    console.log(`[${new Date().toISOString()}] Usuario ${userId} accedió a caso ${caseId}`);
 
     res.status(200).json(response);
   } catch (error: any) {
@@ -539,10 +537,8 @@ export const evaluateCase = async (req: Request, res: Response) => {
     };
 
     // Log de evaluación
-    console.log(`[${new Date().toISOString()}] Usuario ${userId} evaluó caso ${caseId}. Score: ${comparison.score}, Tiempo: ${completionTime}s`);
 
     if (comparison.criticalErrors.length > 0) {
-      console.log(`[${new Date().toISOString()}] Usuario ${userId} tiene ${comparison.criticalErrors.length} error(es) crítico(s) en caso ${caseId}`);
     }
 
     res.status(200).json(response);
@@ -672,7 +668,6 @@ export const getCaseAttempts = async (req: Request, res: Response) => {
     };
 
     // Log de consulta
-    console.log(`[${new Date().toISOString()}] Usuario ${userId} consultó intentos del caso ${caseId}`);
 
     res.status(200).json(response);
   } catch (error: any) {

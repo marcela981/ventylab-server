@@ -84,7 +84,6 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`[${new Date().toISOString()}] Usuario ${userId} accedió a su perfil`);
 
     res.status(200).json({
       user,
@@ -202,7 +201,6 @@ export const updateCurrentUser = async (req: Request, res: Response) => {
       },
     });
 
-    console.log(`[${new Date().toISOString()}] Usuario ${userId} actualizó su perfil:`, Object.keys(updateData));
 
     res.status(200).json({
       message: 'Perfil actualizado exitosamente',
@@ -347,7 +345,6 @@ export const changePassword = async (req: Request, res: Response) => {
       console.warn('No se pudieron invalidar las sesiones anteriores:', sessionError);
     }
 
-    console.log(`[${new Date().toISOString()}] Usuario ${userId} cambió su contraseña`);
 
     res.status(200).json({
       message: 'Contraseña actualizada exitosamente',
