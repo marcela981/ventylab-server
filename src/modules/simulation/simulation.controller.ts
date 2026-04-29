@@ -20,6 +20,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate } from '../../shared/middleware/auth.middleware';
 import { SimulationService } from './simulation.service';
 import { PatientSimulationService } from './patient-simulation.service';
+import type { SimulationHealth } from './simulation.health';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -28,10 +29,22 @@ import { PatientSimulationService } from './patient-simulation.service';
 export function createSimulationController(
   service: SimulationService,
   patientService: PatientSimulationService,
+  health?: SimulationHealth,
 ): Router {
   const router = Router();
 
-  // All simulation endpoints require a valid JWT.
+  // -------------------------------------------------------------------------
+  // GET /api/simulation/health  (public — no auth required)
+  // Used for debugging and admin dashboards.
+  // -------------------------------------------------------------------------
+  router.get('/health', (_req: Request, res: Response) => {
+    if (!health) {
+      return res.json({ success: true, data: null, message: 'Health monitor not configured' });
+    }
+    res.json({ success: true, data: health.snapshot() });
+  });
+
+  // All remaining simulation endpoints require a valid JWT.
   router.use(authenticate);
 
   // -------------------------------------------------------------------------

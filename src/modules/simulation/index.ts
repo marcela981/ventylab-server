@@ -26,5 +26,12 @@ export { HexParser } from './hex-parser';
 export { HexEncoder } from './hex-encoder';
 export { InfluxTelemetryService } from './influx-service';
 
+// Health monitor (in-memory snapshot of MQTT + WS + reservation state)
+export { SimulationHealth } from './simulation.health';
+export type { HealthSnapshot } from './simulation.health';
+
+// Configuration (env-backed, used in src/index.ts and simulation module internals)
+export { SIMULATION_CONFIG } from './simulation.config';
+
 // Legacy local types (kept for backwards compat; prefer contracts/simulation.contracts.ts)
 export * from './simulation.types';

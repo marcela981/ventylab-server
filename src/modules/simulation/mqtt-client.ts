@@ -255,24 +255,41 @@ export class MqttClient implements IVentilatorConnection {
         console.warn(`[MqttClient] JSON parse error – discarding frame: ${msg}`);
         return;
       }
-
-      // Validate required fields
+  
+      // Only pressure/flow/volume are strictly required.
+      // timestamp and deviceId are filled with defaults downstream in
+      // SimulationService.handleTelemetryJson() when missing.
       if (
         typeof parsed !== 'object' ||
         parsed === null ||
         typeof (parsed as any).pressure !== 'number' ||
         typeof (parsed as any).flow !== 'number' ||
-        typeof (parsed as any).volume !== 'number' ||
-        typeof (parsed as any).timestamp !== 'number' ||
-        typeof (parsed as any).deviceId !== 'string'
+        typeof (parsed as any).volume !== 'number'
       ) {
         console.warn(
-          '[MqttClient] Telemetry JSON missing required fields – discarding frame',
+          '[MqttClient] Telemetry missing required fields (pressure/flow/volume) – discarding',
         );
         return;
       }
-
-      callback(parsed as TelemetryPayload);
+  
+      // Normalize timestamp: if missing or clearly not an epoch (e.g. < year 2001),
+      // replace with server wall clock. Keeps frontend charts time-consistent.
+      const p = parsed as any;
+      const now = Date.now();
+      const tsLooksValid = typeof p.timestamp === 'number' && p.timestamp > 1_000_000_000_000;
+      const normalized: TelemetryPayload = {
+        pressure: p.pressure,
+        flow: p.flow,
+        volume: p.volume,
+        timestamp: tsLooksValid ? p.timestamp : now,
+        deviceId: typeof p.deviceId === 'string' && p.deviceId.length > 0
+          ? p.deviceId
+          : 'ventilab-device-unknown',
+        ...(typeof p.pco2 === 'number' ? { pco2: p.pco2 } : {}),
+        ...(typeof p.spo2 === 'number' ? { spo2: p.spo2 } : {}),
+      };
+  
+      callback(normalized);
     });
   }
 

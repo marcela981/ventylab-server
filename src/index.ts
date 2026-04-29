@@ -12,6 +12,7 @@ import { errorHandler, notFoundHandler } from './shared/middleware/error-handler
 import {
   createSimulationController,
   SimulationService,
+  SimulationHealth,
   PatientSimulationService,
   PatientCalculatorService,
   SignalGeneratorService,
@@ -21,6 +22,7 @@ import {
   HexParser,
   HexEncoder,
   InfluxTelemetryService,
+  SIMULATION_CONFIG,
 } from './modules/simulation';
 
 // Importar rutas desde módulos
@@ -322,28 +324,22 @@ const startServer = async () => {
   });
 
   // ------------------------------------------------------------------
-  // Simulation module wiring
+  // Simulation module wiring  (order matters — see comments)
   // ------------------------------------------------------------------
-  const mqttBrokerUrl = process.env.MQTT_BROKER_URL ?? 'mqtt://localhost:1883';
-  const mqttTelemetryTopic = process.env.MQTT_TOPIC; // undefined → MqttClient uses MQTT_TOPICS.TELEMETRY
 
+  // c. Construct all simulation services
   const mqttClient = new MqttClient({
-    brokerUrl: mqttBrokerUrl,
-    clientId: `ventylab-server-${Math.random().toString(16).slice(2, 8)}`,
-    telemetryTopic: mqttTelemetryTopic,
+    brokerUrl: SIMULATION_CONFIG.MQTT_BROKER_URL,
+    clientId: SIMULATION_CONFIG.MQTT_CLIENT_ID,
+    username: SIMULATION_CONFIG.MQTT_USERNAME,
+    password: SIMULATION_CONFIG.MQTT_PASSWORD,
+    telemetryTopic: SIMULATION_CONFIG.MQTT_TELEMETRY_TOPIC,
   });
   const wsGateway = new WSGateway(io);
   const hexParser = new HexParser();
   const hexEncoder = new HexEncoder();
-  const simulationService = new SimulationService(
-    prisma,
-    wsGateway,
-    mqttClient,
-    hexParser,
-    hexEncoder,
-  );
 
-  // Patient simulation (signal generation from form data)
+  // Patient simulation (signal generation from form data — no MQTT)
   const calculator = new PatientCalculatorService();
   const signalGenerator = new SignalGeneratorService();
   const clinicalCasesService = new ClinicalCasesService(calculator);
@@ -354,14 +350,40 @@ const startServer = async () => {
     wsGateway,
   );
 
-  // Register REST routes (needs the instantiated services)
-  app.use('/api/simulation', createSimulationController(simulationService, patientSimulationService));
+  // Health monitor uses a closure to read reservation state from service
+  // without a direct circular reference at construction time.
+  // eslint-disable-next-line prefer-const
+  let simulationService!: SimulationService;
+  const simulationHealth = new SimulationHealth(
+    mqttClient,
+    wsGateway,
+    () => simulationService.getReservationSnapshot(),
+  );
+  simulationService = new SimulationService(
+    prisma,
+    wsGateway,
+    mqttClient,
+    hexParser,
+    hexEncoder,
+    simulationHealth,
+  );
 
-  // Error handlers MUST be registered AFTER all routes (including simulation)
-  app.use(notFoundHandler);
-  app.use(errorHandler);
+  // d. Validación de topic MQTT (falla silenciosa #1: topic no-match)
+  if (!SIMULATION_CONFIG.MQTT_TELEMETRY_TOPIC.startsWith('/')) {
+    console.warn('');
+    console.warn('╔══════════════════════════════════════════════════════════════════╗');
+    console.warn('║  ⚠️  ADVERTENCIA MQTT: TOPIC DE TELEMETRÍA SIN SLASH INICIAL     ║');
+    console.warn('╠══════════════════════════════════════════════════════════════════╣');
+    console.warn(`║  MQTT_TELEMETRY_TOPIC debe coincidir EXACTAMENTE con el          ║`);
+    console.warn(`║  publisher. Valor actual: "${SIMULATION_CONFIG.MQTT_TELEMETRY_TOPIC}"`);
+    console.warn(`║                                                                  ║`);
+    console.warn(`║  Verifica con:                                                   ║`);
+    console.warn(`║    mqttx sub -h <host> -t ${SIMULATION_CONFIG.MQTT_TELEMETRY_TOPIC} -v`);
+    console.warn('╚══════════════════════════════════════════════════════════════════╝');
+    console.warn('');
+  }
 
-  // Connect to MQTT (non-fatal – server starts even if broker is unreachable)
+  // d. Initialize MQTT connection (non-fatal)
   try {
     await simulationService.initialize();
     console.log('✅ Simulation module initialized (MQTT connected)');
@@ -369,6 +391,13 @@ const startServer = async () => {
     console.warn('⚠️  Simulation module: MQTT connection failed –', err.message);
     console.warn('    REST endpoints are available; real-time data will not stream.');
   }
+
+  // e. Register simulation REST routes
+  app.use('/api/simulation', createSimulationController(simulationService, patientSimulationService, simulationHealth));
+
+  // f–g. Error handlers MUST be registered AFTER all routes (including simulation)
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   // InfluxDB telemetry persistence (optional – server starts without it)
   influxService = InfluxTelemetryService.fromEnv();

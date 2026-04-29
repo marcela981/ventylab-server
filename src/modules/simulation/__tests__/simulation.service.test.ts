@@ -34,10 +34,14 @@ import {
 // Mock factories
 // ============================================================================
 
+/** Flush all pending microtasks so async sendTelemetryToLeader resolves. */
+const flushMicrotasks = () => new Promise<void>(resolve => setImmediate(resolve));
+
 function createMockPrisma() {
   return {
     ventilatorReservation: {
-      findFirst: jest.fn(),
+      // Default: no active reservation → broadcast path
+      findFirst: jest.fn().mockResolvedValue(null),
       create: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn().mockResolvedValue({ count: 0 }),
@@ -144,6 +148,8 @@ describe('SimulationService', () => {
       mockConnection,
       mockParser,
       mockEncoder,
+      undefined, // health — not tested here
+      0,         // throttleIntervalMs = 0 so non-throttle tests are unaffected
     );
   });
 
@@ -162,15 +168,19 @@ describe('SimulationService', () => {
       expect(mockConnection.subscribeTelemetry).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it('the registered telemetry callback delegates to handleTelemetryBuffer', async () => {
+    it('the registered telemetry callback processes incoming data (JSON path)', async () => {
       await service.initialize();
       const [callback] = mockConnection.subscribeTelemetry.mock.calls[0] as [(d: Buffer) => void];
 
-      mockParser.validate.mockReturnValue(false);
-      callback(DUMMY_BUF);
+      // Valid JSON telemetry — should broadcast via WebSocket
+      const jsonBuf = Buffer.from(JSON.stringify({ pressure: 5, flow: 10, volume: 200 }));
+      callback(jsonBuf);
+      await flushMicrotasks();
 
-      // validate() is the first thing handleTelemetryBuffer calls
-      expect(mockParser.validate).toHaveBeenCalledWith(DUMMY_BUF);
+      expect(mockGateway.broadcastData).toHaveBeenCalledWith(
+        'ventilator:data',
+        expect.objectContaining({ pressure: 5, flow: 10, volume: 200 }),
+      );
     });
   });
 
@@ -220,10 +230,11 @@ describe('SimulationService', () => {
       expect(mockGateway.broadcastData).not.toHaveBeenCalled();
     });
 
-    it('broadcasts ventilator:data on a PRESSURE frame', () => {
+    it('broadcasts ventilator:data on a PRESSURE frame', async () => {
       mockParser.parse.mockReturnValue(makePressure(15.3));
 
       service.handleTelemetryBuffer(DUMMY_BUF);
+      await flushMicrotasks();
 
       expect(mockGateway.broadcastData).toHaveBeenCalledWith(
         'ventilator:data',
@@ -231,10 +242,11 @@ describe('SimulationService', () => {
       );
     });
 
-    it('broadcasts ventilator:data on a FLOW frame', () => {
+    it('broadcasts ventilator:data on a FLOW frame', async () => {
       mockParser.parse.mockReturnValue(makeFlow(-5.0));
 
       service.handleTelemetryBuffer(DUMMY_BUF);
+      await flushMicrotasks();
 
       expect(mockGateway.broadcastData).toHaveBeenCalledWith(
         'ventilator:data',
@@ -242,10 +254,11 @@ describe('SimulationService', () => {
       );
     });
 
-    it('broadcasts ventilator:data on a VOLUME frame', () => {
+    it('broadcasts ventilator:data on a VOLUME frame', async () => {
       mockParser.parse.mockReturnValue(makeVolume(480));
 
       service.handleTelemetryBuffer(DUMMY_BUF);
+      await flushMicrotasks();
 
       expect(mockGateway.broadcastData).toHaveBeenCalledWith(
         'ventilator:data',
@@ -253,15 +266,18 @@ describe('SimulationService', () => {
       );
     });
 
-    it('accumulates reading state across multiple frames', () => {
+    it('accumulates reading state across multiple frames', async () => {
       mockParser.parse.mockReturnValueOnce(makePressure(20.0));
       service.handleTelemetryBuffer(DUMMY_BUF);
+      await flushMicrotasks();
 
       mockParser.parse.mockReturnValueOnce(makeFlow(30.0));
       service.handleTelemetryBuffer(DUMMY_BUF);
+      await flushMicrotasks();
 
       mockParser.parse.mockReturnValueOnce(makeVolume(500));
       service.handleTelemetryBuffer(DUMMY_BUF);
+      await flushMicrotasks();
 
       // Last call should contain all three accumulated values
       const lastCall = mockGateway.broadcastData.mock.calls.at(-1)!;
@@ -305,9 +321,10 @@ describe('SimulationService', () => {
       expect(statusResponse.lastDataTimestamp).toBeGreaterThanOrEqual(before);
     });
 
-    it('reading includes deviceId', () => {
+    it('reading includes deviceId', async () => {
       mockParser.parse.mockReturnValue(makePressure(5));
       service.handleTelemetryBuffer(DUMMY_BUF);
+      await flushMicrotasks();
 
       const [, payload] = mockGateway.broadcastData.mock.calls[0];
       expect((payload as any).deviceId).toBe('ventilab-device-001');
@@ -342,6 +359,22 @@ describe('SimulationService', () => {
 
       expect(result.commandId).toBeDefined();
       expect(typeof result.timestamp).toBe('number');
+    });
+
+    it('non-leader user receives success:false without calling publishCommand', async () => {
+      (service as any).activeReservationCache = {
+        userId: 'user-1',
+        leaderId: 'leader-1',
+        groupId: null,
+        reservationId: 'res-1',
+        endTime: Date.now() + 60_000,
+      };
+
+      const result = await service.sendCommand({ command: VALID_COMMAND, userId: 'non-leader' });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Only the reservation leader can send commands');
+      expect(mockConnection.publishCommand).not.toHaveBeenCalled();
     });
   });
 
@@ -615,6 +648,157 @@ describe('SimulationService', () => {
 
       const [call] = mockPrisma.simulatorSession.findMany.mock.calls;
       expect(call[0]).not.toHaveProperty('take');
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // reservation cache (zero-DB telemetry routing)
+  // --------------------------------------------------------------------------
+
+  describe('reservation cache', () => {
+    it('handleTelemetry with empty cache → broadcastData, findFirst NOT called', () => {
+      mockParser.parse.mockReturnValue(makePressure(10));
+      service.handleTelemetryBuffer(DUMMY_BUF);
+
+      expect(mockGateway.broadcastData).toHaveBeenCalledWith('ventilator:data', expect.anything());
+      expect(mockPrisma.ventilatorReservation.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('handleTelemetry with cache.leaderId → sendToUser to leaderId, no DB', () => {
+      (service as any).activeReservationCache = {
+        userId: 'user-1',
+        leaderId: 'leader-1',
+        groupId: 'group-1',
+        reservationId: 'res-1',
+        endTime: Date.now() + 60_000,
+      };
+
+      mockParser.parse.mockReturnValue(makePressure(10));
+      service.handleTelemetryBuffer(DUMMY_BUF);
+
+      expect(mockGateway.sendToUser).toHaveBeenCalledWith('leader-1', 'ventilator:data', expect.anything());
+      expect(mockGateway.broadcastData).not.toHaveBeenCalledWith('ventilator:data', expect.anything());
+      expect(mockPrisma.ventilatorReservation.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('handleTelemetry with expired cache → clears cache and broadcasts', () => {
+      (service as any).activeReservationCache = {
+        userId: 'user-1',
+        leaderId: null,
+        groupId: null,
+        reservationId: 'res-1',
+        endTime: Date.now() - 1_000, // already expired
+      };
+
+      mockParser.parse.mockReturnValue(makePressure(10));
+      service.handleTelemetryBuffer(DUMMY_BUF);
+
+      expect((service as any).activeReservationCache).toBeNull();
+      expect(mockGateway.broadcastData).toHaveBeenCalledWith('ventilator:data', expect.anything());
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // Throttle (WS_MAX_HZ per-recipient rate limiting)
+  // --------------------------------------------------------------------------
+
+  describe('throttle', () => {
+    /** Helper: flush all pending microtasks so async sendTelemetryToLeader resolves. */
+    const flushMicrotasks = () => new Promise<void>(resolve => setImmediate(resolve));
+
+    /** Creates a service with the given interval (ms) instead of env-derived value. */
+    function makeThrottledService(throttleIntervalMs: number) {
+      return new SimulationService(
+        mockPrisma as any,
+        mockGateway,
+        mockConnection,
+        mockParser,
+        mockEncoder,
+        undefined,       // health — not needed for throttle tests
+        throttleIntervalMs,
+      );
+    }
+
+    beforeEach(() => {
+      jest.useFakeTimers({ doNotFake: ['setImmediate'] });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('with WS_MAX_HZ=10 (interval 100 ms), 5 frames in 50 ms only forward 1', () => {
+      // WS_MAX_HZ=10 → throttleIntervalMs = 100
+      const svc = makeThrottledService(100);
+      mockParser.parse.mockReturnValue(makePressure(10));
+
+      // Send 5 frames at t=0 (well within 100 ms) — cache is empty → broadcast path
+      for (let i = 0; i < 5; i++) {
+        svc.handleTelemetryBuffer(DUMMY_BUF);
+      }
+
+      // Only the first frame should have been forwarded
+      expect(mockGateway.broadcastData).toHaveBeenCalledTimes(1);
+      expect(mockGateway.broadcastData).toHaveBeenCalledWith('ventilator:data', expect.anything());
+    });
+
+    it('allows a second frame after the throttle interval has elapsed', () => {
+      const svc = makeThrottledService(100);
+      mockParser.parse.mockReturnValue(makePressure(10));
+
+      // First frame — should be forwarded
+      svc.handleTelemetryBuffer(DUMMY_BUF);
+      expect(mockGateway.broadcastData).toHaveBeenCalledTimes(1);
+
+      // Advance time past the throttle window
+      jest.advanceTimersByTime(101);
+
+      // Second frame — should also be forwarded
+      svc.handleTelemetryBuffer(DUMMY_BUF);
+      expect(mockGateway.broadcastData).toHaveBeenCalledTimes(2);
+    });
+
+    it('applies throttle independently per userId (different recipients not shared)', () => {
+      const svc = makeThrottledService(100);
+      mockParser.parse.mockReturnValue(makePressure(10));
+
+      // First call: cache set to user-A
+      (svc as any).activeReservationCache = {
+        userId: 'user-A', leaderId: null, groupId: null,
+        reservationId: 'res-A', endTime: Date.now() + 60_000,
+      };
+      svc.handleTelemetryBuffer(DUMMY_BUF);
+
+      // Second call immediately after: cache switched to user-B
+      (svc as any).activeReservationCache = {
+        userId: 'user-B', leaderId: null, groupId: null,
+        reservationId: 'res-B', endTime: Date.now() + 60_000,
+      };
+      svc.handleTelemetryBuffer(DUMMY_BUF);
+
+      // Each user should have received exactly one frame (separate throttle state)
+      expect(mockGateway.sendToUser).toHaveBeenCalledTimes(2);
+      expect(mockGateway.sendToUser).toHaveBeenCalledWith('user-A', 'ventilator:data', expect.anything());
+      expect(mockGateway.sendToUser).toHaveBeenCalledWith('user-B', 'ventilator:data', expect.anything());
+    });
+
+    it('throttles the same userId across multiple rapid frames', () => {
+      const svc = makeThrottledService(100);
+      mockParser.parse.mockReturnValue(makePressure(10));
+
+      (svc as any).activeReservationCache = {
+        userId: 'user-X', leaderId: null, groupId: null,
+        reservationId: 'res-X', endTime: Date.now() + 60_000,
+      };
+
+      // Send 3 frames rapidly for the same user
+      for (let i = 0; i < 3; i++) {
+        svc.handleTelemetryBuffer(DUMMY_BUF);
+      }
+
+      // Only the first frame should have been sent
+      expect(mockGateway.sendToUser).toHaveBeenCalledTimes(1);
+      expect(mockGateway.sendToUser).toHaveBeenCalledWith('user-X', 'ventilator:data', expect.anything());
     });
   });
 });

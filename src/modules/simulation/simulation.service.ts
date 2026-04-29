@@ -34,6 +34,9 @@ import {
   HexMessageType,
 } from '../../../contracts/simulation.contracts';
 
+import type { SimulationHealth } from './simulation.health';
+import { SIMULATION_CONFIG } from './simulation.config';
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -68,13 +71,66 @@ export class SimulationService {
    */
   private readonly currentReading = { pressure: 0, flow: 0, volume: 0 };
 
+  /** In-memory reservation state, kept in sync with DB writes. */
+  private reservationSnapshot: { isReserved: boolean; currentUser?: string; endsAt?: number } = {
+    isReserved: false,
+  };
+
+  /**
+   * Throttle: last time (ms) a ventilator:data frame was forwarded per recipient.
+   * Key is userId or '__broadcast__'.
+   */
+  private readonly lastSentAt = new Map<string, number>();
+
+  /** Minimum ms between frames forwarded to the same recipient. */
+  private readonly throttleIntervalMs: number;
+
+  /** In-memory mirror of the currently active reservation.
+   *  Read on every frame (zero DB hits). Written only on reserve/release/expire. */
+  private activeReservationCache: {
+    userId: string;
+    leaderId: string | null;
+    groupId: string | null;
+    reservationId: string;
+    endTime: number; // ms epoch
+  } | null = null;
+
   constructor(
     private readonly prisma: PrismaClient,
     private readonly gateway: ISimulationGateway,
     private readonly ventilatorConnection: IVentilatorConnection,
     private readonly hexParser: IHexParser,
     private readonly hexEncoder: IHexEncoder,
-  ) { }
+    private readonly health?: SimulationHealth,
+    throttleIntervalMs?: number,
+  ) {
+    this.throttleIntervalMs = throttleIntervalMs ?? (1000 / SIMULATION_CONFIG.WS_MAX_HZ);
+  }
+
+  /** Returns the in-memory reservation snapshot (no DB query). */
+  getReservationSnapshot(): { isReserved: boolean; currentUser?: string; endsAt?: number } {
+    return { ...this.reservationSnapshot };
+  }
+
+  /** Fetches the active reservation from DB and writes it to the in-memory cache. */
+  private async refreshReservationCache(): Promise<void> {
+    const db = this.prisma as any;
+    const active = await db.ventilatorReservation.findFirst({
+      where: { status: 'ACTIVE', deviceId: DEVICE_ID },
+      select: { id: true, userId: true, leaderId: true, groupId: true, endTime: true },
+    });
+    this.activeReservationCache = active
+      ? {
+          userId: active.userId,
+          leaderId: active.leaderId ?? null,
+          groupId: active.groupId ?? null,
+          reservationId: active.id,
+          endTime: active.endTime instanceof Date
+            ? active.endTime.getTime()
+            : Number(active.endTime ?? Date.now() + 30 * 60_000),
+        }
+      : null;
+  }
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -94,6 +150,7 @@ export class SimulationService {
     this.ventilatorConnection.subscribeTelemetry((data: Buffer) => {
       this.handleTelemetryJson(data);
     });
+    await this.refreshReservationCache();
   }
 
   /**
@@ -155,7 +212,7 @@ export class SimulationService {
       timestamp: parsed.timestamp,
       deviceId: DEVICE_ID,
     };
-    void this.sendTelemetryToLeader(reading);
+    this.sendTelemetryToLeader(reading);
   }
 
   // ---------------------------------------------------------------------------
@@ -219,7 +276,7 @@ export class SimulationService {
     };
 
     this.lastDataTimestamp = Date.now();
-    void this.sendTelemetryToLeader(reading);
+    this.sendTelemetryToLeader(reading);
   }
 
   // ---------------------------------------------------------------------------
@@ -227,31 +284,40 @@ export class SimulationService {
   // ---------------------------------------------------------------------------
 
   /**
-   * Enruta la trama de telemetría al usuario correcto:
-   *   - Si hay reserva activa con leaderId → solo al líder
-   *   - Si hay reserva activa sin líder → solo al userId que reservó
-   *   - Sin reserva activa → broadcast a todos (modo demo/libre)
+   * Enruta la trama al destinatario correcto usando únicamente el caché en memoria.
+   * Zero DB hits — la BD solo se consulta en reserve/release/expire/initialize.
    */
-  private async sendTelemetryToLeader(reading: VentilatorReading): Promise<void> {
-    try {
-      const db = this.prisma as any;
-      const active = await db.ventilatorReservation.findFirst({
-        where: { status: 'ACTIVE', deviceId: DEVICE_ID },
-        select: { userId: true, leaderId: true, groupId: true },
-      });
+  private sendTelemetryToLeader(reading: VentilatorReading): void {
+    const cache = this.activeReservationCache;
 
-      if (!active) {
-        // No active reservation — broadcast freely (dev / demo mode)
-        this.gateway.broadcastData('ventilator:data', reading);
-        return;
-      }
-
-      const recipientId: string = active.leaderId ?? active.userId;
-      this.gateway.sendToUser(recipientId, 'ventilator:data', reading);
-    } catch {
-      // If DB is unreachable, fall back to broadcast so clients aren't left blind
-      this.gateway.broadcastData('ventilator:data', reading);
+    // Auto-expire if cached reservation passed its endTime
+    if (cache && cache.endTime < Date.now()) {
+      this.activeReservationCache = null;
+      void this.expireOverdueReservations();
     }
+
+    if (!this.activeReservationCache) {
+      if (this.isThrottled('__broadcast__')) return;
+      this.markSent('__broadcast__');
+      this.gateway.broadcastData('ventilator:data', reading);
+      this.health?.recordFrame();
+      return;
+    }
+
+    const recipientId = this.activeReservationCache.leaderId ?? this.activeReservationCache.userId;
+    if (this.isThrottled(recipientId)) return;
+    this.markSent(recipientId);
+    this.gateway.sendToUser(recipientId, 'ventilator:data', reading);
+    this.health?.recordFrame();
+  }
+
+  private isThrottled(key: string): boolean {
+    const last = this.lastSentAt.get(key);
+    return last !== undefined && Date.now() - last < this.throttleIntervalMs;
+  }
+
+  private markSent(key: string): void {
+    this.lastSentAt.set(key, Date.now());
   }
 
   // ---------------------------------------------------------------------------
@@ -273,6 +339,19 @@ export class SimulationService {
         timestamp: Date.now(),
         errors,
       };
+    }
+
+    const cache = this.activeReservationCache;
+    if (cache && request.userId) {
+      const authorizedId = cache.leaderId ?? cache.userId;
+      if (request.userId !== authorizedId) {
+        return {
+          success: false,
+          message: 'Only the reservation leader can send commands',
+          timestamp: Date.now(),
+          errors: [`User ${request.userId} is not authorized (expected ${authorizedId})`],
+        };
+      }
     }
 
     await this.ventilatorConnection.publishCommand(request.command);
@@ -302,6 +381,7 @@ export class SimulationService {
       },
       data: { status: 'EXPIRED' },
     });
+    void this.refreshReservationCache();
   }
 
   /**
@@ -368,6 +448,14 @@ export class SimulationService {
       endTime: endTime.getTime(),
     });
 
+    this.reservationSnapshot = {
+      isReserved: true,
+      currentUser: request.userId,
+      endsAt: endTime.getTime(),
+    };
+
+    await this.refreshReservationCache();
+
     return {
       success: true,
       reservationId: reservation.id,
@@ -396,7 +484,9 @@ export class SimulationService {
       data: { status: 'COMPLETED', releasedAt: new Date() },
     });
 
+    this.reservationSnapshot = { isReserved: false };
     this.gateway.broadcastData('ventilator:released', { userId });
+    await this.refreshReservationCache();
   }
 
   // ---------------------------------------------------------------------------

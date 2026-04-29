@@ -1,21 +1,27 @@
 /**
- * Overview Progress Service
+ * =============================================================================
+ * VentyLab — Overview Progress Service
+ * =============================================================================
  *
  * Builds the GET /api/progress/overview response from the definitive
- * data model: Level → Module → Page → PageProgress.
+ * data model: Level → Module → Lesson → LessonCompletion.
  *
- * Key design decisions:
- * - Starts from CONTENT (modules + pages), not from progress records.
- *   This ensures modules and pages always appear even for new users.
- * - Uses PageProgress (not LessonProgress) as the progress source.
- * - No dependency on JSON curriculum, Lesson model, or legacy IDs.
- * - Two queries total (no N+1): modules+pages, then pageProgress.
- * - Module availability: first module per level = always available,
- *   subsequent modules require the previous module to be fully completed.
+ * CONTRACT (frontend consumes this via `modules[]`):
+ *   modules: [{ moduleId, lessonsTotal, lessonsCompleted, percent, ... }]
+ *
+ * The canonical keys (`moduleId`, `lessonsTotal`, `lessonsCompleted`,
+ * `percent`) are always emitted. Legacy aliases (`id`, `totalLessons`,
+ * `completedLessons`, `percentComplete`, `progress`, `completed`) are
+ * preserved so existing callers keep working — but new code MUST use the
+ * canonical contract defined in `progress.dto.ts`.
+ *
+ * Module: src/modules/teaching/overviewProgress.service.ts
+ * =============================================================================
  */
 
 import { prisma } from '../../shared/infrastructure/database';
 import { DEFAULT_LEVEL_TRACK } from '../../config/levelTrack';
+import type { ProgressOverviewModuleDTO } from './progress.dto';
 
 // ── Response types ──────────────────────────────────────────────────
 
@@ -31,8 +37,9 @@ interface OverviewStats {
   calendar: string[];
 }
 
-interface ModuleSummary {
-  moduleId: string;
+interface ModuleSummary extends ProgressOverviewModuleDTO {
+  // Legacy aliases (kept for back-compat, do not use in new code)
+  id: string;
   title: string;
   levelId: string | null;
   description: string | null;
@@ -45,6 +52,8 @@ interface ModuleSummary {
   completedLessons: number;
   isAvailable: boolean;
   percentComplete: number;
+  progress: number;
+  completed: boolean;
 }
 
 interface PageSummary {
@@ -187,21 +196,27 @@ export async function getProgressOverview(
     prevCompleteByLevel.set(levelKey, isModuleComplete);
 
     return {
+      // ── Canonical DTO fields (ProgressOverviewModuleDTO) ──────────────
       moduleId: mod.id,
-      id: mod.id,               // alias for frontend compatibility
+      lessonsTotal: totalLessons,
+      lessonsCompleted: completedLessons,
+      percent: percentComplete,
+
+      // ── Legacy aliases — DO NOT USE in new code ───────────────────────
+      id: mod.id,
       title: mod.title,
       levelId: mod.levelId,
       description: mod.description,
       difficulty: mod.difficulty,
       estimatedTime: mod.estimatedTime,
       order: mod.order,
-      totalPages: totalLessons, // alias
-      completedPages: completedLessons, // alias
-      totalLessons,   // alias for frontend compatibility
-      completedLessons, // alias for frontend compatibility
+      totalPages: totalLessons,
+      completedPages: completedLessons,
+      totalLessons,
+      completedLessons,
       isAvailable,
       percentComplete,
-      progress: percentComplete,  // alias for frontend compatibility
+      progress: percentComplete,
       completed: isModuleComplete,
     };
   });
