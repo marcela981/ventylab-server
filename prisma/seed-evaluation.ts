@@ -1,22 +1,37 @@
 /**
- * seed-evaluation.ts
- * ==================
- * Populates the `quizzes` and `activities` tables from JSON evaluation files
- * located in the frontend repo at:
- *   ventilab-web/src/features/ensenanza/shared/data/evaluation/
+ * =============================================================================
+ * Funcionalidad : Seed de evaluación (quizzes, exámenes, talleres)
+ * Descripción   : Puebla las tablas `quizzes` y `activities` a partir de los
+ *                 archivos JSON ubicados en `prisma/seed-data/evaluation/` del
+ *                 propio backend (no requiere que el frontend esté checked out).
  *
- * Quizzes  → quizzes   table  (26 total: mecanica 6+6+8, ventylab 2+2+2)
- * Exams    → activities table (type = EXAM,   6 total)
- * Talleres → activities table (type = TALLER, 9 total)
+ *                 Estructura esperada:
+ *                   prisma/seed-data/evaluation/
+ *                     ├── quizzes/
+ *                     │   ├── mecanica/{principiante,intermedio,avanzado}/*.json
+ *                     │   └── ventylab/{principiante,intermedio,avanzado}/*.json
+ *                     ├── examenes/**\/*.json
+ *                     └── talleres/**\/*.json
  *
- * SAFE TO RE-RUN: all writes use prisma.upsert().
+ *                 Quizzes  → tabla quizzes    (26 total: mecánica 6+6+8, ventylab 2+2+2)
+ *                 Exámenes → tabla activities (type = EXAM,   6 total)
+ *                 Talleres → tabla activities (type = TALLER, 9 total)
  *
- * Run:
- *   npm run seed:evaluation
- *   npx tsx prisma/seed-evaluation.ts
+ *                 SEGURO DE RE-EJECUTAR: todas las escrituras usan prisma.upsert().
  *
- * Autor   : Marcela Mazo Castro
- * Proyecto: VentyLab
+ *                 Comandos:
+ *                   npm run seed:evaluation
+ *                   npx tsx prisma/seed-evaluation.ts
+ *
+ * Versión       : 2.0
+ * Autor         : Marcela Mazo Castro
+ * Proyecto      : VentyLab
+ * Tesis         : Desarrollo de una aplicación web para la enseñanza de
+ *                 mecánica ventilatoria que integre un sistema de
+ *                 retroalimentación usando modelos de lenguaje
+ * Institución   : Universidad del Valle
+ * Contacto      : marcela.mazo@correounivalle.edu.co
+ * =============================================================================
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -26,11 +41,11 @@ import * as path from 'path';
 const prisma = new PrismaClient();
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
+// Los JSON viven dentro del propio repo del backend para que el seed pueda
+// correrse sin requerir el checkout del frontend (`ventilab-web`).
+//   <ventylab-server>/prisma/seed-data/evaluation/
 
-const EVAL_DIR = path.resolve(
-  __dirname,
-  '../../ventilab-web/src/features/ensenanza/shared/data/evaluation',
-);
+const EVAL_DIR = path.resolve(__dirname, 'seed-data/evaluation');
 
 // ─── moduleId map for mecanica quizzes ────────────────────────────────────────
 // The JSON files use inconsistent casing / extra words compared to the DB module
@@ -300,7 +315,7 @@ async function main() {
 
   if (!fs.existsSync(EVAL_DIR)) {
     console.error(`❌  Evaluation data directory not found:\n    ${EVAL_DIR}`);
-    console.error('    Ensure ventilab-web is checked out at the same level as ventylab-server.');
+    console.error('    Verifica que existan los JSON en prisma/seed-data/evaluation/.');
     process.exit(1);
   }
 

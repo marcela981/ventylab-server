@@ -53,19 +53,17 @@ import {
 // ============================================
 // ENVIRONMENT CONFIGURATION
 // ============================================
-// Load environment variables based on NODE_ENV
-// Priority: process.env.NODE_ENV > .env.development (default)
-const NODE_ENV = process.env.NODE_ENV || 'development';
-const envFile = NODE_ENV === 'production' ? '.env.production' : '.env.development';
-
-const envResult = dotenv.config({ path: envFile });
+// Single source of truth: `.env` at the project root.
+// NODE_ENV is read from .env (or process env) but we don't load
+// per-environment files (.env.development / .env.production) anymore.
+const envResult = dotenv.config(); // loads .env
 
 if (envResult.error) {
-  console.error(`❌ Error loading ${envFile}:`, envResult.error.message);
-  console.error('Falling back to .env file...');
-  dotenv.config(); // Fallback to .env
-} else {
+  console.error('❌ Error loading .env:', envResult.error.message);
+  console.error('   Crea un archivo .env en la raíz con DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, JWT_SECRET.');
 }
+
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Validar variables de entorno requeridas
 const requiredEnvVars = [
@@ -152,9 +150,18 @@ app.use(cors({
 // ============================================
 // Middleware de seguridad
 // ============================================
+// Helmet defaults set `Cross-Origin-Resource-Policy: same-origin` and
+// `Cross-Origin-Opener-Policy: same-origin`, which cause the browser to
+// block legitimate CORS responses with ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+// when the frontend (localhost:3000) consumes this API (localhost:4000).
+// We relax these two policies to `cross-origin`/disabled so CORS alone
+// governs cross-site access. The Allow-Origin whitelist above is the
+// real gate; CORP/COOP defaults are too strict for an API server.
 app.use(helmet({
   contentSecurityPolicy: NODE_ENV === 'production' ? undefined : false,
   crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginOpenerPolicy: false,
 }));
 
 // ============================================
