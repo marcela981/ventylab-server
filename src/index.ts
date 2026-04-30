@@ -26,6 +26,7 @@ import {
 } from './modules/simulation';
 
 // Importar rutas desde módulos
+import healthRoutes from './modules/health/health.controller';
 import authRoutes from './modules/auth/auth.controller';
 import evaluationRoutes from './modules/evaluation/evaluation.controller';
 import quizRoutes from './modules/evaluation/quiz.router';
@@ -217,7 +218,7 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   next();
 });
 
-// Ruta de salud (antes de autenticación)
+// Ruta de salud raíz (antes de autenticación) — para UptimeRobot y herramientas externas
 app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'ok',
@@ -226,6 +227,9 @@ app.get('/health', (req: Request, res: Response) => {
     environment: NODE_ENV,
   });
 });
+
+// /api/health — para el cliente frontend (warm-up de cold start, omitido del rate limiter)
+app.use('/api/health', healthRoutes);
 
 // Rutas de autenticación
 app.use('/api/auth', authRoutes);
@@ -424,7 +428,8 @@ const startServer = async () => {
     console.log(`📝 Entorno: ${NODE_ENV}`);
     console.log(`🌐 Frontend URL: ${FRONTEND_URL}`);
     console.log('📋 Endpoints disponibles:');
-    console.log('  - GET  /health - Health check');
+    console.log('  - GET  /health     - Health check (raíz)');
+    console.log('  - GET  /api/health - Health check (warm-up frontend, sin rate limit)');
     console.log('  - POST /api/auth/* - Autenticación');
     console.log('  - GET  /api/users/* - Usuarios');
     console.log('  - GET  /api/progress/* - Progreso');
