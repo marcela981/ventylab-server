@@ -77,6 +77,20 @@ const MECANICA_MODULE_MAP: Record<string, string> = {
   'avanzado/recuperacion':      'module-08-recuperacion-proteccion',
 };
 
+// ─── moduleId map for ventylab quizzes ────────────────────────────────────────
+// Los JSON ventylab declaran moduleId con el nombre del archivo de lección
+// (ej. "historia_fisiología_aplicada"), pero la tabla `modules` usa el id
+// canónico seedeado por prisma/seed.ts. Este map traduce uno a otro.
+// Key = "<level>/<basename-without-.json>"
+const VENTYLAB_MODULE_MAP: Record<string, string> = {
+  'principiante/quizz-1': 'ventylab-module-01-historia-fisiologia',
+  'principiante/quizz-2': 'ventylab-module-02-ventilador-componentes',
+  'intermedio/quizz-1':   'ventylab-module-03-programacion-modos',
+  'intermedio/quizz-2':   'ventylab-module-04-vni-destete',
+  'avanzado/quizz-1':     'ventylab-module-06-innovacion-tecnologia',
+  'avanzado/quizz-2':     'ventylab-module-05-raciocinio-clinico',
+};
+
 // ─── Type definitions ─────────────────────────────────────────────────────────
 
 interface QuizOption {
@@ -231,7 +245,9 @@ async function seedQuizzes(): Promise<number> {
 
   for (const filePath of ventylabFiles) {
     const json     = readJson(filePath);
-    const moduleId = json.moduleId;
+    const level    = path.basename(path.dirname(filePath));
+    const base     = path.basename(filePath, '.json');
+    const moduleId = VENTYLAB_MODULE_MAP[`${level}/${base}`] ?? json.moduleId;
 
     // Advisory check — ventylab moduleIds use a different naming convention
     const moduleExists = await prisma.module.findUnique({ where: { id: moduleId } });
