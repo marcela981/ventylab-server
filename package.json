@@ -16,6 +16,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
     "seed:evaluation": "tsx prisma/seed-evaluation.ts",
+    "seed:clinical": "tsx prisma/seed-clinical-cases.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "simulate:vent": "npx ts-node --transpile-only scripts/simulate-ventilator.ts"
@@ -59,6 +60,7 @@
     "dotenv-cli": "^11.0.0",
     "jest": "^30.2.0",
     "prisma": "^6.19.2",
+    "socket.io-client": "^4.8.3",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "tsx": "^4.7.0",
