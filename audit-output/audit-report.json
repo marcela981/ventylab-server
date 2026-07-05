@@ -1,0 +1,773 @@
+{
+  "version": "1.0",
+  "generatedAt": "2026-05-19T02:44:55.219Z",
+  "results": [
+    {
+      "objectiveCode": "OE1",
+      "objectiveName": "Diseñar e implementar el modelo de contenido didáctico estructurado y trazable.",
+      "summary": "OE1: 4/5 gates en estado PASS.",
+      "gates": [
+        {
+          "id": "OE1.G1",
+          "name": "Conteo de módulos por nivel coincide con el currículo esperado",
+          "status": "PASS",
+          "detail": "7 niveles auditados sin discrepancias.",
+          "evidence": "prisma.level.findMany + EXPECTED_BY_TRACK"
+        },
+        {
+          "id": "OE1.G2",
+          "name": "Cada módulo tiene al menos una lección",
+          "status": "PASS",
+          "detail": "0 módulo(s) sin lecciones"
+        },
+        {
+          "id": "OE1.G3",
+          "name": "Cada lección tiene ≥1 Page con ≥1 PageSection no vacía",
+          "status": "WARN",
+          "detail": "Lecciones sin Page: 5; Lecciones sin secciones útiles: 5"
+        },
+        {
+          "id": "OE1.G4",
+          "name": "No existen lecciones huérfanas (sin Module)",
+          "status": "PASS",
+          "detail": "0 lección(es) huérfana(s)",
+          "evidence": "SELECT COUNT(*) FROM lessons LEFT JOIN modules ..."
+        },
+        {
+          "id": "OE1.G5",
+          "name": "Grafo de prerequisitos sin ciclos",
+          "status": "PASS",
+          "detail": "DFS no detectó ciclos en módulos ni niveles.",
+          "evidence": "DFS sobre ModulePrerequisite y LevelPrerequisite"
+        }
+      ],
+      "tables": [
+        {
+          "title": "OE1 — Cobertura del modelo didáctico",
+          "headers": [
+            "Level",
+            "Module",
+            "Lesson",
+            "#Pages",
+            "#Sections",
+            "Status"
+          ],
+          "rows": [
+            [
+              "mecanica/Prerequisitos",
+              "Fisiología Respiratoria",
+              "La Inversión Fisiológica (Fundamentos)",
+              0,
+              0,
+              "FAIL: módulo sin Page"
+            ],
+            [
+              "mecanica/Prerequisitos",
+              "Fisiología Respiratoria",
+              "Ecuación de Movimiento (Fundamentos)",
+              0,
+              0,
+              "FAIL: módulo sin Page"
+            ],
+            [
+              "mecanica/Prerequisitos",
+              "Fisiología Respiratoria",
+              "Variables de Fase (Fundamentos)",
+              0,
+              0,
+              "FAIL: módulo sin Page"
+            ],
+            [
+              "mecanica/Prerequisitos",
+              "Principios de Ventilación Mecánica",
+              "Indicaciones de Ventilación Mecánica",
+              0,
+              0,
+              "FAIL: módulo sin Page"
+            ],
+            [
+              "mecanica/Prerequisitos",
+              "Principios de Ventilación Mecánica",
+              "Parámetros Ventilatorios Básicos",
+              0,
+              0,
+              "FAIL: módulo sin Page"
+            ],
+            [
+              "mecanica/Nivel Principiante",
+              "La Inversión Fisiológica: De la Presión Negativa a la Positiva",
+              "La Inversión Fisiológica: De la Presión Negativa a la Positiva",
+              1,
+              44,
+              "PASS (cobertura a nivel de Module)"
+            ],
+            [
+              "mecanica/Nivel Principiante",
+              "El Santo Grial – La Ecuación del Movimiento Respiratorio",
+              "El Santo Grial – La Ecuación del Movimiento Respiratorio",
+              1,
+              35,
+              "PASS (cobertura a nivel de Module)"
+            ],
+            [
+              "mecanica/Nivel Principiante",
+              "Variables de Fase y el Ciclo Respiratorio",
+              "La Lógica de la Máquina: Variables de Fase y el Ciclo Respiratorio",
+              1,
+              13,
+              "PASS (cobertura a nivel de Module)"
+            ],
+            [
+              "mecanica/Nivel Principiante",
+              "Taxonomía de los Modos Ventilatorios",
+              "Taxonomía de los Modos: Volumen vs. Presión (Control y Asistencia)",
+              1,
+              23,
+              "PASS (cobertura a nivel de Module)"
+            ],
+            [
+              "mecanica/Nivel Principiante",
+              "Monitorización Gráfica I: Escalares y Bucles",
+              "Monitorización Gráfica I: Escalares, Bucles y Asincronías básicas",
+              1,
+              98,
+              "PASS (cobertura a nivel de Module)"
+            ],
+            [
+              "mecanica/Nivel Principiante",
+              "Efectos Sistémicos y VILI",
+              "Efectos Sistémicos y Lesión Inducida por la Ventilación (VILI)",
+              1,
+              86,
+              "PASS (cobertura a nivel de Module)"
+            ],
+            [
+              "mecanica/Nivel Intermedio",
+              "VCV vs PCV en el Paciente de Alta Complejidad",
+              "Ventilación por Control de Volumen (VCV) vs. Control de Presión (PCV) en el Paciente de Alta Complejidad",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Intermedio",
+              "PEEP: Fisiopatología y Optimización de la Oxigenación",
+              "PEEP: fisiopatología y optimización de la oxigenación en el paciente obeso",
+              1,
+              11,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Intermedio",
+              "Soporte Ventilatorio: PSV, CPAP y Protección Pulmonar",
+              "Soporte ventilatorio en el paciente obeso: PSV, CPAP y estrategias de protección pulmonar",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Intermedio",
+              "Modos Duales y SIMV: Fisiopatología Avanzada",
+              "Modos duales y SIMV: fisiopatología avanzada, ventilación protectora y andamiaje pedagógico",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Intermedio",
+              "Monitorización Gráfica y Fine Tuning",
+              "Monitorización gráfica y Fine Tuning en el paciente con obesidad",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Intermedio",
+              "Mecánicas Avanzadas y Evaluación para el Destete",
+              "Mecánicas avanzadas y evaluación para el destete en el paciente obeso",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Avanzado",
+              "VILI y Ventilación Protectora en el Paciente con Obesidad",
+              "VILI y ventilación protectora en el paciente con obesidad",
+              1,
+              9,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Avanzado",
+              "Monitorización de Alto Nivel: Driving Pressure y Poder Mecánico",
+              "Monitorización de alto nivel: Driving Pressure y Poder Mecánico",
+              1,
+              11,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Avanzado",
+              "Advertencias, Asincronías y Situaciones Complejas",
+              "Advertencias, asincronías y resolución de situaciones complejas",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Avanzado",
+              "Destete Ventilatorio Complejo y VMNI en el Paciente con Obesidad",
+              "Destete ventilatorio complejo y uso de VMNI en el paciente con obesidad",
+              1,
+              11,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Avanzado",
+              "Ventilación en Obesidad y Sedentarismo: Patologías Avanzadas",
+              "Ventilación en el paciente con obesidad y sedentarismo: perspectiva de patologías avanzadas",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Avanzado",
+              "Estrategias en Enfermedades Obstructivas: EPOC, Asma y Fumadores",
+              "Estrategias en enfermedades obstructivas: EPOC, asma y fumadores",
+              1,
+              11,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Avanzado",
+              "SDRA en el Paciente Obeso: Ventilación Protectora Avanzada",
+              "SDRA en el paciente obeso: ventilación protectora avanzada y monitoreo de alta precisión",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "mecanica/Nivel Avanzado",
+              "Protección Extrema: Sinergia entre Fisiología Respiratoria y Arquitectura Cognitiva",
+              "Protección extrema: sinergia entre fisiología respiratoria y arquitectura cognitiva",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "ventylab/Principiante",
+              "Historia y Fisiología Aplicada",
+              "Historia y fisiología aplicada: SDL/TBL y estrategias de recuperación",
+              1,
+              9,
+              "PASS"
+            ],
+            [
+              "ventylab/Principiante",
+              "El Ventilador y sus Componentes",
+              "El Ventilador y sus Componentes: Aprendizaje autodirigido con SDL/TBL",
+              1,
+              9,
+              "PASS"
+            ],
+            [
+              "ventylab/Intermedio",
+              "Programación de Modos Clásicos",
+              "Arquitectura del Aprendizaje Activo y Estructuración con JSON (Programación de modos clásicos)",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "ventylab/Intermedio",
+              "Ventilación No Invasiva y Destete",
+              "Guía maestra de estrategias de aprendizaje para ventilación no invasiva y destete",
+              1,
+              10,
+              "PASS"
+            ],
+            [
+              "ventylab/Avanzado",
+              "Raciocinio Clínico en Patologías Críticas",
+              "Raciocinio clínico en patologías críticas: neurobiología, recuperación y arquitectura de datos",
+              1,
+              9,
+              "PASS"
+            ],
+            [
+              "ventylab/Avanzado",
+              "Innovación, Tecnología y Gestión del Aprendizaje",
+              "Innovación, tecnología y gestión del aprendizaje clínico",
+              1,
+              10,
+              "PASS"
+            ]
+          ]
+        }
+      ],
+      "defenseBullets": [
+        "Demuestra que existe un esquema relacional (Level → Module → Lesson → Page → PageSection) instanciado en Postgres.",
+        "Cuantifica cobertura de contenido por track del currículo (mecánica y ventylab).",
+        "Garantiza la integridad referencial: ausencia de lecciones huérfanas y de ciclos en prerequisitos."
+      ]
+    },
+    {
+      "objectiveCode": "OE2",
+      "objectiveName": "Construir el módulo de evaluación basado en quizzes y actividades (exámenes y talleres).",
+      "summary": "OE2: 5/5 gates en estado PASS.",
+      "gates": [
+        {
+          "id": "OE2.G1",
+          "name": "Existen ≥26 quizzes activos",
+          "status": "PASS",
+          "detail": "26/26 quizzes activos en BD",
+          "evidence": "prisma.quiz.findMany"
+        },
+        {
+          "id": "OE2.G2",
+          "name": "Cada quiz tiene questions[] válidas, passingScore y referencia (Lesson o Module)",
+          "status": "PASS",
+          "detail": "26/26 quizzes bien formados; 0 sin vínculo válido"
+        },
+        {
+          "id": "OE2.G3",
+          "name": "Actividades EXAM (≥6) y TALLER (≥9) presentes",
+          "status": "PASS",
+          "detail": "EXAM=6/6, TALLER=9/9, otros=0",
+          "evidence": "prisma.activity.findMany"
+        },
+        {
+          "id": "OE2.G4",
+          "name": "Cada actividad tiene maxScore válido y estructura coherente",
+          "status": "PASS",
+          "detail": "15/15 actividades bien formadas"
+        },
+        {
+          "id": "OE2.G5",
+          "name": "evaluation.service.compareConfigurations sigue exportado (API residual)",
+          "status": "PASS",
+          "detail": "Función disponible para futuras integraciones (casos clínicos quedaron fuera de scope).",
+          "evidence": "src/modules/evaluation/evaluation.service.ts"
+        }
+      ],
+      "tables": [
+        {
+          "title": "OE2 — Inventario de quizzes y actividades",
+          "headers": [
+            "tipo",
+            "título",
+            "#preguntas",
+            "maxScore/passingScore",
+            "vínculo",
+            "status"
+          ],
+          "rows": [
+            [
+              "QUIZ",
+              "Quiz: Asincronías Paciente-Ventilador",
+              5,
+              80,
+              "module: module-03-advertencias-asincronias",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Destete Complejo y VMNI",
+              5,
+              80,
+              "module: module-04-destete-complejo-vmni",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: EPOC y Crisis Asmática",
+              5,
+              80,
+              "module: module-06-epoc-asma-fumadores",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Monitorización de Alto Nivel",
+              5,
+              80,
+              "module: module-02-monitorizacion-alto-nivel",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Ventilación en Pacientes Obesos",
+              5,
+              80,
+              "module: module-05-obesidad-sedentarismo",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Recuperación, Pronóstico y Secuelas",
+              5,
+              80,
+              "module: module-08-recuperacion-proteccion",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Manejo del SDRA (Síndrome de Distrés Respira",
+              5,
+              80,
+              "module: module-07-sdra",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: VILI y Ventilación Protectora",
+              5,
+              80,
+              "module: module-01-vili-ventilacion-protectora",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Evaluación y Práctica del Destete (Weaning)",
+              5,
+              80,
+              "module: module-06-avanzado-evaluacion-destete",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Modos Sincronizados y Duales",
+              5,
+              80,
+              "module: module-04-duales-simv",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Análisis Gráfico y Fine Tuning",
+              5,
+              80,
+              "module: module-05-graficas-fine-tuning",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Optimización del PEEP",
+              5,
+              80,
+              "module: module-02-peep-optimizar-oxigenacion",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Modos Espontáneos - PSV y CPAP",
+              5,
+              80,
+              "module: module-03-soporte-psv-cpap",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: VCV vs PCV - Análisis Profundo",
+              5,
+              80,
+              "module: module-01-vcv-vs-pcv",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: La Ecuación del Movimiento",
+              5,
+              80,
+              "module: module-02-ecuacion-movimiento",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Efectos Sistémicos de la Ventilación",
+              5,
+              80,
+              "module: module-06-efectos-sistemicos",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: La Inversión Fisiológica",
+              5,
+              80,
+              "module: module-01-inversion-fisiologica",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Modos Ventilatorios Básicos",
+              5,
+              80,
+              "module: module-04-modos-ventilatorios",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Monitorización Gráfica Básica",
+              5,
+              80,
+              "module: module-05-monitorizacion-grafica",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Variables de Fase del Ventilador",
+              5,
+              80,
+              "module: module-03-variables-fase",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Innovación, Tecnología y Gestión",
+              5,
+              80,
+              "module: ventylab-module-06-innovacion-tecnologia",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Raciocinio Clínico - Patologías Críticas",
+              5,
+              80,
+              "module: ventylab-module-05-raciocinio-clinico",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Programación de Modos Clásicos",
+              5,
+              80,
+              "module: ventylab-module-03-programacion-modos",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: VMNI y Estrategias de Destete",
+              5,
+              80,
+              "module: ventylab-module-04-vni-destete",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Historia y Fisiología Aplicada",
+              5,
+              80,
+              "module: ventylab-module-01-historia-fisiologia",
+              "PASS"
+            ],
+            [
+              "QUIZ",
+              "Quiz: Ventilador y sus Componentes",
+              5,
+              80,
+              "module: ventylab-module-02-ventilador-componentes",
+              "PASS"
+            ],
+            [
+              "EXAM",
+              "Examen Final: Especialista en Ventilación Mecánica",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "EXAM",
+              "Examen Final: Ventilación Mecánica Intermedia",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "EXAM",
+              "Examen Final: Fundamentos de Ventilación Mecánica",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "EXAM",
+              "Examen Final: VentyLab Avanzado",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "EXAM",
+              "Examen Final: VentyLab Intermedio",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "EXAM",
+              "Examen Final: VentyLab Principiante",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "TALLER",
+              "Taller ABP: Crisis Asmática y EPOC Exacerbado",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "TALLER",
+              "Taller ABP: Manejo del Paciente Obeso",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "TALLER",
+              "Taller ABP: Manejo Avanzado del SDRA",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "TALLER",
+              "Taller ABP: Interpretación de Ondas y Bucles",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "TALLER",
+              "Taller ABP: Transición de Modos y Soporte Parcial",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "TALLER",
+              "Taller de Integración: Configuración Inicial y Par",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "TALLER",
+              "Taller ABP: Troubleshooting y Raciocinio Avanzado",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "TALLER",
+              "Taller ABP: Programación en el Simulador VentyLab",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ],
+            [
+              "TALLER",
+              "Taller ABP: Reconocimiento y Armado del Circuito",
+              "—",
+              100,
+              "0 asignaciones",
+              "PASS"
+            ]
+          ]
+        }
+      ],
+      "defenseBullets": [
+        "Demuestra que el módulo de evaluación está poblado: 26 quizzes, 6 exámenes, 9 talleres.",
+        "Evidencia que cada quiz declara una rúbrica explícita (passingScore) y referencia a la lección que evalúa.",
+        "Garantiza la trazabilidad lecciones ↔ instrumentos de evaluación, alineada con los niveles del currículo."
+      ]
+    },
+    {
+      "objectiveCode": "OE3",
+      "objectiveName": "Generar retroalimentación pedagógica con LLM y respaldo determinístico.",
+      "summary": "OE3: 3/4 gates en estado PASS.",
+      "gates": [
+        {
+          "id": "OE3.G1",
+          "name": "evaluation.service.ts existe y exporta compareConfigurations + generateFeedback",
+          "status": "PASS",
+          "detail": "compareConfigurations=true, generateFeedback=true",
+          "evidence": "src/modules/evaluation/evaluation.service.ts"
+        },
+        {
+          "id": "OE3.G2",
+          "name": "Smoke test fallback determinístico ⇒ EvaluationFeedback válido",
+          "status": "PASS",
+          "detail": "feedback.length=102, arrays=[strengths=true, improvements=true, recommendations=true]",
+          "evidence": "evaluation.service.ts → generateFeedback (catch → generateFallbackFeedback)"
+        },
+        {
+          "id": "OE3.G3",
+          "name": "Provider strategy soporta ≥3 proveedores (OpenAI, Anthropic, Gemini)",
+          "status": "PASS",
+          "detail": "proveedores encontrados: openai, anthropic, gemini",
+          "evidence": "src/config/aiConfig.ts"
+        },
+        {
+          "id": "OE3.G4",
+          "name": "Log estructurado con {provider, latencyMs, parsedOK}",
+          "status": "WARN",
+          "detail": "No se encontró un sitio que loguee las tres claves simultáneamente. Reportado como gap (no se modifica código)."
+        }
+      ],
+      "tables": [
+        {
+          "title": "OE3 — Verificación del módulo de retroalimentación",
+          "headers": [
+            "check",
+            "status",
+            "evidence_path"
+          ],
+          "rows": [
+            [
+              "evaluation.service.ts presente y exports OK",
+              "PASS",
+              "src/modules/evaluation/evaluation.service.ts"
+            ],
+            [
+              "Fallback determinístico produce EvaluationFeedback válido",
+              "PASS",
+              "src/modules/evaluation/evaluation.service.ts → generateFallbackFeedback"
+            ],
+            [
+              "Provider strategy soporta ≥3 proveedores (OpenAI, Anthropic, Gemini)",
+              "PASS",
+              "src/config/aiConfig.ts"
+            ],
+            [
+              "Log estructurado con {provider, latencyMs, parsedOK}",
+              "WARN",
+              "—"
+            ]
+          ]
+        }
+      ],
+      "defenseBullets": [
+        "Demuestra que el servicio de evaluación expone una API estable para comparación y feedback.",
+        "Garantiza un camino determinístico cuando el LLM no está disponible (resiliencia educativa).",
+        "Documenta la estrategia multi-proveedor de IA y los puntos de observabilidad existentes (o reporta su ausencia como gap)."
+      ]
+    }
+  ]
+}

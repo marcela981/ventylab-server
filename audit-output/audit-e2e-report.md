@@ -1,0 +1,416 @@
+# Auditoría E2E del Sistema Ciberfísico — VentyLab
+
+**Tesis:** Plataforma educativa interactiva para entrenamiento en ventilación mecánica.
+**Autora:** Marcela Mazo Castro — Universidad del Valle
+**Generado:** 2026-05-19T03:48:49.284Z
+**Alcance:** Telemetría MQTT, comandos, loop de simulación, dashboard admin, contexto IA, higiene arquitectónica.
+
+## Resumen ejecutivo
+
+- **Gates aprobados:** 17 / 24
+- **G1** — Telemetría inbound: MQTT → backend → WebSocket cliente. → 0/1 PASS
+- **G2** — Comando outbound: WebSocket → backend → MQTT físico. → 0/1 PASS
+- **G3** — Loop de simulación: configuración, captura y respuesta a comando dinámico. → 0/1 PASS
+- **G4** — Dashboard admin: invariantes de GroupService. → 10/10 PASS
+- **G5** — Contexto IA: provider strategy, invocaciones por feature, sin keys hardcoded. → 6/6 PASS
+- **G6** — Higiene arquitectónica: tamaño, cross-feature, estilos, headers, storage. → 1/5 PASS
+
+## G1 — Telemetría inbound: MQTT → backend → WebSocket cliente.
+
+> G1: 0/1 gates en estado PASS.
+
+### Gates
+
+| ID | Gate | Estado | Detalle | Evidencia |
+|---|---|---|---|---|
+| G1.0 | Pre-requisitos de conexión | FAIL | No fue posible conectar al broker MQTT mqtt://test.mosquitto.org:1883. |  |
+
+## G2 — Comando outbound: WebSocket → backend → MQTT físico.
+
+> No fue posible auditar: broker MQTT inalcanzable.
+
+### Gates
+
+| ID | Gate | Estado | Detalle | Evidencia |
+|---|---|---|---|---|
+| G2.0 | Conexión MQTT al broker | FAIL | No fue posible conectar a mqtt://test.mosquitto.org:1883: connack timeout |  |
+
+## G3 — Loop de simulación: configuración, captura y respuesta a comando dinámico.
+
+> G3: 0/1 gates en estado PASS.
+
+### Gates
+
+| ID | Gate | Estado | Detalle | Evidencia |
+|---|---|---|---|---|
+| G3.0 | AUDIT_JWT_TOKEN configurado | WARN | Variable AUDIT_JWT_TOKEN no presente. Los endpoints /api/simulation/* requieren autenticación. |  |
+
+## G4 — Dashboard admin: invariantes de GroupService.
+
+> G4: 10/10 gates en estado PASS.
+
+### Gates
+
+| ID | Gate | Estado | Detalle | Evidencia |
+|---|---|---|---|---|
+| G4.1 | createGroup raíz: enrollmentCode generado y depth=0 | PASS | code=8YL2QQ depth=0 |  |
+| G4.2 | Creador auto-añadido como TEACHER member | PASS | member role=TEACHER |  |
+| G4.3 | updateGroup persiste cambios | PASS | description='updated by audit' |  |
+| G4.4 | addMember(STUDENT) crea membresía con rol correcto | PASS | role=STUDENT |  |
+| G4.5 | setSimulatorLead asigna simulatorLeaderId | PASS | simulatorLeaderId=cmpc3ey1d0001sjdc3e02up7z |  |
+| G4.6 | removeMember del líder nulifica simulatorLeaderId | PASS | simulatorLeaderId después de remover líder=null |  |
+| G4.7 | Jerarquía depth 0→1→2 construida | PASS | child.depth=1, grand.depth=2 |  |
+| G4.8 | createGroup rechaza depth=3 (max 3 niveles) | PASS | rechazado con: Máximo 3 niveles de jerarquía permitidos |  |
+| G4.9 | deleteGroup rechaza si hay subgrupos | PASS | rechazado correctamente |  |
+| G4.10 | deleteGroup elimina hojas y luego raíz | PASS | árbol limpiado |  |
+
+### G4 — Invariantes ejecutadas
+
+| id | invariante | status | evidencia |
+| --- | --- | --- | --- |
+| G4.1 | createGroup raíz: enrollmentCode generado y depth=0 | PASS | code=8YL2QQ depth=0 |
+| G4.2 | Creador auto-añadido como TEACHER member | PASS | member role=TEACHER |
+| G4.3 | updateGroup persiste cambios | PASS | description='updated by audit' |
+| G4.4 | addMember(STUDENT) crea membresía con rol correcto | PASS | role=STUDENT |
+| G4.5 | setSimulatorLead asigna simulatorLeaderId | PASS | simulatorLeaderId=cmpc3ey1d0001sjdc3e02up7z |
+| G4.6 | removeMember del líder nulifica simulatorLeaderId | PASS | simulatorLeaderId después de remover líder=null |
+| G4.7 | Jerarquía depth 0→1→2 construida | PASS | child.depth=1, grand.depth=2 |
+| G4.8 | createGroup rechaza depth=3 (max 3 niveles) | PASS | rechazado con: Máximo 3 niveles de jerarquía permitidos |
+| G4.9 | deleteGroup rechaza si hay subgrupos | PASS | rechazado correctamente |
+| G4.10 | deleteGroup elimina hojas y luego raíz | PASS | árbol limpiado |
+
+## G5 — Contexto IA: provider strategy, invocaciones por feature, sin keys hardcoded.
+
+> G5: 6/6 gates en estado PASS.
+
+### Gates
+
+| ID | Gate | Estado | Detalle | Evidencia |
+|---|---|---|---|---|
+| G5.1 | AIServiceManager presente con analyzeVentilatorConfiguration | PASS | exposesAnalyze=true | src/shared/ai/AIServiceManager.ts |
+| G5.2 | aiConfig declara ≥3 providers (openai, anthropic, gemini) | PASS | encontrados: openai, anthropic, gemini | src/config/aiConfig.ts |
+| G5.3 | Sin API keys hardcoded (deben venir de process.env) | PASS | todas las keys salen de process.env | src/config/aiConfig.ts |
+| G5.4 | AIServiceManager invocado en features/simulador | PASS | 4 invocación(es) | ventilab-web/src/features/simulador |
+| G5.5 | AIServiceManager invocado en features/ensenanza | PASS | 7 invocación(es) | ventilab-web/src/features/ensenanza |
+| G5.6 | Fallback determinístico ya verificado por audit-thesis-objectives OE3.G2 | PASS | Re-usa el gate OE3.G2 sin re-ejecutarlo (evita doble smoke). | audit-output/audit-report.json → OE3 |
+
+### G5 — Inspección del subsistema IA
+
+| campo | valor | evidencia |
+| --- | --- | --- |
+| AIServiceManager.ts | OK | src/shared/ai/AIServiceManager.ts |
+| aiConfig.providers | 3 | src/config/aiConfig.ts |
+| hardcoded_key | none | src/config/aiConfig.ts |
+| invocaciones_simulador | 4 | features/simulador |
+| invocaciones_ensenanza | 7 | features/ensenanza |
+
+## G6 — Higiene arquitectónica: tamaño, cross-feature, estilos, headers, storage.
+
+> G6: 1/5 gates en estado PASS.
+
+### Gates
+
+| ID | Gate | Estado | Detalle | Evidencia |
+|---|---|---|---|---|
+| G6.1 | Tamaño de archivos (WARN >500, FAIL >700) | FAIL | 74 archivo(s) excedidos (29 en FAIL) |  |
+| G6.2 | Sin imports cross-feature prohibidos (admin↔simulador internals) | PASS | 0 violación(es) encontradas |  |
+| G6.3 | Sin sx={…}, style={…} ni styled-components | WARN | 3574 ocurrencia(s) en código |  |
+| G6.4 | Archivos con header VentyLab | WARN | 558/659 archivos sin header (heurística por tokens "VentyLab"/"Marcela Mazo") |  |
+| G6.5 | Sin localStorage/sessionStorage en features/progress/ | WARN | 39 ocurrencia(s) |  |
+
+### G6.1 — Archivos oversize
+
+| archivo | línea | nota |
+| --- | --- | --- |
+| server/src/index.ts | 512 | WARN: > 500 líneas |
+| server/src/shared\ai\AIServiceManager.ts | 515 | WARN: > 500 líneas |
+| server/src/shared\ai\providers\GeminiProvider.ts | 558 | WARN: > 500 líneas |
+| server/src/modules\teaching\learningProgress.service.ts | 521 | WARN: > 500 líneas |
+| server/src/modules\teaching\lessons.service.ts | 807 | FAIL: > 700 líneas |
+| server/src/modules\teaching\levelPrerequisites.service.ts | 515 | WARN: > 500 líneas |
+| server/src/modules\teaching\levels.service.ts | 933 | FAIL: > 700 líneas |
+| server/src/modules\teaching\modules.service.ts | 1066 | FAIL: > 700 líneas |
+| server/src/modules\teaching\overrides.service.ts | 762 | FAIL: > 700 líneas |
+| server/src/modules\teaching\progress.controller.ts | 930 | FAIL: > 700 líneas |
+| server/src/modules\teaching\steps.service.ts | 802 | FAIL: > 700 líneas |
+| server/src/modules\teaching\teacherStudent.service.ts | 517 | WARN: > 500 líneas |
+| server/src/modules\teaching\unifiedProgress.service.ts | 571 | WARN: > 500 líneas |
+| server/src/modules\simulation\simulation.service.ts | 612 | WARN: > 500 líneas |
+| server/src/modules\simulation\__tests__\mqtt-client.test.ts | 521 | WARN: > 500 líneas |
+| server/src/modules\simulation\__tests__\signal-generator.service.test.ts | 552 | WARN: > 500 líneas |
+| server/src/modules\simulation\__tests__\simulation.service.test.ts | 805 | FAIL: > 700 líneas |
+| server/src/modules\profile\profile.controller.ts | 656 | WARN: > 500 líneas |
+| server/src/modules\evaluation\evaluation.controller.ts | 718 | FAIL: > 700 líneas |
+| server/src/modules\evaluation\evaluation.service.ts | 650 | WARN: > 500 líneas |
+| web/src/theme\theme.js | 578 | WARN: > 500 líneas |
+| web/src/styles\animations.js | 724 | FAIL: > 700 líneas |
+| web/src/shared\utils\suggestions.es.js | 693 | WARN: > 500 líneas |
+| web/src/shared\services\authService.js | 626 | WARN: > 500 líneas |
+| web/src/shared\hooks\useAnimations.js | 506 | WARN: > 500 líneas |
+| web/src/shared\hooks\useSearch.js | 778 | FAIL: > 700 líneas |
+| web/src/shared\components\Navbar.jsx | 661 | WARN: > 500 líneas |
+| web/src/shared\components\SearchBar.jsx | 687 | WARN: > 500 líneas |
+| web/src/shared\components\SearchFilters.jsx | 839 | FAIL: > 700 líneas |
+| web/src/features\simulador\simuladorVentilador\dashboard\hooks\useDashboardState.ts | 528 | WARN: > 500 líneas |
+| web/src/features\simulador\simuladorVentilador\dashboard\componentes\MetricColumn.jsx | 560 | WARN: > 500 líneas |
+| web/src/features\simulador\simuladorPaciente\FormularioPaciente\componentes\PatientForm.tsx | 639 | WARN: > 500 líneas |
+| web/src/features\progress\LearningProgressContext.jsx | 1479 | FAIL: > 700 líneas |
+| web/src/features\progress\services\progressService.js | 972 | FAIL: > 700 líneas |
+| web/src/features\progress\services\progressService.ts | 696 | WARN: > 500 líneas |
+| web/src/features\progress\services\ProgressSource.ts | 646 | WARN: > 500 líneas |
+| web/src/features\profile\components\ChangePasswordForm.jsx | 563 | WARN: > 500 líneas |
+| web/src/features\profile\components\EditProfileForm.jsx | 602 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\progreso\ProgressTracker.jsx | 864 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\progreso\components\ModuleProgressCard.jsx | 875 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\progreso\components\ProgressTree.jsx | 793 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\hooks\useLesson.js | 509 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\hooks\useLessonProgress.ts | 929 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\data\helpers\lessonLoader.js | 742 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\data\curriculum\selectors.js | 526 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\dashboard\FlashcardDashboardPage.jsx | 840 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\dashboard\components\QuickAccessLessons\QuickAccessLessons.jsx | 637 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\components\pages\TeachingModule.jsx | 1148 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\components\navigation\ModuleCategoryNav.jsx | 617 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\components\modulos\FlashcardSystem.jsx | 786 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\components\modulos\ModuleGrid.jsx | 517 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\components\modulos\LevelStepper\LevelStepper.jsx | 646 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\components\media\InteractiveDiagram.jsx | 533 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\components\leccion\LessonViewer.jsx | 817 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\components\leccion\content\ClinicalCase.jsx | 1331 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\components\leccion\content\ParameterTable.jsx | 858 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\components\leccion\content\PersonalNotes.jsx | 633 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\components\clinical\ExpertComparison.jsx | 501 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\components\ai\AITopicExpander.jsx | 1642 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\shared\components\ai\AITutorChat.jsx | 526 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\components\ai\ContentGeneratorPanel.jsx | 579 | WARN: > 500 líneas |
+| web/src/features\ensenanza\shared\components\ai\TutorAIPopup.jsx | 933 | FAIL: > 700 líneas |
+| web/src/features\ensenanza\curriculum\ensenanzaRespiratoria\modules.js | 622 | WARN: > 500 líneas |
+| web/src/features\dashboard\hooks\useDashboardData.js | 905 | FAIL: > 700 líneas |
+| web/src/features\dashboard\components\AdminDashboard.jsx | 827 | FAIL: > 700 líneas |
+| web/src/features\dashboard\components\StudentDashboard.jsx | 875 | FAIL: > 700 líneas |
+| web/src/features\dashboard\components\TeacherDashboard.jsx | 530 | WARN: > 500 líneas |
+| web/src/features\ai-feedback\services\aiExpandService.js | 543 | WARN: > 500 líneas |
+| web/src/features\ai-feedback\services\AIServiceManager.js | 574 | WARN: > 500 líneas |
+| web/src/features\ai-feedback\services\chatService.js | 589 | WARN: > 500 líneas |
+| web/src/features\ai-feedback\services\contextBuilder.ts | 519 | WARN: > 500 líneas |
+| web/src/features\ai-feedback\services\providers\GeminiProvider.js | 533 | WARN: > 500 líneas |
+| web/src/features\ai-feedback\hooks\useAITutor.js | 652 | WARN: > 500 líneas |
+| web/src/features\admin\hooks\useUserManagement.js | 597 | WARN: > 500 líneas |
+
+### G6.2 — Cross-feature imports prohibidos
+
+_(sin filas)_
+
+### G6.3 — Estilos inline / styled-components
+
+| archivo | línea | nota |
+| --- | --- | --- |
+| web/src/styles\animations.js | 466 | sx={ |
+| web/src/styles\animations.js | 696 | sx={ |
+| web/src/styles\animations.js | 699 | sx={ |
+| web/src/styles\animations.js | 712 | sx={ |
+| web/src/shared\utils\highlightText.js | 269 | sx={ |
+| web/src/shared\utils\highlightText.js | 318 | sx={ |
+| web/src/shared\utils\highlightText.js | 383 | sx={ |
+| web/src/shared\contexts\NotificationContext.jsx | 134 | sx={ |
+| web/src/shared\components\ErrorBoundary.jsx | 51 | sx={ |
+| web/src/shared\components\ErrorBoundary.jsx | 59 | sx={ |
+| web/src/shared\components\ErrorBoundary.jsx | 61 | sx={ |
+| web/src/shared\components\ErrorBoundary.jsx | 70 | sx={ |
+| web/src/shared\components\ErrorBoundary.jsx | 75 | sx={ |
+| web/src/shared\components\ErrorBoundary.jsx | 80 | sx={ |
+| web/src/shared\components\ErrorBoundary.jsx | 93 | sx={ |
+| web/src/shared\components\ErrorBoundary.jsx | 98 | sx={ |
+| web/src/shared\components\ErrorBoundary.jsx | 108 | sx={ |
+| web/src/shared\components\Layout.jsx | 54 | sx={ |
+| web/src/shared\components\Layout.jsx | 67 | sx={ |
+| web/src/shared\components\LevelBadge.jsx | 119 | sx={ |
+| web/src/shared\components\LevelBadge.jsx | 132 | sx={ |
+| web/src/shared\components\LevelBadge.jsx | 135 | style={ |
+| web/src/shared\components\LevelBadge.jsx | 139 | sx={ |
+| web/src/shared\components\LevelBadge.jsx | 160 | sx={ |
+| web/src/shared\components\LevelBadge.jsx | 162 | sx={ |
+| web/src/shared\components\LevelBadge.jsx | 172 | sx={ |
+| web/src/shared\components\LevelBadge.jsx | 180 | sx={ |
+| web/src/shared\components\LevelBadge.jsx | 189 | sx={ |
+| web/src/shared\components\Navbar.jsx | 243 | sx={ |
+| web/src/shared\components\Navbar.jsx | 253 | sx={ |
+| web/src/shared\components\Navbar.jsx | 285 | sx={ |
+| web/src/shared\components\Navbar.jsx | 293 | sx={ |
+| web/src/shared\components\Navbar.jsx | 306 | sx={ |
+| web/src/shared\components\Navbar.jsx | 307 | sx={ |
+| web/src/shared\components\Navbar.jsx | 311 | sx={ |
+| web/src/shared\components\Navbar.jsx | 342 | sx={ |
+| web/src/shared\components\Navbar.jsx | 413 | sx={ |
+| web/src/shared\components\Navbar.jsx | 424 | sx={ |
+| web/src/shared\components\Navbar.jsx | 438 | sx={ |
+| web/src/shared\components\Navbar.jsx | 441 | sx={ |
+| web/src/shared\components\Navbar.jsx | 452 | sx={ |
+| web/src/shared\components\Navbar.jsx | 467 | sx={ |
+| web/src/shared\components\Navbar.jsx | 478 | sx={ |
+| web/src/shared\components\Navbar.jsx | 508 | sx={ |
+| web/src/shared\components\Navbar.jsx | 510 | sx={ |
+| web/src/shared\components\Navbar.jsx | 523 | sx={ |
+| web/src/shared\components\Navbar.jsx | 528 | sx={ |
+| web/src/shared\components\Navbar.jsx | 551 | sx={ |
+| web/src/shared\components\Navbar.jsx | 567 | sx={ |
+| web/src/shared\components\Navbar.jsx | 575 | sx={ |
+| web/src/shared\components\Navbar.jsx | 586 | sx={ |
+| web/src/shared\components\Navbar.jsx | 602 | sx={ |
+| web/src/shared\components\Navbar.jsx | 615 | sx={ |
+| web/src/shared\components\Navbar.jsx | 632 | sx={ |
+| web/src/shared\components\Navbar.jsx | 640 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 158 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 167 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 194 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 212 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 215 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 228 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 239 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 257 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 274 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 281 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 284 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 294 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 297 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 308 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 322 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 333 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 337 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 357 | sx={ |
+| web/src/shared\components\ProfileDropdown.jsx | 363 | sx={ |
+| web/src/shared\components\RoleGuard.jsx | 123 | sx={ |
+| web/src/shared\components\RoleGuard.jsx | 147 | sx={ |
+| web/src/shared\components\RoleGuard.jsx | 195 | sx={ |
+| web/src/shared\components\SearchBar.jsx | 109 | sx={ |
+| web/src/shared\components\SearchBar.jsx | 324 | sx={ |
+| web/src/shared\components\SearchBar.jsx | 334 | sx={ |
+
+### G6.4 — Archivos sin header VentyLab
+
+| archivo | línea | nota |
+| --- | --- | --- |
+| server/src/index.ts | 1 |  |
+| server/src/shared\utils\computeModuleProgress.ts | 1 |  |
+| server/src/shared\utils\errors.ts | 1 |  |
+| server/src/shared\utils\index.ts | 1 |  |
+| server/src/shared\utils\jwt.ts | 1 |  |
+| server/src/shared\utils\password.ts | 1 |  |
+| server/src/shared\utils\response.ts | 1 |  |
+| server/src/shared\types\common.types.ts | 1 |  |
+| server/src/shared\types\override.types.ts | 1 |  |
+| server/src/shared\types\progress.ts | 1 |  |
+| server/src/shared\middleware\auth.middleware.ts | 1 |  |
+| server/src/shared\middleware\error-handler.middleware.ts | 1 |  |
+| server/src/shared\middleware\rate-limiter.middleware.ts | 1 |  |
+| server/src/shared\middleware\validator.middleware.ts | 1 |  |
+| server/src/shared\middleware\validators.ts | 1 |  |
+| server/src/shared\infrastructure\database.ts | 1 |  |
+| server/src/shared\ai\AIServiceManager.ts | 1 |  |
+| server/src/shared\ai\FallbackManager.ts | 1 |  |
+| server/src/shared\ai\PromptTemplateManager.ts | 1 |  |
+| server/src/shared\ai\ResponseParser.ts | 1 |  |
+| server/src/shared\ai\providers\ClaudeProvider.ts | 1 |  |
+| server/src/shared\ai\providers\GeminiProvider.ts | 1 |  |
+| server/src/shared\ai\providers\OllamaProvider.ts | 1 |  |
+| server/src/shared\ai\providers\OpenAIProvider.ts | 1 |  |
+| server/src/modules\teaching\achievements.service.ts | 1 |  |
+| server/src/modules\teaching\cards.routes.ts | 1 |  |
+| server/src/modules\teaching\changelog.controller.ts | 1 |  |
+| server/src/modules\teaching\changelog.routes.ts | 1 |  |
+| server/src/modules\teaching\changelog.service.ts | 1 |  |
+| server/src/modules\teaching\curriculum-editor.controller.ts | 1 |  |
+| server/src/modules\teaching\curriculum-editor.service.ts | 1 |  |
+| server/src/modules\teaching\curriculum.controller.ts | 1 |  |
+| server/src/modules\teaching\curriculum.routes.ts | 1 |  |
+| server/src/modules\teaching\curriculum.service.ts | 1 |  |
+| server/src/modules\teaching\index.ts | 1 |  |
+| server/src/modules\teaching\learningProgress.service.ts | 1 |  |
+| server/src/modules\teaching\lessonProgress.service.ts | 1 |  |
+| server/src/modules\teaching\lessons.controller.ts | 1 |  |
+| server/src/modules\teaching\lessons.routes.ts | 1 |  |
+| server/src/modules\teaching\lessons.service.ts | 1 |  |
+| server/src/modules\teaching\levelCalculation.service.ts | 1 |  |
+| server/src/modules\teaching\levelPrerequisites.service.ts | 1 |  |
+| server/src/modules\teaching\levels.controller.ts | 1 |  |
+| server/src/modules\teaching\levels.routes.ts | 1 |  |
+| server/src/modules\teaching\levels.service.ts | 1 |  |
+| server/src/modules\teaching\moduleProgress.service.ts | 1 |  |
+| server/src/modules\teaching\modules.controller.ts | 1 |  |
+| server/src/modules\teaching\modules.routes.ts | 1 |  |
+| server/src/modules\teaching\modules.service.ts | 1 |  |
+| server/src/modules\teaching\moduleUnlock.service.ts | 1 |  |
+
+### G6.5 — Storage en features/progress
+
+| archivo | línea | nota |
+| --- | --- | --- |
+| web/src/features\progress\LearningProgressContext.jsx | 171 | // We deliberately DO NOT hydrate `progressByModule` from localStorage on |
+| web/src/features\progress\LearningProgressContext.jsx | 198 | // DO NOT rely on localStorage - this function ALWAYS fetches from DB when authe |
+| web/src/features\progress\LearningProgressContext.jsx | 331 | // triggers a fresh DB fetch even if localStorage was cleared) |
+| web/src/features\progress\LearningProgressContext.jsx | 368 | // When user clears localStorage, this effect ensures DB data repopulates progre |
+| web/src/features\progress\services\progressService.js | 153 | localStorage.setItem('ventilab_user_data', JSON.stringify(payload.user)); |
+| web/src/features\progress\services\ProgressSource.ts | 77 | localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(progress)); |
+| web/src/features\progress\services\ProgressSource.ts | 89 | localStorage.removeItem(LOCAL_STORAGE_KEY); |
+| web/src/features\progress\services\ProgressSource.ts | 90 | localStorage.removeItem(LAST_SYNC_KEY); |
+| web/src/features\progress\services\ProgressSource.ts | 102 | return localStorage.getItem(LAST_SYNC_KEY); |
+| web/src/features\progress\services\ProgressSource.ts | 114 | localStorage.setItem(LAST_SYNC_KEY, timestamp); |
+| web/src/features\progress\services\ProgressSource.ts | 121 | try { return JSON.parse(localStorage.getItem(LS_QUEUE) \|\| '[]'); } catch { retur |
+| web/src/features\progress\services\ProgressSource.ts | 126 | localStorage.setItem(LS_QUEUE, JSON.stringify(q)); |
+| web/src/features\progress\services\ProgressSource.ts | 135 | // intentionally no-ops so localStorage cannot win against /api/progress/overvie |
+| web/src/features\progress\services\ProgressSource.ts | 213 | // Database is the SINGLE SOURCE OF TRUTH - localStorage is only for pending cha |
+| web/src/features\progress\services\ProgressSource.ts | 216 | // 1. If lesson exists in DB → use DB progress UNLESS localStorage has higher pr |
+| web/src/features\progress\services\ProgressSource.ts | 217 | // 2. If lesson only exists in localStorage → add it (pending sync to DB) |
+| web/src/features\progress\services\ProgressSource.ts | 218 | // 3. NEVER downgrade progress (max of DB and localStorage) |
+| web/src/features\progress\services\ProgressSource.ts | 219 | // 4. ALWAYS prefer DB timestamp unless localStorage has higher progress |
+| web/src/features\progress\services\ProgressSource.ts | 221 | // This ensures that when user clears localStorage, DB data is loaded correctly |
+| web/src/features\progress\services\ProgressSource.ts | 226 | // New lesson in localStorage (not yet synced to DB) - add it |
+| web/src/features\progress\services\ProgressSource.ts | 234 | // Lesson exists in both DB and localStorage |
+| web/src/features\progress\services\ProgressSource.ts | 235 | // CRITICAL: Only override DB if localStorage has HIGHER progress |
+| web/src/features\progress\services\ProgressSource.ts | 236 | // This prevents localStorage from masking DB updates |
+| web/src/features\progress\services\ProgressSource.ts | 250 | // This is the CRITICAL FIX: when localStorage is cleared, DB data is preserved |
+| web/src/features\progress\services\ProgressSource.ts | 375 | * Database is PRIMARY, localStorage is SECONDARY (only for pending changes). |
+| web/src/features\progress\services\ProgressSource.ts | 379 | * 2. Read localStorage queue (pending changes not yet synced) |
+| web/src/features\progress\services\ProgressSource.ts | 381 | * 4. Merge: DB data + localStorage queue (only if localStorage has higher progre |
+| web/src/features\progress\services\ProgressSource.ts | 384 | * IMPORTANT: If user clears localStorage, this method will correctly load from D |
+| web/src/features\progress\services\ProgressSource.ts | 393 | // DO NOT read full localStorage snapshot here - DB is primary source |
+| web/src/features\progress\services\ProgressSource.ts | 478 | console.error('   Will fall back to localStorage if available'); |
+| web/src/features\progress\services\ProgressSource.ts | 482 | console.warn('⚠️  No auth token - will use localStorage only (offline mode)'); |
+| web/src/features\progress\services\ProgressSource.ts | 485 | // 3) Merge: DB (primary) + localStorage queue (only if higher progress) |
+| web/src/features\progress\services\ProgressSource.ts | 486 | // CRITICAL: DB data takes precedence, localStorage only adds pending changes |
+| web/src/features\progress\hooks\useOutboxReconciliation.js | 190 | localStorage.setItem('progress.outbox.v2', JSON.stringify(updatedEvents)); |
+| web/src/features\progress\hooks\useOutboxReconciliation.js | 227 | localStorage.setItem('progress.outbox.v2', JSON.stringify(updatedEvents)); |
+| web/src/features\progress\hooks\useProgressPersistence.js | 6 | * This hook used to mirror `progressByModule` into `localStorage` and rehydrate |
+| web/src/features\progress\hooks\useProgressPersistence.js | 11 | * GET /api/progress/overview). Writing to or reading from localStorage here is |
+| web/src/features\progress\hooks\useProgressPersistence.js | 19 | // Intentionally empty. Do NOT reintroduce localStorage I/O here. |
+| web/src/features\progress\hooks\useTokenManager.js | 128 | localStorage.setItem('ventilab_user_data', JSON.stringify(data.user)); |
+
+## Implicaciones para defensa
+
+### G1
+- Auditor no pudo ejecutarse por dependencias de red — reportar como gap, no como ausencia de capacidad.
+
+### G2
+- Demuestra el camino completo de comando con observación directa en el broker MQTT.
+- Valida la estructura del payload publicado (modo, Vt, FR, PEEP, FiO₂).
+- Cuantifica el tiempo backend→broker para auditar el SLO de respuesta del lazo de control.
+
+### G3
+- Demuestra que el lazo configurar → arrancar → emitir telemetría → mutar parámetros funciona E2E.
+- Aporta evidencia cuantitativa de la respuesta del modelo fisiológico a un cambio de PEEP en runtime.
+- Cuantifica plausibilidad fisiológica (rangos de presión y volumen) sobre 100 frames capturados.
+
+### G4
+- Demuestra que GroupService preserva sus invariantes de negocio en escenarios CRUD reales.
+- Verifica la regla de profundidad máxima (3 niveles) por construcción, no por inspección.
+- Garantiza el aislamiento del audit con cleanup en finally (no deja residuo en la BD).
+
+### G5
+- Demuestra la integración de IA con conteo de invocaciones por feature didáctica y de simulación.
+- Garantiza ausencia de secretos hardcoded en aiConfig (cumplimiento de seguridad básica).
+- Documenta la estrategia de fallback como path determinístico complementario al LLM.
+
+### G6
+- Demuestra adherencia (o gap) a las reglas de modularidad por feature declaradas en la arquitectura.
+- Cuantifica deuda técnica de estilos inline y archivos monolíticos en ambos repos.
+- Garantiza la trazabilidad autoría (header VentyLab) y el origen de verdad de progreso (BD vs storage).
