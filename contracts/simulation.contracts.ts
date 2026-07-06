@@ -414,6 +414,9 @@ export interface ReserveVentilatorResponse {
   /** Current user if already reserved */
   currentUser?: string;
 
+  /** Display name (or email) of the user holding the reservation, if already reserved */
+  currentUserName?: string | null;
+
   /** Message */
   message: string;
 }
@@ -444,6 +447,9 @@ export interface GetVentilatorStatusResponse {
 
   /** Current user if reserved */
   currentUser?: string;
+
+  /** Display name (or email) of the user holding the reservation, if reserved */
+  currentUserName?: string | null;
 
   /** Group ID if the reservation is for a group */
   groupId?: string | null;

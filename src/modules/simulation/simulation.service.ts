@@ -388,20 +388,62 @@ export class SimulationService {
    * Reserva el ventilador físico para un usuario.
    * Solo un usuario puede tener reserva activa a la vez.
    * Si el mismo usuario ya tiene una reserva activa, se la devuelve.
+   *
+   * Adquisición atómica: la sección crítica (expirar → comprobar → crear) corre
+   * dentro de prisma.$transaction serializada por un advisory lock de Postgres
+   * ligado al deviceId (pg_advisory_xact_lock, liberado al hacer commit). Dos
+   * requests concurrentes se encolan en el lock: exactamente uno crea la reserva
+   * y el otro ve la fila ACTIVE y recibe el conflicto (409 en el controlador).
    * @param request - Datos de la reserva
    * @returns Resultado de la reserva
    */
   async reserveVentilator(request: ReserveVentilatorRequest): Promise<ReserveVentilatorResponse> {
-    const db = this.prisma as any;
+    const outcome = await this.prisma.$transaction(async (txClient) => {
+      const tx = txClient as any;
 
-    // Auto-expire overdue reservations first
-    await this.expireOverdueReservations();
+      // Serializa a los competidores por ESTE dispositivo (bloquea hasta obtenerlo)
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${DEVICE_ID}))`;
 
-    const existing = await db.ventilatorReservation.findFirst({
-      where: { status: 'ACTIVE' },
+      // Auto-expire overdue reservations dentro de la misma transacción
+      await tx.ventilatorReservation.updateMany({
+        where: { status: 'ACTIVE', endTime: { lt: new Date() } },
+        data: { status: 'EXPIRED' },
+      });
+
+      const existing = await tx.ventilatorReservation.findFirst({
+        where: { status: 'ACTIVE' },
+        include: { user: { select: { name: true, email: true } } },
+      });
+
+      if (existing) {
+        return { kind: 'existing' as const, existing };
+      }
+
+      const startTime = new Date();
+      const endTime = new Date(startTime.getTime() + request.durationMinutes * 60 * 1000);
+
+      const reservation = await tx.ventilatorReservation.create({
+        data: {
+          userId: request.userId,
+          userRole: request.userRole ?? 'STUDENT',
+          deviceId: DEVICE_ID,
+          status: 'ACTIVE',
+          durationMinutes: request.durationMinutes,
+          startTime,
+          endTime,
+          purpose: request.purpose,
+          groupId: (request as any).groupId ?? null,
+          leaderId: (request as any).leaderId ?? null,
+        },
+        include: { user: { select: { name: true, email: true } } },
+      });
+
+      return { kind: 'created' as const, reservation, startTime, endTime };
     });
 
-    if (existing) {
+    if (outcome.kind === 'existing') {
+      const existing = outcome.existing;
+
       // If the same user already holds the reservation, return it (recovery)
       if (existing.userId === request.userId) {
         return {
@@ -415,33 +457,19 @@ export class SimulationService {
 
       return {
         success: false,
-        message: 'Ventilator is already reserved',
+        message: 'Ventilador ya reservado',
         currentUser: existing.userId,
+        currentUserName: existing.user?.name ?? existing.user?.email ?? null,
       };
     }
 
-    const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + request.durationMinutes * 60 * 1000);
-
-    const reservation = await db.ventilatorReservation.create({
-      data: {
-        userId: request.userId,
-        userRole: request.userRole ?? 'STUDENT',
-        deviceId: DEVICE_ID,
-        status: 'ACTIVE',
-        durationMinutes: request.durationMinutes,
-        startTime,
-        endTime,
-        purpose: request.purpose,
-        groupId: (request as any).groupId ?? null,
-        leaderId: (request as any).leaderId ?? null,
-      },
-    });
+    const { reservation, startTime, endTime } = outcome;
 
     // Notify ALL connected clients that the ventilator is now reserved
     // (so other teachers can see the "occupied" status)
     this.gateway.broadcastData('ventilator:reserved', {
       userId: request.userId,
+      userName: reservation.user?.name ?? reservation.user?.email ?? null,
       reservationId: reservation.id,
       groupId: (request as any).groupId ?? null,
       leaderId: (request as any).leaderId ?? null,
@@ -508,6 +536,7 @@ export class SimulationService {
 
     const activeReservation = await db.ventilatorReservation.findFirst({
       where: { status: 'ACTIVE', deviceId: targetDeviceId },
+      include: { user: { select: { name: true, email: true } } },
     });
 
     return {
@@ -516,6 +545,7 @@ export class SimulationService {
       isReserved: !!activeReservation,
       reservationId: activeReservation?.id,
       currentUser: activeReservation?.userId,
+      currentUserName: activeReservation?.user?.name ?? activeReservation?.user?.email ?? null,
       groupId: activeReservation?.groupId ?? null,
       leaderId: activeReservation?.leaderId ?? null,
       reservationEndsAt: activeReservation?.endTime?.getTime(),
