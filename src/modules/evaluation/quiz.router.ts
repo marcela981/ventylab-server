@@ -112,6 +112,7 @@ router.post('/quizzes/:quizId/attempt', writeLimiter, async (req: Request, res: 
     if (existing) {
       return res.status(409).json({
         success: false,
+        status: 'already_completed',
         message: 'Ya completaste este quiz. Contacta a tu docente para repetirlo.',
         attempt: { id: existing.id, score: existing.score, passed: existing.passed, completedAt: existing.completedAt },
       });
@@ -140,6 +141,24 @@ router.post('/quizzes/:quizId/attempt', writeLimiter, async (req: Request, res: 
   } catch (err: any) {
     if (err.message?.startsWith('Quiz not found')) {
       return res.status(404).json({ success: false, message: err.message });
+    }
+    // Race lost against a concurrent submit: the serializable transaction in
+    // gradeQuizAttempt aborted (P2034) or its re-check found the winner's row.
+    // Respond exactly like the one-attempt guard above.
+    if (err.code === 'P2034' || err.message?.startsWith('Attempt already exists')) {
+      const existing = await prisma.quizAttempt
+        .findFirst({
+          where: { quizId: req.params.quizId, userId: req.user!.id },
+          orderBy: { startedAt: 'asc' },
+          select: { id: true, score: true, passed: true, completedAt: true },
+        })
+        .catch(() => null);
+      return res.status(409).json({
+        success: false,
+        status: 'already_completed',
+        message: 'Ya completaste este quiz. Contacta a tu docente para repetirlo.',
+        attempt: existing,
+      });
     }
     console.error('[POST /quizzes/:id/attempt]', err.message);
     return res.status(500).json({ success: false, message: 'Error al procesar intento' });

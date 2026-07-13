@@ -7,6 +7,30 @@ const router = Router();
 
 router.use(authenticate);
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+// Slim payload of the student's completed submission for 409 (already_completed)
+// responses. Ownership is already guaranteed: the service throws 'No autorizado'
+// before any status-based error, so these branches only run for the owner.
+async function buildAlreadyCompletedPayload(submissionId: string) {
+  const existing = await ActivitySubmissionService.getSubmissionById(submissionId).catch(() => null);
+  if (!existing) return null;
+  return {
+    id: existing.id,
+    status: existing.status,
+    content: existing.content,
+    score: existing.score,
+    maxScore: existing.maxScore,
+    submittedAt: existing.submittedAt,
+    feedback: existing.feedback,
+  };
+}
+
+const ALREADY_SENT_ERRORS = [
+  'La entrega ya fue enviada o calificada',
+  'Solo se puede editar un borrador',
+];
+
 // ── Student: list my submissions ─────────────────────────────────────────────
 router.get('/my', readLimiter, async (req: Request, res: Response) => {
   try {
@@ -60,6 +84,7 @@ router.post('/', writeLimiter, async (req: Request, res: Response) => {
     if (existing && (existing.status === 'SUBMITTED' || existing.status === 'GRADED')) {
       return res.status(409).json({
         success: false,
+        status: 'already_completed',
         message: 'Ya completaste esta actividad. Contacta a tu docente para repetirla.',
         submission: existing,
       });
@@ -82,6 +107,14 @@ router.put('/:id', writeLimiter, async (req: Request, res: Response) => {
     const submission = await ActivitySubmissionService.saveSubmissionDraft(req.params.id, req.user!.id, content);
     return res.json({ success: true, submission });
   } catch (err: any) {
+    if (ALREADY_SENT_ERRORS.includes(err.message)) {
+      return res.status(409).json({
+        success: false,
+        status: 'already_completed',
+        message: 'Ya completaste esta actividad. Contacta a tu docente para repetirla.',
+        submission: await buildAlreadyCompletedPayload(req.params.id),
+      });
+    }
     return res.status(400).json({ success: false, message: err.message });
   }
 });
@@ -95,6 +128,14 @@ router.post('/:id/submit', writeLimiter, async (req: Request, res: Response) => 
     const submission = await ActivitySubmissionService.submitActivity(req.params.id, req.user!.id);
     return res.json({ success: true, submission });
   } catch (err: any) {
+    if (ALREADY_SENT_ERRORS.includes(err.message)) {
+      return res.status(409).json({
+        success: false,
+        status: 'already_completed',
+        message: 'Ya completaste esta actividad. Contacta a tu docente para repetirla.',
+        submission: await buildAlreadyCompletedPayload(req.params.id),
+      });
+    }
     return res.status(400).json({ success: false, message: err.message });
   }
 });

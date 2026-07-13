@@ -9,6 +9,7 @@
  *  - Grading a quiz attempt and persisting it
  */
 
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../shared/infrastructure/database';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -137,17 +138,33 @@ export async function gradeQuizAttempt(
   const score   = totalQuestions > 0 ? Math.round((correct / totalQuestions) * 100) : 0;
   const passed  = score >= quiz.passingScore;
 
-  // Persist the attempt
-  const attempt = await prisma.quizAttempt.create({
-    data: {
-      userId,
-      quizId,
-      score,
-      passed,
-      answers: answers as any,
-      completedAt: new Date(),
+  // Persist the attempt.
+  // QuizAttempt has no @@unique(userId, quizId) in the schema, so the
+  // one-attempt policy is enforced here: re-check + create inside a
+  // SERIALIZABLE transaction. A concurrent duplicate either fails the
+  // re-check ("Attempt already exists") or aborts with Prisma P2034;
+  // the router maps both to HTTP 409.
+  const attempt = await prisma.$transaction(
+    async (tx) => {
+      const existing = await tx.quizAttempt.findFirst({
+        where: { userId, quizId },
+        select: { id: true },
+      });
+      if (existing) throw new Error(`Attempt already exists: ${existing.id}`);
+
+      return tx.quizAttempt.create({
+        data: {
+          userId,
+          quizId,
+          score,
+          passed,
+          answers: answers as any,
+          completedAt: new Date(),
+        },
+      });
     },
-  });
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
 
   return {
     attemptId:      attempt.id,

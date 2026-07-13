@@ -161,20 +161,26 @@ export const updateCurrentUser = async (req: Request, res: Response) => {
     }
 
     if (image !== undefined) {
-      if (typeof image !== 'string') {
+      // '' o null limpian la foto de perfil. Cualquier otro valor debe ser una
+      // URL válida; esto incluye data-URLs base64 (el formulario de perfil
+      // envía la foto así y "data:" es un esquema válido para new URL()).
+      if (image === null || image === '') {
+        updateData.image = null;
+      } else if (typeof image !== 'string') {
         return res.status(400).json({
           error: 'Validación fallida',
           message: 'La imagen debe ser una URL válida',
         });
-      }
-      try {
-        new URL(image);
-        updateData.image = image;
-      } catch {
-        return res.status(400).json({
-          error: 'Validación fallida',
-          message: 'La imagen debe ser una URL válida',
-        });
+      } else {
+        try {
+          new URL(image);
+          updateData.image = image;
+        } catch {
+          return res.status(400).json({
+            error: 'Validación fallida',
+            message: 'La imagen debe ser una URL válida',
+          });
+        }
       }
     }
 
@@ -272,7 +278,10 @@ export const changePassword = async (req: Request, res: Response) => {
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
 
     if (!isCurrentPasswordValid) {
-      return res.status(401).json({
+      // 400 y no 401: la sesión es válida, solo falló la verificación del dato.
+      // Un 401 dispararía el refresh de token del interceptor axios del frontend
+      // (y un posible logout) por una simple contraseña mal tipeada.
+      return res.status(400).json({
         error: 'Contraseña incorrecta',
         message: 'La contraseña actual no es correcta',
       });
