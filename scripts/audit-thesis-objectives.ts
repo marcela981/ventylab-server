@@ -14,7 +14,7 @@
  *   $ cd ventylab-server
  *   $ npx tsx scripts/audit-thesis-objectives.ts
  *
- * Versión       : 1.0
+ * Versión       : 1.1
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -24,7 +24,7 @@
  */
 
 import path from 'node:path';
-import { prisma } from '../src/shared/infrastructure/database';
+import { prisma } from './lib/prisma';
 import { TeachingAuditor } from './auditors/TeachingAuditor';
 import { EvaluationAuditor } from './auditors/EvaluationAuditor';
 import { FeedbackAuditor } from './auditors/FeedbackAuditor';

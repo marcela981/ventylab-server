@@ -1,0 +1,23 @@
+{
+  "notes_retrieved": "Notes retrieved successfully",
+  "note_retrieved": "Note retrieved successfully",
+  "note_created": "Note created successfully",
+  "note_updated": "Note updated successfully",
+  "note_deleted": "Note deleted successfully",
+  "notes_analyzed": "Notes analyzed successfully",
+  "note_not_found": "Note not found",
+  "lesson_not_found": "Lesson not found",
+  "module_not_found": "Module not found",
+  "page_not_in_lesson": "The page does not belong to the lesson",
+  "invalid_content": "The note content is not a valid rich text document",
+  "invalid_analysis_scope": "Provide either a lesson or a module, not both",
+  "no_notes_to_analyze": "There are no notes to analyze in this scope",
+  "analysis_invalid_response": "The AI service returned an invalid analysis, try again later",
+  "validation": {
+    "lesson_id_required": "The lesson is required",
+    "lesson_id_must_be_string": "The lesson must be a non-empty string",
+    "module_id_must_be_string": "The module must be a non-empty string",
+    "page_id_must_be_string": "The page must be a non-empty string",
+    "content_must_be_object": "The content must be a JSON document"
+  }
+}

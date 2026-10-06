@@ -1,146 +1,129 @@
-# VentyLab Server — Contexto para IA
+# VentyLab server: AI context
 
-## Descripción del proyecto
-Backend Express + TypeScript del Sistema Ciberfísico Educativo VentyLab (enseñanza de ventilación mecánica).
-Tesis de Marcela Mazo Castro — Universidad del Valle.
+Backend of VentyLab, an educational cyber-physical system for teaching mechanical ventilation (thesis of Marcela Mazo Castro, Universidad del Valle). Sibling repo: `../ventilab-web` (Next.js frontend, has its own `AI_CONTEXT.md`; it still targets the legacy Express contract and is migrated separately).
 
-Este documento refleja el árbol **post-limpieza** (rama `cleanup-pre-entrega`, julio 2026).
-Repo hermano: `../ventilab-web` (frontend Next.js, tiene su propio AI_CONTEXT.md).
+The server was rebuilt in October 2026 from `template-backend-nestjs` (NestJS 11, hexagonal/DDD features), keeping Prisma and the existing database. Conventions live in `CLAUDE.md`, `AGENTS.md` and `.claude/skills/*/SKILL.md`; the migration log and author checklist live in `odd/tasks/nestjs-template-migration.md`.
 
-**Stack:**
-- Express 4 + TypeScript 5 (build `tsc` → `dist/`; dev con `tsx watch`)
-- Prisma 6 + PostgreSQL (pooled + `DIRECT_URL`, estilo Neon/Supabase)
-- Auth: JWT propio (jsonwebtoken) + puente NextAuth; bcryptjs; RBAC por middleware
-- Realtime: Socket.io 4 (`WSGateway`) — IoT: MQTT 5 (Node-RED/ESP), InfluxDB v2 (telemetría)
-- IA: @google/generative-ai — Gemini 2.0 Flash vía `shared/ai/AIServiceManager`
-- Validación: express-validator (NO zod); seguridad: helmet, CORS whitelist, express-rate-limit
-- En deps también: next-auth v5 beta y @supabase/* (revisar si legado)
+## Stack (from `package.json`)
 
-**Scripts npm:** `dev` (tsx watch), `build` (tsc), `start`, `prisma:*` (generate/migrate/deploy/reset/studio/seed), `seed:evaluation`, `seed:clinical`, `test` (jest — **no funciona hasta restaurar los tests diferidos**), `simulate:vent` (telemetría MQTT sintética).
+- Node >= 22, TypeScript ^5.7, NestJS ^11 (`@nestjs/core`, `common`, `platform-express`, `config`, `jwt`, `swagger`, `throttler`, `schedule`, `event-emitter`, `websockets`, `platform-socket.io`, `axios`)
+- Prisma ^6.19 + PostgreSQL (Neon: pooled `DATABASE_URL` + `DIRECT_URL`)
+- Validation: `class-validator` ^0.14 + `class-transformer`; i18n: `nestjs-i18n` ^10 (en, es)
+- Auth: `@nestjs/jwt` (access + refresh tokens), `bcrypt` ^6, NextAuth bridge with a shared secret
+- Realtime and IoT: `socket.io` ^4.8, `mqtt` ^5.15 (Node-RED / ESP ventilator), `@influxdata/influxdb-client` ^1.35 (telemetry, optional)
+- AI: `@google/generative-ai` ^0.24 (Gemini) behind the `IAITextGenerator` port
+- Ops: `helmet`, `compression`, `@sentry/nestjs` (optional), `@scalar/express-api-reference` (API docs at `/api/docs`, JSON at `/api/docs-json`, IP allow-list), `nodemailer`
+- Tooling: ESLint 9 (typescript-eslint, stylistic, import), Jest 30 + ts-jest, husky + lint-staged, `tsx` for scripts
 
----
+## Architecture and layout
 
-## Entrypoint (`src/index.ts`)
+Clean Architecture + DDD. Dependencies flow inward: `presentation -> application -> domain`, `infrastructure -> domain`.
 
-Express + `http.createServer` + Socket.io. El router de `simulation` se monta dentro de `startServer` (después de inicializar Socket.io). Global: `trust proxy`, CORS whitelist, helmet (CORP/COOP relajados), compression, rate-limit en `/api` (500 req/15 min, salta `/health`), morgan, middleware que reescribe `/api/api/*` → `/api/*`, y `notFoundHandler` + `errorHandler` al final.
+```
+src/
+  main.ts              bootstrap: helmet, compression, 10mb body, CORS, ValidationPipe, RealtimeIoAdapter, docs, listen(PORT)
+  instrument.ts        Sentry init (reads env through common/infrastructure/config/sentry-config.ts)
+  app.module.ts        global common modules + every feature module
+  @types/              express Request augmentation (request.user: JwtPayload)
+  i18n/{en,es}/        one JSON namespace per feature + common
+  common/
+    application/       ports: event bus, transaction manager, AI text generator, realtime publisher, access token verifier, password hasher
+    domain/            aggregate root, domain events, domain errors, audit log entity, value objects, utils (generateId = UUID v7)
+    infrastructure/    config (env validation), persistence/prisma (PrismaService, transaction manager, resolveClient),
+                       audit-log + error-log repositories, ai (Gemini adapter), realtime (gateway, IO adapter, publisher),
+                       logging (AppLogger), context (request context), events (NestEventBus), email, security, storage, docs, http, pipes
+    presentation/      APIResponseBuilder, HttpExceptionFilter, errors-map.ts, health controller, guards, middlewares (trace id), decorators
+  features/<feature>/
+    domain/            entities (aggregates), events, errors, repository interfaces + tokens, value objects, pure services, read models
+    application/       commands, use cases (*.usecase.ts), results, application services
+    infrastructure/    persistence/prisma/{mappers,repositories}/*-prisma.repository.ts, event handlers, adapters
+    presentation/      controllers, DTOs (*.dto.ts), presentation mappers
+    <feature>.module.ts
+```
 
-Envelope de respuesta: `{ success, data }` (+ `message` en errores) — helpers en `shared/utils/response.ts`. El frontend depende de esta convención.
+Prisma schema: `prisma/schema.prisma`, 35 models (the 33 legacy models with their original table and column names, plus `AuditLog` and `ErrorLog`). `PrismaService` is the only client in `src`.
 
----
+## Features and routes
 
-## Módulos (`src/modules/`) y endpoints reales
+No global prefix; every controller declares `api/<resource>`. Unless noted, routes use `JwtAuthGuard` + `PermissionsGuard` with `@RequirePermissions(...)`. P = public, O = optional JWT. Role to permission mapping: `src/features/authorization/domain/role-permissions.ts` (STUDENT < TEACHER < ADMIN < SUPERUSER; SUPERUSER bypasses the guard).
 
-| Base path | Módulo / archivo | Propósito |
+| Feature | Base routes | Access summary |
 |---|---|---|
-| `/health`, `/api/health` | health/ | Liveness |
-| `/api/auth` (y `/auth`) | auth/ | Registro, login, JWT, puente NextAuth |
-| `/api/users` | profile/ | Perfil propio, stats, cambio de password |
-| `/api/progress` (y `/progress`) | teaching/progress.routes | Progreso de aprendizaje |
-| `/api/modules`, `/api/lessons`, `/api/levels`, `/api/cards`, `/api/curriculum`, `/api/teaching`, `/api/pages`, `/api/changelog`, `/api/overrides`, `/api` (teacher-students) | teaching/ | Plataforma de contenido: niveles→módulos→lecciones→steps, páginas CMS, auditoría, overrides, relación teacher-student |
-| `/api/cases` | evaluation/evaluation.controller | Casos clínicos (evaluar, intentos) |
-| `/api/evaluation` | evaluation/quiz.router | Quizzes y actividades públicas |
-| `/api/admin` (y `/admin`), `/api/groups`, `/api/scores` | admin/ | Gestión de estudiantes, grupos, notas, estadísticas |
-| `/api/activities`, `/api/activity-assignments`, `/api/activity-submissions` | activities/ | Actividades: CRUD, asignación, entregas, calificación |
-| `/api/simulation` | simulation/ | Simulador: comandos, reservas, sesiones, paciente |
+| auth | `api/auth` (`register`, `register/superuser`, `login`, `refresh`, `logout`, `me`, `nextauth-token`) | P for register/login/refresh; `x-admin-api-key` for superuser register; `x-nextauth-bridge-secret` for the NextAuth exchange; JWT for `me`/`logout` |
+| authorization | `api/authorization/permissions`, `roles` | JWT |
+| users | `api/users/me` (GET, PATCH), `me/change-password`, `me/stats`, `students`, `students/:id` | JWT; `students:read_all`, `students:read` (teachers limited to assigned students) |
+| levels | `api/levels` (+ `curriculum`, `roadmap`, `reorder`, `:id/modules`, `:id/prerequisites`, `:id/unlock-status`, `:id/can-delete`) | reads P/O; `progress:read_own`; `levels:create/update/delete` |
+| modules | `api/modules` (+ `:id/lessons`, `:id/lessons/count`, `:id/progress`, `:id/resume`, `:id/prerequisites`) | reads P; `progress:read_own`; `modules:*` |
+| lessons | `api/lessons` (+ `:id/next`, `:id/previous`, `:id/steps`, `:id/complete`, `:id/access`) | reads P; `progress:update_own`; `lessons:*` |
+| steps | `api/steps` (alias `api/cards`, + `:id/next`, `:id/previous`, `reorder`) | reads P; `steps:*` |
+| pages | `api/pages/by-legacy-json/:id`, `by-lesson/:id`, `by-module/:id`, `:id` | P |
+| curriculum | `api/curriculum/overview`, `beginner`, `prerequisitos`, `level/:level`, `modules/:moduleId/unlocked`, `modules/:moduleId/next` | O; `progress:read_own` |
+| overrides | `api/overrides` CRUD | `overrides:*` |
+| changelog | `api/changelog`, `recent`, `stats`, `:entityType/:entityId` | `changelog:read` (teachers see their own changes) |
+| curriculum-editor | `api/teaching/tree`, `node`, `node/:id`, `lesson/:id/content` | `curriculum:manage` |
+| progress | `api/progress/*` (overview, module, lesson, details, resume, milestones, achievements, skills, step update, complete); `api/teaching/lessons/:id/complete`, `modules/unlocked`, `modules/:id/access`, `lessons/:id/access` | `progress:read_own`, `progress:update_own` |
+| quizzes | `api/quizzes` (alias `api/evaluation/quizzes`, + `my-attempts`, `:quizId`, `:quizId/my-attempt`, `:quizId/attempt`) | `quizzes:read`, `quizzes:attempt` |
+| clinical-cases | `api/clinical-cases` (alias `api/cases`, + `:caseId`, `:caseId/attempts`, `:caseId/evaluate` throttled 10/min) | `clinical-cases:read`, `clinical-cases:evaluate` |
+| activities | `api/activities` (+ `catalog`, `catalog/:id`, `:id/publish`, `:id/submissions`), `api/activity-assignments`, `api/activity-submissions` (`my`, `for-activity/:id`, `:id/submit`, `:id/grade`, `:id/reset`) | `activities:*`, `activity-assignments:*`, `activity-submissions:*` |
+| groups | `api/groups` (+ `:id/members`, `:id/members/:userId`, `:id/lead`) | `groups:read/create/update/delete/manage_members` |
+| scores | `api/scores`, `scores/:id`, `students/:studentId`, `my-scores` | `scores:create/delete/read` |
+| teacher-students | `api/teacher-students` CRUD, `api/teachers/:id/students`, `teachers/:teacherId/students/:studentId(/progress)`, `teachers/me/students/:studentId/check`, `api/students/:id/teachers` | `teacher-students:manage`, `teacher-students:read` + self-or-permission guard |
+| admin | `api/admin/students`, `students/:id/progress`, `teachers`, `users/:id/role`, `statistics` | `students:read`, `users:read`, `users:update_role`, `admin-statistics:read` |
+| simulation | `api/simulation/health` (P), `status`, `sessions`, `patient`, `command`, `reserve` (POST, DELETE), `session`, `session/save`, `patient/configure`, `patient/start`, `patient/stop` | `simulation:read`, `simulation:control` |
+| health (common) | `GET /`, `/health`, `/api/health` | P |
 
-`/api/ai` está **comentado (TODO)** en index.ts — el subsistema IA existe pero no expone rutas.
+Mutations return `data: null` except creates (`{ id }`), quiz attempts and case evaluations (result as `data`), and the get-or-create submission.
 
-### Endpoints por módulo (auth middleware indicado)
+## Common building blocks
 
-**auth** — `POST /register`, `POST /login`, `POST /logout`, `GET /me`, `POST /nextauth-token`
+- **Persistence**: inject `PrismaService`; repositories call `resolveClient(this._prisma, transaction)`; transactions through `TRANSACTION_MANAGER_TOKEN`; aggregates write `audit_logs` through `AUDIT_LOG_REPOSITORY_TOKEN`; new ids via `generateId()` (UUID v7), legacy cuid ids are read as strings.
+- **Events**: aggregates record domain events; use cases publish them through `EVENT_BUS_TOKEN` after commit. Handlers write ChangeLog entries, unlock achievements, upsert scores on grading and push socket events (fail-soft).
+- **Auth**: `AuthModule` is global and exports `JwtAuthGuard`, `OptionalJwtAuthGuard`, `PermissionsGuard`, `SelfOrPermissionGuard`; decorators `@RequirePermissions`, `@AllowSelfOr`, `@CurrentUser()` (`JwtPayload { sub, email, role, permissions }`). `SUPERADMIN_EMAIL` user has an immutable role.
+- **AI**: `AI_TEXT_GENERATOR_TOKEN` (`IAITextGenerator.generate(prompt, { temperature, maxTokens })`), Gemini adapter, throws `AIUnavailableError` / `AIGenerationFailedError`; clinical-case feedback falls back to deterministic feedback.
+- **Realtime**: `REALTIME_PUBLISHER_TOKEN` (`emitToUser`, `emitToGroup`, `emitToRole`, `emitToRoom`, `broadcast`, `joinRoom`, `leaveRoom`).
+- **Logging and tracing**: Nest `Logger` through `AppLogger` (JSON lines in production); `x-trace-id` / `x-request-id` accepted and echoed; errors stored in `error_logs`.
+- **Config**: `process.env` is read only in `src/common/infrastructure/config/` (`env.validation.ts`, `sentry-config.ts`); everything else injects `ConfigService`.
 
-**profile (`/api/users`)** — `GET|PUT|PATCH /me`, `POST /me/change-password`, `GET /me/stats`; `GET /students` (admin), `GET /students/:id` (teacher+)
+## Realtime and MQTT contract
 
-**progress** — `GET /overview`, `GET /module/:moduleId`, `GET|PUT /lesson/:lessonId`, `POST /lesson/:lessonId/complete`, `POST /lesson/:lessonId/complete-unified`, `GET /lesson/:lessonId/details`, `POST /step/update`, `GET /resume/:moduleId`, `GET /milestones|/achievements|/skills`, `GET /debug/write-test`
+- Socket.io on the HTTP server, same CORS as HTTP. Handshake JWT (`auth.token` or `Authorization: Bearer`) or the legacy `authenticate` event; replies `authenticated { userId }` or `auth_error { message: "Invalid token" }` and disconnects. Rooms: `user:{id}`, `role:{role}`, `group:{id}`, ventilator room.
+- Events: `ventilator:data` (broadcast, or per user to the reservation leader, throttled to `WS_MAX_HZ`; patient simulation sends per user every 33 ms), `ventilator:alarm`, `ventilator:reserved`, `ventilator:released { userId }`, `achievement:unlocked`.
+- MQTT: subscribe qos 1 to `MQTT_TELEMETRY_TOPIC` (default `/ventynet/data`) and `ventilab/device/001/alarm`; commands published as JSON qos 1 to `ventilab/device/001/command` (fixed contract constants). Reconnect backoff 5 s x 2^n capped at 60 s, 5 attempts. JSON and hex frames are parsed. Influx (`telemetry` measurement) only when `INFLUXDB_*` are set.
+- Reservation: `pg_advisory_xact_lock(hashtext('ventilab-device-001'))` inside a transaction, then expire, check, create.
 
-**cases (`/api/cases`)** — `GET /`, `GET /:caseId`, `POST /:caseId/evaluate`, `GET /:caseId/attempts`
+## Environment variables (names only; see `env.validation.ts`)
 
-**evaluation (`/api/evaluation`, con read/writeLimiter)** — `GET /quizzes`, `GET /quizzes/my-attempts`, `GET /quizzes/:quizId`, `GET /quizzes/:quizId/my-attempt`, `POST /quizzes/:quizId/attempt`, `GET /activities`, `GET /activities/:id`
+Required: `NODE_ENV`, `PORT`, `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN`, `NEXTAUTH_SECRET`, `NEXTAUTH_BRIDGE_SECRET`, `ADMIN_API_KEY`, `SUPERADMIN_EMAIL`, `CORS_ORIGIN`, `FRONTEND_URL`, `PRODUCTION_URL`, `THROTTLE_TTL`, `THROTTLE_LIMIT`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_SECURE`.
 
-**modules** — `GET /`, `GET /:id`, `GET /:id/lessons`, `GET /:id/lessons/count`; `GET /:id/progress|/resume` (auth); `POST /` y `PUT /:id` (teacher+), `DELETE /:id` (admin); prerequisites `POST|DELETE` (teacher+)
+Optional: `VERCEL_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SENTRY_DSN`, `SWAGGER_ALLOWED_IPS`, `SMTP_USER`, `SMTP_PASS`, `MQTT_BROKER_URL` (or `MQTT_URL`), `MQTT_CLIENT_ID`, `MQTT_USERNAME`, `MQTT_PASSWORD`, `MQTT_TELEMETRY_TOPIC`, `MQTT_COMMAND_TOPIC` and `MQTT_ALARM_TOPIC` (validated, not read), `WS_MAX_HZ`, `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET`, `GEMINI_API_KEY`.
 
-**lessons** — `GET /:id`, `GET /:id/next|/previous|/steps`; `POST /:id/complete|/access` (auth); `POST /`, `PUT /:id` (teacher+), `DELETE /:id` (admin)
+## Response envelope and errors
 
-**levels** — `GET /`, `GET /curriculum` (optionalAuth), `GET /roadmap` (auth), `GET /:id`, `GET /:id/modules|/prerequisites`, `GET /:id/unlock-status` (auth); `PUT /reorder`, `POST /`, `PUT /:id`, prerequisites (teacher+); `DELETE /:id`, `/can-delete` (admin)
+Every response goes through `APIResponseBuilder`:
 
-**cards (steps)** — `GET /`, `GET /:id`, `GET /:id/next|/previous`; `PUT /reorder`, `POST /`, `PUT /:id` (teacher+); `DELETE /:id` (admin)
+```json
+{ "success": true, "message": "...", "data": {}, "code": null, "timestamp": "...", "traceId": "...", "pagination": { "total": 0, "pages": 0, "page": 1, "limit": 20, "next": null, "previous": null } }
+```
 
-**curriculum** — `GET /overview|/beginner|/prerequisitos|/level/:level` (optionalAuth); `GET /modules/:moduleId/unlocked|/next` (auth)
+Errors go through `HttpExceptionFilter`: `success: false`, `code` is the domain error code (`<feature>.<error>`, registered with its HTTP status in `src/common/presentation/errors-map.ts`), `message` is translated from `src/i18n/{en,es}` using `x-lang`, `?lang` or `Accept-Language`. Validation errors use `code: "validation_error"` with a message list. Prisma `P2002` maps to 409 `common.conflict`, `P2025` to 404 `common.not_found`. Stacks never reach the response; they go to logs and `error_logs`.
 
-**teacher-students (en `/api`)** — CRUD de relaciones teacher↔student (admin/teacher+), `GET /teachers/:teacherId/students/:studentId/progress` (teacher+)
+## How to run
 
-**changelog / overrides** — todo con auth + teacher+
+`package.json` scripts: `start`, `start:dev`, `start:debug`, `start:prod` (`node dist/main`), `build` (`nest build`), `lint`, `lint:check`, `format`, `prisma:generate`, `prisma:migrate`, `prisma:deploy`, `prisma:studio`, `prisma:seed` (`tsx prisma/seed.ts`), `test`, `test:watch`, `test:cov`, `test:debug`. Type check: `npx tsc --noEmit -p tsconfig.json` (baseline 0 errors).
 
-**teaching (`/api/teaching`, auth a nivel router)** — `POST /lessons/:lessonId/complete`, `GET /modules/unlocked`, `GET /modules/:moduleId/access`, `GET /lessons/:lessonId/access`; CMS: `GET /tree`, `POST /node`, `PUT|DELETE /node/:id`, `GET|PUT /lesson/:id/content` (teacher+)
+Thesis audit scripts (OE1-OE3 evidence, outside Nest): `npx tsx scripts/audit-thesis-objectives.ts` and `npx tsx scripts/audit-e2e/audit-e2e.ts`; they use their own Prisma client in `scripts/lib/prisma.ts` and write to `audit-output/`. `scripts/simulate-ventilator.ts` publishes synthetic MQTT telemetry.
 
-**pages (`/api/pages`, GET públicos)** — `GET /by-legacy-json/:legacyJsonId`, `GET /by-lesson/:lessonId`, `GET /by-module/:moduleId`, `GET /:id`
+## Unapplied migration
 
-**admin** — `GET /students`, `GET /students/:id/progress`, `GET /statistics` (teacher+); `GET /teachers`, `PATCH /users/:id/role` (admin)
+`prisma/migrations/20261004120000_add_audit_and_error_logs/migration.sql` creates `audit_logs` and `error_logs`. It is generated but not applied to Neon. Until it is applied, every write that records an audit log (all aggregate saves) fails at runtime, and error-log rows are dropped (the filter only logs a warning). `prisma/migrations/` is gitignored.
 
-**groups** — `GET|POST /`, `GET|PATCH|DELETE /:id`, `GET|POST /:id/members`, `DELETE /:id/members/:userId`, `PATCH /:id/lead`
+## Known runtime checks pending
 
-**scores** — `POST /`, `DELETE /:id`, `GET /students/:studentId`, `GET /my-scores`
+The rebuild was verified only statically (tsc, eslint, madge, parity scripts). Pending for the author: boot with and without `SUPERADMIN_EMAIL` and MQTT, `/health`, login with 200/401/403, sockets with and without JWT, content navigation and progress writes, quiz attempt and achievement unlock, case evaluation with and without `GEMINI_API_KEY`, the activity flow and score upsert, groups and teacher-student routes, admin statistics against legacy numbers, simulator telemetry at about 30 Hz, reservation and commands reaching Node-RED, patient simulation, Influx writes, graceful shutdown. Full list in the feature document's author checklist.
 
-**activities** — `GET /`, `GET /:id`; `POST /`, `PUT|DELETE /:id`, `POST /:id/publish`, `GET /:id/submissions` (teacher+)
+## Other folders
 
-**activity-assignments** — `GET /`, `POST /`, `DELETE /:id`
-
-**activity-submissions** — `GET /my`, `GET /for-activity/:activityId`, `GET /:id`, `POST /`, `PUT /:id`, `POST /:id/submit`; `PUT /:id/grade`, `DELETE /:id/reset` (teacher+)
-
-**simulation** — `GET /health|/status`, `POST /command`, `POST|DELETE /reserve`, `POST /session`, `POST /session/save`, `GET /sessions`, `POST /patient/configure|/start|/stop`, `GET /patient`
-
----
-
-## Capa compartida (`src/shared/`)
-
-- `ai/AIServiceManager.ts` — orquestador multi-proveedor: cadena de fallback `['gemini','openai','claude']`, rate limiting por proveedor. **Solo Gemini está instanciado** (`ai/providers/GeminiProvider.ts`, gemini-2.0-flash); imports de OpenAI/Claude comentados. Lo consume `evaluation.service`.
-- `infrastructure/database.ts` — singleton de Prisma Client (`DATABASE_URL`).
-- `middleware/` — `auth.middleware` (authenticate, optionalAuth, requireRole, requireAdmin, requireTeacherPlus), `error-handler`, `rate-limiter` (read/writeLimiter), `validator` + `validators` (express-validator).
-- `types/` — augmentación de Request, tipos comunes, overrides, progress.
-- `utils/` — computeModuleProgress, errors, jwt, password (bcrypt), response (envelope).
-
----
-
-## Datos (`prisma/schema.prisma` — PostgreSQL, 33 modelos)
-
-User, Account, Session, VerificationToken, ChangeLog, TeacherStudent, ContentOverride, Level, LevelPrerequisite, Module, ModulePrerequisite, Lesson, Step, Page, PageSection, PageRevision, PageProgress, Quiz, QuizAttempt, Achievement, ClinicalCase, ExpertConfiguration, VentilatorReservation, SimulatorSession, EvaluationAttempt, UserProgress, LessonCompletion, Activity, ActivityAssignment, ActivitySubmission, Group, GroupMember, Score.
-
----
-
-## Realtime / IoT (`src/modules/simulation/`)
-
-- `ws-gateway.ts` — gateway Socket.io con sockets autenticados por JWT; `broadcastData` + `sendToUser`.
-- `mqtt-client.ts` — cliente MQTT hacia Node-RED/ESP: suscribe telemetría, publica comandos, reconexión con backoff.
-- `influx-service.ts` — escritor batched de series de tiempo (presión/flujo/volumen) en InfluxDB v2; init opcional `fromEnv()`.
-- `hex-parser.ts` / `hex-encoder.ts` — protocolo binario del ventilador.
-- `patient/` — fisiología del paciente simulado: patient-calculator, signal-generator, clinical-cases.
-
-Contratos del dominio (`ISimulationGateway`, `IVentilatorConnection`, `MQTT_TOPICS`…) vienen de `contracts/simulation.contracts.ts` (raíz).
-
----
-
-## Contratos
-
-- `contracts/` raíz (8 archivos): **vivos e importados por src/: `admin.contracts.ts` y `simulation.contracts.ts`**. Los otros 6 (ai-feedback, api-responses, evaluation, profile, teaching, websocket-events) no tienen importadores — se dejaron a propósito en la limpieza, pendientes de decisión.
-- `src/contracts/`: vacío tras la limpieza (se eliminó `patient.contracts.ts`, sin referencias; el frontend usa su propia copia).
-- `tsconfig.json` incluye `src/**/*` y `contracts/**/*`.
-
----
-
-## Tests diferidos
-
-`__deferred_tests__/` contiene los 9 tests unitarios de simulación + `jest.config.js`, movidos desde `src/modules/simulation/__tests__/` en la curaduría pre-entrega (fuera del árbol de build; reversible — ver `__deferred_tests__/README.md`).
-
----
-
-## Problemas conocidos
-
-- `/api/ai` no está montado (TODO comentado en index.ts) aunque el subsistema IA está vivo.
-- Montajes duplicados por compatibilidad: `/api/auth` y `/auth`; `/api/progress` y `/progress`; `/api/admin` y `/admin`.
-- Rutas de `groups`, `scores` y `progress` sin middleware de auth visible por línea — verificar antes de exponer públicamente.
-- `next-auth` v5 beta y `@supabase/*` en dependencias de un server Express puro — posible legado.
-- `tsc --noEmit`: **0 errores** (baseline verde post-limpieza).
-- Scripts de auditoría de tesis (OE1–OE3) viven en `scripts/` (`audit-thesis-objectives.ts`, `auditors/`, `audit-e2e/`); sus reportes generados están en `audit-output/`.
-
-## Nota de limpieza (julio 2026)
-Rama `cleanup-pre-entrega`: limpieza en `3c2958f` (51 archivos, −6.578 líneas). Se eliminaron stubs TODO huérfanos, el módulo `ai-feedback` nunca montado, providers stub de IA, scripts one-off y notas; dumps de Neon movidos a `../_backups-neon/`; tests movidos a `__deferred_tests__/`. Dudosos (6 contracts raíz sin importar, auth.service placeholder, scoring.service vacío, audit-output) se dejaron intactos a propósito.
+- `contracts/`: legacy shared contracts, no longer imported by `src` (simulation constants were copied into domain value objects).
+- `__deferred_tests__/`: legacy simulation unit tests, outside the build.
+- `audit-output/`: generated audit reports (thesis evidence).
+- `docs/json-specs/`: content specs.

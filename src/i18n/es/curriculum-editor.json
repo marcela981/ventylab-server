@@ -1,0 +1,18 @@
+{
+  "tree_retrieved": "Árbol del currículo obtenido correctamente",
+  "level_created": "Nivel creado correctamente",
+  "module_created": "Módulo creado correctamente",
+  "level_updated": "Nivel actualizado correctamente",
+  "module_updated": "Módulo actualizado correctamente",
+  "level_deleted": "Nivel eliminado junto con todos sus descendientes",
+  "module_deleted": "Módulo eliminado junto con todo su contenido",
+  "lesson_content_retrieved": "Contenido de la lección obtenido correctamente",
+  "lesson_content_saved": "Contenido de la lección guardado correctamente",
+  "validation": {
+    "type_invalid": "type debe ser uno de: level, module",
+    "title_required": "El título es obligatorio",
+    "tags_invalid": "tags debe ser un arreglo de cadenas de texto",
+    "order_invalid": "El orden debe ser un número entero no negativo",
+    "blocks_invalid": "blocks debe ser un arreglo"
+  }
+}

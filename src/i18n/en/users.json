@@ -1,0 +1,39 @@
+{
+  "user_not_found": "User not found",
+  "user_already_exists": "A user with this email already exists",
+  "invalid_current_password": "Current password is incorrect",
+  "password_not_set": "This user signed up with an external provider and has no password",
+  "same_password": "New password must be different from the current password",
+  "user_not_student": "The user is not a student",
+  "student_access_denied": "The student is not assigned to you",
+  "cannot_change_own_role": "You cannot change your own role",
+  "superadmin_role_immutable": "The superadmin role cannot be changed",
+  "superadmin_status_immutable": "The superadmin account cannot be deactivated",
+  "cannot_change_own_status": "You cannot change your own account status",
+  "users_retrieved": "Users retrieved successfully",
+  "role_changed": "Role changed successfully",
+  "status_changed": "Account status changed successfully",
+  "user_retrieved": "User retrieved successfully",
+  "profile_updated": "Profile updated successfully",
+  "password_changed": "Password changed successfully. Every previous session was closed",
+  "stats_retrieved": "Statistics retrieved successfully",
+  "students_retrieved": "Students retrieved successfully",
+  "student_retrieved": "Student retrieved successfully",
+  "update_me": {
+    "name_must_be_string": "Name must be a string",
+    "name_must_not_be_empty": "Name must not be empty",
+    "name_max_length": "Name must not exceed {constraints.0} characters",
+    "image_must_be_valid_url": "Image must be a valid http(s) URL or base64 image data URL"
+  },
+  "change_password": {
+    "current_password_must_be_string": "Current password must be a string",
+    "current_password_must_not_be_empty": "Current password is required",
+    "new_password_must_be_string": "New password must be a string",
+    "new_password_strength": "New password must be 8 to 128 characters long and contain at least one uppercase letter, one lowercase letter and one number"
+  },
+  "validation": {
+    "sort_by_invalid": "sortBy must be one of: createdAt, name, email",
+    "role_invalid": "role must be one of: STUDENT, TEACHER, ADMIN",
+    "is_active_boolean": "isActive must be a boolean"
+  }
+}

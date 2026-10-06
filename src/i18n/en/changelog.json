@@ -1,0 +1,13 @@
+{
+  "changelog_retrieved": "Change log retrieved successfully",
+  "recent_changes_retrieved": "Recent changes retrieved successfully",
+  "stats_retrieved": "Change statistics retrieved successfully",
+  "entity_history_retrieved": "Entity history retrieved successfully",
+  "validation": {
+    "entity_type_invalid": "entityType must be one of: Level, Module, Lesson, Step",
+    "action_invalid": "action must be one of: create, update, delete, reorder",
+    "entity_id_required": "entityId is required",
+    "from_date_invalid": "fromDate must be a valid ISO 8601 date",
+    "to_date_invalid": "toDate must be a valid ISO 8601 date"
+  }
+}

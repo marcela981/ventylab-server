@@ -1,0 +1,30 @@
+{
+  "lesson_not_found": "Lección no encontrada",
+  "lesson_module_unavailable": "El módulo de esta lección no está disponible",
+  "inactive_module_lesson_creation": "No se pueden agregar lecciones a un módulo inactivo",
+  "invalid_lesson_content": "El contenido de la lección debe tener un campo \"type\" y un arreglo \"sections\" con al menos un elemento",
+  "lesson_order_already_taken": "Ya existe una lección con ese orden en este módulo",
+  "lesson_has_active_steps": "La lección tiene pasos activos. Desactívelos primero o use forceDeactivate=true",
+  "lesson_retrieved": "Lección obtenida exitosamente",
+  "next_lesson_retrieved": "Siguiente lección obtenida",
+  "no_next_lesson": "No hay más lecciones",
+  "previous_lesson_retrieved": "Lección anterior obtenida",
+  "no_previous_lesson": "No hay lección anterior",
+  "steps_retrieved": "Pasos de la lección obtenidos exitosamente",
+  "lesson_created": "Lección creada exitosamente",
+  "lesson_updated": "Lección actualizada exitosamente",
+  "lesson_deactivated": "Lección desactivada exitosamente",
+  "lesson_completed": "Lección completada exitosamente",
+  "access_recorded": "Acceso a la lección registrado",
+  "invalid_lesson_reorder": "La lista debe contener cada lección del módulo exactamente una vez",
+  "lessons_reordered": "Lecciones reordenadas exitosamente",
+  "lesson_deleted": "Lección eliminada exitosamente",
+  "validation": {
+    "title_length": "El título debe tener entre 3 y 200 caracteres",
+    "content_required": "El contenido de la lección es obligatorio",
+    "module_id_required": "El ID del módulo es obligatorio",
+    "order_invalid": "El orden debe ser un entero no negativo",
+    "estimated_time_invalid": "El tiempo estimado debe ser un entero no negativo",
+    "time_spent_invalid": "El tiempo transcurrido debe ser un entero no negativo"
+  }
+}

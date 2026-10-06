@@ -1,0 +1,28 @@
+{
+  "content_override_not_found": "Override no encontrado",
+  "cannot_manage_overrides": "No tiene permiso para gestionar overrides de este estudiante",
+  "override_target_not_found": "No se encontró la entidad a la que se aplica el override",
+  "invalid_override_data": "Datos de override no válidos: extraCards y hiddenCardIds solo son válidos para overrides de tipo LESSON, y cada tarjeta extra requiere id, content, contentType e insertAfterOrder",
+  "content_override_already_exists": "Ya existe un override para esta combinación de estudiante y entidad",
+  "override_created": "Override creado exitosamente",
+  "overrides_retrieved": "Overrides obtenidos exitosamente",
+  "override_retrieved": "Override obtenido exitosamente",
+  "override_updated": "Override actualizado exitosamente",
+  "override_deleted": "Override desactivado exitosamente",
+  "validation": {
+    "student_id_required": "studentId es obligatorio",
+    "entity_type_invalid": "entityType debe ser uno de: LEVEL, LESSON, CARD",
+    "entity_id_required": "entityId es obligatorio",
+    "override_data_invalid": "overrideData debe ser un objeto",
+    "field_overrides_invalid": "fieldOverrides debe ser un objeto",
+    "extra_cards_invalid": "extraCards debe ser un arreglo",
+    "hidden_card_ids_invalid": "hiddenCardIds debe ser un arreglo de cadenas de texto",
+    "title_max_length": "title no debe exceder 200 caracteres",
+    "order_invalid": "order debe ser un entero no negativo",
+    "estimated_time_invalid": "estimatedTime debe ser un entero no negativo",
+    "content_type_invalid": "contentType debe ser uno de: text, image, video, quiz, simulation, code",
+    "extra_card_id_required": "Cada tarjeta extra debe tener un id",
+    "extra_card_content_required": "Cada tarjeta extra debe tener content",
+    "insert_after_order_invalid": "insertAfterOrder debe ser un entero (use -1 para insertar al inicio)"
+  }
+}

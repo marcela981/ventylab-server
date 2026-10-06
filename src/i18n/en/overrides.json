@@ -1,0 +1,28 @@
+{
+  "content_override_not_found": "Override not found",
+  "cannot_manage_overrides": "You are not allowed to manage overrides for this student",
+  "override_target_not_found": "The overridden entity was not found",
+  "invalid_override_data": "Invalid override data: extraCards and hiddenCardIds are only valid for LESSON overrides, and each extra card needs id, content, contentType and insertAfterOrder",
+  "content_override_already_exists": "An override already exists for this student and entity",
+  "override_created": "Override created successfully",
+  "overrides_retrieved": "Overrides retrieved successfully",
+  "override_retrieved": "Override retrieved successfully",
+  "override_updated": "Override updated successfully",
+  "override_deleted": "Override deactivated successfully",
+  "validation": {
+    "student_id_required": "studentId is required",
+    "entity_type_invalid": "entityType must be one of: LEVEL, LESSON, CARD",
+    "entity_id_required": "entityId is required",
+    "override_data_invalid": "overrideData must be an object",
+    "field_overrides_invalid": "fieldOverrides must be an object",
+    "extra_cards_invalid": "extraCards must be an array",
+    "hidden_card_ids_invalid": "hiddenCardIds must be an array of strings",
+    "title_max_length": "title must not exceed 200 characters",
+    "order_invalid": "order must be a non-negative integer",
+    "estimated_time_invalid": "estimatedTime must be a non-negative integer",
+    "content_type_invalid": "contentType must be one of: text, image, video, quiz, simulation, code",
+    "extra_card_id_required": "Each extra card must have an id",
+    "extra_card_content_required": "Each extra card must have content",
+    "insert_after_order_invalid": "insertAfterOrder must be an integer, use -1 to insert at the beginning"
+  }
+}

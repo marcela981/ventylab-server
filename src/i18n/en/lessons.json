@@ -1,0 +1,30 @@
+{
+  "lesson_not_found": "Lesson not found",
+  "lesson_module_unavailable": "The module of this lesson is not available",
+  "inactive_module_lesson_creation": "Lessons cannot be added to an inactive module",
+  "invalid_lesson_content": "The lesson content must have a \"type\" field and a \"sections\" array with at least one element",
+  "lesson_order_already_taken": "Another lesson of this module already has this order",
+  "lesson_has_active_steps": "The lesson has active steps. Deactivate them first or use forceDeactivate=true",
+  "lesson_retrieved": "Lesson retrieved successfully",
+  "next_lesson_retrieved": "Next lesson retrieved",
+  "no_next_lesson": "There are no more lessons",
+  "previous_lesson_retrieved": "Previous lesson retrieved",
+  "no_previous_lesson": "There is no previous lesson",
+  "steps_retrieved": "Lesson steps retrieved successfully",
+  "lesson_created": "Lesson created successfully",
+  "lesson_updated": "Lesson updated successfully",
+  "lesson_deactivated": "Lesson deactivated successfully",
+  "lesson_completed": "Lesson completed successfully",
+  "access_recorded": "Lesson access recorded",
+  "invalid_lesson_reorder": "The lesson list must contain every lesson of the module exactly once",
+  "lessons_reordered": "Lessons reordered successfully",
+  "lesson_deleted": "Lesson deleted successfully",
+  "validation": {
+    "title_length": "The title must be between 3 and 200 characters",
+    "content_required": "The lesson content is required",
+    "module_id_required": "The module ID is required",
+    "order_invalid": "The order must be a non-negative integer",
+    "estimated_time_invalid": "The estimated time must be a non-negative integer",
+    "time_spent_invalid": "The time spent must be a non-negative integer"
+  }
+}

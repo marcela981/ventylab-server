@@ -1,0 +1,16 @@
+{
+  "overview_retrieved": "Vista general del currículo obtenida",
+  "beginner_retrieved": "Módulos del nivel principiante obtenidos exitosamente",
+  "prerequisitos_retrieved": "Módulos de prerrequisitos obtenidos exitosamente",
+  "level_retrieved": "Módulos del nivel obtenidos exitosamente",
+  "unlock_status_retrieved": "Estado de desbloqueo obtenido",
+  "next_module_retrieved": "Módulo siguiente obtenido",
+  "no_next_module": "No hay módulo siguiente disponible",
+  "tree_retrieved": "Árbol del currículo obtenido exitosamente",
+  "node_has_student_data": "Este contenido o alguno de sus descendientes tiene datos de estudiantes. Archívelo en lugar de eliminarlo",
+  "validation": {
+    "level_invalid": "level debe ser uno de: prerequisitos, beginner, intermediate, advanced",
+    "ids_invalid": "ids debe ser un arreglo no vacío de cadenas de texto",
+    "status_invalid": "status debe ser uno de: DRAFT, PUBLISHED, ARCHIVED"
+  }
+}

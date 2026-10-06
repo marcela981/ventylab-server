@@ -8,7 +8,7 @@
  *                 Comprueba conteos esperados por track, lecciones
  *                 huérfanas y ausencia de ciclos en los prerequisitos
  *                 de módulos (DFS) y de niveles.
- * Versión       : 1.0
+ * Versión       : 1.1
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -17,7 +17,7 @@
  * Contacto      : marcelamazo189@gmail.com
  */
 
-import { prisma } from '../../src/shared/infrastructure/database';
+import { prisma } from '../lib/prisma';
 import { Auditor } from './Auditor';
 import type { AuditResult, Gate } from '../reporting/types';
 

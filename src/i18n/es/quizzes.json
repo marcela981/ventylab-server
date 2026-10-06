@@ -1,0 +1,14 @@
+{
+  "quiz_not_found": "Quiz no encontrado",
+  "quiz_inactive": "Este quiz está inactivo",
+  "quiz_already_attempted": "Ya completó este quiz. Comuníquese con su docente para repetirlo.",
+  "quizzes_retrieved": "Quizzes obtenidos correctamente",
+  "quiz_retrieved": "Quiz obtenido correctamente",
+  "attempts_retrieved": "Intentos de quiz obtenidos correctamente",
+  "attempt_retrieved": "Intento de quiz obtenido correctamente",
+  "attempt_recorded": "Intento de quiz calificado y registrado correctamente",
+  "validation": {
+    "answers_required": "El campo answers debe ser un arreglo no vacío",
+    "answer_invalid": "Cada respuesta debe tener questionId y selectedOptionId como texto"
+  }
+}

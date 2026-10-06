@@ -10,7 +10,7 @@
  *                 ≥3 providers en aiConfig.ts con keys vía env (no
  *                 hardcoded), (d) referencia al fallback determinístico
  *                 ya cubierto en audit-thesis-objectives.ts.
- * Versión       : 1.0
+ * Versión       : 1.1
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -24,8 +24,8 @@ import path from 'node:path';
 import { E2EAuditor, type E2EAuditResult, type Gate } from '../E2EAuditor';
 import { SERVER_ROOT, WEB_ROOT } from '../e2e-config';
 
-const AI_MANAGER_REL = 'src/shared/ai/AIServiceManager.ts';
-const AI_CONFIG_REL = 'src/config/aiConfig.ts';
+const AI_MANAGER_REL = 'src/common/infrastructure/ai/gemini-ai-text-generator.ts';
+const AI_CONFIG_REL = 'src/common/infrastructure/ai/gemini-ai-text-generator.ts';
 const REQUIRED_PROVIDERS = ['openai', 'anthropic', 'gemini'];
 
 export class AIContextAuditor extends E2EAuditor {

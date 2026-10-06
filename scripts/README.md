@@ -16,7 +16,7 @@ npx tsx scripts/audit-thesis-objectives.ts
 Variables de entorno requeridas:
 
 - `DATABASE_URL` — usada por el cliente Prisma compartido
-  (`src/shared/infrastructure/database.ts`).
+  (`scripts/lib/prisma.ts`, independiente de NestJS).
 
 ## Salidas
 

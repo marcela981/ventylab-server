@@ -1,0 +1,23 @@
+{
+  "notes_retrieved": "Notas obtenidas correctamente",
+  "note_retrieved": "Nota obtenida correctamente",
+  "note_created": "Nota creada correctamente",
+  "note_updated": "Nota actualizada correctamente",
+  "note_deleted": "Nota eliminada correctamente",
+  "notes_analyzed": "Notas analizadas correctamente",
+  "note_not_found": "Nota no encontrada",
+  "lesson_not_found": "Lección no encontrada",
+  "module_not_found": "Módulo no encontrado",
+  "page_not_in_lesson": "La página no pertenece a la lección",
+  "invalid_content": "El contenido de la nota no es un documento de texto enriquecido válido",
+  "invalid_analysis_scope": "Indique una lección o un módulo, no ambos",
+  "no_notes_to_analyze": "No hay notas para analizar en este alcance",
+  "analysis_invalid_response": "El servicio de IA devolvió un análisis no válido; intente de nuevo más tarde",
+  "validation": {
+    "lesson_id_required": "La lección es obligatoria",
+    "lesson_id_must_be_string": "La lección debe ser un texto no vacío",
+    "module_id_must_be_string": "El módulo debe ser un texto no vacío",
+    "page_id_must_be_string": "La página debe ser un texto no vacío",
+    "content_must_be_object": "El contenido debe ser un documento JSON"
+  }
+}

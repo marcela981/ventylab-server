@@ -1,0 +1,13 @@
+{
+  "score_not_found": "Calificación no encontrada",
+  "score_not_owned": "Solo el profesor que creó la calificación puede eliminarla",
+  "points_out_of_range": "La calificación debe estar entre 0 y el puntaje máximo",
+  "score_recorded": "Calificación registrada correctamente",
+  "score_deleted": "Calificación eliminada correctamente",
+  "scores_retrieved": "Calificaciones obtenidas correctamente",
+  "validation": {
+    "required_fields": "studentId, entityType, entityId y score son obligatorios",
+    "entity_type_invalid": "entityType debe ser uno de: MODULE, LESSON, QUIZ, CASE, CUSTOM",
+    "max_score_invalid": "maxScore debe ser un número"
+  }
+}

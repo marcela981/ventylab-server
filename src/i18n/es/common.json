@@ -1,0 +1,38 @@
+{
+  "validation_error": "Error de validación de esquema",
+  "internal_server_error": "Error interno del servidor",
+  "unauthorized": "No autorizado",
+  "forbidden": "Prohibido",
+  "not_found": "No se encontró el registro solicitado",
+  "conflict": "La operación entra en conflicto con un registro existente",
+  "invalid_value_object": "Valor inválido proporcionado",
+  "ai_unavailable": "El servicio de IA no está disponible",
+  "ai_generation_failed": "El servicio de IA no pudo generar una respuesta",
+  "validation": {
+    "string": "El valor debe ser una cadena de texto",
+    "enum": "El valor debe ser una de las opciones permitidas",
+    "boolean": "El valor debe ser un booleano",
+    "page": {
+      "must_be_integer": "La página debe ser un número entero",
+      "min": "La página debe ser al menos 1"
+    },
+    "limit": {
+      "must_be_integer": "El límite debe ser un número entero",
+      "min": "El límite debe ser al menos 1",
+      "max": "El límite no debe exceder 100"
+    },
+    "created_at_from": {
+      "must_be_date": "createdAtFrom debe ser una fecha ISO 8601 válida"
+    },
+    "created_at_to": {
+      "must_be_date": "createdAtTo debe ser una fecha ISO 8601 válida"
+    },
+    "sort_order": {
+      "must_be_valid": "La dirección de ordenamiento debe ser uno de: asc, desc"
+    },
+    "ids": {
+      "must_be_array_of_strings": "ids debe ser una lista de cadenas separadas por comas"
+    }
+  },
+  "superadmin_protected": "La cuenta del superadministrador no se puede degradar, desactivar ni renombrar"
+}

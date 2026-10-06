@@ -1,0 +1,13 @@
+{
+  "score_not_found": "Score not found",
+  "score_not_owned": "Only the teacher who created the score can delete it",
+  "points_out_of_range": "The score must be between 0 and the maximum score",
+  "score_recorded": "Score recorded successfully",
+  "score_deleted": "Score deleted successfully",
+  "scores_retrieved": "Scores retrieved successfully",
+  "validation": {
+    "required_fields": "studentId, entityType, entityId and score are required",
+    "entity_type_invalid": "entityType must be one of: MODULE, LESSON, QUIZ, CASE, CUSTOM",
+    "max_score_invalid": "maxScore must be a number"
+  }
+}

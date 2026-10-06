@@ -1,0 +1,28 @@
+{
+  "lesson_access_denied": "You cannot access this lesson yet",
+  "quiz_score_required": "A quiz score is required to complete this lesson",
+  "overview_retrieved": "Progress overview retrieved successfully",
+  "module_progress_retrieved": "Module progress retrieved successfully",
+  "lesson_progress_retrieved": "Lesson progress retrieved successfully",
+  "lesson_progress_updated": "Lesson progress updated successfully",
+  "step_progress_updated": "Step progress updated successfully",
+  "resume_retrieved": "Resume state retrieved successfully",
+  "lesson_details_retrieved": "Lesson progress details retrieved successfully",
+  "milestones_retrieved": "Milestones retrieved successfully",
+  "achievements_retrieved": "Achievements retrieved successfully",
+  "skills_retrieved": "Skills retrieved successfully",
+  "unlocked_modules_retrieved": "Unlocked modules retrieved successfully",
+  "access_retrieved": "Access status retrieved successfully",
+  "page_view_recorded": "Page view recorded successfully",
+  "learning_summary_retrieved": "Learning progress summary retrieved successfully",
+  "level_progress_retrieved": "Level progress retrieved successfully",
+  "section_progress_retrieved": "Section progress retrieved successfully",
+  "validation": {
+    "module_id_required": "The module ID is required",
+    "lesson_id_required": "The lesson ID is required",
+    "time_spent_invalid": "The time spent must be a non-negative integer",
+    "step_invalid": "The step must be a non-negative integer",
+    "total_steps_invalid": "The total number of steps must be an integer of at least 1",
+    "score_invalid": "The score must be a number between 0 and 100"
+  }
+}

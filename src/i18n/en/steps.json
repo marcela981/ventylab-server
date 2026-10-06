@@ -1,0 +1,24 @@
+{
+  "step_not_found": "Step not found",
+  "inactive_lesson_step_creation": "Steps cannot be added to an inactive lesson. Activate the lesson first",
+  "step_order_already_taken": "Another step of this lesson already has this order. Use a different order or reorder the steps",
+  "invalid_step_reorder": "One or more steps do not exist or do not belong to this lesson",
+  "steps_retrieved": "Steps retrieved successfully",
+  "step_retrieved": "Step retrieved successfully",
+  "next_step_retrieved": "Next step retrieved",
+  "no_next_step": "There are no more steps",
+  "previous_step_retrieved": "Previous step retrieved",
+  "no_previous_step": "There is no previous step",
+  "steps_reordered": "Steps reordered successfully",
+  "step_created": "Step created successfully",
+  "step_updated": "Step updated successfully",
+  "step_deactivated": "Step deactivated successfully",
+  "validation": {
+    "lesson_id_required": "The lesson ID is required",
+    "title_max_length": "The title must not exceed 200 characters",
+    "content_required": "The step content is required",
+    "content_type_invalid": "contentType must be one of: text, image, video, quiz, simulation, code",
+    "order_invalid": "The order must be a non-negative integer",
+    "step_ids_invalid": "stepIds must be a non-empty array of strings"
+  }
+}

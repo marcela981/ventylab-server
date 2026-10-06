@@ -14,7 +14,7 @@
  *   $ cd ventylab-server
  *   $ AUDIT_BASE_URL=http://localhost:3001 npx tsx scripts/audit-e2e/audit-e2e.ts
  *
- * Versión       : 1.0
+ * Versión       : 1.1
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -24,7 +24,7 @@
  */
 
 import path from 'node:path';
-import { prisma } from '../../src/shared/infrastructure/database';
+import { prisma } from '../lib/prisma';
 import { E2EReportWriter } from './E2EReportWriter';
 import { E2E_CONFIG, OUTPUT_DIR } from './e2e-config';
 import { TelemetryInboundAuditor } from './auditors/TelemetryInboundAuditor';

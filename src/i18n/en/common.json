@@ -1,0 +1,38 @@
+{
+  "validation_error": "Schema validation error",
+  "internal_server_error": "Internal server error",
+  "unauthorized": "Unauthorized",
+  "forbidden": "Forbidden",
+  "not_found": "The requested record was not found",
+  "conflict": "The operation conflicts with an existing record",
+  "invalid_value_object": "Invalid value provided",
+  "ai_unavailable": "The AI service is not available",
+  "ai_generation_failed": "The AI service could not generate a response",
+  "validation": {
+    "string": "The value must be a string",
+    "enum": "The value must be one of the allowed options",
+    "boolean": "The value must be a boolean",
+    "page": {
+      "must_be_integer": "Page must be an integer",
+      "min": "Page must be at least 1"
+    },
+    "limit": {
+      "must_be_integer": "Limit must be an integer",
+      "min": "Limit must be at least 1",
+      "max": "Limit must not exceed 100"
+    },
+    "created_at_from": {
+      "must_be_date": "createdAtFrom must be a valid ISO 8601 date"
+    },
+    "created_at_to": {
+      "must_be_date": "createdAtTo must be a valid ISO 8601 date"
+    },
+    "sort_order": {
+      "must_be_valid": "Sort order must be one of: asc, desc"
+    },
+    "ids": {
+      "must_be_array_of_strings": "ids must be a comma-separated list of strings"
+    }
+  },
+  "superadmin_protected": "The superadmin account cannot be demoted, deactivated or renamed"
+}

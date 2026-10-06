@@ -1,0 +1,18 @@
+{
+  "tree_retrieved": "Curriculum tree retrieved successfully",
+  "level_created": "Level created successfully",
+  "module_created": "Module created successfully",
+  "level_updated": "Level updated successfully",
+  "module_updated": "Module updated successfully",
+  "level_deleted": "Level and all its descendants deleted",
+  "module_deleted": "Module and all its content deleted",
+  "lesson_content_retrieved": "Lesson content retrieved successfully",
+  "lesson_content_saved": "Lesson content saved successfully",
+  "validation": {
+    "type_invalid": "type must be one of: level, module",
+    "title_required": "The title is required",
+    "tags_invalid": "tags must be an array of strings",
+    "order_invalid": "The order must be a non-negative integer",
+    "blocks_invalid": "blocks must be an array"
+  }
+}

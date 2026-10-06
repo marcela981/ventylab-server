@@ -1,0 +1,16 @@
+{
+  "overview_retrieved": "Curriculum overview retrieved",
+  "beginner_retrieved": "Beginner level modules retrieved successfully",
+  "prerequisitos_retrieved": "Prerequisite modules retrieved successfully",
+  "level_retrieved": "Level modules retrieved successfully",
+  "unlock_status_retrieved": "Unlock status retrieved",
+  "next_module_retrieved": "Next module retrieved",
+  "no_next_module": "There is no next module available",
+  "tree_retrieved": "Curriculum tree retrieved successfully",
+  "node_has_student_data": "This content or one of its descendants has student data. Archive it instead of deleting it",
+  "validation": {
+    "level_invalid": "level must be one of: prerequisitos, beginner, intermediate, advanced",
+    "ids_invalid": "ids must be a non-empty array of strings",
+    "status_invalid": "status must be one of: DRAFT, PUBLISHED, ARCHIVED"
+  }
+}

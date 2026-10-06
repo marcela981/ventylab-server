@@ -1,0 +1,24 @@
+{
+  "step_not_found": "Paso no encontrado",
+  "inactive_lesson_step_creation": "No se pueden agregar pasos a una lección inactiva. Active primero la lección",
+  "step_order_already_taken": "Ya existe un paso con ese orden en esta lección. Use un orden diferente o reordene los pasos",
+  "invalid_step_reorder": "Uno o más pasos no existen o no pertenecen a esta lección",
+  "steps_retrieved": "Pasos obtenidos exitosamente",
+  "step_retrieved": "Paso obtenido exitosamente",
+  "next_step_retrieved": "Siguiente paso obtenido",
+  "no_next_step": "No hay más pasos",
+  "previous_step_retrieved": "Paso anterior obtenido",
+  "no_previous_step": "No hay paso anterior",
+  "steps_reordered": "Pasos reordenados exitosamente",
+  "step_created": "Paso creado exitosamente",
+  "step_updated": "Paso actualizado exitosamente",
+  "step_deactivated": "Paso desactivado exitosamente",
+  "validation": {
+    "lesson_id_required": "El ID de la lección es obligatorio",
+    "title_max_length": "El título no debe exceder 200 caracteres",
+    "content_required": "El contenido del paso es obligatorio",
+    "content_type_invalid": "contentType debe ser uno de: text, image, video, quiz, simulation, code",
+    "order_invalid": "El orden debe ser un entero no negativo",
+    "step_ids_invalid": "stepIds debe ser un arreglo no vacío de cadenas de texto"
+  }
+}

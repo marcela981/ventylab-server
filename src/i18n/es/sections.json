@@ -1,0 +1,19 @@
+{
+  "section_not_found": "Sección no encontrada",
+  "section_slug_already_exists": "Ya existe una sección con este slug",
+  "invalid_section_reorder": "La lista de secciones está vacía, tiene duplicados o contiene secciones inexistentes",
+  "sections_retrieved": "Secciones obtenidas exitosamente",
+  "section_retrieved": "Sección obtenida exitosamente",
+  "section_levels_retrieved": "Niveles de la sección obtenidos exitosamente",
+  "section_created": "Sección creada exitosamente",
+  "section_updated": "Sección actualizada exitosamente",
+  "section_status_changed": "Estado de la sección actualizado exitosamente",
+  "sections_reordered": "Secciones reordenadas exitosamente",
+  "section_deleted": "Sección eliminada exitosamente",
+  "validation": {
+    "slug_invalid": "El slug debe tener entre 2 y 80 letras minúsculas, dígitos o guiones",
+    "title_length": "El título debe tener entre 2 y 150 caracteres",
+    "description_max_length": "La descripción no debe exceder 2000 caracteres",
+    "order_invalid": "El orden debe ser un entero no negativo"
+  }
+}

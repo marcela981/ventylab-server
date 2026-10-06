@@ -1,0 +1,11 @@
+{
+  "students_retrieved": "Estudiantes obtenidos correctamente",
+  "student_progress_retrieved": "Progreso del estudiante obtenido correctamente",
+  "teachers_retrieved": "Profesores obtenidos correctamente",
+  "role_changed": "Rol del usuario actualizado correctamente",
+  "statistics_retrieved": "Estadísticas obtenidas correctamente",
+  "validation": {
+    "sort_by_invalid": "sortBy debe ser uno de: name, email, lastActivity, progress",
+    "role_invalid": "Rol inválido"
+  }
+}

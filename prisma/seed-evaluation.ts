@@ -1,9 +1,15 @@
 /**
  * =============================================================================
  * Funcionalidad : Seed de evaluación (quizzes, exámenes, talleres)
- * Descripción   : Puebla las tablas `quizzes` y `activities` a partir de los
- *                 archivos JSON ubicados en `prisma/seed-data/evaluation/` del
- *                 propio backend (no requiere que el frontend esté checked out).
+ * Descripción   : Puebla `evaluations` (+ `evaluation_scenarios`,
+ *                 `evaluation_questions`, `evaluation_question_options`) a partir
+ *                 de los archivos JSON ubicados en `prisma/seed-data/evaluation/`
+ *                 del propio backend (no requiere que el frontend esté checked out).
+ *                 Las tablas legacy `quizzes` y `activities` están congeladas y
+ *                 este seed ya no las escribe: produce las mismas filas (ids,
+ *                 forma TipTap, campos legacy_*) que la migración
+ *                 20261007120000_evaluation_feature genera desde ellas, vía
+ *                 `prisma/seed-helpers/evaluation-seed.mapper.ts`.
  *
  *                 Estructura esperada:
  *                   prisma/seed-data/evaluation/
@@ -13,9 +19,9 @@
  *                     ├── examenes/**\/*.json
  *                     └── talleres/**\/*.json
  *
- *                 Quizzes  → tabla quizzes    (26 total: mecánica 6+6+8, ventylab 2+2+2)
- *                 Exámenes → tabla activities (type = EXAM,   6 total)
- *                 Talleres → tabla activities (type = TALLER, 9 total)
+ *                 Quizzes  → evaluations type QUIZ     (26 total: mecánica 6+6+8, ventylab 2+2+2)
+ *                 Exámenes → evaluations type EXAM     (legacy_type = EXAM,   6 total)
+ *                 Talleres → evaluations type WORKSHOP (legacy_type = TALLER, 9 total)
  *
  *                 SEGURO DE RE-EJECUTAR: todas las escrituras usan prisma.upsert().
  *
@@ -23,7 +29,7 @@
  *                   npm run seed:evaluation
  *                   npx tsx prisma/seed-evaluation.ts
  *
- * Versión       : 2.0
+ * Versión       : 2.1
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Desarrollo de una aplicación web para la enseñanza de
@@ -34,9 +40,17 @@
  * =============================================================================
  */
 
-import { PrismaClient } from '@prisma/client';
+import { type Prisma, PrismaClient } from '@prisma/client';
 import * as fs   from 'fs';
 import * as path from 'path';
+
+import {
+  type EvalJson,
+  mapActivitySeed,
+  mapQuizSeed,
+  type SeedActivityType,
+  type SeedEvaluationBundle,
+} from './seed-helpers/evaluation-seed.mapper';
 
 const prisma = new PrismaClient();
 
@@ -91,41 +105,6 @@ const VENTYLAB_MODULE_MAP: Record<string, string> = {
   'avanzado/quizz-2':     'ventylab-module-05-raciocinio-clinico',
 };
 
-// ─── Type definitions ─────────────────────────────────────────────────────────
-
-interface QuizOption {
-  id: string;
-  text: string;
-  isCorrect: boolean;
-  feedback?: string;
-}
-
-interface QuizQuestion {
-  id: string;
-  type: 'multiple_choice' | 'true_false' | 'scenario_choice';
-  text: string;
-  options: QuizOption[];
-  explanation?: string;
-}
-
-interface CaseStudy {
-  patient: string;
-  scenario: string;
-  objective: string;
-}
-
-interface EvalJson {
-  id: string;
-  type: 'quiz' | 'examen' | 'taller';
-  title: string;
-  description: string;
-  moduleId: string;
-  level: string;
-  passingScore: number;
-  questions: QuizQuestion[];
-  caseStudy?: CaseStudy;
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Read + parse a JSON file using explicit utf-8 Buffer conversion. */
@@ -154,8 +133,8 @@ function collectJsonFiles(dir: string): string[] {
   return results;
 }
 
-/** Derive the MECANICA_MODULE_MAP key from a full file path. */
-function mecanicaKey(filePath: string): string {
+/** Derive the MECANICA_MODULE_MAP / VENTYLAB_MODULE_MAP key from a full file path. */
+function moduleMapKey(filePath: string): string {
   const level = path.basename(path.dirname(filePath)); // principiante | intermedio | avanzado
   const base  = path.basename(filePath, '.json');
   return `${level}/${base}`;
@@ -192,135 +171,124 @@ async function resolveCreatorId(): Promise<string> {
   return sys.id;
 }
 
+// ─── Upsert of one mapped evaluation ─────────────────────────────────────────
+// Every row is upserted by the same deterministic id the migration uses, so a
+// fresh DB seeded here matches a DB migrated from the legacy seed, and re-running
+// the seed (or running it after the migration) never duplicates rows.
+
+async function upsertEvaluation(bundle: SeedEvaluationBundle): Promise<void> {
+  const { createdById, ...evaluationUpdate } = bundle.evaluation;
+
+  await prisma.evaluation.upsert({
+    where:  { id: bundle.evaluation.id },
+    update: evaluationUpdate,
+    create: { ...bundle.evaluation, createdById },
+  });
+
+  if (bundle.scenario) {
+    const { id, ...scenarioData } = bundle.scenario;
+    const content = bundle.scenario.content as unknown as Prisma.InputJsonValue;
+
+    await prisma.evaluationScenario.upsert({
+      where:  { id },
+      update: { ...scenarioData, content },
+      create: { id, ...scenarioData, content },
+    });
+  }
+
+  for (const question of bundle.questions) {
+    const { options, ...questionData } = question;
+    const prompt = question.prompt as unknown as Prisma.InputJsonValue;
+
+    await prisma.evaluationQuestion.upsert({
+      where:  { id: question.id },
+      update: { ...questionData, prompt },
+      create: { ...questionData, prompt },
+    });
+
+    for (const option of options) {
+      await prisma.evaluationQuestionOption.upsert({
+        where:  { id: option.id },
+        update: option,
+        create: option,
+      });
+    }
+  }
+}
+
+async function moduleExists(moduleId: string, ownerId: string): Promise<boolean> {
+  // evaluations.module_id is a FK: an unknown module is stored only in legacy_module_ref.
+  const found = await prisma.module.findUnique({ where: { id: moduleId }, select: { id: true } });
+  if (!found) {
+    console.warn(`  ⚠  "${ownerId}": moduleId "${moduleId}" not in modules table (kept in legacy_module_ref only)`);
+  }
+  return found !== null;
+}
+
+async function levelExists(levelId: string): Promise<boolean> {
+  const found = await prisma.level.findUnique({ where: { id: levelId }, select: { id: true } });
+  return found !== null;
+}
+
+/** Map each file to its index inside its own folder (the legacy quiz `order`). */
+function folderOrder(files: string[]): Map<string, number> {
+  const byFolder = new Map<string, string[]>();
+  for (const f of files) {
+    const folder = path.dirname(f);
+    byFolder.set(folder, [...(byFolder.get(folder) ?? []), f]);
+  }
+  const order = new Map<string, number>();
+  for (const f of files) {
+    order.set(f, (byFolder.get(path.dirname(f)) ?? []).indexOf(f));
+  }
+  return order;
+}
+
 // ─── Seed: Quizzes ────────────────────────────────────────────────────────────
 
+async function seedQuizGroup(dir: string, moduleMap: Record<string, string>): Promise<number> {
+  const files = collectJsonFiles(dir);
+  const order = folderOrder(files);
+
+  for (const filePath of files) {
+    const json      = readJson(filePath);
+    const moduleRef = moduleMap[moduleMapKey(filePath)] ?? json.moduleId;
+
+    await upsertEvaluation(
+      mapQuizSeed(json, { moduleRef, moduleExists: await moduleExists(moduleRef, json.id), order: order.get(filePath) ?? 0 }),
+    );
+  }
+
+  return files.length;
+}
+
 async function seedQuizzes(): Promise<number> {
-  let count = 0;
-
-  // ── mecanica ──────────────────────────────────────────────────────────────
-  const mecanicaDir = path.join(EVAL_DIR, 'quizzes', 'mecanica');
-  const mecanicaFiles = collectJsonFiles(mecanicaDir);
-
-  // Group by folder to assign per-folder order index
-  const byFolder = new Map<string, string[]>();
-  for (const f of mecanicaFiles) {
-    const folder = path.dirname(f);
-    if (!byFolder.has(folder)) byFolder.set(folder, []);
-    byFolder.get(folder)!.push(f);
-  }
-
-  for (const filePath of mecanicaFiles) {
-    const json     = readJson(filePath);
-    const key      = mecanicaKey(filePath);
-    const moduleId = MECANICA_MODULE_MAP[key] ?? json.moduleId;
-
-    // Advisory module-existence check (Quiz.moduleId has no FK in Prisma schema —
-    // a missing module will NOT cause a DB error; we warn and continue).
-    const moduleExists = await prisma.module.findUnique({ where: { id: moduleId } });
-    if (!moduleExists) {
-      console.warn(`  ⚠  Quiz "${json.id}": moduleId "${moduleId}" not in modules table (stored as-is)`);
-    }
-
-    const folder = path.dirname(filePath);
-    const order  = (byFolder.get(folder) ?? []).indexOf(filePath);
-
-    await prisma.quiz.upsert({
-      where:  { id: json.id },
-      update: { title: json.title, description: json.description, moduleId, questions: json.questions as any, passingScore: json.passingScore, isActive: true, order },
-      create: { id: json.id, title: json.title, description: json.description, moduleId, questions: json.questions as any, passingScore: json.passingScore, isActive: true, order },
-    });
-    count++;
-  }
-
-  // ── ventylab ──────────────────────────────────────────────────────────────
-  const ventylabDir   = path.join(EVAL_DIR, 'quizzes', 'ventylab');
-  const ventylabFiles = collectJsonFiles(ventylabDir);
-
-  const vByFolder = new Map<string, string[]>();
-  for (const f of ventylabFiles) {
-    const folder = path.dirname(f);
-    if (!vByFolder.has(folder)) vByFolder.set(folder, []);
-    vByFolder.get(folder)!.push(f);
-  }
-
-  for (const filePath of ventylabFiles) {
-    const json     = readJson(filePath);
-    const level    = path.basename(path.dirname(filePath));
-    const base     = path.basename(filePath, '.json');
-    const moduleId = VENTYLAB_MODULE_MAP[`${level}/${base}`] ?? json.moduleId;
-
-    // Advisory check — ventylab moduleIds use a different naming convention
-    const moduleExists = await prisma.module.findUnique({ where: { id: moduleId } });
-    if (!moduleExists) {
-      console.warn(`  ⚠  Quiz "${json.id}": moduleId "${moduleId}" not in modules table (stored as-is)`);
-    }
-
-    const folder = path.dirname(filePath);
-    const order  = (vByFolder.get(folder) ?? []).indexOf(filePath);
-
-    await prisma.quiz.upsert({
-      where:  { id: json.id },
-      update: { title: json.title, description: json.description, moduleId, questions: json.questions as any, passingScore: json.passingScore, isActive: true, order },
-      create: { id: json.id, title: json.title, description: json.description, moduleId, questions: json.questions as any, passingScore: json.passingScore, isActive: true, order },
-    });
-    count++;
-  }
-
-  return count;
+  const mecanica = await seedQuizGroup(path.join(EVAL_DIR, 'quizzes', 'mecanica'), MECANICA_MODULE_MAP);
+  const ventylab = await seedQuizGroup(path.join(EVAL_DIR, 'quizzes', 'ventylab'), VENTYLAB_MODULE_MAP);
+  return mecanica + ventylab;
 }
 
-// ─── Seed: Exams ──────────────────────────────────────────────────────────────
+// ─── Seed: Exams and talleres ─────────────────────────────────────────────────
+// The legacy seed stored {moduleId, level, passingScore, caseStudy?, questions}
+// as JSON text in activities.instructions; the mapper rebuilds that exact text
+// for legacy_instructions and expands the questions and the caseStudy scenario.
 
-async function seedExams(createdBy: string): Promise<number> {
-  let count = 0;
-  const examsDir = path.join(EVAL_DIR, 'examenes');
+async function seedActivities(dirName: string, activityType: SeedActivityType, createdById: string): Promise<number> {
+  const files = collectJsonFiles(path.join(EVAL_DIR, dirName));
 
-  for (const filePath of collectJsonFiles(examsDir)) {
+  for (const filePath of files) {
     const json = readJson(filePath);
 
-    // Store full question data (with explanations) in `instructions` as JSON string.
-    const instructions = JSON.stringify(
-      { moduleId: json.moduleId, level: json.level, passingScore: json.passingScore, questions: json.questions },
-      null,
-      2,
+    await upsertEvaluation(
+      mapActivitySeed(json, activityType, {
+        moduleExists: await moduleExists(json.moduleId, json.id),
+        levelExists:  await levelExists(json.level),
+        createdById,
+      }),
     );
-
-    await prisma.activity.upsert({
-      where:  { id: json.id },
-      update: { title: json.title, description: json.description, instructions, type: 'EXAM', maxScore: 100, isPublished: true, isActive: true },
-      create: { id: json.id, title: json.title, description: json.description, instructions, type: 'EXAM', maxScore: 100, isPublished: true, isActive: true, createdBy },
-    });
-    count++;
   }
 
-  return count;
-}
-
-// ─── Seed: Talleres ───────────────────────────────────────────────────────────
-
-async function seedTalleres(createdBy: string): Promise<number> {
-  let count = 0;
-  const talleresDir = path.join(EVAL_DIR, 'talleres');
-
-  for (const filePath of collectJsonFiles(talleresDir)) {
-    const json = readJson(filePath);
-
-    // Store caseStudy + questions in `instructions` as JSON string.
-    const instructions = JSON.stringify(
-      { moduleId: json.moduleId, level: json.level, passingScore: json.passingScore, caseStudy: json.caseStudy ?? null, questions: json.questions },
-      null,
-      2,
-    );
-
-    await prisma.activity.upsert({
-      where:  { id: json.id },
-      update: { title: json.title, description: json.description, instructions, type: 'TALLER', maxScore: 100, isPublished: true, isActive: true },
-      create: { id: json.id, title: json.title, description: json.description, instructions, type: 'TALLER', maxScore: 100, isPublished: true, isActive: true, createdBy },
-    });
-    count++;
-  }
-
-  return count;
+  return files.length;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -342,11 +310,11 @@ async function main() {
   console.log(`✅  Seeded ${quizCount} quizzes`);
 
   console.log('\n📋  Seeding exams...');
-  const examCount = await seedExams(createdBy);
+  const examCount = await seedActivities('examenes', 'EXAM', createdBy);
   console.log(`✅  Seeded ${examCount} exams`);
 
   console.log('\n🔧  Seeding talleres...');
-  const tallerCount = await seedTalleres(createdBy);
+  const tallerCount = await seedActivities('talleres', 'TALLER', createdBy);
   console.log(`✅  Seeded ${tallerCount} talleres`);
 
   console.log('\n' + '─'.repeat(45));

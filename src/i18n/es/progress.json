@@ -1,0 +1,28 @@
+{
+  "lesson_access_denied": "Todavía no puede acceder a esta lección",
+  "quiz_score_required": "Se requiere el puntaje del quiz para completar esta lección",
+  "overview_retrieved": "Resumen de progreso obtenido correctamente",
+  "module_progress_retrieved": "Progreso del módulo obtenido correctamente",
+  "lesson_progress_retrieved": "Progreso de la lección obtenido correctamente",
+  "lesson_progress_updated": "Progreso de la lección actualizado correctamente",
+  "step_progress_updated": "Progreso del paso actualizado correctamente",
+  "resume_retrieved": "Punto de reanudación obtenido correctamente",
+  "lesson_details_retrieved": "Detalle del progreso de la lección obtenido correctamente",
+  "milestones_retrieved": "Hitos obtenidos correctamente",
+  "achievements_retrieved": "Logros obtenidos correctamente",
+  "skills_retrieved": "Habilidades obtenidas correctamente",
+  "unlocked_modules_retrieved": "Módulos desbloqueados obtenidos correctamente",
+  "access_retrieved": "Estado de acceso obtenido correctamente",
+  "page_view_recorded": "Vista de página registrada correctamente",
+  "learning_summary_retrieved": "Resumen de progreso de aprendizaje obtenido correctamente",
+  "level_progress_retrieved": "Progreso del nivel obtenido correctamente",
+  "section_progress_retrieved": "Progreso de la sección obtenido correctamente",
+  "validation": {
+    "module_id_required": "El ID del módulo es obligatorio",
+    "lesson_id_required": "El ID de la lección es obligatorio",
+    "time_spent_invalid": "El tiempo dedicado debe ser un entero no negativo",
+    "step_invalid": "El paso debe ser un entero no negativo",
+    "total_steps_invalid": "El número total de pasos debe ser un entero mayor o igual a 1",
+    "score_invalid": "El puntaje debe ser un número entre 0 y 100"
+  }
+}

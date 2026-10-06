@@ -1,0 +1,14 @@
+{
+  "quiz_not_found": "Quiz not found",
+  "quiz_inactive": "This quiz is inactive",
+  "quiz_already_attempted": "You already completed this quiz. Contact your teacher to retake it.",
+  "quizzes_retrieved": "Quizzes retrieved successfully",
+  "quiz_retrieved": "Quiz retrieved successfully",
+  "attempts_retrieved": "Quiz attempts retrieved successfully",
+  "attempt_retrieved": "Quiz attempt retrieved successfully",
+  "attempt_recorded": "Quiz attempt graded and recorded successfully",
+  "validation": {
+    "answers_required": "The answers field must be a non-empty array",
+    "answer_invalid": "Each answer must have questionId and selectedOptionId as strings"
+  }
+}

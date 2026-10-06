@@ -1,0 +1,16 @@
+{
+  "media_uploaded": "Archivo cargado correctamente",
+  "media_list_retrieved": "Archivos obtenidos correctamente",
+  "media_retrieved": "Archivo obtenido correctamente",
+  "media_url_generated": "URL firmada generada correctamente",
+  "media_deleted": "Archivo eliminado correctamente",
+  "media_not_found": "Archivo no encontrado",
+  "media_in_use": "El archivo está en uso en el contenido de una página y no se puede eliminar",
+  "storage_unavailable": "El almacenamiento de archivos no está configurado",
+  "unsupported_media_type": "Este tipo de archivo no está permitido",
+  "media_too_large": "El archivo supera el tamaño máximo permitido para su tipo",
+  "file_required": "Se requiere un archivo no vacío",
+  "validation": {
+    "kind_invalid": "El tipo debe ser uno de: IMAGE, VIDEO, FILE"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "clinical_case_not_found": "The specified clinical case does not exist",
+  "clinical_case_unavailable": "This clinical case is not available",
+  "expert_configuration_missing": "The clinical case has no associated expert configuration",
+  "clinical_cases_retrieved": "Clinical cases retrieved successfully",
+  "clinical_case_retrieved": "Clinical case retrieved successfully",
+  "clinical_case_evaluated": "Configuration evaluated successfully",
+  "attempts_retrieved": "Clinical case attempts retrieved successfully",
+  "validation": {
+    "difficulty_invalid": "The difficulty must be one of: BEGINNER, INTERMEDIATE, ADVANCED",
+    "pathology_invalid": "The pathology must be one of the valid options",
+    "configuration_required": "The ventilator configuration is required",
+    "ventilation_mode_required": "The ventilation mode is required",
+    "tidal_volume_invalid": "Tidal volume must be a positive number",
+    "respiratory_rate_invalid": "Respiratory rate must be a positive number",
+    "peep_invalid": "PEEP must be a positive number",
+    "fio2_invalid": "FiO2 must be a number between 0 and 100",
+    "max_pressure_invalid": "Maximum pressure must be a positive number"
+  }
+}

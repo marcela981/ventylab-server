@@ -1,0 +1,16 @@
+{
+  "media_uploaded": "Media uploaded successfully",
+  "media_list_retrieved": "Media retrieved successfully",
+  "media_retrieved": "Media retrieved successfully",
+  "media_url_generated": "Signed URL generated successfully",
+  "media_deleted": "Media deleted successfully",
+  "media_not_found": "Media not found",
+  "media_in_use": "The media is used by page content and cannot be deleted",
+  "storage_unavailable": "File storage is not configured",
+  "unsupported_media_type": "This file type is not allowed",
+  "media_too_large": "The file exceeds the maximum size allowed for its type",
+  "file_required": "A non-empty file is required",
+  "validation": {
+    "kind_invalid": "Kind must be one of: IMAGE, VIDEO, FILE"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "section_not_found": "Section not found",
+  "section_slug_already_exists": "A section with this slug already exists",
+  "invalid_section_reorder": "The section list is empty, has duplicates or contains unknown sections",
+  "sections_retrieved": "Sections retrieved successfully",
+  "section_retrieved": "Section retrieved successfully",
+  "section_levels_retrieved": "Section levels retrieved successfully",
+  "section_created": "Section created successfully",
+  "section_updated": "Section updated successfully",
+  "section_status_changed": "Section status changed successfully",
+  "sections_reordered": "Sections reordered successfully",
+  "section_deleted": "Section deleted successfully",
+  "validation": {
+    "slug_invalid": "slug must have 2 to 80 lowercase letters, digits or hyphens",
+    "title_length": "The title must be between 2 and 150 characters",
+    "description_max_length": "The description must not exceed 2000 characters",
+    "order_invalid": "The order must be a non-negative integer"
+  }
+}

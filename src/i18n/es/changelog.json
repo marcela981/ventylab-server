@@ -1,0 +1,13 @@
+{
+  "changelog_retrieved": "Historial de cambios obtenido exitosamente",
+  "recent_changes_retrieved": "Cambios recientes obtenidos exitosamente",
+  "stats_retrieved": "Estadísticas de cambios obtenidas exitosamente",
+  "entity_history_retrieved": "Historial de la entidad obtenido exitosamente",
+  "validation": {
+    "entity_type_invalid": "entityType debe ser uno de: Level, Module, Lesson, Step",
+    "action_invalid": "action debe ser uno de: create, update, delete, reorder",
+    "entity_id_required": "entityId es obligatorio",
+    "from_date_invalid": "fromDate debe ser una fecha ISO 8601 válida",
+    "to_date_invalid": "toDate debe ser una fecha ISO 8601 válida"
+  }
+}

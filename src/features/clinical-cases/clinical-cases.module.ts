@@ -1,0 +1,39 @@
+/*
+ * Funcionalidad: Módulo ClinicalCasesModule
+ * Descripción: Registra la feature de casos clínicos (controlador, casos de uso, generador de retroalimentación con IAITextGenerator y repositorio Prisma)
+ * Versión: 1.0
+ * Autor: Marcela Mazo Castro
+ * Proyecto: VentyLab
+ * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+ * Institución: Universidad del Valle
+ * Contacto: marcela.mazo@correounivalle.edu.co
+ */
+import { Module } from "@nestjs/common";
+
+import { AuthModule } from "@/features/auth/auth.module";
+import { EvaluationFeedbackGenerator } from "@/features/clinical-cases/application/services/evaluation-feedback-generator.service";
+import { EvaluateClinicalCaseUseCase } from "@/features/clinical-cases/application/use-cases/evaluate-clinical-case.usecase";
+import { GetClinicalCaseAttemptsUseCase } from "@/features/clinical-cases/application/use-cases/get-clinical-case-attempts.usecase";
+import { GetClinicalCaseUseCase } from "@/features/clinical-cases/application/use-cases/get-clinical-case.usecase";
+import { GetClinicalCasesUseCase } from "@/features/clinical-cases/application/use-cases/get-clinical-cases.usecase";
+import { CLINICAL_CASES_REPOSITORY_TOKEN } from "@/features/clinical-cases/domain/repositories/clinical-cases.repository";
+import { ClinicalCasesPrismaRepository } from "@/features/clinical-cases/infrastructure/persistence/prisma/repositories/clinical-cases-prisma.repository";
+import { ClinicalCasesController } from "@/features/clinical-cases/presentation/controllers/clinical-cases.controller";
+
+@Module({
+  imports: [AuthModule],
+  controllers: [ClinicalCasesController],
+  providers: [
+    {
+      provide: CLINICAL_CASES_REPOSITORY_TOKEN,
+      useClass: ClinicalCasesPrismaRepository,
+    },
+    EvaluationFeedbackGenerator,
+    GetClinicalCasesUseCase,
+    GetClinicalCaseUseCase,
+    EvaluateClinicalCaseUseCase,
+    GetClinicalCaseAttemptsUseCase,
+  ],
+  exports: [CLINICAL_CASES_REPOSITORY_TOKEN, EvaluationFeedbackGenerator],
+})
+export class ClinicalCasesModule {}

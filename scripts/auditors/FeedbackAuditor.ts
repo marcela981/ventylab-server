@@ -9,7 +9,7 @@
  *                 disponibilidad de ≥3 proveedores en aiConfig, y la
  *                 existencia de logging estructurado con
  *                 {provider, latencyMs, parsedOK}.
- * Versión       : 1.0
+ * Versión       : 1.1
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -24,8 +24,12 @@ import { Auditor } from './Auditor';
 import type { AuditResult, Gate, GateStatus } from '../reporting/types';
 
 const SERVER_ROOT = path.resolve(__dirname, '..', '..');
-const EVAL_SERVICE_REL = 'src/modules/evaluation/evaluation.service.ts';
-const AI_CONFIG_REL = 'src/config/aiConfig.ts';
+const COMPARISON_REL = 'src/features/clinical-cases/domain/services/configuration-comparison.ts';
+const FEEDBACK_GENERATOR_REL =
+  'src/features/clinical-cases/application/services/evaluation-feedback-generator.service.ts';
+const FALLBACK_REL = 'src/features/clinical-cases/domain/services/evaluation-feedback.ts';
+const EVAL_SERVICE_REL = `${COMPARISON_REL} + ${FEEDBACK_GENERATOR_REL}`;
+const AI_CONFIG_REL = 'src/common/infrastructure/ai/gemini-ai-text-generator.ts';
 const REQUIRED_PROVIDERS = ['openai', 'anthropic', 'gemini'];
 const STRUCTURED_LOG_KEYS = ['provider', 'latencyMs', 'parsedOK'];
 
@@ -38,18 +42,20 @@ export class FeedbackAuditor extends Auditor {
     const gates: Gate[] = [];
     const tableRows: Array<Array<string | number>> = [];
 
-    // Gate 1: existencia del archivo y exports.
-    const evalServiceAbs = path.join(SERVER_ROOT, EVAL_SERVICE_REL);
-    const evalExists = await this.fileExists(evalServiceAbs);
-    let evalSource = '';
-    if (evalExists) evalSource = await fs.readFile(evalServiceAbs, 'utf8');
+    // Gate 1: existencia de los archivos y exports.
+    // compareConfigurations es una función exportada del dominio;
+    // generateFeedback es un método público de la clase exportada
+    // EvaluationFeedbackGenerator (servicio de aplicación).
+    const comparisonSource = await this.readSafe(path.join(SERVER_ROOT, COMPARISON_REL));
+    const generatorSource = await this.readSafe(path.join(SERVER_ROOT, FEEDBACK_GENERATOR_REL));
+    const evalExists = comparisonSource !== null && generatorSource !== null;
 
     const exportsCompare = /export\s+(async\s+)?function\s+compareConfigurations/.test(
-      evalSource,
+      comparisonSource ?? '',
     );
-    const exportsGenerate = /export\s+(async\s+)?function\s+generateFeedback/.test(
-      evalSource,
-    );
+    const exportsGenerate =
+      /export\s+class\s+EvaluationFeedbackGenerator\b/.test(generatorSource ?? '') &&
+      /public\s+async\s+generateFeedback\s*\(/.test(generatorSource ?? '');
 
     const gateExports = this.makeGate(
       'OE3.G1',
@@ -68,12 +74,13 @@ export class FeedbackAuditor extends Auditor {
     ]);
 
     // Gate 2: smoke test del fallback determinístico.
-    const fallbackGate = await this.smokeFallback(evalSource);
+    const fallbackSource = (await this.readSafe(path.join(SERVER_ROOT, FALLBACK_REL))) ?? '';
+    const fallbackGate = await this.smokeFallback(fallbackSource);
     gates.push(fallbackGate);
     tableRows.push([
       'Fallback determinístico produce EvaluationFeedback válido',
       fallbackGate.status,
-      `${EVAL_SERVICE_REL} → generateFallbackFeedback`,
+      `${FALLBACK_REL} → generateFallbackFeedback`,
     ]);
 
     // Gate 3: providers strategy (≥3).
@@ -114,6 +121,14 @@ export class FeedbackAuditor extends Auditor {
     };
   }
 
+  private async readSafe(p: string): Promise<string | null> {
+    try {
+      return await fs.readFile(p, 'utf8');
+    } catch {
+      return null;
+    }
+  }
+
   private async fileExists(p: string): Promise<boolean> {
     try {
       await fs.access(p);
@@ -124,9 +139,9 @@ export class FeedbackAuditor extends Auditor {
   }
 
   private async smokeFallback(evalSource: string): Promise<Gate> {
-    // El fallback es función interna (no exportada). Se invoca
-    // indirectamente vía generateFeedback con un caso/config sintético,
-    // forzando el catch path al desactivar el AIServiceManager.
+    // El fallback se invoca indirectamente vía
+    // EvaluationFeedbackGenerator.generateFeedback con un caso/config
+    // sintético, forzando el catch path con un proveedor de IA no disponible.
     const hasFallbackDef = /function\s+generateFallbackFeedback/.test(
       evalSource,
     );
@@ -139,31 +154,30 @@ export class FeedbackAuditor extends Auditor {
       );
     }
 
-    let mod: typeof import('../../src/modules/evaluation/evaluation.service');
+    let mod: typeof import('../../src/features/clinical-cases/application/services/evaluation-feedback-generator.service');
+    let aiErrors: typeof import('../../src/common/domain/errors/ai-unavailable.error');
     try {
-      mod = await import('../../src/modules/evaluation/evaluation.service');
+      mod = await import('../../src/features/clinical-cases/application/services/evaluation-feedback-generator.service');
+      aiErrors = await import('../../src/common/domain/errors/ai-unavailable.error');
     } catch (err) {
       return this.makeGate(
         'OE3.G2',
         'Smoke test fallback determinístico ⇒ EvaluationFeedback válido',
         'FAIL',
-        `No se pudo importar evaluation.service: ${(err as Error).message}`,
+        `No se pudo importar EvaluationFeedbackGenerator: ${(err as Error).message}`,
       );
     }
 
-    // Forzar el path de fallback: anulamos GEMINI_API_KEY y mockeamos
-    // el aiServiceManager para que retorne success=false.
+    // Forzar el path de fallback: el generador recibe un proveedor de IA
+    // stub cuyo generate() lanza AIUnavailableError (IA no disponible).
     try {
-      const ai = await import('../../src/shared/ai/AIServiceManager');
-      const manager = (ai as any).aiServiceManager;
-      const originalGenerate = manager?.generateResponse?.bind(manager);
-      if (manager && originalGenerate) {
-        manager.generateResponse = async () => ({
-          success: false,
-          response: null,
-          error: 'forced for audit smoke test',
-        });
-      }
+      const unavailableAI: import('../../src/common/application/ports/ai-text-generator.interface').IAITextGenerator = {
+        isAvailable: () => false,
+        generate: async () => {
+          throw new aiErrors.AIUnavailableError();
+        },
+      };
+      const generator = new mod.EvaluationFeedbackGenerator(unavailableAI);
 
       const synthClinicalCase = {
         id: 'audit',
@@ -197,15 +211,12 @@ export class FeedbackAuditor extends Auditor {
         summary: { correct: 5, minor: 0, moderate: 0, critical: 0 },
       };
 
-      const fb = await mod.generateFeedback(
+      const fb = await generator.generateFeedback(
         synthClinicalCase as any,
         synthUser as any,
         synthExpert as any,
         synthDifferences as any,
       );
-
-      // Restaurar
-      if (manager && originalGenerate) manager.generateResponse = originalGenerate;
 
       const arraysOk =
         Array.isArray(fb.strengths) &&
@@ -224,7 +235,7 @@ export class FeedbackAuditor extends Auditor {
         ]
           .map((k) => `${k}=${Array.isArray((fb as any)[k])}`)
           .join(', ')}]`,
-        'evaluation.service.ts → generateFeedback (catch → generateFallbackFeedback)',
+        'EvaluationFeedbackGenerator.generateFeedback (catch AIUnavailableError → generateFallbackFeedback)',
       );
     } catch (err) {
       return this.makeGate(

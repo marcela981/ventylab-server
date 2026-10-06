@@ -1,0 +1,17 @@
+{
+  "relationship_not_found": "Teacher-student relationship not found",
+  "relationship_already_exists": "The student is already assigned to this teacher",
+  "teacher_role_required": "The user must have the TEACHER or ADMIN role",
+  "student_assigned": "Student assigned to the teacher successfully",
+  "relationships_retrieved": "Relationships retrieved successfully",
+  "relationship_removed": "Teacher-student relationship removed successfully",
+  "students_retrieved": "Students retrieved successfully",
+  "teachers_retrieved": "Teachers retrieved successfully",
+  "student_progress_retrieved": "Student progress retrieved successfully",
+  "assignment_checked": "Assignment checked successfully",
+  "validation": {
+    "teacher_id_required": "teacherId is required",
+    "student_id_required": "studentId is required",
+    "include_progress_invalid": "includeProgress must be true or false"
+  }
+}

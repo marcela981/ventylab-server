@@ -1,0 +1,39 @@
+{
+  "user_not_found": "Usuario no encontrado",
+  "user_already_exists": "Ya existe un usuario con este email",
+  "invalid_current_password": "La contraseña actual no es correcta",
+  "password_not_set": "Este usuario se registró con un proveedor externo y no tiene contraseña",
+  "same_password": "La nueva contraseña debe ser diferente a la actual",
+  "user_not_student": "El usuario no es estudiante",
+  "student_access_denied": "El estudiante no está asignado a ti",
+  "cannot_change_own_role": "No puedes cambiar tu propio rol",
+  "superadmin_role_immutable": "El rol del superadministrador no se puede modificar",
+  "superadmin_status_immutable": "La cuenta del superadministrador no se puede desactivar",
+  "cannot_change_own_status": "No puedes cambiar el estado de tu propia cuenta",
+  "users_retrieved": "Usuarios obtenidos exitosamente",
+  "role_changed": "Rol cambiado exitosamente",
+  "status_changed": "Estado de la cuenta cambiado exitosamente",
+  "user_retrieved": "Usuario obtenido exitosamente",
+  "profile_updated": "Perfil actualizado exitosamente",
+  "password_changed": "Contraseña actualizada exitosamente. Todas las sesiones anteriores fueron cerradas",
+  "stats_retrieved": "Estadísticas obtenidas exitosamente",
+  "students_retrieved": "Estudiantes obtenidos exitosamente",
+  "student_retrieved": "Estudiante obtenido exitosamente",
+  "update_me": {
+    "name_must_be_string": "El nombre debe ser una cadena de texto",
+    "name_must_not_be_empty": "El nombre no puede estar vacío",
+    "name_max_length": "El nombre no puede exceder {constraints.0} caracteres",
+    "image_must_be_valid_url": "La imagen debe ser una URL http(s) válida o una data URL de imagen en base64"
+  },
+  "change_password": {
+    "current_password_must_be_string": "La contraseña actual debe ser una cadena de texto",
+    "current_password_must_not_be_empty": "La contraseña actual es obligatoria",
+    "new_password_must_be_string": "La nueva contraseña debe ser una cadena de texto",
+    "new_password_strength": "La nueva contraseña debe tener entre 8 y 128 caracteres e incluir al menos una mayúscula, una minúscula y un número"
+  },
+  "validation": {
+    "sort_by_invalid": "sortBy debe ser uno de: createdAt, name, email",
+    "role_invalid": "role debe ser uno de: STUDENT, TEACHER, ADMIN",
+    "is_active_boolean": "isActive debe ser un booleano"
+  }
+}

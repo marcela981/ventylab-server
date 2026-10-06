@@ -1,0 +1,17 @@
+{
+  "relationship_not_found": "Relación profesor-estudiante no encontrada",
+  "relationship_already_exists": "El estudiante ya está asignado a este profesor",
+  "teacher_role_required": "El usuario debe tener el rol TEACHER o ADMIN",
+  "student_assigned": "Estudiante asignado al profesor correctamente",
+  "relationships_retrieved": "Relaciones obtenidas correctamente",
+  "relationship_removed": "Relación profesor-estudiante eliminada correctamente",
+  "students_retrieved": "Estudiantes obtenidos correctamente",
+  "teachers_retrieved": "Profesores obtenidos correctamente",
+  "student_progress_retrieved": "Progreso del estudiante obtenido correctamente",
+  "assignment_checked": "Verificación completada",
+  "validation": {
+    "teacher_id_required": "teacherId es obligatorio",
+    "student_id_required": "studentId es obligatorio",
+    "include_progress_invalid": "includeProgress debe ser true o false"
+  }
+}

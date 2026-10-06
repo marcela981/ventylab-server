@@ -54,7 +54,7 @@
  */
 
 import { PrismaClient, CaseDifficulty, Pathology } from '@prisma/client';
-import { CLINICAL_CASES, ClinicalCase } from '../src/modules/simulation/patient/clinical-cases.data';
+import { SIMULATION_CLINICAL_CASES as CLINICAL_CASES, type SimulationClinicalCase as ClinicalCase } from '../src/features/simulation/domain/services/simulation-case-catalog';
 
 const prisma = new PrismaClient();
 

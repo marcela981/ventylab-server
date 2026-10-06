@@ -1,0 +1,20 @@
+{
+  "clinical_case_not_found": "El caso clínico especificado no existe",
+  "clinical_case_unavailable": "Este caso clínico no está disponible",
+  "expert_configuration_missing": "El caso clínico no tiene configuración experta asociada",
+  "clinical_cases_retrieved": "Casos clínicos obtenidos correctamente",
+  "clinical_case_retrieved": "Caso clínico obtenido correctamente",
+  "clinical_case_evaluated": "Configuración evaluada correctamente",
+  "attempts_retrieved": "Intentos del caso clínico obtenidos correctamente",
+  "validation": {
+    "difficulty_invalid": "La dificultad debe ser una de: BEGINNER, INTERMEDIATE, ADVANCED",
+    "pathology_invalid": "La patología debe ser una de las opciones válidas",
+    "configuration_required": "La configuración del ventilador es obligatoria",
+    "ventilation_mode_required": "El modo de ventilación es obligatorio",
+    "tidal_volume_invalid": "El volumen tidal debe ser un número positivo",
+    "respiratory_rate_invalid": "La frecuencia respiratoria debe ser un número positivo",
+    "peep_invalid": "La PEEP debe ser un número positivo",
+    "fio2_invalid": "La FiO2 debe ser un número entre 0 y 100",
+    "max_pressure_invalid": "La presión máxima debe ser un número positivo"
+  }
+}

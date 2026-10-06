@@ -2,14 +2,15 @@
  * VentyLab — Auditoría E2E de Sistema Ciberfísico
  * ===============================================
  * Funcionalidad : AdminDashboardAuditor — Gate G4.
- * Descripción   : Smoke test directo (sin HTTP) sobre GroupService:
+ * Descripción   : Smoke test directo (sin HTTP) sobre los casos de uso
+ *                 de grupos (NestJS, construidos sin contenedor DI):
  *                 crea un árbol de grupos depth 0/1/2, valida invariantes
  *                 (enrollmentCode único, creador TEACHER auto, líder
  *                 nulificado al remover, deleteGroup rechaza si hay
  *                 subgrupos, profundidad máxima respetada) y limpia todo
  *                 el árbol en finally. No requiere backend HTTP arriba;
  *                 solo Prisma + DB válida.
- * Versión       : 1.0
+ * Versión       : 1.1
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -18,11 +19,87 @@
  * Contacto      : marcelamazo189@gmail.com
  */
 
-import { prisma } from '../../../src/shared/infrastructure/database';
-import * as Groups from '../../../src/modules/admin/group.service';
+import { prisma } from '../../lib/prisma';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { type PrismaService } from '../../../src/common/infrastructure/persistence/prisma/prisma.service';
+import { PrismaTransactionManager } from '../../../src/common/infrastructure/persistence/prisma/prisma-transaction.manager';
+import { AuditLogPrismaRepository } from '../../../src/common/infrastructure/persistence/audit-log/audit-log-prisma.repository';
+import { RequestContextService } from '../../../src/common/infrastructure/context/request-context.service';
+import { NestEventBus } from '../../../src/common/infrastructure/events/nest-event-bus';
+import { UsersPrismaRepository } from '../../../src/features/users/infrastructure/persistence/prisma/repositories/users-prisma.repository';
+import { GroupsPrismaRepository } from '../../../src/features/groups/infrastructure/persistence/prisma/repositories/groups-prisma.repository';
+import { GroupMembersPrismaRepository } from '../../../src/features/groups/infrastructure/persistence/prisma/repositories/group-members-prisma.repository';
+import { CreateGroupUseCase } from '../../../src/features/groups/application/use-cases/create-group.usecase';
+import { UpdateGroupUseCase } from '../../../src/features/groups/application/use-cases/update-group.usecase';
+import { AddGroupMemberUseCase } from '../../../src/features/groups/application/use-cases/add-group-member.usecase';
+import { SetSimulatorLeadUseCase } from '../../../src/features/groups/application/use-cases/set-simulator-lead.usecase';
+import { RemoveGroupMemberUseCase } from '../../../src/features/groups/application/use-cases/remove-group-member.usecase';
+import { DeleteGroupUseCase } from '../../../src/features/groups/application/use-cases/delete-group.usecase';
+import { CreateGroupCommand } from '../../../src/features/groups/application/commands/create-group.command';
+import { UpdateGroupCommand } from '../../../src/features/groups/application/commands/update-group.command';
+import { AddGroupMemberCommand } from '../../../src/features/groups/application/commands/add-group-member.command';
+import { SetSimulatorLeadCommand } from '../../../src/features/groups/application/commands/set-simulator-lead.command';
+import { RemoveGroupMemberCommand } from '../../../src/features/groups/application/commands/remove-group-member.command';
+import { DeleteGroupCommand } from '../../../src/features/groups/application/commands/delete-group.command';
 import { E2EAuditor, type E2EAuditResult, type Gate, type GateStatus } from '../E2EAuditor';
 
 const AUDIT_TAG = `audit-e2e-${Date.now()}`;
+
+// Servicio de grupos construido a mano sobre los casos de uso de NestJS
+// (sin contenedor DI: AppModule arranca MQTT/Socket.io y exige todo el
+// .env, y tsx no emite metadata de decoradores). Expone la misma
+// superficie que el legacy group.service y relee cada fila con Prisma,
+// porque los casos de uso devuelven void o el id.
+function createGroupService(performedBy: () => string) {
+  const db = prisma as unknown as PrismaService;
+  const auditLogs = new AuditLogPrismaRepository(db, new RequestContextService());
+  const groups = new GroupsPrismaRepository(db, auditLogs);
+  const members = new GroupMembersPrismaRepository(db, auditLogs);
+  const users = new UsersPrismaRepository(db, auditLogs);
+  const tx = new PrismaTransactionManager(db);
+  const bus = new NestEventBus(new EventEmitter2());
+
+  const readGroup = (id: string) => prisma.group.findUniqueOrThrow({ where: { id } });
+
+  return {
+    async createGroup(input: { name: string; parentGroupId?: string; createdBy: string }) {
+      const id = await new CreateGroupUseCase(groups, members, tx, bus).execute(
+        new CreateGroupCommand({ name: input.name, parentGroupId: input.parentGroupId, performedBy: input.createdBy }),
+      );
+      return readGroup(id);
+    },
+    async updateGroup(groupId: string, input: { description?: string }) {
+      await new UpdateGroupUseCase(groups, tx, bus).execute(
+        new UpdateGroupCommand({ groupId, description: input.description, performedBy: performedBy() }),
+      );
+      return readGroup(groupId);
+    },
+    async addMember(groupId: string, userId: string, role: 'STUDENT' | 'TEACHER') {
+      await new AddGroupMemberUseCase(groups, members, users, tx, bus).execute(
+        new AddGroupMemberCommand({ groupId, userId, role, performedBy: performedBy() }),
+      );
+      return prisma.groupMember.findUniqueOrThrow({ where: { groupId_userId: { groupId, userId } } });
+    },
+    async setSimulatorLead(groupId: string, userId: string | null) {
+      await new SetSimulatorLeadUseCase(groups, members, tx, bus).execute(
+        new SetSimulatorLeadCommand({ groupId, userId: userId ?? undefined, performedBy: performedBy() }),
+      );
+      return readGroup(groupId);
+    },
+    async removeMember(groupId: string, userId: string) {
+      await new RemoveGroupMemberUseCase(groups, members, tx, bus).execute(
+        new RemoveGroupMemberCommand({ groupId, userId, performedBy: performedBy() }),
+      );
+      return { removed: true };
+    },
+    async deleteGroup(groupId: string) {
+      await new DeleteGroupUseCase(groups, tx, bus).execute(
+        new DeleteGroupCommand({ groupId, performedBy: performedBy() }),
+      );
+      return { deleted: true };
+    },
+  };
+}
 
 export class AdminDashboardAuditor extends E2EAuditor {
   readonly objectiveCode = 'G4';
@@ -33,6 +110,7 @@ export class AdminDashboardAuditor extends E2EAuditor {
     const created: string[] = [];
     let teacherId = '';
     let studentId = '';
+    const Groups = createGroupService(() => teacherId);
 
     try {
       const teacher = await prisma.user.create({

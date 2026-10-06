@@ -1,0 +1,11 @@
+{
+  "students_retrieved": "Students retrieved successfully",
+  "student_progress_retrieved": "Student progress retrieved successfully",
+  "teachers_retrieved": "Teachers retrieved successfully",
+  "role_changed": "User role changed successfully",
+  "statistics_retrieved": "Statistics retrieved successfully",
+  "validation": {
+    "sort_by_invalid": "sortBy must be one of: name, email, lastActivity, progress",
+    "role_invalid": "Invalid role"
+  }
+}

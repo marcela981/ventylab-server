@@ -48,3 +48,33 @@ coverage/
 
 .vercel
 .env*.local
+
+.claude/
+claude.md
+agents.md
+AI_CONTEXT.md
+
+
+
+
+# ── NestJS template entries ──
+/build
+pnpm-debug.log*
+lerna-debug.log*
+/coverage
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.env.development.local
+.env.test.local
+.env.production.local
+.temp
+.tmp
+pids
+*.pid
+*.seed
+*.pid.lock
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
