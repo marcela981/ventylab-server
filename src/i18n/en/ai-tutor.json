@@ -1,0 +1,23 @@
+{
+  "conversations_retrieved": "Conversations retrieved successfully",
+  "conversation_retrieved": "Conversation retrieved successfully",
+  "conversation_renamed": "Conversation renamed successfully",
+  "conversation_deleted": "Conversation deleted successfully",
+  "conversation_not_found": "Conversation not found",
+  "ref_required": "Lesson and module conversations need the id of the lesson or module",
+  "conversation_page_mismatch": "The conversation does not belong to this page",
+  "stream_failed": "The tutor could not finish the answer, try again later",
+  "validation": {
+    "question_must_be_string": "The question must be a string",
+    "question_too_long": "The question must not exceed {constraints.0} characters",
+    "conversation_id_must_be_string": "The conversation must be a non-empty string",
+    "scope_invalid": "The scope must be FREE, LESSON or MODULE",
+    "scope_filter_invalid": "The scope must be FREE, LESSON, MODULE or PAGE",
+    "ref_id_must_be_string": "The reference must be a non-empty string",
+    "message_required": "The message is required",
+    "message_too_long": "The message must not exceed {constraints.0} characters",
+    "current_page_id_must_be_string": "The current page must be a non-empty string",
+    "title_required": "The title is required",
+    "title_too_long": "The title must not exceed {constraints.0} characters"
+  }
+}

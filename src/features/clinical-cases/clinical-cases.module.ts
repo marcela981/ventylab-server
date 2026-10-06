@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo ClinicalCasesModule
- * Descripción: Registra la feature de casos clínicos (controlador, casos de uso, generador de retroalimentación con IAITextGenerator y repositorio Prisma)
- * Versión: 1.0
+ * Descripción: Registra la feature de casos clínicos (controlador, casos de uso, generador de retroalimentación sobre el gateway de IA de AiModule y repositorio Prisma)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { Module } from "@nestjs/common";
 
+import { AiModule } from "@/features/ai/ai.module";
 import { AuthModule } from "@/features/auth/auth.module";
 import { EvaluationFeedbackGenerator } from "@/features/clinical-cases/application/services/evaluation-feedback-generator.service";
 import { EvaluateClinicalCaseUseCase } from "@/features/clinical-cases/application/use-cases/evaluate-clinical-case.usecase";
@@ -21,7 +22,7 @@ import { ClinicalCasesPrismaRepository } from "@/features/clinical-cases/infrast
 import { ClinicalCasesController } from "@/features/clinical-cases/presentation/controllers/clinical-cases.controller";
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, AiModule],
   controllers: [ClinicalCasesController],
   providers: [
     {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GenerateGradeFeedbackUseCase
  * Descripción: Verifica la generación de retroalimentación de un intento calificado: reserva PENDING idempotente por intento, filas READY global y por pregunta con origen, proveedor y modelo, regeneración de una fila FAILED, descarte cuando una regeneración la reemplazó, FAILED ante un error inesperado e intentos sin calificar ignorados
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -72,6 +72,8 @@ describe("GenerateGradeFeedbackUseCase", () => {
 
     expect(context.passingGrade).toBe(3);
     expect(JSON.stringify(context)).not.toContain("student-1");
+    expect(JSON.stringify(context)).not.toContain("attempt-1");
+    expect(generate.mock.calls[0][1]).toEqual({ attemptId: "attempt-1" });
   });
 
   it.each(["READY", "PENDING"] as const)("skips the attempt when its overall feedback is already %s", async (status: "READY" | "PENDING") => {

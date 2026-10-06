@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Filtro global HttpExceptionFilter
- * Descripción: Convierte toda excepción en el envoltorio estándar traducido (validación, dominio, HTTP, Prisma P2002/P2025, protección del superadmin del trigger protect_superadmin como 403, inesperada), registra en log, Sentry y error_logs, y nunca expone trazas de pila en la respuesta
- * Versión: 1.2
+ * Descripción: Convierte toda excepción en el envoltorio estándar traducido (validación, dominio con argumentos de traducción opcionales y cabecera Retry-After cuando el error indica cuándo reintentar, HTTP, Prisma P2002/P2025, protección del superadmin del trigger protect_superadmin como 403, inesperada), registra en log, Sentry y error_logs, y nunca expone trazas de pila en la respuesta
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -45,6 +45,13 @@ const SUPERADMIN_PROTECTION_CODE: string = "common.superadmin_protected";
 interface ExceptionResponse {
   statusCode: number;
   apiResponse: APIResponse<unknown>;
+  headers?: Record<string, string>;
+}
+
+// Optional members a domain error may expose: interpolation values for its translated message and the moment the client may retry.
+interface DomainErrorExtras {
+  i18nArgs?: unknown;
+  retryAt?: unknown;
 }
 
 @Catch()
@@ -80,6 +87,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (!shouldSkipSaveErrorLog(exception)) {
       this._saveErrorLogToDatabase(exception, request, exceptionResponse.statusCode);
+    }
+
+    if (exceptionResponse.headers) {
+      response.set(exceptionResponse.headers);
     }
 
     response
@@ -186,8 +197,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
         exception.constructor as new (...args: unknown[]) => DomainError,
       ) ?? HttpStatus.INTERNAL_SERVER_ERROR;
 
+    const extras: DomainErrorExtras = exception as DomainErrorExtras;
+    const args: Record<string, unknown> | undefined =
+      typeof extras.i18nArgs === "object" && extras.i18nArgs !== null ? (extras.i18nArgs as Record<string, unknown>) : undefined;
+
     const translatedMessage: string = i18nContext
-      ? i18nContext.t(exception.code)
+      ? i18nContext.t(exception.code, args ? { args } : undefined)
       : exception.message;
 
     const apiResponse: APIResponse<unknown> = new APIResponseBuilder()
@@ -200,7 +215,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return {
       statusCode,
       apiResponse,
+      headers: extras.retryAt instanceof Date ? { "Retry-After": this._retryAfterSeconds(extras.retryAt) } : undefined,
     };
+  }
+
+  private _retryAfterSeconds(retryAt: Date): string {
+    return String(Math.max(0, Math.ceil((retryAt.getTime() - Date.now()) / 1000)));
   }
 
   private _handleHttpException(

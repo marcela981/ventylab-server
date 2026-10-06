@@ -1,0 +1,9 @@
+{
+  "stats_retrieved": "AI telemetry stats retrieved successfully",
+  "invalid_range": "The date range must start before it ends and span at most 366 days",
+  "validation": {
+    "date_invalid": "The date must be a valid ISO 8601 date",
+    "use_case_invalid": "The AI use case is not valid",
+    "filter_too_long": "The filter must have at most 100 characters"
+  }
+}

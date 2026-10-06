@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de notas
- * Descripción: Endpoints autenticados de /api/notes para las notas privadas del usuario: CRUD solo del autor (sin excepción por rol; una nota ajena responde 404), listados paginados de todas, por lección y por módulo, y análisis con IA limitado a 10 solicitudes por minuto
- * Versión: 1.0
+ * Descripción: Endpoints autenticados de /api/notes para las notas privadas del usuario: CRUD solo del autor (sin excepción por rol; una nota ajena responde 404), listados paginados de todas, por lección y por módulo, y análisis con IA limitado a 10 solicitudes por minuto y a la cuota diaria de IA del rol
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -129,7 +129,7 @@ export class NotesController {
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Lesson or module not found" })
   @ApiResponseDoc({ status: HttpStatus.UNPROCESSABLE_ENTITY, description: "No notes to analyze in the scope" })
-  @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many analysis requests" })
+  @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many analysis requests or daily AI quota reached (Retry-After header)" })
   @ApiResponseDoc({ status: HttpStatus.BAD_GATEWAY, description: "The AI service failed or returned an invalid analysis" })
   @ApiResponseDoc({ status: HttpStatus.SERVICE_UNAVAILABLE, description: "The AI service is not available" })
   public async analyzeNotes(
@@ -143,6 +143,7 @@ export class NotesController {
         lessonId: dto.lessonId,
         moduleId: dto.moduleId,
         language: Language.createOrDefault(i18n.lang).value,
+        userRole: currentUser.role,
       }),
     );
 

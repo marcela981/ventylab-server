@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo raíz AppModule
- * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, IA, tiempo real) y las features; registra el filtro global y los middlewares de traza y contexto
- * Versión: 1.8
+ * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real) y las features; registra el filtro global y los middlewares de traza y contexto
+ * Versión: 1.13
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,7 +18,6 @@ import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { SentryModule } from "@sentry/nestjs/setup";
 import { AcceptLanguageResolver, HeaderResolver, I18nModule, QueryResolver } from "nestjs-i18n";
 
-import { AIModule } from "@/common/infrastructure/ai/ai.module";
 import { EnvironmentVariables, validate } from "@/common/infrastructure/config/env.validation";
 import { DEFAULT_LANGUAGE } from "@/common/infrastructure/config/i18n.constants";
 import { RequestContextModule } from "@/common/infrastructure/context/request-context.module";
@@ -36,6 +35,10 @@ import { RequestContextMiddleware } from "@/common/presentation/middlewares/requ
 import { TraceIdMiddleware } from "@/common/presentation/middlewares/trace-id.middleware";
 import { ActivitiesModule } from "@/features/activities/activities.module";
 import { AdminModule } from "@/features/admin/admin.module";
+import { AiModule } from "@/features/ai/ai.module";
+import { AiRatingsModule } from "@/features/ai-ratings/ai-ratings.module";
+import { AiTelemetryModule } from "@/features/ai-telemetry/ai-telemetry.module";
+import { AiTutorModule } from "@/features/ai-tutor/ai-tutor.module";
 import { AuthModule } from "@/features/auth/auth.module";
 import { AuthorizationModule } from "@/features/authorization/authorization.module";
 import { ChangeLogModule } from "@/features/changelog/changelog.module";
@@ -99,7 +102,6 @@ import { UsersModule } from "@/features/users/users.module";
     HttpObservabilityModule,
     SecurityModule,
     StorageModule,
-    AIModule,
     RealtimeModule,
     AuthModule,
     AuthorizationModule,
@@ -126,6 +128,10 @@ import { UsersModule } from "@/features/users/users.module";
     AdminModule,
     SimulationModule,
     EvaluationModule,
+    AiTelemetryModule,
+    AiRatingsModule,
+    AiModule,
+    AiTutorModule,
   ],
   controllers: [HealthController],
   providers: [

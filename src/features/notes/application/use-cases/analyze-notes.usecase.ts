@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso AnalyzeNotesUseCase
- * Descripción: Analiza con IA (puerto INotesAnalyzer) las notas propias más recientes del usuario en una lección, un módulo o en todas sus notas, convirtiéndolas a texto plano con los títulos de lección y módulo; sin respaldo simulado cuando la IA falla
- * Versión: 1.0
+ * Descripción: Analiza con IA (puerto INotesAnalyzer) las notas propias más recientes del usuario en una lección, un módulo o en todas sus notas, convirtiéndolas a texto plano con los títulos de lección y módulo; pasa el usuario y su rol al analizador para cuotas y telemetría; sin respaldo simulado cuando la IA falla
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -40,8 +40,8 @@ export const MAX_ANALYZED_NOTES: number = 50;
  * @throws {NoteLessonNotFoundError} If the lesson does not exist
  * @throws {NoteModuleNotFoundError} If the module does not exist
  * @throws {NoNotesToAnalyzeError} If the user has no notes with text in the scope
- * @throws {AIUnavailableError} If the AI service is not configured or available
- * @throws {AIGenerationFailedError} If the AI service fails to generate the analysis
+ * @throws {AiQuotaExceededError} If the user reached the daily AI usage quota
+ * @throws {AiProvidersUnavailableError} If no AI provider is available
  * @throws {NotesAnalysisInvalidResponseError} If the AI response cannot be parsed into an analysis
  */
 @Injectable()
@@ -54,7 +54,7 @@ export class AnalyzeNotesUseCase {
   ) {}
 
   public async execute(command: AnalyzeNotesCommand): Promise<NotesAnalysisResult> {
-    const { userId, lessonId, moduleId, language } = command;
+    const { userId, userRole, lessonId, moduleId, language } = command;
 
     if (lessonId !== undefined && moduleId !== undefined) {
       throw new InvalidNotesAnalysisScopeError();
@@ -81,7 +81,7 @@ export class AnalyzeNotesUseCase {
       throw new NoNotesToAnalyzeError();
     }
 
-    const analysis: NotesAnalysis = await this._notesAnalyzer.analyze(notes, context);
+    const analysis: NotesAnalysis = await this._notesAnalyzer.analyze(notes, { ...context, userId, userRole });
 
     return new NotesAnalysisResult({
       scope: context.scope,

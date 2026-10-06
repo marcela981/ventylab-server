@@ -91,6 +91,11 @@ model User {
   studentEvaluationAttempts StudentEvaluationAttempt[] @relation("StudentEvaluationAttempts")
   gradedEvaluationAnswers   EvaluationAnswer[]         @relation("EvaluationAnswerGrader")
 
+  // AI features
+  aiCallLogs      AiCallLog[]
+  aiConversations AiConversation[]
+  aiRatings       AiRating[]
+
   @@index([role])
   @@index([isActive])
   @@map("users")
@@ -1684,4 +1689,138 @@ model GradeFeedback {
   @@index([attemptId])
   @@index([questionId])
   @@map("grade_feedbacks")
+}
+
+// ============================================
+// AI FEATURES
+// ============================================
+// AiCallLog: one row per AI gateway call (telemetry, quotas, cost). Never stores prompts or outputs.
+// AiConversation / AiMessage: AI tutor conversations (free chat, lesson, module or page scope).
+// AiRating: student rating of one AI output (QUEST-aligned Likert items, 1-5, CHECK constraints in SQL).
+// GradeFeedback (evaluation feature) keeps storing grade feedback; it is not migrated.
+
+enum AiUseCase {
+  GRADE_FEEDBACK
+  NOTES_ANALYSIS
+  PAGE_DEEPEN
+  LESSON_QA
+  FREE_CHAT
+  TOPIC_CHECK
+  SIM_ASSIST
+}
+
+enum AiCallStatus {
+  SUCCESS
+  ERROR
+  FALLBACK
+  BLOCKED_OFFTOPIC
+  QUOTA_EXCEEDED
+  ABORTED
+}
+
+enum AiConversationScope {
+  FREE
+  LESSON
+  MODULE
+  PAGE
+}
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+}
+
+enum AiRatingTargetType {
+  GRADE_FEEDBACK
+  MESSAGE
+  NOTES_ANALYSIS
+  SIM_ASSIST
+}
+
+model AiCallLog {
+  id              String       @id @default(cuid())
+  userId          String?      @map("user_id")
+  useCase         AiUseCase    @map("use_case")
+  provider        String // provider id, or "deterministic" / "none"
+  model           String?
+  promptVersion   String       @map("prompt_version")
+  promptHash      String       @map("prompt_hash") // sha256 hex
+  inputTokens     Int?         @map("input_tokens")
+  outputTokens    Int?         @map("output_tokens")
+  latencyMs       Int          @map("latency_ms")
+  ttftMs          Int?         @map("ttft_ms")
+  status          AiCallStatus
+  errorCode       String?      @map("error_code")
+  attempts        Int          @default(0)
+  costEstimateUsd Decimal?     @map("cost_estimate_usd") @db.Decimal(12, 6)
+  refType         String?      @map("ref_type")
+  refId           String?      @map("ref_id")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user     User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages AiMessage[]
+  ratings  AiRating[]
+
+  @@index([userId, useCase, createdAt])
+  @@index([useCase, createdAt])
+  @@index([createdAt])
+  @@map("ai_call_logs")
+}
+
+model AiConversation {
+  id        String              @id @default(cuid())
+  userId    String              @map("user_id")
+  scope     AiConversationScope
+  refId     String?             @map("ref_id")
+  title     String
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  messages AiMessage[]
+
+  @@index([userId, updatedAt])
+  @@index([userId, scope])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String        @id @default(cuid())
+  conversationId String        @map("conversation_id")
+  role           AiMessageRole
+  content        String        @db.Text
+  aiCallId       String?       @map("ai_call_id")
+  isIncomplete   Boolean       @default(false) @map("is_incomplete")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  aiCall       AiCallLog?     @relation(fields: [aiCallId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@map("ai_messages")
+}
+
+model AiRating {
+  id            String             @id @default(cuid())
+  userId        String             @map("user_id")
+  aiCallId      String?            @map("ai_call_id")
+  targetType    AiRatingTargetType @map("target_type")
+  targetId      String             @map("target_id")
+  helpful       Boolean
+  comment       String?            @db.Text
+  quality       Int? // 1-5 (CHECK constraint in SQL)
+  understanding Int? // 1-5 (CHECK constraint in SQL)
+  expression    Int? // 1-5 (CHECK constraint in SQL)
+  safety        Int? // 1-5 (CHECK constraint in SQL)
+  trust         Int? // 1-5 (CHECK constraint in SQL)
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user   User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  aiCall AiCallLog? @relation(fields: [aiCallId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, targetType, targetId])
+  @@index([aiCallId])
+  @@index([targetType, targetId])
+  @@map("ai_ratings")
 }

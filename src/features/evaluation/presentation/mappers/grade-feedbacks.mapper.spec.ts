@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del mapeador de retroalimentación de calificación
  * Descripción: Verifica que la vista del estudiante exponga solo el estado, el contenido y el origen de la retroalimentación lista (sin proveedor ni modelo) y que la del docente incluya proveedor, modelo y estado
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,13 +20,13 @@ const RESULT: GradeFeedbackResult = new GradeFeedbackResult({
 });
 
 describe("GradeFeedbacksMapper", () => {
-  it("exposes only status, content and source to the student", () => {
+  it("exposes only the feedback id (the rating target), status, content and source to the student, never provider or model", () => {
     const dto: StudentGradeFeedbackDTO = GradeFeedbacksMapper.toStudentDTO(RESULT);
 
     expect(JSON.parse(JSON.stringify(dto))).toEqual({
       attemptId: "attempt-1",
-      overall: { questionId: null, status: "READY", source: "LLM", content: "Buen trabajo." },
-      questions: [{ questionId: "q1", status: "PENDING", source: null, content: null }],
+      overall: { id: "overall", questionId: null, status: "READY", source: "LLM", content: "Buen trabajo." },
+      questions: [{ id: "fq1", questionId: "q1", status: "PENDING", source: null, content: null }],
     });
   });
 

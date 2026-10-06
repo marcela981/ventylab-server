@@ -1,0 +1,23 @@
+{
+  "conversations_retrieved": "Conversaciones obtenidas correctamente",
+  "conversation_retrieved": "Conversación obtenida correctamente",
+  "conversation_renamed": "Conversación renombrada correctamente",
+  "conversation_deleted": "Conversación eliminada correctamente",
+  "conversation_not_found": "Conversación no encontrada",
+  "ref_required": "Las conversaciones de lección y de módulo necesitan el id de la lección o del módulo",
+  "conversation_page_mismatch": "La conversación no pertenece a esta página",
+  "stream_failed": "El tutor no pudo terminar la respuesta, inténtalo más tarde",
+  "validation": {
+    "question_must_be_string": "La pregunta debe ser un texto",
+    "question_too_long": "La pregunta no debe superar {constraints.0} caracteres",
+    "conversation_id_must_be_string": "La conversación debe ser un texto no vacío",
+    "scope_invalid": "El alcance debe ser FREE, LESSON o MODULE",
+    "scope_filter_invalid": "El alcance debe ser FREE, LESSON, MODULE o PAGE",
+    "ref_id_must_be_string": "La referencia debe ser un texto no vacío",
+    "message_required": "El mensaje es obligatorio",
+    "message_too_long": "El mensaje no debe superar {constraints.0} caracteres",
+    "current_page_id_must_be_string": "La página actual debe ser un texto no vacío",
+    "title_required": "El título es obligatorio",
+    "title_too_long": "El título no debe superar {constraints.0} caracteres"
+  }
+}

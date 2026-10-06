@@ -3,14 +3,16 @@
  * ===============================================
  * Funcionalidad : AIContextAuditor — Gate G5.
  * Descripción   : Inspección estática del subsistema de IA:
- *                 (a) presencia del módulo AIServiceManager y del método
- *                 analyzeVentilatorConfiguration, (b) conteo de
+ *                 (a) presencia de la fachada del gateway de IA
+ *                 (src/features/ai/application/services/ai-gateway.ts) y
+ *                 del método analyzeVentilatorConfiguration, (b) conteo de
  *                 invocaciones del manager en features/simulador/ y
  *                 features/ensenanza/ del frontend, (c) declaración de
- *                 ≥3 providers en aiConfig.ts con keys vía env (no
- *                 hardcoded), (d) referencia al fallback determinístico
+ *                 ≥3 providers en src/features/ai/infrastructure/providers/
+ *                 con keys vía env (no hardcoded; también se revisa
+ *                 ai-providers.config.ts), (d) referencia al fallback determinístico
  *                 ya cubierto en audit-thesis-objectives.ts.
- * Versión       : 1.1
+ * Versión       : 1.2
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -24,8 +26,9 @@ import path from 'node:path';
 import { E2EAuditor, type E2EAuditResult, type Gate } from '../E2EAuditor';
 import { SERVER_ROOT, WEB_ROOT } from '../e2e-config';
 
-const AI_MANAGER_REL = 'src/common/infrastructure/ai/gemini-ai-text-generator.ts';
-const AI_CONFIG_REL = 'src/common/infrastructure/ai/gemini-ai-text-generator.ts';
+const AI_MANAGER_REL = 'src/features/ai/application/services/ai-gateway.ts';
+const AI_CONFIG_REL = 'src/features/ai/infrastructure/providers';
+const AI_KEYS_CONFIG_REL = 'src/features/ai/infrastructure/config/ai-providers.config.ts';
 const REQUIRED_PROVIDERS = ['openai', 'anthropic', 'gemini'];
 
 export class AIContextAuditor extends E2EAuditor {
@@ -47,13 +50,15 @@ export class AIContextAuditor extends E2EAuditor {
     tableRows.push(['AIServiceManager.ts', managerExists ? 'OK' : 'MISSING', AI_MANAGER_REL]);
 
     const configAbs = path.join(SERVER_ROOT, AI_CONFIG_REL);
-    const configSrc = await this.readSafe(configAbs);
+    const configSrc = await this.readProviderSources(configAbs);
     const providersFound = configSrc
       ? REQUIRED_PROVIDERS.filter((p) =>
           p === 'anthropic' ? /\b(anthropic|claude)\b/i.test(configSrc) : new RegExp(`\\b${p}\\b`, 'i').test(configSrc),
         )
       : [];
-    const hardcodedKey = configSrc ? this.detectHardcodedKey(configSrc) : null;
+    const keysConfigSrc = await this.readSafe(path.join(SERVER_ROOT, AI_KEYS_CONFIG_REL));
+    const keyScanSrc = [configSrc, keysConfigSrc].filter((src): src is string => src !== null).join('\n');
+    const hardcodedKey = keyScanSrc ? this.detectHardcodedKey(keyScanSrc) : null;
     gates.push(this.makeGate('G5.2', `aiConfig declara ≥3 providers (${REQUIRED_PROVIDERS.join(', ')})`,
       providersFound.length >= 3 ? 'PASS' : 'WARN',
       `encontrados: ${providersFound.join(', ') || 'ninguno'}`,
@@ -96,6 +101,16 @@ export class AIContextAuditor extends E2EAuditor {
 
   private async readSafe(p: string): Promise<string | null> {
     try { return await fs.readFile(p, 'utf8'); } catch { return null; }
+  }
+
+  private async readProviderSources(dir: string): Promise<string | null> {
+    // Concatena las implementaciones de proveedores (sin specs) del directorio.
+    let entries: string[];
+    try { entries = await fs.readdir(dir); } catch { return null; }
+    const files = entries.filter((name) => name.endsWith('.ts') && !name.endsWith('.spec.ts'));
+    if (files.length === 0) return null;
+    const sources = await Promise.all(files.map((name) => fs.readFile(path.join(dir, name), 'utf8')));
+    return sources.join('\n');
   }
 
   private detectHardcodedKey(src: string): string | null {

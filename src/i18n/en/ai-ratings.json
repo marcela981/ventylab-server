@@ -1,0 +1,20 @@
+{
+  "rating_saved": "Rating saved successfully",
+  "rating_retrieved": "Rating retrieved successfully",
+  "stats_retrieved": "AI rating stats retrieved successfully",
+  "invalid_score": "Each rating dimension must be an integer between 1 and 5",
+  "comment_too_long": "The comment must have at most 2000 characters",
+  "target_not_found": "The AI output to rate was not found",
+  "not_recipient": "Only the recipient of an AI output can rate it",
+  "ai_call_mismatch": "The AI call does not match the rated output",
+  "invalid_range": "The date range must start before it ends and span at most 366 days",
+  "validation": {
+    "target_type_invalid": "The rating target type is not valid",
+    "target_id_invalid": "The rating target id must be a non-empty text of at most 100 characters",
+    "ai_call_id_invalid": "The AI call id must have at most 100 characters",
+    "score_number": "Each rating dimension must be a number",
+    "date_invalid": "The date must be a valid ISO 8601 date",
+    "use_case_invalid": "The AI use case is not valid",
+    "filter_too_long": "The filter must have at most 100 characters"
+  }
+}

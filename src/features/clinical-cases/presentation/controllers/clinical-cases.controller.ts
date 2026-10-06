@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de casos clínicos
- * Descripción: Endpoints autenticados de /api/clinical-cases (alias /api/cases): listado, detalle, evaluación con retroalimentación de IA (límite de 10 solicitudes por minuto) e historial de intentos; respuestas sin caché
- * Versión: 1.0
+ * Descripción: Endpoints autenticados de /api/clinical-cases (alias /api/cases): listado, detalle, evaluación con retroalimentación de IA (límite de 10 solicitudes por minuto; la configuración experta solo se revela con clinical-cases:view_expert) e historial de intentos; respuestas sin caché
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -124,7 +124,7 @@ export class ClinicalCasesController {
   @ApiOperation({
     summary: "Evaluate clinical case",
     description:
-      "Compares the student's ventilator configuration with the expert one, generates AI feedback (deterministic fallback when AI fails) and records the attempt",
+      "Compares the student's ventilator configuration with the expert one, generates AI feedback (deterministic fallback when AI fails) and records the attempt; expert values and differences are only returned to callers holding clinical-cases:view_expert",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Configuration evaluated and attempt recorded", type: ClinicalCaseEvaluationDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
@@ -141,13 +141,14 @@ export class ClinicalCasesController {
     const result: ClinicalCaseEvaluationResult = await this._evaluateClinicalCaseUseCase.execute(
       new EvaluateClinicalCaseCommand({
         userId: currentUser.sub,
+        userRole: currentUser.role,
         caseId,
         configuration: ClinicalCasesMapper.toConfiguration(dto.configuration),
       }),
     );
 
     return new APIResponseBuilder<ClinicalCaseEvaluationDTO>()
-      .setData(ClinicalCasesMapper.toEvaluationDTO(result))
+      .setData(ClinicalCasesMapper.toEvaluationDTO(result, currentUser.permissions.includes("clinical-cases:view_expert")))
       .setMessage(await i18n.t("clinical-cases.clinical_case_evaluated"))
       .build();
   }

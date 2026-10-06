@@ -1,0 +1,5 @@
+{
+  "providers_unavailable": "El servicio de IA no está disponible en este momento, intenta más tarde",
+  "quota_exceeded": "Alcanzaste tu límite de uso de IA, intenta de nuevo a partir de {resetAt}",
+  "stream_interrupted": "La respuesta de la IA se interrumpió, intenta de nuevo"
+}

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.16
+ * Versión: 1.21
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,8 +10,6 @@
  */
 import { HttpStatus } from "@nestjs/common";
 
-import { AIGenerationFailedError } from "@/common/domain/errors/ai-generation-failed.error";
-import { AIUnavailableError } from "@/common/domain/errors/ai-unavailable.error";
 import { DomainError } from "@/common/domain/errors/domain-error";
 import { InvalidValueObjectError } from "@/common/domain/errors/invalid-value-object.error";
 import {
@@ -31,6 +29,21 @@ import {
   InvalidActivitySubmissionScoreError,
   StudentRoleRequiredError,
 } from "@/features/activities/domain/activities.errors";
+import { AiProvidersUnavailableError, AiQuotaExceededError, AiStreamInterruptedError } from "@/features/ai/domain/ai.errors";
+import {
+  AiRatingCallMismatchError,
+  AiRatingCommentTooLongError,
+  AiRatingNotRecipientError,
+  AiRatingTargetNotFoundError,
+  InvalidAiRatingScoreError,
+  InvalidAiRatingsRangeError,
+} from "@/features/ai-ratings/domain/ai-ratings.errors";
+import { InvalidAiTelemetryRangeError } from "@/features/ai-telemetry/domain/ai-telemetry.errors";
+import {
+  AiConversationNotFoundError,
+  AiConversationPageMismatchError,
+  AiConversationRefRequiredError,
+} from "@/features/ai-tutor/domain/ai-tutor.errors";
 import {
   EmailDomainNotAllowedError,
   ForbiddenPermissionError,
@@ -225,8 +238,19 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   HttpStatus
 >([
   [InvalidValueObjectError, HttpStatus.BAD_REQUEST],
-  [AIUnavailableError, HttpStatus.SERVICE_UNAVAILABLE],
-  [AIGenerationFailedError, HttpStatus.BAD_GATEWAY],
+  [InvalidAiTelemetryRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [InvalidAiRatingScoreError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [AiRatingCommentTooLongError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [AiRatingTargetNotFoundError, HttpStatus.NOT_FOUND],
+  [AiRatingNotRecipientError, HttpStatus.FORBIDDEN],
+  [AiRatingCallMismatchError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [InvalidAiRatingsRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [AiProvidersUnavailableError, HttpStatus.SERVICE_UNAVAILABLE],
+  [AiQuotaExceededError, HttpStatus.TOO_MANY_REQUESTS],
+  [AiStreamInterruptedError, HttpStatus.BAD_GATEWAY],
+  [AiConversationNotFoundError, HttpStatus.NOT_FOUND],
+  [AiConversationRefRequiredError, HttpStatus.BAD_REQUEST],
+  [AiConversationPageMismatchError, HttpStatus.BAD_REQUEST],
   [InvalidCredentialsError, HttpStatus.UNAUTHORIZED],
   [UnauthorizedError, HttpStatus.UNAUTHORIZED],
   [TokenExpiredError, HttpStatus.UNAUTHORIZED],

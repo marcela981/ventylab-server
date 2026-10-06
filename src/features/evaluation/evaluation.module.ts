@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo EvaluationModule
- * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación desde EVALUATION_PASSING_GRADE, propietario de sesiones del simulador, casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (IAITextGenerator global vía AIModule con respaldo determinista), puntaje práctico por comparación clínica y lector de sesiones del simulador; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión)
- * Versión: 1.4
+ * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación desde EVALUATION_PASSING_GRADE, propietario de sesiones del simulador, casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (gateway de IA vía AiModule con respaldo determinista), puntaje práctico por comparación clínica y lector de sesiones del simulador; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
+import { AiModule } from "@/features/ai/ai.module";
 import { AuthModule } from "@/features/auth/auth.module";
 import { EVALUATION_GRADING_CONFIG_TOKEN, type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
 import { GRADE_FEEDBACK_GENERATOR_TOKEN } from "@/features/evaluation/application/ports/grade-feedback-generator.interface";
@@ -90,7 +91,7 @@ import { StudentEvaluationsController } from "@/features/evaluation/presentation
 import { GroupsModule } from "@/features/groups/groups.module";
 
 @Module({
-  imports: [AuthModule, GroupsModule],
+  imports: [AuthModule, GroupsModule, AiModule],
   controllers: [EvaluationsController, EvaluationAssignmentsController, StudentEvaluationsController, GradeFeedbackController, EvaluationGradingController],
   providers: [
     {

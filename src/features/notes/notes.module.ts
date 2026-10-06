@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo NotesModule
- * Descripción: Registra la feature de notas privadas (controlador, casos de uso, repositorio Prisma y analizador de notas sobre IAITextGenerator)
- * Versión: 1.0
+ * Descripción: Registra la feature de notas privadas (controlador, casos de uso, repositorio Prisma y analizador de notas sobre el gateway de IA de AiModule)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { Module } from "@nestjs/common";
 
+import { AiModule } from "@/features/ai/ai.module";
 import { AuthModule } from "@/features/auth/auth.module";
 import { NOTES_ANALYZER_TOKEN } from "@/features/notes/application/ports/notes-analyzer.interface";
 import { AnalyzeNotesUseCase } from "@/features/notes/application/use-cases/analyze-notes.usecase";
@@ -24,7 +25,7 @@ import { NotesPrismaRepository } from "@/features/notes/infrastructure/persisten
 import { NotesController } from "@/features/notes/presentation/controllers/notes.controller";
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, AiModule],
   controllers: [NotesController],
   providers: [
     {

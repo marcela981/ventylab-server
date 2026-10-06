@@ -6,8 +6,6 @@
   "not_found": "No se encontró el registro solicitado",
   "conflict": "La operación entra en conflicto con un registro existente",
   "invalid_value_object": "Valor inválido proporcionado",
-  "ai_unavailable": "El servicio de IA no está disponible",
-  "ai_generation_failed": "El servicio de IA no pudo generar una respuesta",
   "validation": {
     "string": "El valor debe ser una cadena de texto",
     "enum": "El valor debe ser una de las opciones permitidas",

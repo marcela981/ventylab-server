@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de evaluación de casos clínicos
- * Descripción: Serialización del resultado de evaluar un caso (intento, comparación por parámetro, retroalimentación, configuración experta y mejora)
- * Versión: 1.0
+ * Descripción: Serialización del resultado de evaluar un caso (intento, comparación por parámetro, retroalimentación, configuración experta solo para quien puede verla, y mejora)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -59,13 +59,23 @@ export class ParameterComparisonDTO {
   @ApiProperty({ description: "Value configured by the student", example: 8, nullable: true, oneOf: [{ type: "number" }, { type: "string" }] })
   public userValue: number | string | null;
 
-  @ApiProperty({ description: "Expert value", example: 5, nullable: true, oneOf: [{ type: "number" }, { type: "string" }] })
+  @ApiProperty({
+    description: "Expert value; null unless the caller holds clinical-cases:view_expert",
+    example: 5,
+    nullable: true,
+    oneOf: [{ type: "number" }, { type: "string" }],
+  })
   public expertValue: number | string | null;
 
-  @ApiProperty({ description: "Absolute difference", example: 3, nullable: true, type: Number })
+  @ApiProperty({ description: "Absolute difference; null unless the caller holds clinical-cases:view_expert", example: 3, nullable: true, type: Number })
   public difference: number | null;
 
-  @ApiProperty({ description: "Difference percentage against the expert value", example: 60, nullable: true, type: Number })
+  @ApiProperty({
+    description: "Difference percentage against the expert value; null unless the caller holds clinical-cases:view_expert",
+    example: 60,
+    nullable: true,
+    type: Number,
+  })
   public differencePercent: number | null;
 
   @ApiProperty({ description: "Whether the value is inside the acceptable range or tolerance", example: false })
@@ -157,10 +167,10 @@ export class EvaluationFeedbackDTO {
   @ApiProperty({ description: "Strengths", example: ["peep está correctamente configurado"], type: String, isArray: true })
   public strengths: string[];
 
-  @ApiProperty({ description: "Areas to improve", example: ["fio2 necesita ajuste (diferencia: 10)"], type: String, isArray: true })
+  @ApiProperty({ description: "Areas to improve", example: ["fio2 necesita ajuste"], type: String, isArray: true })
   public improvements: string[];
 
-  @ApiProperty({ description: "Recommendations", example: ["Ajusta fio2 hacia 40"], type: String, isArray: true })
+  @ApiProperty({ description: "Recommendations", example: ["Considera disminuir fio2"], type: String, isArray: true })
   public recommendations: string[];
 
   @ApiProperty({ description: "Safety concerns", example: ["Revisa los parámetros críticos fuera de rango"], type: String, isArray: true, nullable: true })
@@ -283,8 +293,12 @@ export class ClinicalCaseEvaluationDTO {
   @ApiProperty({ description: "AI generated feedback, or the deterministic fallback", type: EvaluationFeedbackDTO })
   public feedback: EvaluationFeedbackDTO;
 
-  @ApiProperty({ description: "Expert configuration of the case", type: ExpertConfigurationDTO })
-  public expertConfiguration: ExpertConfigurationDTO;
+  @ApiProperty({
+    description: "Expert configuration of the case; null unless the caller holds clinical-cases:view_expert",
+    type: ExpertConfigurationDTO,
+    nullable: true,
+  })
+  public expertConfiguration: ExpertConfigurationDTO | null;
 
   @ApiProperty({ description: "Change against the previous attempt", type: EvaluationImprovementDTO, nullable: true })
   public improvement: EvaluationImprovementDTO | null;
@@ -299,7 +313,7 @@ export class ClinicalCaseEvaluationDTO {
     attempt: EvaluationAttemptDTO;
     comparison: ConfigurationComparisonDTO;
     feedback: EvaluationFeedbackDTO;
-    expertConfiguration: ExpertConfigurationDTO;
+    expertConfiguration: ExpertConfigurationDTO | null;
     improvement: EvaluationImprovementDTO | null;
   }) {
     this.attempt = attempt;

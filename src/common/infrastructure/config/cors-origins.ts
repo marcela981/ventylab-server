@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Configuración de CORS
  * Descripción: Construye los orígenes permitidos a partir de CORS_ORIGIN, FRONTEND_URL, PRODUCTION_URL y VERCEL_URL, y define las cabeceras permitidas y expuestas compartidas por HTTP y Socket.io
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,6 +37,8 @@ export const CORS_ALLOWED_HEADERS: readonly string[] = [
 
 export const CORS_EXPOSED_HEADERS: readonly string[] = [
   "Content-Disposition",
+  "Retry-After",
+  "X-Export-Truncated",
   TRACE_ID_HEADER,
   REQUEST_ID_HEADER,
 ];

@@ -1,0 +1,9 @@
+{
+  "stats_retrieved": "Estadísticas de telemetría de IA obtenidas correctamente",
+  "invalid_range": "El rango de fechas debe empezar antes de terminar y abarcar como máximo 366 días",
+  "validation": {
+    "date_invalid": "La fecha debe ser una fecha ISO 8601 válida",
+    "use_case_invalid": "El caso de uso de IA no es válido",
+    "filter_too_long": "El filtro debe tener como máximo 100 caracteres"
+  }
+}

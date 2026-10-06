@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Catálogo de permisos
  * Descripción: Define todos los permisos recurso:acción del sistema
- * Versión: 1.8
+ * Versión: 1.12
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -56,6 +56,7 @@ export type PermissionValue =
   | "quizzes:manage"
   | "clinical-cases:read"
   | "clinical-cases:evaluate"
+  | "clinical-cases:view_expert"
   | "activities:read"
   | "activities:create"
   | "activities:update"
@@ -95,7 +96,11 @@ export type PermissionValue =
   | "evaluations:manage"
   | "evaluations:assign"
   | "evaluations:attempt"
-  | "evaluations:grade";
+  | "evaluations:grade"
+  | "ai-telemetry:read"
+  | "ai-ratings:create_own"
+  | "ai-ratings:read"
+  | "ai-tutor:use";
 
 export const PERMISSION_CATALOG: readonly PermissionValue[] = [
   "users:read",
@@ -145,6 +150,7 @@ export const PERMISSION_CATALOG: readonly PermissionValue[] = [
   "quizzes:manage",
   "clinical-cases:read",
   "clinical-cases:evaluate",
+  "clinical-cases:view_expert",
   "activities:read",
   "activities:create",
   "activities:update",
@@ -185,4 +191,8 @@ export const PERMISSION_CATALOG: readonly PermissionValue[] = [
   "evaluations:assign",
   "evaluations:attempt",
   "evaluations:grade",
+  "ai-telemetry:read",
+  "ai-ratings:create_own",
+  "ai-ratings:read",
+  "ai-tutor:use",
 ] as const;

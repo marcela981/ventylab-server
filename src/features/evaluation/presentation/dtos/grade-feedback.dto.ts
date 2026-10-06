@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de retroalimentación de calificación
- * Descripción: Respuestas HTTP de la retroalimentación de un intento: vista del estudiante (estado, contenido y origen solo cuando está lista, sin proveedor ni modelo), vista del docente (con proveedor, modelo y estado) y aceptación de una regeneración (estado PENDING)
- * Versión: 1.0
+ * Descripción: Respuestas HTTP de la retroalimentación de un intento: vista del estudiante (id de la fila para valorarla, estado, contenido y origen solo cuando está lista, sin proveedor ni modelo), vista del docente (con proveedor, modelo y estado) y aceptación de una regeneración (estado PENDING)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,9 @@ import { GRADE_FEEDBACK_STATUS_VALUES } from "@/features/evaluation/domain/value
 const GRADE_FEEDBACK_SOURCE_VALUES: readonly string[] = ["LLM", "DETERMINISTIC"];
 
 export class StudentGradeFeedbackItemDTO {
+  @ApiProperty({ description: "Feedback ID (target ID when rating this feedback)", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e6f" })
+  public id: string;
+
   @ApiProperty({ description: "Question ID, or null for the overall feedback", example: "cm5question01", nullable: true, type: String })
   public questionId: string | null;
 
@@ -27,7 +30,20 @@ export class StudentGradeFeedbackItemDTO {
   @ApiProperty({ description: "Feedback text, only when READY", example: "Buen manejo de la PEEP.", nullable: true, type: String })
   public content: string | null;
 
-  public constructor({ questionId, status, source, content }: { questionId: string | null; status: string; source: string | null; content: string | null }) {
+  public constructor({
+    id,
+    questionId,
+    status,
+    source,
+    content,
+  }: {
+    id: string;
+    questionId: string | null;
+    status: string;
+    source: string | null;
+    content: string | null;
+  }) {
+    this.id = id;
     this.questionId = questionId;
     this.status = status;
     this.source = source;

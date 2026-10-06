@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo LessonsModule
  * Descripción: Registra controladores, casos de uso, repositorios y manejadores de eventos de la feature de lecciones y declara sus importaciones y exportaciones de NestJS
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -67,6 +67,7 @@ import { UsersModule } from "@/features/users/users.module";
   exports: [
     LESSONS_REPOSITORY_TOKEN,
     LESSON_PROGRESS_REPOSITORY_TOKEN,
+    GetLessonByIdUseCase,
     CompleteLessonUseCase,
     RecordLessonAccessUseCase,
     GetLessonContentUseCase,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso EvaluateClinicalCaseUseCase
  * Descripción: Compara la configuración del estudiante con la configuración experta del caso, genera la retroalimentación (IA con respaldo determinístico) fuera de la transacción, registra el EvaluationAttempt con su tiempo de resolución y calcula la mejora frente al intento anterior
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -48,7 +48,7 @@ export class EvaluateClinicalCaseUseCase {
 
   public async execute(command: EvaluateClinicalCaseCommand): Promise<ClinicalCaseEvaluationResult> {
     const startTime: number = Date.now();
-    const { userId, caseId, configuration } = command;
+    const { userId, userRole, caseId, configuration } = command;
 
     const clinicalCase: ClinicalCaseDetail | undefined = await this._clinicalCasesRepository.getById(caseId);
 
@@ -63,7 +63,10 @@ export class EvaluateClinicalCaseUseCase {
     }
 
     const comparison: ConfigurationComparison = compareConfigurations(configuration, expertConfiguration);
-    const feedback: EvaluationFeedback = await this._feedbackGenerator.generateFeedback(clinicalCase, configuration, expertConfiguration, comparison);
+    const feedback: EvaluationFeedback = await this._feedbackGenerator.generateFeedback(clinicalCase, configuration, expertConfiguration, comparison, {
+      userId,
+      userRole,
+    });
     const completionTime: number = Math.floor((Date.now() - startTime) / 1000);
 
     const { attempt, events } = await this._transactionManager.run(

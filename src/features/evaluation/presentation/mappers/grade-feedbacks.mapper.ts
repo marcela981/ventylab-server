@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de retroalimentación de calificación
- * Descripción: Convierte los resultados de retroalimentación en DTOs: para el estudiante solo estado, y contenido y origen cuando la fila está READY (nunca proveedor ni modelo); para el docente además proveedor, modelo y fecha; y la aceptación de una regeneración
- * Versión: 1.0
+ * Descripción: Convierte los resultados de retroalimentación en DTOs: para el estudiante solo id de la fila (objetivo de la valoración), estado, y contenido y origen cuando la fila está READY (nunca proveedor ni modelo); para el docente además proveedor, modelo y fecha; y la aceptación de una regeneración
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,6 +44,7 @@ export class GradeFeedbacksMapper {
     const ready: boolean = record.status === READY_FEEDBACK_STATUS;
 
     return new StudentGradeFeedbackItemDTO({
+      id: record.id,
       questionId: record.questionId ?? null,
       status: record.status,
       source: ready ? record.source : null,

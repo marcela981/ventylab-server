@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo ModulesModule
  * Descripción: Registra controladores, casos de uso, repositorios y manejadores de eventos de la feature de módulos y declara sus importaciones y exportaciones de NestJS
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -76,6 +76,8 @@ import { ModulesController } from "@/features/modules/presentation/controllers/m
   exports: [
     MODULES_REPOSITORY_TOKEN,
     MODULE_PROGRESS_REPOSITORY_TOKEN,
+    GetModuleByIdUseCase,
+    GetModuleLessonsUseCase,
     GetModuleProgressUseCase,
     GetModuleResumeUseCase,
     CreateModuleNodeUseCase,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de notas
- * Descripción: Representación HTTP de una nota (contenido Tiptap saneado) y del análisis de notas con IA
- * Versión: 1.0
+ * Descripción: Representación HTTP de una nota (contenido Tiptap saneado) y del análisis de notas con IA (con el id de la llamada de IA para calificarla)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -83,6 +83,9 @@ export class NotesAnalysisDTO {
   @ApiProperty({ description: "AI model that produced the analysis", example: "gemini-2.0-flash" })
   public model: string;
 
+  @ApiProperty({ description: "Identifier of the AI call that produced the analysis, used to rate it", example: "01920f7e-8b1a-7c3d-9e4f-5a6b7c8d9e0f" })
+  public aiCallId: string;
+
   public constructor({
     scope,
     lessonId,
@@ -93,6 +96,7 @@ export class NotesAnalysisDTO {
     gaps,
     suggestions,
     model,
+    aiCallId,
   }: {
     scope: string;
     lessonId: string | null;
@@ -103,6 +107,7 @@ export class NotesAnalysisDTO {
     gaps: string[];
     suggestions: string[];
     model: string;
+    aiCallId: string;
   }) {
     this.scope = scope;
     this.lessonId = lessonId;
@@ -113,5 +118,6 @@ export class NotesAnalysisDTO {
     this.gaps = gaps;
     this.suggestions = suggestions;
     this.model = model;
+    this.aiCallId = aiCallId;
   }
 }

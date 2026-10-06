@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Documentación de la API
- * Descripción: Configura Swagger y Scalar con las secciones pública, de evaluaciones y administrativa, protegidas por lista de IP permitidas
- * Versión: 1.8
+ * Descripción: Configura Swagger y Scalar con las secciones pública, de evaluaciones, de IA y administrativa, protegidas por lista de IP permitidas
+ * Versión: 1.11
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -40,6 +40,8 @@ const PUBLIC_TAGS: string[] = [
 ];
 
 const EVALUATION_TAGS: string[] = ["Evaluations", "Evaluation assignments", "Student evaluations", "Evaluation grading", "Grade feedback"];
+
+const AI_TAGS: string[] = ["AI telemetry", "AI ratings", "AI tutor"];
 
 const ADMIN_TAGS: string[] = [
   "Authorization",
@@ -87,6 +89,7 @@ export function setupDocs(app: INestApplication, allowedIps: string[]): void {
   (document as OpenAPIObject & Record<string, unknown>)["x-tagGroups"] = [
     { name: "Public", tags: PUBLIC_TAGS },
     { name: "Evaluations", tags: EVALUATION_TAGS },
+    { name: "AI", tags: AI_TAGS },
     { name: "Administration", tags: ADMIN_TAGS },
   ];
 

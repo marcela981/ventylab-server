@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GenerateGradeFeedbackUseCase
- * Descripción: Genera la retroalimentación de un intento calificado: reserva bajo candado por intento una fila global PENDING (idempotente: omite si ya hay una PENDING o READY, salvo que se complete una reserva de regeneración), arma el contexto sin datos personales, llama a IGradeFeedbackGenerator fuera de toda transacción y guarda en otra transacción la fila global y una por pregunta como READY con origen, proveedor y modelo, solo si la reserva sigue vigente; ante un error inesperado marca la reserva FAILED y relanza
- * Versión: 1.0
+ * Descripción: Genera la retroalimentación de un intento calificado: reserva bajo candado por intento una fila global PENDING (idempotente: omite si ya hay una PENDING o READY, salvo que se complete una reserva de regeneración), arma el contexto sin datos personales, llama a IGradeFeedbackGenerator fuera de toda transacción (con el identificador del intento solo para la telemetría) y guarda en otra transacción la fila global y una por pregunta como READY con origen, proveedor y modelo, solo si la reserva sigue vigente; ante un error inesperado marca la reserva FAILED y relanza
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -78,6 +78,7 @@ export class GenerateGradeFeedbackUseCase {
     try {
       const generated: GeneratedGradeFeedback = await this._generator.generate(
         buildGradeFeedbackContext({ evaluation: await this._loadEvaluation(attempt), attempt, passingGrade: this._gradingConfig.passingGrade }),
+        { attemptId: attempt.id },
       );
 
       return (await this._store(attempt.id, pendingId, generated)) ? "ready" : "superseded";

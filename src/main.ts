@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Arranque de la aplicación
- * Descripción: Crea la aplicación NestJS con logger estructurado, helmet, compresión, límites de cuerpo, CORS, adaptador de Socket.io, pipes globales de validación y documentación de la API
- * Versión: 1.1
+ * Descripción: Crea la aplicación NestJS con logger estructurado, helmet, compresión (excepto respuestas text/event-stream), límites de cuerpo, CORS, adaptador de Socket.io, pipes globales de validación y documentación de la API
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { type NestExpressApplication } from "@nestjs/platform-express";
 import compression from "compression";
+import { type Request, type Response } from "express";
 import helmet from "helmet";
 import { I18nValidationPipe } from "nestjs-i18n";
 
@@ -28,6 +29,19 @@ import { TrimPipe } from "@/common/infrastructure/pipes/trim.pipe";
 import { RealtimeIoAdapter } from "@/common/infrastructure/realtime/realtime-io.adapter";
 
 const BODY_SIZE_LIMIT: string = "10mb";
+
+const EVENT_STREAM_CONTENT_TYPE: string = "text/event-stream";
+
+// Compression buffers the body until enough bytes accumulate, which would hold server-sent events back from the client.
+function shouldCompress(req: Request, res: Response): boolean {
+  const contentType: unknown = res.getHeader("Content-Type");
+
+  if (typeof contentType === "string" && contentType.startsWith(EVENT_STREAM_CONTENT_TYPE)) {
+    return false;
+  }
+
+  return compression.filter(req, res);
+}
 
 async function bootstrap(): Promise<void> {
   // rawBody: true exposes req.rawBody (Buffer), needed to validate HMAC signatures
@@ -57,7 +71,7 @@ async function bootstrap(): Promise<void> {
     crossOriginOpenerPolicy: false,
   }));
 
-  app.use(compression());
+  app.use(compression({ filter: shouldCompress }));
 
   app.useBodyParser("json", { limit: BODY_SIZE_LIMIT });
   app.useBodyParser("urlencoded", { extended: true, limit: BODY_SIZE_LIMIT });

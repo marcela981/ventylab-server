@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de notas
  * Descripción: Convierte la entidad Note y el resultado del análisis de notas en sus DTOs de respuesta
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,6 +35,7 @@ export class NotesMapper {
       gaps: result.analysis.gaps,
       suggestions: result.analysis.suggestions,
       model: result.analysis.model,
+      aiCallId: result.analysis.aiCallId,
     });
   }
 }

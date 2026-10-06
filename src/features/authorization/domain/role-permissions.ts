@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Permisos por rol
  * Descripción: Asocia cada rol de usuario con su conjunto de permisos y los resuelve
- * Versión: 1.9
+ * Versión: 1.11
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -38,6 +38,8 @@ const STUDENT_PERMISSIONS: readonly PermissionValue[] = [
   "simulation:control",
   "groups:read_own",
   "evaluations:attempt",
+  "ai-ratings:create_own",
+  "ai-tutor:use",
 ];
 
 const TEACHER_PERMISSIONS: readonly PermissionValue[] = [
@@ -91,6 +93,7 @@ const TEACHER_PERMISSIONS: readonly PermissionValue[] = [
   "evaluations:manage",
   "evaluations:assign",
   "evaluations:grade",
+  "ai-ratings:read",
 ];
 
 export const ROLE_PERMISSIONS: Readonly<Record<UserRoleValue, readonly PermissionValue[]>> = {

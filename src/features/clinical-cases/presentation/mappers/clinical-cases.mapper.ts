@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de casos clínicos
- * Descripción: Convierte modelos de lectura y resultados de casos clínicos y evaluaciones a sus DTOs de respuesta, y la configuración del ventilador recibida al modelo de dominio
- * Versión: 1.0
+ * Descripción: Convierte modelos de lectura y resultados de casos clínicos y evaluaciones a sus DTOs de respuesta (los valores expertos y las diferencias solo se incluyen para quien puede ver la configuración experta), y la configuración del ventilador recibida al modelo de dominio
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -124,7 +124,7 @@ export class ClinicalCasesMapper {
     });
   }
 
-  public static toEvaluationDTO(result: ClinicalCaseEvaluationResult): ClinicalCaseEvaluationDTO {
+  public static toEvaluationDTO(result: ClinicalCaseEvaluationResult, revealExpert: boolean): ClinicalCaseEvaluationDTO {
     const { comparison, feedback, expertConfiguration, improvement } = result;
 
     return new ClinicalCaseEvaluationDTO({
@@ -144,9 +144,9 @@ export class ClinicalCasesMapper {
             new ParameterComparisonDTO({
               parameter: parameter.parameter,
               userValue: parameter.userValue ?? null,
-              expertValue: parameter.expertValue ?? null,
-              difference: parameter.difference,
-              differencePercent: parameter.differencePercent,
+              expertValue: revealExpert ? (parameter.expertValue ?? null) : null,
+              difference: revealExpert ? parameter.difference : null,
+              differencePercent: revealExpert ? parameter.differencePercent : null,
               withinRange: parameter.withinRange,
               errorClassification: parameter.errorClassification,
               priority: parameter.priority,
@@ -161,16 +161,18 @@ export class ClinicalCasesMapper {
         recommendations: feedback.recommendations,
         safetyConcerns: feedback.safetyConcerns ?? null,
       }),
-      expertConfiguration: new ExpertConfigurationDTO({
-        ventilationMode: expertConfiguration.ventilationMode,
-        tidalVolume: expertConfiguration.tidalVolume ?? null,
-        respiratoryRate: expertConfiguration.respiratoryRate ?? null,
-        peep: expertConfiguration.peep ?? null,
-        fio2: expertConfiguration.fio2 ?? null,
-        maxPressure: expertConfiguration.maxPressure ?? null,
-        iERatio: expertConfiguration.iERatio ?? null,
-        justification: expertConfiguration.justification,
-      }),
+      expertConfiguration: revealExpert
+        ? new ExpertConfigurationDTO({
+          ventilationMode: expertConfiguration.ventilationMode,
+          tidalVolume: expertConfiguration.tidalVolume ?? null,
+          respiratoryRate: expertConfiguration.respiratoryRate ?? null,
+          peep: expertConfiguration.peep ?? null,
+          fio2: expertConfiguration.fio2 ?? null,
+          maxPressure: expertConfiguration.maxPressure ?? null,
+          iERatio: expertConfiguration.iERatio ?? null,
+          justification: expertConfiguration.justification,
+        })
+        : null,
       improvement: improvement ? new EvaluationImprovementDTO(improvement) : null,
     });
   }

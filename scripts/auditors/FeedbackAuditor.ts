@@ -5,11 +5,12 @@
  * Descripción   : Verifica la existencia del servicio de evaluación,
  *                 los exports requeridos (compareConfigurations,
  *                 generateFeedback), la presencia del fallback
- *                 determinístico (generateFallbackFeedback), la
- *                 disponibilidad de ≥3 proveedores en aiConfig, y la
+ *                 determinístico (generateFallbackFeedback) a través del
+ *                 gateway de IA, la disponibilidad de ≥3 proveedores en
+ *                 src/features/ai/infrastructure/providers/, y la
  *                 existencia de logging estructurado con
  *                 {provider, latencyMs, parsedOK}.
- * Versión       : 1.1
+ * Versión       : 1.2
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -29,7 +30,7 @@ const FEEDBACK_GENERATOR_REL =
   'src/features/clinical-cases/application/services/evaluation-feedback-generator.service.ts';
 const FALLBACK_REL = 'src/features/clinical-cases/domain/services/evaluation-feedback.ts';
 const EVAL_SERVICE_REL = `${COMPARISON_REL} + ${FEEDBACK_GENERATOR_REL}`;
-const AI_CONFIG_REL = 'src/common/infrastructure/ai/gemini-ai-text-generator.ts';
+const AI_CONFIG_REL = 'src/features/ai/infrastructure/providers';
 const REQUIRED_PROVIDERS = ['openai', 'anthropic', 'gemini'];
 const STRUCTURED_LOG_KEYS = ['provider', 'latencyMs', 'parsedOK'];
 
@@ -129,15 +130,6 @@ export class FeedbackAuditor extends Auditor {
     }
   }
 
-  private async fileExists(p: string): Promise<boolean> {
-    try {
-      await fs.access(p);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   private async smokeFallback(evalSource: string): Promise<Gate> {
     // El fallback se invoca indirectamente vía
     // EvaluationFeedbackGenerator.generateFeedback con un caso/config
@@ -155,10 +147,8 @@ export class FeedbackAuditor extends Auditor {
     }
 
     let mod: typeof import('../../src/features/clinical-cases/application/services/evaluation-feedback-generator.service');
-    let aiErrors: typeof import('../../src/common/domain/errors/ai-unavailable.error');
     try {
       mod = await import('../../src/features/clinical-cases/application/services/evaluation-feedback-generator.service');
-      aiErrors = await import('../../src/common/domain/errors/ai-unavailable.error');
     } catch (err) {
       return this.makeGate(
         'OE3.G2',
@@ -168,16 +158,21 @@ export class FeedbackAuditor extends Auditor {
       );
     }
 
-    // Forzar el path de fallback: el generador recibe un proveedor de IA
-    // stub cuyo generate() lanza AIUnavailableError (IA no disponible).
+    // Forzar el path de fallback: el generador recibe un gateway de IA
+    // stub sin proveedores disponibles que, como AiOrchestrator, responde
+    // con el respaldo determinista (source DETERMINISTIC) que le pasa el
+    // generador.
     try {
-      const unavailableAI: import('../../src/common/application/ports/ai-text-generator.interface').IAITextGenerator = {
-        isAvailable: () => false,
-        generate: async () => {
-          throw new aiErrors.AIUnavailableError();
-        },
+      type AiGateway = import('../../src/features/ai/application/services/ai-gateway').AiGateway;
+      type AiCallOptions = import('../../src/features/ai/application/services/ai-gateway').AiCallOptions;
+      const unavailableGateway = {
+        complete: async (_useCase: string, _input: unknown, options: AiCallOptions = {}) => ({
+          content: options.fallback ? await options.fallback() : '',
+          source: 'DETERMINISTIC' as const,
+          aiCallId: 'audit-smoke',
+        }),
       };
-      const generator = new mod.EvaluationFeedbackGenerator(unavailableAI);
+      const generator = new mod.EvaluationFeedbackGenerator(unavailableGateway as unknown as AiGateway);
 
       const synthClinicalCase = {
         id: 'audit',
@@ -235,7 +230,7 @@ export class FeedbackAuditor extends Auditor {
         ]
           .map((k) => `${k}=${Array.isArray((fb as any)[k])}`)
           .join(', ')}]`,
-        'EvaluationFeedbackGenerator.generateFeedback (catch AIUnavailableError → generateFallbackFeedback)',
+        'EvaluationFeedbackGenerator.generateFeedback (AiGateway sin proveedores → fallback DETERMINISTIC → generateFallbackFeedback)',
       );
     } catch (err) {
       return this.makeGate(
@@ -249,7 +244,8 @@ export class FeedbackAuditor extends Auditor {
 
   private async checkProviders(): Promise<Gate> {
     const aiConfigAbs = path.join(SERVER_ROOT, AI_CONFIG_REL);
-    if (!(await this.fileExists(aiConfigAbs))) {
+    const source = await this.readProviderSources(aiConfigAbs);
+    if (source === null) {
       return this.makeGate(
         'OE3.G3',
         'Provider strategy soporta ≥3 proveedores (OpenAI, Anthropic, Gemini)',
@@ -257,7 +253,6 @@ export class FeedbackAuditor extends Auditor {
         `aiConfig no encontrado: ${AI_CONFIG_REL}`,
       );
     }
-    const source = await fs.readFile(aiConfigAbs, 'utf8');
     // Anthropic puede aparecer como 'claude' o 'anthropic'.
     const found = REQUIRED_PROVIDERS.filter((p) => {
       if (p === 'anthropic') return /\b(anthropic|claude)\b/i.test(source);
@@ -270,6 +265,20 @@ export class FeedbackAuditor extends Auditor {
       `proveedores encontrados: ${found.join(', ') || 'ninguno'}`,
       AI_CONFIG_REL,
     );
+  }
+
+  private async readProviderSources(dir: string): Promise<string | null> {
+    // Concatena las implementaciones de proveedores (sin specs) del directorio.
+    let entries: string[];
+    try {
+      entries = await fs.readdir(dir);
+    } catch {
+      return null;
+    }
+    const files = entries.filter((name) => name.endsWith('.ts') && !name.endsWith('.spec.ts'));
+    if (files.length === 0) return null;
+    const sources = await Promise.all(files.map((name) => fs.readFile(path.join(dir, name), 'utf8')));
+    return sources.join('\n');
   }
 
   private async checkStructuredLog(): Promise<Gate> {

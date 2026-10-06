@@ -6,8 +6,6 @@
   "not_found": "The requested record was not found",
   "conflict": "The operation conflicts with an existing record",
   "invalid_value_object": "Invalid value provided",
-  "ai_unavailable": "The AI service is not available",
-  "ai_generation_failed": "The AI service could not generate a response",
   "validation": {
     "string": "The value must be a string",
     "enum": "The value must be one of the allowed options",

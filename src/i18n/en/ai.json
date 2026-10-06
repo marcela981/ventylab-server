@@ -1,0 +1,5 @@
+{
+  "providers_unavailable": "The AI service is not available right now, try again later",
+  "quota_exceeded": "You reached your AI usage limit, try again after {resetAt}",
+  "stream_interrupted": "The AI response was interrupted, try again"
+}

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Validación de variables de entorno
- * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0)
- * Versión: 1.4
+ * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Transform, Type, plainToInstance } from "class-transformer";
-import { IsBoolean, IsEmail, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min, type ValidationError, validateSync } from "class-validator";
+import { IsBoolean, IsEmail, IsEnum, IsInt, IsJSON, IsNumber, IsOptional, IsString, IsUrl, Max, Min, type ValidationError, validateSync } from "class-validator";
 
 export enum Environment {
   Development = "development",
@@ -182,6 +182,66 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   public GEMINI_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  public OPENAI_API_KEY?: string;
+
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  public OPENAI_BASE_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  public ANTHROPIC_API_KEY?: string;
+
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  public ANTHROPIC_BASE_URL?: string;
+
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  public AI_CUSTOM_HTTP_ENDPOINT?: string;
+
+  @IsString()
+  @IsOptional()
+  public AI_CUSTOM_HTTP_AUTH_HEADER?: string;
+
+  @IsString()
+  @IsOptional()
+  public AI_CUSTOM_HTTP_AUTH_VALUE?: string;
+
+  @IsJSON()
+  @IsOptional()
+  public AI_USE_CASE_SETTINGS?: string;
+
+  @IsJSON()
+  @IsOptional()
+  public AI_QUOTAS?: string;
+
+  @IsJSON()
+  @IsOptional()
+  public AI_PRICES?: string;
+
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  public AI_BREAKER_FAILURE_THRESHOLD: number = 3;
+
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  public AI_BREAKER_OPEN_SECONDS: number = 60;
+
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  public AI_TUTOR_HISTORY_WINDOW: number = 10;
+
+  @IsInt()
+  @Min(100)
+  @Type(() => Number)
+  public AI_TUTOR_CONTEXT_TOKEN_BUDGET: number = 6000;
 
   @IsString()
   @IsOptional()
