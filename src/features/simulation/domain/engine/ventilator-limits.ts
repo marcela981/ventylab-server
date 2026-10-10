@@ -1,13 +1,21 @@
 /*
  * Funcionalidad: Límites del ventilador del motor fisiológico
- * Descripción: Rangos permitidos de cada ajuste del ventilador (coherentes con los rangos seguros del comando físico), ajustes por defecto y validación de un conjunto completo de ajustes, incluidas las reglas cruzadas de presión, flujo y tiempo espiratorio
- * Versión: 1.0
+ * Descripción: Rangos permitidos de cada ajuste del ventilador derivados de la fuente única común (src/common/domain/ventilator), ajustes por defecto y validación de un conjunto completo de ajustes, incluidas las reglas cruzadas de presión, flujo y tiempo espiratorio
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import {
+  MAX_AIRWAY_PRESSURE_SETTING_CMH2O,
+  MAX_PEAK_INSPIRATORY_FLOW_LPM,
+  MIN_EXPIRATORY_TIME_S,
+  VENTILATOR_PARAMETER_LIMITS,
+  type VentilatorParameterLimit,
+} from "@/common/domain/ventilator/ventilator-limits";
+
 import { EngineValidationError } from "./engine.errors";
 import {
   EngineVentilationMode,
@@ -17,11 +25,9 @@ import {
   VentilatorSettings,
 } from "./engine.types";
 
-export interface VentilatorLimit {
-  readonly min: number;
-  readonly max: number;
-  readonly unit: string;
-}
+export { MAX_AIRWAY_PRESSURE_SETTING_CMH2O, MAX_PEAK_INSPIRATORY_FLOW_LPM, MIN_EXPIRATORY_TIME_S };
+
+export type VentilatorLimit = VentilatorParameterLimit;
 
 export type NumericSettingKey =
   | "tidalVolumeMl"
@@ -38,23 +44,19 @@ export type NumericSettingKey =
   | "apneaTimeS";
 
 export const VENTILATOR_LIMITS: Readonly<Record<NumericSettingKey, VentilatorLimit>> = {
-  tidalVolumeMl: { min: 200, max: 800, unit: "mL" },
-  respiratoryRateBpm: { min: 5, max: 40, unit: "breaths/min" },
-  peepCmH2O: { min: 0, max: 20, unit: "cmH2O" },
-  fio2: { min: 0.21, max: 1.0, unit: "fraction" },
-  inspiratoryTimeS: { min: 0.5, max: 3.0, unit: "s" },
-  inspiratoryPauseS: { min: 0, max: 2.0, unit: "s" },
-  inspiratoryPressureCmH2O: { min: 5, max: 40, unit: "cmH2O above PEEP" },
-  pressureSupportCmH2O: { min: 0, max: 30, unit: "cmH2O above PEEP" },
-  flowTriggerLpm: { min: 0.5, max: 10, unit: "L/min" },
-  pressureTriggerCmH2O: { min: 0.5, max: 10, unit: "cmH2O" },
-  cycleOffPercent: { min: 5, max: 80, unit: "% of peak inspiratory flow" },
-  apneaTimeS: { min: 10, max: 60, unit: "s" },
+  tidalVolumeMl: VENTILATOR_PARAMETER_LIMITS.tidalVolumeMl,
+  respiratoryRateBpm: VENTILATOR_PARAMETER_LIMITS.respiratoryRateBpm,
+  peepCmH2O: VENTILATOR_PARAMETER_LIMITS.peepCmH2O,
+  fio2: VENTILATOR_PARAMETER_LIMITS.fio2,
+  inspiratoryTimeS: VENTILATOR_PARAMETER_LIMITS.inspiratoryTimeS,
+  inspiratoryPauseS: VENTILATOR_PARAMETER_LIMITS.inspiratoryPauseS,
+  inspiratoryPressureCmH2O: VENTILATOR_PARAMETER_LIMITS.inspiratoryPressureCmH2O,
+  pressureSupportCmH2O: VENTILATOR_PARAMETER_LIMITS.pressureSupportCmH2O,
+  flowTriggerLpm: VENTILATOR_PARAMETER_LIMITS.flowTriggerLpm,
+  pressureTriggerCmH2O: VENTILATOR_PARAMETER_LIMITS.pressureTriggerCmH2O,
+  cycleOffPercent: VENTILATOR_PARAMETER_LIMITS.cycleOffPercent,
+  apneaTimeS: VENTILATOR_PARAMETER_LIMITS.apneaTimeS,
 };
-
-export const MAX_AIRWAY_PRESSURE_SETTING_CMH2O: number = 50;
-export const MAX_PEAK_INSPIRATORY_FLOW_LPM: number = 100;
-export const MIN_EXPIRATORY_TIME_S: number = 0.3;
 
 export const VENTILATION_MODES: readonly EngineVentilationMode[] = ["VCV", "PCV", "PSV", "CPAP", "SIMV"];
 export const FLOW_PATTERNS: readonly FlowPattern[] = ["SQUARE", "DECELERATING"];

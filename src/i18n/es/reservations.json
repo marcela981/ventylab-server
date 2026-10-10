@@ -1,0 +1,33 @@
+{
+  "reservations_retrieved": "Reservas obtenidas correctamente",
+  "current_reservation_retrieved": "Reserva actual obtenida correctamente",
+  "reservation_created": "Reserva creada correctamente",
+  "reservation_cancelled": "Reserva cancelada correctamente",
+  "reservation_preempted": "Reserva desplazada y reemplazo creado correctamente",
+  "reservation_not_found": "Reserva no encontrada",
+  "invalid_window": "La reserva debe terminar después de empezar",
+  "not_aligned": "La reserva debe empezar y terminar en el límite de una franja de {slotMinutes} minutos",
+  "too_long": "La reserva no puede durar más de {maxMinutes} minutos",
+  "in_past": "La reserva no puede empezar en el pasado",
+  "too_far_ahead": "La reserva no puede empezar con más de {maxDays} días de antelación",
+  "limit_reached": "Ya tienes el máximo de {limit} reservas próximas",
+  "invalid_holder": "Una reserva de usuario necesita un usuario y una de grupo necesita un grupo",
+  "holder_not_found": "El usuario o grupo de la reserva no existe",
+  "reserve_forbidden": "No puedes reservar el ventilador para este usuario o grupo",
+  "cancel_forbidden": "No puedes cancelar esta reserva",
+  "not_scheduled": "La reserva ya no está programada",
+  "invalid_range": "El rango debe ser válido y abarcar como máximo {maxDays} días",
+  "conflict": "La franja se solapa con otra reserva",
+  "conflict_preemptable": "La franja se solapa con otras reservas; confirma para desplazarlas",
+  "labels": {
+    "group_student": "Reservado por un estudiante del grupo {group}",
+    "student": "Reservado por un estudiante",
+    "teacher": "Reservado por un docente"
+  },
+  "validation": {
+    "date_invalid": "{property} debe ser una fecha ISO 8601 válida",
+    "holder_type_invalid": "El tipo de titular debe ser USER o GROUP",
+    "text_too_long": "{property} debe tener como máximo {constraints.0} caracteres",
+    "reason_required": "El motivo es obligatorio"
+  }
+}

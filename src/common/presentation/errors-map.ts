@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.24
+ * Versión: 1.25
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -201,6 +201,22 @@ import {
   QuizScoreRequiredError,
 } from "@/features/progress/domain/progress.errors";
 import { QuizAlreadyAttemptedError, QuizInactiveError, QuizNotFoundError } from "@/features/quizzes/domain/quizzes.errors";
+import {
+  InvalidReservationHolderError,
+  InvalidReservationRangeError,
+  InvalidReservationWindowError,
+  ReservationCancelForbiddenError,
+  ReservationConflictError,
+  ReservationForbiddenError,
+  ReservationHolderNotFoundError,
+  ReservationInPastError,
+  ReservationLimitReachedError,
+  ReservationNotAlignedError,
+  ReservationNotFoundError,
+  ReservationNotScheduledError,
+  ReservationTooFarAheadError,
+  ReservationTooLongError,
+} from "@/features/reservations/domain/reservations.errors";
 import { InvalidScorePointsError, ScoreNotFoundError, ScoreNotOwnedError } from "@/features/scores/domain/scores.errors";
 import { InvalidSectionReorderError, SectionNotFoundError, SectionSlugAlreadyExistsError } from "@/features/sections/domain/sections.errors";
 import {
@@ -466,4 +482,18 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [GradeFeedbackNotAvailableError, HttpStatus.NOT_FOUND],
   [GradeFeedbackAttemptNotGradedError, HttpStatus.CONFLICT],
   [GradeFeedbackForbiddenError, HttpStatus.FORBIDDEN],
+  [ReservationNotFoundError, HttpStatus.NOT_FOUND],
+  [InvalidReservationWindowError, HttpStatus.BAD_REQUEST],
+  [ReservationNotAlignedError, HttpStatus.BAD_REQUEST],
+  [ReservationTooLongError, HttpStatus.BAD_REQUEST],
+  [ReservationInPastError, HttpStatus.BAD_REQUEST],
+  [ReservationTooFarAheadError, HttpStatus.BAD_REQUEST],
+  [InvalidReservationHolderError, HttpStatus.BAD_REQUEST],
+  [InvalidReservationRangeError, HttpStatus.BAD_REQUEST],
+  [ReservationLimitReachedError, HttpStatus.CONFLICT],
+  [ReservationHolderNotFoundError, HttpStatus.NOT_FOUND],
+  [ReservationForbiddenError, HttpStatus.FORBIDDEN],
+  [ReservationCancelForbiddenError, HttpStatus.FORBIDDEN],
+  [ReservationNotScheduledError, HttpStatus.CONFLICT],
+  [ReservationConflictError, HttpStatus.CONFLICT],
 ]);

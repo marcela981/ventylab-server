@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo raíz AppModule
  * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real) y las features; registra el filtro global y los middlewares de traza y contexto
- * Versión: 1.13
+ * Versión: 1.14
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -56,6 +56,7 @@ import { OverridesModule } from "@/features/overrides/overrides.module";
 import { PagesModule } from "@/features/pages/pages.module";
 import { ProgressModule } from "@/features/progress/progress.module";
 import { QuizzesModule } from "@/features/quizzes/quizzes.module";
+import { ReservationsModule } from "@/features/reservations/reservations.module";
 import { ScoresModule } from "@/features/scores/scores.module";
 import { SectionsModule } from "@/features/sections/sections.module";
 import { SimulationModule } from "@/features/simulation/simulation.module";
@@ -126,6 +127,7 @@ import { UsersModule } from "@/features/users/users.module";
     NotesModule,
     TeacherStudentsModule,
     AdminModule,
+    ReservationsModule,
     SimulationModule,
     EvaluationModule,
     AiTelemetryModule,

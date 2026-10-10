@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma de grupos
  * Descripción: Verifica sobre un cliente Prisma simulado que el historial que impide el borrado físico de un grupo cuenta asignaciones de evaluaciones e intentos ligados al grupo (por asignación o por el groupId heredado en legacy_payload) y nunca consulta las tablas congeladas de actividades
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,9 +14,9 @@ import { GroupsPrismaRepository } from "@/features/groups/infrastructure/persist
 
 const GROUP_ID: string = "group-1";
 
-type CountName = "groupMember" | "evaluationAssignment" | "studentEvaluationAttempt" | "ventilatorReservation" | "auditLog";
+type CountName = "groupMember" | "evaluationAssignment" | "studentEvaluationAttempt" | "ventilatorReservation" | "reservation" | "auditLog";
 
-const COUNT_NAMES: CountName[] = ["groupMember", "evaluationAssignment", "studentEvaluationAttempt", "ventilatorReservation", "auditLog"];
+const COUNT_NAMES: CountName[] = ["groupMember", "evaluationAssignment", "studentEvaluationAttempt", "ventilatorReservation", "reservation", "auditLog"];
 
 interface PrismaDoubles {
   repository: GroupsPrismaRepository;
@@ -69,7 +69,7 @@ describe("GroupsPrismaRepository.hasActivityHistory", () => {
     expect(doubles.frozen).not.toHaveBeenCalled();
   });
 
-  it.each<CountName>(["groupMember", "ventilatorReservation", "auditLog"])("keeps blocking the physical delete when %s has history", async (name: CountName) => {
+  it.each<CountName>(["groupMember", "ventilatorReservation", "reservation", "auditLog"])("keeps blocking the physical delete when %s has history", async (name: CountName) => {
     const doubles: PrismaDoubles = buildDoubles(name);
 
     await expect(doubles.repository.hasActivityHistory(GROUP_ID)).resolves.toBe(true);

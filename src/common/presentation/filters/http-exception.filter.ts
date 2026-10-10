@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Filtro global HttpExceptionFilter
- * Descripción: Convierte toda excepción en el envoltorio estándar traducido (validación, dominio con argumentos de traducción opcionales y cabecera Retry-After cuando el error indica cuándo reintentar, HTTP, Prisma P2002/P2025, protección del superadmin del trigger protect_superadmin como 403, inesperada), registra en log, Sentry y error_logs, y nunca expone trazas de pila en la respuesta
- * Versión: 1.3
+ * Descripción: Convierte toda excepción en el envoltorio estándar traducido (validación, dominio con argumentos de traducción opcionales, detalles opcionales en data y cabecera Retry-After cuando el error indica cuándo reintentar, HTTP, Prisma P2002/P2025, protección del superadmin del trigger protect_superadmin como 403, inesperada), registra en log, Sentry y error_logs, y nunca expone trazas de pila en la respuesta
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -48,9 +48,10 @@ interface ExceptionResponse {
   headers?: Record<string, string>;
 }
 
-// Optional members a domain error may expose: interpolation values for its translated message and the moment the client may retry.
+// Optional members a domain error may expose: interpolation values for its translated message, structured details for the client and the moment the client may retry.
 interface DomainErrorExtras {
   i18nArgs?: unknown;
+  details?: unknown;
   retryAt?: unknown;
 }
 
@@ -205,12 +206,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
       ? i18nContext.t(exception.code, args ? { args } : undefined)
       : exception.message;
 
-    const apiResponse: APIResponse<unknown> = new APIResponseBuilder()
+    const builder: APIResponseBuilder<unknown> = new APIResponseBuilder()
       .setSuccess(false)
       .setMessage(translatedMessage)
       .setCode(exception.code)
-      .setTraceId(request.traceId)
-      .build();
+      .setTraceId(request.traceId);
+
+    if (typeof extras.details === "object" && extras.details !== null) {
+      builder.setData(extras.details);
+    }
+
+    const apiResponse: APIResponse<unknown> = builder.build();
 
     return {
       statusCode,

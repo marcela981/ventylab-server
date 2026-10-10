@@ -1,0 +1,33 @@
+{
+  "reservations_retrieved": "Reservations retrieved successfully",
+  "current_reservation_retrieved": "Current reservation retrieved successfully",
+  "reservation_created": "Reservation created successfully",
+  "reservation_cancelled": "Reservation cancelled successfully",
+  "reservation_preempted": "Reservation preempted and replacement created successfully",
+  "reservation_not_found": "Reservation not found",
+  "invalid_window": "The reservation must end after it starts",
+  "not_aligned": "The reservation must start and end on a {slotMinutes}-minute slot boundary",
+  "too_long": "The reservation cannot last more than {maxMinutes} minutes",
+  "in_past": "The reservation cannot start in the past",
+  "too_far_ahead": "The reservation cannot start more than {maxDays} days ahead",
+  "limit_reached": "You already have the maximum of {limit} upcoming reservations",
+  "invalid_holder": "A user reservation needs a user and a group reservation needs a group",
+  "holder_not_found": "The user or group of the reservation does not exist",
+  "reserve_forbidden": "You cannot reserve the ventilator for this user or group",
+  "cancel_forbidden": "You cannot cancel this reservation",
+  "not_scheduled": "The reservation is no longer scheduled",
+  "invalid_range": "The range must be valid and span at most {maxDays} days",
+  "conflict": "The slot overlaps another reservation",
+  "conflict_preemptable": "The slot overlaps other reservations; confirm to preempt them",
+  "labels": {
+    "group_student": "Reserved by a student of group {group}",
+    "student": "Reserved by a student",
+    "teacher": "Reserved by a teacher"
+  },
+  "validation": {
+    "date_invalid": "{property} must be a valid ISO 8601 date",
+    "holder_type_invalid": "The holder type must be USER or GROUP",
+    "text_too_long": "{property} must be at most {constraints.0} characters long",
+    "reason_required": "The reason is required"
+  }
+}

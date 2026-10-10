@@ -1,13 +1,15 @@
 /*
  * Funcionalidad: Comando del ventilador
- * Descripción: Define los modos de ventilación, la forma del comando que se envía al ventilador físico o a la simulación sintética y los rangos seguros de cada parámetro (contrato con Node-RED/ESP)
- * Versión: 1.0
+ * Descripción: Define los modos de ventilación, la forma del comando que se envía al ventilador físico o a la simulación sintética y los rangos seguros de cada parámetro (contrato con Node-RED/ESP), derivados de la fuente única común de límites del ventilador
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { VENTILATOR_PARAMETER_LIMITS, type VentilatorParameterLimit } from "@/common/domain/ventilator/ventilator-limits";
+
 export type VentilationModeValue = "VCV" | "PCV" | "SIMV" | "PSV";
 
 export const VCV_MODE_VALUE: VentilationModeValue = "VCV";
@@ -52,12 +54,16 @@ export interface VentilatorSafeRanges {
   readonly FLOW_RATE: VentilatorSafeRange;
 }
 
+function withUnit(limit: VentilatorParameterLimit, unit: string): VentilatorSafeRange {
+  return { min: limit.min, max: limit.max, unit };
+}
+
 export const VENTILATOR_SAFE_RANGES: VentilatorSafeRanges = {
-  PEEP: { min: 0, max: 20, unit: "cmH₂O" },
-  FIO2: { min: 0.21, max: 1.0, unit: "fraction" },
-  TIDAL_VOLUME: { min: 200, max: 800, unit: "ml" },
-  RESPIRATORY_RATE: { min: 5, max: 40, unit: "breaths/min" },
-  PRESSURE_LIMIT: { min: 10, max: 50, unit: "cmH₂O" },
-  INSPIRATORY_TIME: { min: 0.5, max: 3.0, unit: "seconds" },
-  FLOW_RATE: { min: 20, max: 100, unit: "L/min" },
+  PEEP: withUnit(VENTILATOR_PARAMETER_LIMITS.peepCmH2O, "cmH₂O"),
+  FIO2: withUnit(VENTILATOR_PARAMETER_LIMITS.fio2, "fraction"),
+  TIDAL_VOLUME: withUnit(VENTILATOR_PARAMETER_LIMITS.tidalVolumeMl, "ml"),
+  RESPIRATORY_RATE: withUnit(VENTILATOR_PARAMETER_LIMITS.respiratoryRateBpm, "breaths/min"),
+  PRESSURE_LIMIT: withUnit(VENTILATOR_PARAMETER_LIMITS.pressureLimitCmH2O, "cmH₂O"),
+  INSPIRATORY_TIME: withUnit(VENTILATOR_PARAMETER_LIMITS.inspiratoryTimeS, "seconds"),
+  FLOW_RATE: withUnit(VENTILATOR_PARAMETER_LIMITS.flowRateLpm, "L/min"),
 };

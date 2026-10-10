@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada pública de grupos
- * Descripción: API de lectura que GroupsModule exporta para otras features: grupo STUDENT activo de un usuario, miembros de un grupo, liderazgo, pertenencia, grupos STUDENT supervisados por los grupos TEACHER de un profesor y alcance de gestión; usa los repositorios de grupos y miembros y GroupAccessService
- * Versión: 1.0
+ * Descripción: API de lectura que GroupsModule exporta para otras features: grupo STUDENT activo de un usuario, miembros de un grupo, liderazgo, pertenencia, grupos STUDENT supervisados por los grupos TEACHER de un profesor alcance de gestión y resumen (nombre, tipo, estado) de un grupo; usa los repositorios de grupos y miembros y GroupAccessService
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,6 +21,7 @@ import {
 import { GROUPS_REPOSITORY_TOKEN, type IGroupsRepository } from "@/features/groups/domain/repositories/groups.repository";
 import { type GroupActor } from "@/features/groups/domain/services/group-management-policy";
 import { type GroupMembershipRoleValue } from "@/features/groups/domain/value-objects/group-membership-role";
+import { type GroupTypeValue } from "@/features/groups/domain/value-objects/group-type";
 
 export interface GroupMemberSummary {
   readonly userId: string;
@@ -28,6 +29,13 @@ export interface GroupMemberSummary {
   readonly email: string;
   readonly userRole: string;
   readonly memberRole: GroupMembershipRoleValue;
+}
+
+export interface GroupSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly type: GroupTypeValue;
+  readonly isActive: boolean;
 }
 
 @Injectable()
@@ -42,6 +50,12 @@ export class GroupsFacade {
 
   public async getStudentGroupOfUser(userId: string): Promise<StudentGroupSummaryView | undefined> {
     return await this._groupsRepository.getStudentGroupSummaryOfUser(userId);
+  }
+
+  public async getGroupSummary(groupId: string): Promise<GroupSummary | undefined> {
+    const group: Group | undefined = await this._groupsRepository.getById(groupId);
+
+    return group ? { id: group.id, name: group.name, type: group.type, isActive: group.isActive } : undefined;
   }
 
   public async getGroupMembers(groupId: string): Promise<GroupMemberSummary[]> {

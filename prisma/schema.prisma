@@ -75,6 +75,12 @@ model User {
   scoresGiven        Score[]                 @relation("GraderScores")
   reservationsAsLead VentilatorReservation[] @relation("ReservationLead")
 
+  // Scheduled ventilator reservations and commands
+  heldReservations      Reservation[]       @relation("ReservationHolderUser")
+  createdReservations   Reservation[]       @relation("ReservationCreator")
+  preemptedReservations Reservation[]       @relation("ReservationPreemptor")
+  ventilatorCommands    VentilatorCommand[]
+
   // Evaluation activities
   createdActivities   Activity[]           @relation("ActivityCreator")
   activityAssignments ActivityAssignment[] @relation("ActivityAssigner")
@@ -1265,6 +1271,7 @@ model Group {
   creator             User?                   @relation("GroupCreator", fields: [createdBy], references: [id])
   members             GroupMember[]
   reservations        VentilatorReservation[]
+  heldReservations    Reservation[]           @relation("ReservationHolderGroup")
   activityAssignments ActivityAssignment[]
   activitySubmissions ActivitySubmission[]
   supervisedGroups    GroupSupervision[]      @relation("TeacherGroup")
@@ -1934,4 +1941,102 @@ model SimulationEvent {
 
   @@index([sessionId, simTimeMs])
   @@map("simulation_events")
+}
+
+// ============================================
+// VENTILATOR FEATURES
+// ============================================
+// Reservation: scheduled slot of the physical ventilator held by a user or a group;
+// "active" is derived on read (SCHEDULED and starts_at <= now < ends_at).
+// VentilatorCommand: one command sent to the physical ventilator, id doubles as correlation id.
+// TelemetryChunk: encoded batch of telemetry samples recorded during a reservation.
+// ============================================
+
+enum ReservationHolderType {
+  USER
+  GROUP
+}
+
+enum ReservationLifecycleStatus {
+  SCHEDULED
+  CANCELLED
+  PREEMPTED
+  COMPLETED
+}
+
+enum VentilatorCommandStatus {
+  PENDING
+  SENT
+  ACKED
+  APPLIED
+  REJECTED
+  TIMEOUT
+}
+
+model Reservation {
+  id                      String                     @id
+  holderType              ReservationHolderType      @map("holder_type")
+  userId                  String?                    @map("user_id")
+  groupId                 String?                    @map("group_id")
+  createdById             String                     @map("created_by_id")
+  startsAt                DateTime                   @map("starts_at") @db.Timestamptz(6)
+  endsAt                  DateTime                   @map("ends_at") @db.Timestamptz(6)
+  status                  ReservationLifecycleStatus
+  purpose                 String?
+  preemptedById           String?                    @map("preempted_by_id")
+  preemptedReason         String?                    @map("preempted_reason")
+  replacedByReservationId String?                    @map("replaced_by_reservation_id")
+  createdAt               DateTime                   @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime                   @map("updated_at") @db.Timestamptz(6)
+
+  user        User?               @relation("ReservationHolderUser", fields: [userId], references: [id], onDelete: Restrict)
+  group       Group?              @relation("ReservationHolderGroup", fields: [groupId], references: [id], onDelete: Restrict)
+  createdBy   User                @relation("ReservationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  preemptedBy User?               @relation("ReservationPreemptor", fields: [preemptedById], references: [id], onDelete: SetNull)
+  commands    VentilatorCommand[]
+  telemetry   TelemetryChunk[]
+
+  @@index([startsAt, endsAt], map: "reservations_starts_at_ends_at_idx")
+  @@index([status, startsAt], map: "reservations_status_starts_at_idx")
+  @@index([groupId], map: "reservations_group_id_idx")
+  @@index([userId], map: "reservations_user_id_idx")
+  @@map("reservations")
+}
+
+model VentilatorCommand {
+  id             String                  @id
+  reservationId  String                  @map("reservation_id")
+  userId         String                  @map("user_id")
+  params         Json
+  encoding       String
+  encodedPayload String                  @map("encoded_payload")
+  status         VentilatorCommandStatus
+  rejectReason   String?                 @map("reject_reason")
+  sentAt         DateTime?               @map("sent_at") @db.Timestamptz(6)
+  resolvedAt     DateTime?               @map("resolved_at") @db.Timestamptz(6)
+  latencyMs      Int?                    @map("latency_ms")
+  createdAt      DateTime                @map("created_at") @db.Timestamptz(6)
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([reservationId, sentAt], map: "ventilator_commands_reservation_id_sent_at_idx")
+  @@map("ventilator_commands")
+}
+
+model TelemetryChunk {
+  id            String   @id
+  reservationId String   @map("reservation_id")
+  startTs       DateTime @map("start_ts") @db.Timestamptz(6)
+  endTs         DateTime @map("end_ts") @db.Timestamptz(6)
+  sampleCount   Int      @map("sample_count")
+  sampleRateHz  Int      @map("sample_rate_hz")
+  encoding      String
+  data          Bytes
+  createdAt     DateTime @map("created_at") @db.Timestamptz(6)
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId, startTs], map: "telemetry_chunks_reservation_id_start_ts_idx")
+  @@map("telemetry_chunks")
 }

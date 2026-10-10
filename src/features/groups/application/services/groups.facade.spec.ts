@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Pruebas de GroupsFacade
- * Descripción: Verifica las lecturas públicas de la feature de grupos con repositorios simulados: grupo STUDENT del usuario, miembros, liderazgo, pertenencia, grupos supervisados por un profesor y alcance de gestión
- * Versión: 1.0
+ * Descripción: Verifica las lecturas públicas de la feature de grupos con repositorios simulados: grupo STUDENT del usuario, miembros, liderazgo, pertenencia, grupos supervisados por un profesor, alcance de gestión y resumen de un grupo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { GroupsFacade, type GroupMemberSummary } from "@/features/groups/application/services/groups.facade";
+import { GroupsFacade, type GroupMemberSummary, type GroupSummary } from "@/features/groups/application/services/groups.facade";
 import { buildDoubles, buildGroup, buildMember, type GroupsDoubles } from "@/features/groups/application/testing/groups-test-doubles-spec";
 import { type StudentGroupSummaryView } from "@/features/groups/domain/read-models/group.read-model";
 
@@ -25,6 +25,14 @@ function defaultDoubles(): GroupsDoubles {
 }
 
 describe("GroupsFacade", () => {
+  it("summarizes a group with its name, type and status", async () => {
+    const facade: GroupsFacade = buildFacade(defaultDoubles());
+
+    const summaries: (GroupSummary | undefined)[] = [await facade.getGroupSummary("group-1"), await facade.getGroupSummary("ghost")];
+
+    expect(summaries).toEqual([{ id: "group-1", name: "Group group-1", type: "STUDENT", isActive: true }, undefined]);
+  });
+
   it("tells whether a user leads a group", async () => {
     const facade: GroupsFacade = buildFacade(defaultDoubles());
 

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Validación de variables de entorno
- * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos)
- * Versión: 1.6
+ * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL
+ * Versión: 1.7
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Transform, Type, plainToInstance } from "class-transformer";
-import { IsBoolean, IsEmail, IsEnum, IsInt, IsJSON, IsNumber, IsOptional, IsString, IsUrl, Max, Min, type ValidationError, validateSync } from "class-validator";
+import { IsBoolean, IsEmail, IsEnum, IsInt, IsJSON, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, Max, Min, type ValidationError, validateSync } from "class-validator";
 
 export enum Environment {
   Development = "development",
@@ -296,6 +296,36 @@ export class EnvironmentVariables {
   @Max(1000)
   @Type(() => Number)
   public SIMULATION_MAX_EVENT_BATCH_SIZE: number = 200;
+
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  public RESERVATION_MAX_DURATION_MINUTES: number = 120;
+
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  @Type(() => Number)
+  public RESERVATION_SLOT_MINUTES: number = 15;
+
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  public RESERVATION_MAX_ADVANCE_DAYS: number = 14;
+
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  public RESERVATION_MAX_FUTURE_PER_STUDENT: number = 3;
+
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  public RESERVATION_MAX_FUTURE_PER_GROUP: number = 5;
+
+  @IsString()
+  @IsNotEmpty()
+  public VENTILATOR_DEVICE_ID: string = "ventilab-device-001";
 }
 
 function formatValidationErrors(errors: ValidationError[]): string {
@@ -325,4 +355,13 @@ export function validate(config: Record<string, unknown>): EnvironmentVariables 
   validatedConfig.MQTT_BROKER_URL = validatedConfig.MQTT_BROKER_URL ?? validatedConfig.MQTT_URL;
 
   return validatedConfig;
+}
+
+export interface DbIntegrationSettings {
+  enabled: boolean;
+  databaseUrl?: string;
+}
+
+export function readDbIntegrationSettings(): DbIntegrationSettings {
+  return { enabled: process.env.RUN_DB_INTEGRATION === "1", databaseUrl: process.env.DATABASE_URL };
 }

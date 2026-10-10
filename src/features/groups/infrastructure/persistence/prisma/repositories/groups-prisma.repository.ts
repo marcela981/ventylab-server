@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de grupos
  * Descripción: Implementa IGroupsRepository sobre las tablas groups, group_members y group_supervisions; las vistas leen líder, creador, grupo padre y subgrupos activos en una sola consulta y aplican el alcance del profesor; consulta el historial (miembros actuales o pasados en audit_logs, asignaciones de evaluaciones, intentos ligados al grupo por asignación o por el groupId heredado en legacy_payload, y reservas) que impide el borrado físico, y registra la auditoría del agregado
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -231,6 +231,7 @@ export class GroupsPrismaRepository implements IGroupsRepository {
         where: { OR: [{ assignment: { groupId } }, { legacyPayload: { path: ["groupId"], equals: groupId } }] },
       }),
       await client.ventilatorReservation.count({ where: { groupId } }),
+      await client.reservation.count({ where: { groupId } }),
       await client.auditLog.count({
         where: {
           entityCollection: GROUP_MEMBER_ENTITY_COLLECTION,

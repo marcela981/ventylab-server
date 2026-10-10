@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Manejadores realtime de simulación
- * Descripción: Difunden por IRealtimePublisher `ventilator:reserved` y `ventilator:released` a todos los clientes cuando se reserva o libera el ventilador físico
- * Versión: 1.0
+ * Descripción: Difunden por IRealtimePublisher `ventilator:reserved` y `ventilator:released` a todos los clientes cuando se reserva o libera el ventilador físico desde el flujo heredado, con la misma forma de payload (leaderId siempre null porque las reservas ya no tienen líder)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,17 +25,17 @@ export class SimulationRealtimeHandlers {
   @OnEvent(VentilatorReservedEvent.name)
   public handleVentilatorReserved(event: VentilatorReservedEvent): void {
     this._realtimePublisher.broadcast(VENTILATOR_RESERVED_EVENT, {
-      userId: event.entity.userId,
+      userId: event.userId,
       userName: event.holderName ?? null,
-      reservationId: event.entity.id,
-      groupId: event.entity.groupId ?? null,
-      leaderId: event.entity.leaderId ?? null,
-      endTime: event.entity.endTime.getTime(),
+      reservationId: event.reservationId,
+      groupId: event.groupId ?? null,
+      leaderId: null,
+      endTime: event.endTime.getTime(),
     });
   }
 
   @OnEvent(VentilatorReleasedEvent.name)
   public handleVentilatorReleased(event: VentilatorReleasedEvent): void {
-    this._realtimePublisher.broadcast(VENTILATOR_RELEASED_EVENT, { userId: event.entity.userId });
+    this._realtimePublisher.broadcast(VENTILATOR_RELEASED_EVENT, { userId: event.userId });
   }
 }

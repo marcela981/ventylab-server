@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Comando ReserveVentilatorCommand
- * Descripción: Intención de reservar el ventilador físico por una duración, opcionalmente para un grupo y con un líder que recibe la telemetría
- * Versión: 1.0
+ * Descripción: Intención heredada de reservar el ventilador físico desde ahora por una duración, opcionalmente para un grupo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,6 @@ export class ReserveVentilatorCommand {
   public readonly durationMinutes: number;
   public readonly purpose?: string;
   public readonly groupId?: string;
-  public readonly leaderId?: string;
 
   public constructor({
     userId,
@@ -22,20 +21,17 @@ export class ReserveVentilatorCommand {
     durationMinutes,
     purpose,
     groupId,
-    leaderId,
   }: {
     userId: string;
     userRole: string;
     durationMinutes: number;
     purpose?: string;
     groupId?: string;
-    leaderId?: string;
   }) {
     this.userId = userId;
     this.userRole = userRole;
     this.durationMinutes = durationMinutes;
     this.purpose = purpose;
     this.groupId = groupId;
-    this.leaderId = leaderId;
   }
 }

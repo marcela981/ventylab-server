@@ -1,21 +1,17 @@
 /*
  * Funcionalidad: Caché de la reserva activa
- * Descripción: Espejo en memoria de la reserva activa del dispositivo, leído en cada trama de telemetría sin consultar la base de datos; se refresca al reservar, liberar, expirar y arrancar, y expira las reservas vencidas a través del repositorio
- * Versión: 1.0
+ * Descripción: Espejo en memoria de la reserva activa leído en cada trama de telemetría sin consultar la base de datos; se alimenta de ReservationsFacade (reserva programada cuya ventana contiene el instante actual) y se refresca al reservar, liberar, al cambiar cualquier reserva, periódicamente y al vencer la reserva en caché
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
-import { SIMULATION_SETTINGS_TOKEN, type SimulationSettings } from "@/features/simulation/application/tokens/simulation-settings.token";
-import { type ActiveReservationView } from "@/features/simulation/domain/read-models/active-reservation.read-model";
-import {
-  type IVentilatorReservationsRepository,
-  VENTILATOR_RESERVATIONS_REPOSITORY_TOKEN,
-} from "@/features/simulation/domain/repositories/ventilator-reservations.repository";
+import { type ActiveReservationSummary } from "@/features/reservations/application/results/active-reservation-summary.result";
+import { ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
 
 export interface CachedReservation {
   reservationId: string;
@@ -30,12 +26,7 @@ export class ReservationCacheService {
   private readonly _logger: Logger = new Logger(ReservationCacheService.name);
   private _current: CachedReservation | undefined;
 
-  public constructor(
-    @Inject(VENTILATOR_RESERVATIONS_REPOSITORY_TOKEN)
-    private readonly _reservationsRepository: IVentilatorReservationsRepository,
-    @Inject(SIMULATION_SETTINGS_TOKEN)
-    private readonly _settings: SimulationSettings,
-  ) {}
+  public constructor(private readonly _reservationsFacade: ReservationsFacade) {}
 
   public get current(): CachedReservation | undefined {
     return this._current;
@@ -46,22 +37,25 @@ export class ReservationCacheService {
   }
 
   public async refresh(): Promise<void> {
-    const view: ActiveReservationView | undefined = await this._reservationsRepository.getActiveByDevice(this._settings.deviceId);
+    const active: ActiveReservationSummary | undefined = await this._reservationsFacade.getActiveReservation(new Date());
 
-    this._current = view
+    this._current = active
       ? {
-        reservationId: view.reservation.id,
-        userId: view.reservation.userId,
-        leaderId: view.reservation.leaderId,
-        groupId: view.reservation.groupId,
-        endTime: view.reservation.endTime.getTime(),
+        reservationId: active.id,
+        userId: active.userId ?? active.createdById,
+        groupId: active.groupId,
+        endTime: active.endsAt.getTime(),
       }
       : undefined;
   }
 
-  public async expireOverdue(): Promise<void> {
-    await this._reservationsRepository.expireOverdue(new Date());
+  public expireOverdue(): Promise<void> {
+    this._refreshInBackground();
 
+    return Promise.resolve();
+  }
+
+  public refreshInBackground(): void {
     this._refreshInBackground();
   }
 

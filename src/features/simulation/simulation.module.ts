@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo SimulationModule
  * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (caché de reserva, monitor de telemetría, pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, adaptadores MQTT e InfluxDB, ajustes desde ConfigService, manejadores realtime y ciclo de vida; exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import { AiModule } from "@/features/ai/ai.module";
 import { AuthModule } from "@/features/auth/auth.module";
 import { ClinicalCasesModule } from "@/features/clinical-cases/clinical-cases.module";
 import { GroupsModule } from "@/features/groups/groups.module";
+import { ReservationsModule } from "@/features/reservations/reservations.module";
 import { AssistSimulationUseCase } from "@/features/simulation/application/assist/assist-simulation.usecase";
 import { EXAM_ATTEMPT_READER_TOKEN } from "@/features/simulation/application/ports/exam-attempt-reader.interface";
 import { SIMULATION_SEED_GENERATOR_TOKEN } from "@/features/simulation/application/ports/simulation-seed-generator.interface";
@@ -57,10 +58,10 @@ import { StartSimulationSessionUseCase } from "@/features/simulation/application
 import { StopPatientSimulationUseCase } from "@/features/simulation/application/use-cases/stop-patient-simulation.usecase";
 import { SIMULATION_SESSIONS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/simulation-sessions.repository";
 import { SIMULATOR_SESSIONS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/simulator-sessions.repository";
-import { VENTILATOR_RESERVATIONS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/ventilator-reservations.repository";
 import { DEFAULT_VENTILATOR_DEVICE_ID } from "@/features/simulation/domain/value-objects/ventilator-telemetry";
 import { type InfluxSettings, readInfluxSettings, resolveWsMaxHz } from "@/features/simulation/infrastructure/config/simulation-config";
 import { SimulationRealtimeHandlers } from "@/features/simulation/infrastructure/events/simulation-realtime.handlers";
+import { SimulationReservationsHandlers } from "@/features/simulation/infrastructure/events/simulation-reservations.handlers";
 import { DisabledTelemetryStore } from "@/features/simulation/infrastructure/influx/disabled-telemetry.store";
 import { InfluxTelemetryStore } from "@/features/simulation/infrastructure/influx/influx-telemetry.store";
 import { SimulationLifecycleService } from "@/features/simulation/infrastructure/lifecycle/simulation-lifecycle.service";
@@ -68,7 +69,6 @@ import { MqttVentilatorDeviceGateway } from "@/features/simulation/infrastructur
 import { ExamAttemptsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/exam-attempts-prisma.repository";
 import { SimulationSessionsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/simulation-sessions-prisma.repository";
 import { SimulatorSessionsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/simulator-sessions-prisma.repository";
-import { VentilatorReservationsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/ventilator-reservations-prisma.repository";
 import { CryptoSimulationSeedGenerator } from "@/features/simulation/infrastructure/random/crypto-simulation-seed.generator";
 import { ClinicalCaseTestRunController } from "@/features/simulation/presentation/controllers/clinical-case-test-run.controller";
 import { PatientSimulationController } from "@/features/simulation/presentation/controllers/patient-simulation.controller";
@@ -104,7 +104,7 @@ function createTelemetryStore(configService: ConfigService<EnvironmentVariables>
 }
 
 @Module({
-  imports: [AuthModule, AiModule, UsersModule, GroupsModule, ClinicalCasesModule],
+  imports: [AuthModule, AiModule, UsersModule, GroupsModule, ClinicalCasesModule, ReservationsModule],
   controllers: [SimulationController, PatientSimulationController, SimulationSessionsController, SimulationAssistController, ClinicalCaseTestRunController],
   providers: [
     {
@@ -125,10 +125,6 @@ function createTelemetryStore(configService: ConfigService<EnvironmentVariables>
     {
       provide: VENTILATOR_DEVICE_GATEWAY_TOKEN,
       useClass: MqttVentilatorDeviceGateway,
-    },
-    {
-      provide: VENTILATOR_RESERVATIONS_REPOSITORY_TOKEN,
-      useClass: VentilatorReservationsPrismaRepository,
     },
     {
       provide: SIMULATOR_SESSIONS_REPOSITORY_TOKEN,
@@ -163,6 +159,7 @@ function createTelemetryStore(configService: ConfigService<EnvironmentVariables>
     StopPatientSimulationUseCase,
     GetActivePatientUseCase,
     SimulationRealtimeHandlers,
+    SimulationReservationsHandlers,
     SimulationLifecycleService,
     SimulationSessionRuntime,
     SimulationSessionAccessService,
@@ -179,6 +176,6 @@ function createTelemetryStore(configService: ConfigService<EnvironmentVariables>
     SimulationAssistContextService,
     AssistSimulationUseCase,
   ],
-  exports: [VENTILATOR_RESERVATIONS_REPOSITORY_TOKEN, SIMULATOR_SESSIONS_REPOSITORY_TOKEN, SimulationFacade, SimulationAssistContextService],
+  exports: [SIMULATOR_SESSIONS_REPOSITORY_TOKEN, SimulationFacade, SimulationAssistContextService],
 })
 export class SimulationModule {}

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de solicitud de simulación
  * Descripción: Validan el comando del ventilador, la reserva (duración, propósito, grupo y líder), la apertura y el guardado de sesiones del simulador y los filtros de estado y listado de sesiones
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -41,7 +41,7 @@ export class ReserveVentilatorDTO {
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   public groupId?: string;
 
-  @ApiPropertyOptional({ description: "User who receives the telemetry; defaults to the group's simulator leader when a group is given", example: "cm5user01" })
+  @ApiPropertyOptional({ description: "Accepted for compatibility and ignored: reservations no longer designate a telemetry leader", example: "cm5user01", deprecated: true })
   @IsOptional()
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   public leaderId?: string;

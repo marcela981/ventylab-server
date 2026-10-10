@@ -1,6 +1,6 @@
 /*
- * Funcionalidad: Estado de la reserva del ventilador
- * Descripción: Valores del enum ReservationStatus de la tabla ventilator_reservations (activa, completada, cancelada, expirada) y su conversión desde la persistencia
+ * Funcionalidad: Estado de la reserva
+ * Descripción: Valores del enum ReservationLifecycleStatus (programada, cancelada, desplazada, completada) y su conversión desde la persistencia
  * Versión: 1.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -10,18 +10,18 @@
  */
 import { InvalidValueObjectError } from "@/common/domain/errors/invalid-value-object.error";
 
-export type ReservationStatusValue = "ACTIVE" | "COMPLETED" | "CANCELLED" | "EXPIRED";
+export type ReservationStatusValue = "SCHEDULED" | "CANCELLED" | "PREEMPTED" | "COMPLETED";
 
-export const ACTIVE_RESERVATION_STATUS: ReservationStatusValue = "ACTIVE";
-export const COMPLETED_RESERVATION_STATUS: ReservationStatusValue = "COMPLETED";
+export const SCHEDULED_RESERVATION_STATUS: ReservationStatusValue = "SCHEDULED";
 export const CANCELLED_RESERVATION_STATUS: ReservationStatusValue = "CANCELLED";
-export const EXPIRED_RESERVATION_STATUS: ReservationStatusValue = "EXPIRED";
+export const PREEMPTED_RESERVATION_STATUS: ReservationStatusValue = "PREEMPTED";
+export const COMPLETED_RESERVATION_STATUS: ReservationStatusValue = "COMPLETED";
 
 export const RESERVATION_STATUS_VALUES: readonly ReservationStatusValue[] = [
-  ACTIVE_RESERVATION_STATUS,
-  COMPLETED_RESERVATION_STATUS,
+  SCHEDULED_RESERVATION_STATUS,
   CANCELLED_RESERVATION_STATUS,
-  EXPIRED_RESERVATION_STATUS,
+  PREEMPTED_RESERVATION_STATUS,
+  COMPLETED_RESERVATION_STATUS,
 ] as const;
 
 export function toReservationStatus(value: string): ReservationStatusValue {

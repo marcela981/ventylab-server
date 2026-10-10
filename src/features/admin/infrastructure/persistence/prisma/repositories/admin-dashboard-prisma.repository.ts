@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de lectura del panel de administración
- * Descripción: Modelo de lectura que agrega en consultas directas tablas de varias features (users, group_members, groups, user_progress, lesson_completions, lessons, modules, evaluation_attempts, student_evaluation_attempts de evaluaciones QUIZ en lugar de la tabla congelada quiz_attempts, simulator_sessions, scores, clinical_cases y ventilator_reservations), igual que el servicio de administración original; no escribe en ninguna
- * Versión: 1.1
+ * Descripción: Modelo de lectura que agrega en consultas directas tablas de varias features (users, group_members, groups, user_progress, lesson_completions, lessons, modules, evaluation_attempts, student_evaluation_attempts de evaluaciones QUIZ en lugar de la tabla congelada quiz_attempts, simulator_sessions, scores, clinical_cases y reservations, cuya reserva activa se deriva de la ventana SCHEDULED vigente), igual que el servicio de administración original; no escribe en ninguna
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Injectable } from "@nestjs/common";
-import { type Prisma, ReservationStatus } from "@prisma/client";
+import { type Prisma, ReservationLifecycleStatus } from "@prisma/client";
 
 import { Paginated } from "@/common/domain/utils/paginated";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
@@ -33,7 +33,7 @@ import { type QuizAttemptRow } from "@/features/quizzes/infrastructure/persisten
 
 const TEACHER_MEMBER_ROLE: string = "TEACHER";
 const STUDENT_MEMBER_ROLE: string = "STUDENT";
-const ACTIVE_RESERVATION_STATUS: ReservationStatus = ReservationStatus.ACTIVE;
+const ACTIVE_RESERVATION_STATUS: ReservationLifecycleStatus = ReservationLifecycleStatus.SCHEDULED;
 const RECENT_COMPLETIONS_LIMIT: number = 10;
 const LESSON_COMPLETIONS_LIMIT: number = 50;
 const QUIZ_ATTEMPTS_LIMIT: number = 30;
@@ -318,6 +318,8 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
   }
 
   public async getPlatformCounts(todayStart: Date, activeSince: Date): Promise<PlatformCounts> {
+    const now: Date = new Date();
+
     const [
       totalStudents,
       totalTeachers,
@@ -343,9 +345,10 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
       this._prisma.clinicalCase.count({ where: { isActive: true } }),
       this._prisma.simulatorSession.count(),
       this._prisma.lessonCompletion.count({ where: { isCompleted: true, completedAt: { gte: todayStart } } }),
-      this._prisma.ventilatorReservation.findFirst({
-        where: { status: ACTIVE_RESERVATION_STATUS },
-        select: { userId: true, groupId: true, leaderId: true },
+      this._prisma.reservation.findFirst({
+        where: { status: ACTIVE_RESERVATION_STATUS, startsAt: { lte: now }, endsAt: { gt: now } },
+        orderBy: { startsAt: "asc" },
+        select: { userId: true, groupId: true, createdById: true },
       }),
       this._prisma.user.count({ where: { role: "STUDENT", userProgress: { some: { lastAccessedAt: { gte: activeSince } } } } }),
       this._prisma.user.count({ where: { role: "STUDENT", userProgress: { some: { isModuleCompleted: true } } } }),
@@ -379,9 +382,9 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
       })),
       activeReservation: activeReservation
         ? {
-          userId: activeReservation.userId,
+          userId: activeReservation.userId ?? activeReservation.createdById,
           groupId: activeReservation.groupId ?? undefined,
-          leaderId: activeReservation.leaderId ?? undefined,
+          leaderId: undefined,
         }
         : undefined,
     };

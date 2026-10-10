@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de simulación
  * Descripción: Endpoints /api/simulation: salud pública del módulo, estado del ventilador, envío de comandos (simulación sintética o ventilador físico), reserva y liberación, apertura y guardado de sesiones y listado de sesiones del usuario
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -143,14 +143,14 @@ export class SimulationController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Reserve ventilator",
-    description: "Reserves the physical ventilator; returns the caller's existing reservation when they already hold it. With a group, the leader defaults to the group's simulator leader",
+    description: "Reserves the physical ventilator from now on through the reservations feature; returns the caller's existing reservation when they already hold it. A group the caller cannot reserve for falls back to a reservation for the caller",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Ventilator reserved or reservation recovered", type: ReservationDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
-  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Group or leader not found" })
-  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "Ventilator already reserved by another user" })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Duration longer than the maximum reservation length" })
+  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "Ventilator already reserved by another holder" })
   public async reserve(
     @Body() dto: ReserveVentilatorDTO,
     @CurrentUser() currentUser: JwtPayload,
@@ -163,7 +163,6 @@ export class SimulationController {
         durationMinutes: dto.durationMinutes,
         purpose: dto.purpose,
         groupId: dto.groupId,
-        leaderId: dto.leaderId,
       }),
     );
 
@@ -178,13 +177,13 @@ export class SimulationController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions("simulation:control")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Release ventilator", description: "Releases the caller's active reservation" })
+  @ApiOperation({ summary: "Release ventilator", description: "Releases the active reservation when the caller holds it, created it, leads or supervises its group, or is an admin" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Reservation released" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "No active reservation" })
   public async release(@CurrentUser() currentUser: JwtPayload, @I18n() i18n: I18nContext): Promise<APIResponse<null>> {
-    await this._releaseVentilatorUseCase.execute(currentUser.sub);
+    await this._releaseVentilatorUseCase.execute(currentUser.sub, currentUser.role);
 
     return new APIResponseBuilder<null>()
       .setMessage(await i18n.t("simulation.reservation_released"))
