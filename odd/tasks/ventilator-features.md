@@ -93,6 +93,11 @@ Allowed dependencies:
 - [x] T4 UPPAAL property tests + docs (audit report, traceability, open questions, verification
       evidence) + bounded telemetry buffer (`VENTILATOR_MAX_BUFFERED_FRAMES`, UPPAAL S8).
       Route: delegated (writer trigger: 2 specs + 9 source files + 6 docs + skills).
+- [x] T5 verification fixes F1–F9 (control take compare-and-set, control state visibility, late
+      events after the room is rebuilt, early ACK before PUBACK, shutdown flush before Prisma
+      disconnects, legacy reserve-now limits, sequence reorder/wrap, independent S2/SM1 oracle,
+      test topic prefix validation) + pre-existing follow-ups listed in OPEN-QUESTIONS.md.
+      Route: delegated (writer trigger: ~35 source/spec files + 4 docs).
 
 ## Checks per task
 `npx tsc --noEmit`; `npx jest <feature>`; `npx madge --circular --extensions ts src`;
@@ -134,3 +139,13 @@ mqttx bench against a broker, physical ventilator tests.
   Requirement status (AUDIT.md): 43 implemented, 10 partial, 4 not implemented.
   Pending (author): review/commit T4, apply the migration (MIGRATION.md), manual checks
   (VERIFICATION.md), `.env.example` changes (README.md), RDD review per feature commit slice.
+- T5 done (delegated writer, uncommitted, base `7853683`). Evidence in VERIFICATION.md item 19:
+  tsc 0 errors; jest reservations+telemetry+commands+simulation 48 suites / 441 tests; full jest
+  1359/1360 (same engine-determinism load flake, passes alone 3/3); eslint clean on changed dirs;
+  madge 0 cycles; `mqtt.connect` 1; header grep empty. RED observed before the fix for F1, F2, F3,
+  F4 (early ACK/APPLIED), F6, F7 and F9 (reader); F8 shown by a mutation check (validator PEEP cap
+  20 -> S2/SM1 fails). F5 deviates from the suggested hook: the flush runs in `onModuleDestroy`
+  because Nest calls `beforeApplicationShutdown` after the global `DatabaseModule` already
+  disconnected Prisma. New env vars `VENTILATOR_SEQ_REORDER_WINDOW` (16) and
+  `VENTILATOR_SEQ_WRAP_BITS` (0) need `.env.example` entries (outside the T5 edit surface).
+  Pre-existing follow-ups: OPEN-QUESTIONS.md items 25–33.

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Propiedades UPPAAL del camino de comandos
- * Descripción: Contrasta la implementación con las consultas del modelo ventilab-commands-uppaal.xml (S2/SM1, S6/P1, S7/P2, L1, L2, S3, R1, R2, R3) mediante pruebas ejecutables sobre los servicios reales con dobles en memoria; las propiedades de seguridad usan un generador pseudoaleatorio con semilla sobre miles de comandos y actores. No sustituye a verifyta: es evidencia de prueba, no una verificación de modelos
- * Versión: 1.0
+ * Descripción: Contrasta la implementación con las consultas del modelo ventilab-commands-uppaal.xml (S2/SM1, S6/P1, S7/P2, L1, L2, S3, R1, R2, R3) mediante pruebas ejecutables sobre los servicios reales con dobles en memoria; las propiedades de seguridad usan un generador pseudoaleatorio con semilla sobre miles de comandos y actores, y S2/SM1 contrasta cada publicación con un oráculo independiente de límites numéricos escritos como literales en la prueba. No sustituye a verifyta: es evidencia de prueba, no una verificación de modelos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -101,6 +101,82 @@ function randomCommand(random: Random): Record<string, unknown> {
   return command;
 }
 
+// Independent oracle: the shared parameter ranges and the test safety caps (VENTILATOR_SAFETY_MAX_*) written as literals, so a bug in the validator cannot also hide in the oracle
+const ORACLE_MODES: readonly string[] = ["VCV", "PCV", "SIMV", "PSV"];
+const ORACLE_REQUIRED: Readonly<Record<string, readonly string[]>> = {
+  VCV: ["tidalVolume", "respiratoryRate", "peep", "fio2"],
+  PCV: ["pressureLimit", "respiratoryRate", "peep", "fio2", "inspiratoryTime"],
+  SIMV: ["tidalVolume", "respiratoryRate", "peep", "fio2"],
+  PSV: ["pressureLimit", "peep", "fio2"],
+};
+const ORACLE_BOUNDS: Readonly<Record<string, readonly [number, number]>> = {
+  tidalVolume: [200, 700],
+  respiratoryRate: [5, 35],
+  peep: [0, 15],
+  fio2: [0.21, 1],
+  pressureLimit: [10, 40],
+  inspiratoryTime: [0.5, 3],
+  flowRate: [20, 100],
+  sensitivity: [0.5, 10],
+};
+const ORACLE_MAX_IE_RATIO: number = 1;
+const ORACLE_MIN_EXPIRATORY_TIME_S: number = 0.3;
+const ORACLE_EPSILON: number = 1e-9;
+
+function oracleIeRatio(value: unknown): number {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  const match: RegExpExecArray | null = typeof value === "string" ? /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(value) : null;
+
+  return match ? Number(match[1]) / Number(match[2]) : Number.NaN;
+}
+
+function isSafeByIndependentOracle(payload: Record<string, unknown>): boolean {
+  const mode: unknown = payload.mode;
+
+  if (typeof mode !== "string" || !ORACLE_MODES.includes(mode)) {
+    return false;
+  }
+
+  if (ORACLE_REQUIRED[mode].some((field: string): boolean => payload[field] === undefined || payload[field] === null)) {
+    return false;
+  }
+
+  for (const [field, [min, max]] of Object.entries(ORACLE_BOUNDS)) {
+    const value: unknown = payload[field];
+
+    if (value === undefined) {
+      continue;
+    }
+
+    if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max) {
+      return false;
+    }
+  }
+
+  if (payload.ieRatio !== undefined) {
+    const ieRatio: number = oracleIeRatio(payload.ieRatio);
+
+    if (!(ieRatio > 0 && ieRatio <= ORACLE_MAX_IE_RATIO + ORACLE_EPSILON)) {
+      return false;
+    }
+  }
+
+  const { respiratoryRate, inspiratoryTime, pressureLimit, peep } = payload as Record<string, number | undefined>;
+
+  if (respiratoryRate !== undefined && inspiratoryTime !== undefined) {
+    const expiratoryTime: number = 60 / respiratoryRate - inspiratoryTime;
+
+    if (expiratoryTime < ORACLE_MIN_EXPIRATORY_TIME_S || inspiratoryTime / expiratoryTime > ORACLE_MAX_IE_RATIO + ORACLE_EPSILON) {
+      return false;
+    }
+  }
+
+  return pressureLimit === undefined || peep === undefined || pressureLimit > peep;
+}
+
 async function operatorHarness(overrides: Parameters<typeof createVentilatorCommandsHarness>[0] = {}): Promise<VentilatorCommandsHarness> {
   const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness(overrides);
 
@@ -151,9 +227,39 @@ describe("UPPAAL commands model properties", () => {
       expect(rejected).toBeGreaterThan(accepted);
 
       for (const published of harness.mqtt.publishes) {
+        const payload: Record<string, unknown> = JSON.parse(String(published.payload)) as Record<string, unknown>;
+
         expect(published.topic.startsWith(`${TEST_TOPIC_PREFIX}/`)).toBe(true);
-        expect(validateVentilatorCommand(JSON.parse(String(published.payload)), harness.settings.safety).valid).toBe(true);
+        expect(validateVentilatorCommand(payload, harness.settings.safety).valid).toBe(true);
+        expect({ payload, safe: isSafeByIndependentOracle(payload) }).toEqual({ payload, safe: true });
       }
+    });
+
+    it("the independent oracle rejects values beyond the literal shared ranges and safety caps", () => {
+      const unsafe: Record<string, unknown>[] = [
+        { ...VALID_COMMAND, peep: 40 },
+        { ...VALID_COMMAND, peep: 16 },
+        { ...VALID_COMMAND, tidalVolume: 790 },
+        { ...VALID_COMMAND, respiratoryRate: 38 },
+        { ...VALID_COMMAND, fio2: 1.2 },
+        { ...VALID_COMMAND, mode: "CPAP" },
+        { mode: "PCV", pressureLimit: 45, respiratoryRate: 14, peep: 5, fio2: 0.4, inspiratoryTime: 1 },
+        { mode: "PCV", pressureLimit: 20, respiratoryRate: 30, peep: 5, fio2: 0.4, inspiratoryTime: 1.5 },
+        { ...VALID_COMMAND, ieRatio: "2:1" },
+      ];
+
+      expect(isSafeByIndependentOracle({ ...VALID_COMMAND, correlationId: "x" })).toBe(true);
+      expect(unsafe.filter((command: Record<string, unknown>): boolean => isSafeByIndependentOracle(command))).toEqual([]);
+    });
+
+    it("never publishes a command the independent oracle rejects, even when it is hand-written to be dangerous", async () => {
+      const harness: VentilatorCommandsHarness = await operatorHarness({ VENTILATOR_COMMAND_RATE_PER_SECOND: 100 });
+
+      for (const command of [{ ...VALID_COMMAND, peep: 40 }, { ...VALID_COMMAND, tidalVolume: 790 }, { ...VALID_COMMAND, respiratoryRate: 38 }]) {
+        await send(harness, "student-1", "STUDENT", command);
+      }
+
+      expect(harness.mqtt.publishes).toHaveLength(0);
     });
   });
 

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Casos de uso del control exclusivo del ventilador
- * Descripción: Consultar el estado del control para quien pregunta, tomar el control libre, arrebatarlo (líder del grupo titular, docente o administrador, con registro de auditoría), liberarlo (operador, docente o administrador) y renovar la presencia del operador con un latido
- * Versión: 1.0
+ * Descripción: Consultar el estado del control para quien pregunta (sin identificadores para quien no es titular, docente ni administrador), tomar el control libre, arrebatarlo (ambos con comparación del estado leído para no pisar un cambio concurrente) (líder del grupo titular, docente o administrador, con registro de auditoría), liberarlo (operador, docente o administrador) y renovar la presencia del operador con un latido
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,7 +15,7 @@ import { type ActiveReservationSummary } from "@/features/reservations/applicati
 import { ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
 import { type VentilatorControlCommand } from "@/features/ventilator-commands/application/commands/ventilator-commands.commands";
 import { VentilatorControlStateResult } from "@/features/ventilator-commands/application/results/ventilator-commands.results";
-import { type OperatorControlSnapshot, OperatorControlService } from "@/features/ventilator-commands/application/services/operator-control.service";
+import { type ControlAssignReason, type OperatorControlSnapshot, OperatorControlService } from "@/features/ventilator-commands/application/services/operator-control.service";
 import {
   canReleaseControl,
   type ControlDecision,
@@ -57,9 +57,10 @@ export class GetVentilatorControlUseCase {
 
   public async execute(command: VentilatorControlCommand): Promise<VentilatorControlStateResult> {
     const { active, operator }: ControlContext = await loadControlContext(this._reservationsFacade, this._operatorControl);
+    const privileged: boolean = isPrivilegedVentilatorRole(command.role);
 
     if (!active) {
-      return new VentilatorControlStateResult({ isOperator: false, canTake: false, canTakeover: false });
+      return new VentilatorControlStateResult({ isOperator: false, canTake: false, canTakeover: false, occupied: false, restricted: !privileged });
     }
 
     const [isHolder, leadsHolderGroup]: [boolean, boolean] = await Promise.all([
@@ -75,15 +76,25 @@ export class GetVentilatorControlUseCase {
       currentOperatorUserId: operator?.operatorUserId,
     };
 
+    const isOperator: boolean = operator?.operatorUserId === command.userId;
+    const canTake: boolean = decideControlRequest("take", facts) === "take";
+    const canTakeover: boolean = decideControlRequest("takeover", facts) === "takeover";
+
+    if (!privileged && !isHolder && !leadsHolderGroup) {
+      return new VentilatorControlStateResult({ isOperator, canTake, canTakeover, occupied: true, restricted: true });
+    }
+
     return new VentilatorControlStateResult({
       reservationId: active.id,
       operatorUserId: operator?.operatorUserId,
       since: operator?.since,
       lastSeenAt: operator?.lastSeenAt,
       presenceExpiresAt: operator?.presenceExpiresAt,
-      isOperator: operator?.operatorUserId === command.userId,
-      canTake: decideControlRequest("take", facts) === "take",
-      canTakeover: decideControlRequest("takeover", facts) === "takeover",
+      isOperator,
+      canTake,
+      canTakeover,
+      occupied: true,
+      restricted: false,
     });
   }
 }
@@ -91,7 +102,7 @@ export class GetVentilatorControlUseCase {
 /**
  * @throws {NoActiveVentilatorReservationError} If no reservation is active now
  * @throws {NotReservationHolderError} If the caller is neither a holder of the active reservation nor a teacher or administrator
- * @throws {VentilatorControlLockedError} If another operator holds the control and the caller may not take it over
+ * @throws {VentilatorControlLockedError} If another operator holds the control and the caller may not take it over, or the control changed while the request was being checked
  */
 @Injectable()
 export class TakeVentilatorControlUseCase {
@@ -133,12 +144,19 @@ export class TakeVentilatorControlUseCase {
 
         return;
       case "take":
-        this._operatorControl.assign(active.id, command.userId, "taken");
+        this._assignOrLock(active.id, command.userId, "taken", operator);
 
         return;
       case "takeover":
-        this._operatorControl.assign(active.id, command.userId, "takeover");
+        this._assignOrLock(active.id, command.userId, "takeover", operator);
         await this._auditTakeover(command.userId, active.id, operator?.operatorUserId);
+    }
+  }
+
+  // The holder checks above are awaited, so another take may have changed the control meanwhile
+  private _assignOrLock(reservationId: string, userId: string, reason: ControlAssignReason, expected: OperatorControlSnapshot | undefined): void {
+    if (!this._operatorControl.assign(reservationId, userId, reason, expected)) {
+      throw new VentilatorControlLockedError();
     }
   }
 

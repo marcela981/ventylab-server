@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la grabación de telemetría
  * Descripción: Verifica el submuestreo a VENTILATOR_RECORDING_HZ, que la escritura del fragmento cada VENTILATOR_RECORDING_FLUSH_SECONDS no se espere en el camino caliente, la detención automática cuando cambia la reserva activa y la lectura de la grabación ordenada con autorización por titularidad o rol
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -98,6 +98,48 @@ describe("TelemetryRecorderService", () => {
     recorder.stopUnlessReservation(undefined);
 
     expect(stillActive).toBe(true);
+    expect(recorder.status.active).toBe(false);
+  });
+
+  it("waits on shutdown until the last chunk is saved", async () => {
+    const clock: FakeTelemetryClock = new FakeTelemetryClock();
+    const repository: InMemoryTelemetryChunksRepository = new InMemoryTelemetryChunksRepository();
+    const recorder: TelemetryRecorderService = new TelemetryRecorderService(buildTelemetrySettings(), repository, new JsonTelemetryChunkCodec(), clock);
+    let releaseSave: () => void = (): void => undefined;
+
+    repository.pendingSave = new Promise<void>((resolve: () => void): void => {
+      releaseSave = resolve;
+    });
+    recorder.start("reservation-1");
+    recorder.offer(frame(clock.nowMs, 1));
+
+    const flushing: Promise<boolean> = recorder.stopAndFlush(2000);
+
+    await flushMicrotasks();
+    const savedBeforeRelease: number = repository.chunks.length;
+
+    releaseSave();
+
+    expect(await flushing).toBe(true);
+    expect(savedBeforeRelease).toBe(0);
+    expect(repository.chunks).toHaveLength(1);
+  });
+
+  it("gives up waiting for a stuck chunk write after the shutdown timeout", async () => {
+    jest.useFakeTimers();
+    const clock: FakeTelemetryClock = new FakeTelemetryClock();
+    const repository: InMemoryTelemetryChunksRepository = new InMemoryTelemetryChunksRepository();
+    const recorder: TelemetryRecorderService = new TelemetryRecorderService(buildTelemetrySettings(), repository, new JsonTelemetryChunkCodec(), clock);
+
+    repository.pendingSave = new Promise<void>((): void => undefined);
+    recorder.start("reservation-1");
+    recorder.offer(frame(clock.nowMs, 1));
+
+    const flushing: Promise<boolean> = recorder.stopAndFlush(2000);
+
+    await jest.advanceTimersByTimeAsync(2000);
+
+    expect(await flushing).toBe(false);
     expect(recorder.status.active).toBe(false);
   });
 });

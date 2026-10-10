@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del control exclusivo del ventilador
  * Descripción: Verifica tomar, bloquear (423), arrebatar con auditoría, liberar, el latido, la gracia de presencia al cerrar el último socket (expira o se cancela al reconectar o con ventilator:heartbeat), la revocación por reserva desplazada, cancelada, completada o vencida en el refresco periódico, los eventos ventilator:control-changed y que ninguno de esos caminos publique un comando
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,11 +28,18 @@ import {
   NotVentilatorOperatorError,
   VentilatorControlLockedError,
 } from "@/features/ventilator-commands/domain/ventilator-commands.errors";
+import { VentilatorCommandsMapper } from "@/features/ventilator-commands/presentation/mappers/ventilator-commands.mapper";
 
 const WINDOW: { startsAt: Date; endsAt: Date } = { startsAt: RESERVATION.startsAt, endsAt: RESERVATION.endsAt };
 
 function actor(userId: string, role: string = "STUDENT"): VentilatorControlCommand {
   return new VentilatorControlCommand({ userId, role });
+}
+
+async function flushMicrotasks(): Promise<void> {
+  for (let index: number = 0; index < 20; index++) {
+    await Promise.resolve();
+  }
 }
 
 function controlChanges(harness: VentilatorCommandsHarness): string[] {
@@ -241,7 +248,127 @@ describe("exclusive ventilator control", () => {
     harness.control.stop();
 
     expect(harness.control.state).toBeUndefined();
-    expect(controlChanges(harness)).toEqual(["taken:student-1", "reservation_ended:none"]);
+    expect(controlChanges(harness)).toEqual(["taken:student-1"]);
+    expect(harness.realtime.payloadsOf<VentilatorControlChangedPayload>(VENTILATOR_CONTROL_CHANGED_EVENT, "user:student-1")).toEqual([
+      { reservationId: RESERVATION.id, operatorUserId: null, reason: "reservation_ended" },
+    ]);
     expect(harness.mqtt.publishes).toHaveLength(0);
+  });
+
+  describe("concurrent take requests (compare-and-set)", () => {
+    function gateHolderChecks(harness: VentilatorCommandsHarness): () => void {
+      let open: () => void = (): void => undefined;
+
+      harness.reservations.holderGate = new Promise<void>((resolve: () => void): void => {
+        open = resolve;
+      });
+
+      return (): void => {
+        harness.reservations.holderGate = undefined;
+        open();
+      };
+    }
+
+    it("refuses a student take with 423 when a teacher takes over while the holder check is pending", async () => {
+      const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness();
+
+      harness.reservations.activate(RESERVATION, ["student-1"]);
+      const openGate: () => void = gateHolderChecks(harness);
+
+      const studentTake: Promise<unknown> = harness.takeControl.execute(actor("student-1"), "take").catch((error: unknown): unknown => error);
+
+      await flushMicrotasks();
+      await harness.takeControl.execute(actor("teacher-1", "TEACHER"), "takeover");
+      openGate();
+
+      expect(await studentTake).toBeInstanceOf(VentilatorControlLockedError);
+      expect(harness.control.state?.operatorUserId).toBe("teacher-1");
+      expect(controlChanges(harness)).toEqual(["taken:teacher-1"]);
+    });
+
+    it("lets only one of two concurrent takes by holders succeed", async () => {
+      const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness();
+
+      harness.reservations.activate(RESERVATION, ["student-1", "student-2"]);
+      const openGate: () => void = gateHolderChecks(harness);
+
+      const first: Promise<unknown> = harness.takeControl.execute(actor("student-1"), "take").catch((error: unknown): unknown => error);
+      const second: Promise<unknown> = harness.takeControl.execute(actor("student-2"), "take").catch((error: unknown): unknown => error);
+
+      await flushMicrotasks();
+      openGate();
+
+      const outcomes: unknown[] = await Promise.all([first, second]);
+
+      expect(outcomes[0]).toBeUndefined();
+      expect(outcomes[1]).toBeInstanceOf(VentilatorControlLockedError);
+      expect(harness.control.state?.operatorUserId).toBe("student-1");
+      expect(controlChanges(harness)).toEqual(["taken:student-1"]);
+    });
+
+    it("refuses a leader takeover with 423 when the operator changed while the leadership check was pending", async () => {
+      const harness: VentilatorCommandsHarness = await heldBy("student-1");
+      const openGate: () => void = gateHolderChecks(harness);
+
+      const leaderTakeover: Promise<unknown> = harness.takeControl.execute(actor("leader-1"), "takeover").catch((error: unknown): unknown => error);
+
+      await flushMicrotasks();
+      await harness.takeControl.execute(actor("teacher-1", "TEACHER"), "takeover");
+      openGate();
+
+      expect(await leaderTakeover).toBeInstanceOf(VentilatorControlLockedError);
+      expect(harness.control.state?.operatorUserId).toBe("teacher-1");
+      expect(harness.audit.records.map((record: { actorId: string | undefined }): string | undefined => record.actorId)).toEqual(["teacher-1"]);
+    });
+  });
+
+  describe("control state visibility", () => {
+    it("shows a student who is not a holder only whether the ventilator is occupied, without identifiers", async () => {
+      const harness: VentilatorCommandsHarness = await heldBy("student-1");
+
+      const result: VentilatorControlStateResult = await harness.getControl.execute(actor("intruder"));
+      const json: string = JSON.stringify(VentilatorCommandsMapper.toControlStateDTO(result));
+
+      expect(JSON.parse(json)).toEqual({ isOperator: false, canTake: false, canTakeover: false, occupied: true });
+      expect(json).not.toContain("student-1");
+      expect(json).not.toContain(RESERVATION.id);
+    });
+
+    it("tells a student who is not a holder that the ventilator is free when no reservation is active", async () => {
+      const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness();
+
+      const result: VentilatorControlStateResult = await harness.getControl.execute(actor("intruder"));
+
+      expect(JSON.parse(JSON.stringify(VentilatorCommandsMapper.toControlStateDTO(result)))).toEqual({ isOperator: false, canTake: false, canTakeover: false, occupied: false });
+    });
+
+    it.each([
+      ["a holder", "student-2", "STUDENT"],
+      ["a teacher", "teacher-1", "TEACHER"],
+      ["an administrator", "admin-1", "ADMIN"],
+    ])("shows %s the reservation and the operator", async (_name: string, userId: string, role: string) => {
+      const harness: VentilatorCommandsHarness = await heldBy("student-1");
+
+      const result: VentilatorControlStateResult = await harness.getControl.execute(actor(userId, role));
+
+      expect(VentilatorCommandsMapper.toControlStateDTO(result)).toMatchObject({ reservationId: RESERVATION.id, operatorUserId: "student-1", occupied: true });
+    });
+  });
+
+  describe("events of a reservation that is no longer the ventilator room's", () => {
+    it("announces the revocation only to the previous operator, teachers and administrators once the room belongs to the next reservation", async () => {
+      jest.useFakeTimers({ now: new Date("2026-10-10T12:10:00Z") });
+      const harness: VentilatorCommandsHarness = await heldBy("student-1");
+
+      harness.realtime.roomEmits.length = 0;
+      harness.reservations.activate(OTHER_RESERVATION, ["teacher-1"]);
+      await harness.control.refresh();
+
+      const rooms: string[] = harness.realtime.roomEmits
+        .filter((emit: { event: string }): boolean => emit.event === VENTILATOR_CONTROL_CHANGED_EVENT)
+        .map((emit: { room: string }): string => emit.room);
+
+      expect(rooms).toEqual(["user:student-1", "role:TEACHER", "role:ADMIN"]);
+    });
   });
 });

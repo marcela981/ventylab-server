@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de los comandos del ventilador
  * Descripción: Publicador en tiempo real, fachada de reservas, conexión MQTT, fachada de telemetría, repositorio en memoria y registrador de auditoría falsos, y un arnés que arma los servicios y casos de uso reales de la feature con ajustes leídos como en NODE_ENV=test (tópicos con prefijo de pruebas), para que ninguna prueba publique en el tópico real
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -109,6 +109,7 @@ export class FakeReservationsFacade {
   public readonly holders: Map<string, Set<string>> = new Map<string, Set<string>>();
   public readonly leaders: Map<string, Set<string>> = new Map<string, Set<string>>();
   public readonly reservations: Map<string, ActiveReservationSummary> = new Map<string, ActiveReservationSummary>();
+  public holderGate: Promise<void> | undefined;
 
   public activate(reservation: ActiveReservationSummary, holderIds: string[], leaderIds: string[] = []): void {
     this.active = reservation;
@@ -126,6 +127,10 @@ export class FakeReservationsFacade {
   }
 
   public async isHolder(userId: string, reservation: ActiveReservationSummary): Promise<boolean> {
+    if (this.holderGate !== undefined) {
+      await this.holderGate;
+    }
+
     return await Promise.resolve(this.holders.get(reservation.id)?.has(userId) ?? false);
   }
 
@@ -151,18 +156,14 @@ export class FakeMqttConnection implements IMqttConnection {
   public failPublish: boolean = false;
   public readonly publishes: RecordedPublish[] = [];
   public readonly subscriptions: { topic: string; qos: MqttQos }[] = [];
+  public beforePublishResolves: ((topic: string, payload: string | Buffer) => void) | undefined;
   private readonly _messageListeners: Set<MqttMessageListener> = new Set<MqttMessageListener>();
 
   public async publish(topic: string, payload: string | Buffer, options: MqttPublishOptions): Promise<void> {
-    if (this.failPublish || !this.isConnected) {
-      const error: Error = new Error("MQTT broker is not connected");
-
-      error.name = "MqttNotConnectedError";
-
-      throw error;
-    }
-
+    this._failIfUnavailable();
     this.publishes.push({ topic, payload, options });
+    this.beforePublishResolves?.(topic, payload);
+    this._failIfUnavailable();
 
     await Promise.resolve();
   }
@@ -188,15 +189,30 @@ export class FakeMqttConnection implements IMqttConnection {
       listener(topic, Buffer.from(payload, "utf8"));
     }
   }
+
+  private _failIfUnavailable(): void {
+    if (this.failPublish || !this.isConnected) {
+      const error: Error = new Error("MQTT broker is not connected");
+
+      error.name = "MqttNotConnectedError";
+
+      throw error;
+    }
+  }
 }
 
 export class FakeTelemetryFacade {
   public deviceOnline: boolean = true;
   public readonly connection: FakeMqttConnection = new FakeMqttConnection();
+  public roomReservationResolver: () => string | undefined = (): string | undefined => undefined;
   private readonly _frameListeners: Set<(frame: TelemetryFrame) => void> = new Set<(frame: TelemetryFrame) => void>();
 
   public get mqttConnection(): IMqttConnection {
     return this.connection;
+  }
+
+  public get ventilatorRoomReservationId(): string | undefined {
+    return this.roomReservationResolver();
   }
 
   public isDeviceOnline(): boolean {
@@ -339,10 +355,11 @@ export function createVentilatorCommandsHarness(overrides: TestEnvironmentOverri
   const telemetry: FakeTelemetryFacade = new FakeTelemetryFacade();
   const repository: InMemoryVentilatorCommandsRepository = new InMemoryVentilatorCommandsRepository();
   const audit: FakeAuditRecorder = new FakeAuditRecorder();
-  const control: OperatorControlService = new OperatorControlService(reservations.asFacade(), realtime, settings);
+  const control: OperatorControlService = new OperatorControlService(reservations.asFacade(), realtime, settings, telemetry.asFacade());
   const rateLimiter: CommandRateLimiterService = new CommandRateLimiterService(settings);
   const lifecycle: CommandLifecycleService = new CommandLifecycleService(settings, repository, realtime, telemetry.asFacade());
 
+  telemetry.roomReservationResolver = (): string | undefined => reservations.active?.id;
   lifecycle.start();
 
   return {

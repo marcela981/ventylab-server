@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Ajustes de la telemetría del ventilador
- * Descripción: Ajustes resueltos desde la configuración: conexión MQTT (solo cuando MQTT_BROKER_URL está definido), tópicos, decodificador, identificador del dispositivo, intervalos de envío, máximo de tramas en el búfer de lotes, inactividad, refresco de sala, ventana de métricas, muestreo de registros de mensajes inválidos y grabación; y el token del decodificador seleccionado
- * Versión: 1.1
+ * Descripción: Ajustes resueltos desde la configuración: conexión MQTT (solo cuando MQTT_BROKER_URL está definido), tópicos, decodificador, identificador del dispositivo, intervalos de envío, máximo de tramas en el búfer de lotes, inactividad, refresco de sala, ventana de métricas, muestreo de registros de mensajes inválidos, grabación, ventana de reordenamiento y vuelta de la secuencia; y el token del decodificador seleccionado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type TelemetryDecoderName } from "@/features/ventilator-telemetry/domain/decoders/telemetry-decoder";
+import { type SequenceWrapBits } from "@/features/ventilator-telemetry/domain/services/sequence-gap-tracker";
 
 export const VENTILATOR_TELEMETRY_SETTINGS_TOKEN: unique symbol = Symbol("VENTILATOR_TELEMETRY_SETTINGS_TOKEN");
 
@@ -37,4 +38,6 @@ export interface VentilatorTelemetrySettings {
   readonly invalidLogIntervalMs: number;
   readonly recordingHz: number;
   readonly recordingFlushSeconds: number;
+  readonly sequenceReorderWindow: number;
+  readonly sequenceWrapBits: SequenceWrapBits;
 }

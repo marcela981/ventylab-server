@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso ReserveNowUseCase
- * Descripción: Reserva inmediata del flujo heredado: desde ahora por una duración (sin alinear a la franja) para el usuario o, si puede reservar para él, para su grupo; bajo el mismo bloqueo del dispositivo recupera la reserva activa del mismo usuario o informa que el ventilador está ocupado
- * Versión: 1.0
+ * Descripción: Reserva inmediata del flujo heredado: desde ahora por una duración (sin alinear a la franja) para el usuario o, si puede reservar para él, para su grupo; bajo el mismo bloqueo del dispositivo recupera la reserva activa del mismo usuario, informa que el ventilador está ocupado (también si una reserva futura del propio usuario se solapa con la ventana pedida) o aplica a estudiantes los mismos límites de reservas futuras por estudiante y por grupo que la creación programada
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { ReserveNowCommand } from "@/features/reservations/application/commands/
 import { type IReservationClock, RESERVATION_CLOCK_TOKEN } from "@/features/reservations/application/ports/reservation-clock.interface";
 import { type ReserveNowResult } from "@/features/reservations/application/results/reserve-now.result";
 import { ReservationAccessService, type ResolvedGroupFacts } from "@/features/reservations/application/services/reservation-access.service";
+import { assertWithinUpcomingReservationLimits } from "@/features/reservations/application/services/upcoming-reservation-limits";
 import { RESERVATION_SETTINGS_TOKEN, type ReservationSettings } from "@/features/reservations/application/tokens/reservation-settings.token";
 import { Reservation } from "@/features/reservations/domain/entities/reservation.entity";
 import { type IReservationsRepository, RESERVATIONS_REPOSITORY_TOKEN } from "@/features/reservations/domain/repositories/reservations.repository";
@@ -37,6 +38,7 @@ type ReserveNowOutcome =
 /**
  * @throws {InvalidReservationWindowError} If the duration is not positive
  * @throws {ReservationTooLongError} If the duration exceeds the maximum
+ * @throws {ReservationLimitReachedError} If a student or a group already has the maximum number of upcoming reservations
  */
 @Injectable()
 export class ReserveNowUseCase {
@@ -74,9 +76,12 @@ export class ReserveNowUseCase {
         return { kind: "recovered", reservation: active };
       }
 
+      // Any other overlap is occupied, including a future reservation of the caller that starts inside the requested window
       if (overlapping.length > 0) {
         return { kind: "occupied" };
       }
+
+      await assertWithinUpcomingReservationLimits(this._reservationsRepository, this._settings, actor, holder, now, transaction);
 
       const reservation: Reservation = Reservation.schedule({ holder, window, createdById: actor.userId, purpose: command.purpose, now });
 

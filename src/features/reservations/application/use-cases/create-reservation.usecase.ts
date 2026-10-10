@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso CreateReservationUseCase
- * Descripción: Programa una reserva del ventilador: valida titular, permisos, franja, duración, antelación y límites; bajo pg_advisory_xact_lock del dispositivo comprueba solapamientos y, si un docente o administrador lo confirma, desplaza las reservas de estudiantes (o de cualquiera, si es administrador) en la misma transacción con auditoría, y publica los eventos tras el commit
- * Versión: 1.0
+ * Descripción: Programa una reserva del ventilador: valida titular, permisos, franja, duración, antelación y límites (compartidos con la reserva inmediata heredada); bajo pg_advisory_xact_lock del dispositivo comprueba solapamientos y, si un docente o administrador lo confirma, desplaza las reservas de estudiantes (o de cualquiera, si es administrador) en la misma transacción con auditoría, y publica los eventos tras el commit
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,6 +18,7 @@ import { CreateReservationCommand } from "@/features/reservations/application/co
 import { type IReservationClock, RESERVATION_CLOCK_TOKEN } from "@/features/reservations/application/ports/reservation-clock.interface";
 import { ReservationAccessService, type ResolvedGroupFacts } from "@/features/reservations/application/services/reservation-access.service";
 import { ReservationViewsService } from "@/features/reservations/application/services/reservation-views.service";
+import { assertWithinUpcomingReservationLimits } from "@/features/reservations/application/services/upcoming-reservation-limits";
 import { RESERVATION_SETTINGS_TOKEN, type ReservationSettings } from "@/features/reservations/application/tokens/reservation-settings.token";
 import { RESERVATION_ENTITY_TYPE, Reservation } from "@/features/reservations/domain/entities/reservation.entity";
 import { type ReservationView } from "@/features/reservations/domain/read-models/reservation.read-model";
@@ -33,10 +34,9 @@ import {
   canReserveFor,
   isPrivilegedActor,
   type ReservationActor,
-  STUDENT_ACTOR_ROLE,
   toReservationPartyRole,
 } from "@/features/reservations/domain/services/reservation-access-policy";
-import { assertBelowUpcomingLimit, assertScheduledWindowRules } from "@/features/reservations/domain/services/reservation-scheduling-rules";
+import { assertScheduledWindowRules } from "@/features/reservations/domain/services/reservation-scheduling-rules";
 import { ReservationHolder } from "@/features/reservations/domain/value-objects/reservation-holder";
 import { ReservationWindow } from "@/features/reservations/domain/value-objects/reservation-window";
 import { UsersFacade } from "@/features/users/application/services/users.facade";
@@ -93,7 +93,7 @@ export class CreateReservationUseCase {
 
     const outcome: CreationOutcome = await this._transactionManager.run(async (transaction: unknown): Promise<CreationOutcome> => {
       await this._reservationsRepository.lockDevice(this._settings.deviceId, transaction);
-      await this._assertWithinUpcomingLimits(actor, holder, now, transaction);
+      await assertWithinUpcomingReservationLimits(this._reservationsRepository, this._settings, actor, holder, now, transaction);
 
       const overlapping: Reservation[] = await this._reservationsRepository.getScheduledOverlapping(window, transaction);
 
@@ -137,22 +137,6 @@ export class CreateReservationUseCase {
       if (!user) {
         throw new ReservationHolderNotFoundError();
       }
-    }
-  }
-
-  private async _assertWithinUpcomingLimits(actor: ReservationActor, holder: ReservationHolder, now: Date, transaction: unknown): Promise<void> {
-    if (actor.role !== STUDENT_ACTOR_ROLE) {
-      return;
-    }
-
-    const userCount: number = await this._reservationsRepository.countUpcomingScheduledOfUser(actor.userId, now, transaction);
-
-    assertBelowUpcomingLimit(userCount, this._settings.maxUpcomingPerStudent);
-
-    if (holder.groupId !== undefined) {
-      const groupCount: number = await this._reservationsRepository.countUpcomingScheduledOfGroup(holder.groupId, now, transaction);
-
-      assertBelowUpcomingLimit(groupCount, this._settings.maxUpcomingPerGroup);
     }
   }
 

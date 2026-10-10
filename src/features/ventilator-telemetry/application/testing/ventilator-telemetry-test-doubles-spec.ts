@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de la telemetría del ventilador
  * Descripción: Publicador en tiempo real falso que registra las emisiones, reloj controlable, repositorio de fragmentos en memoria, códec JSON sin compresión, cliente MQTT falso y ajustes de telemetría por defecto para las pruebas unitarias (ninguno usa red)
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -211,6 +211,8 @@ export function buildTelemetrySettings(overrides: Partial<VentilatorTelemetrySet
     invalidLogIntervalMs: 5000,
     recordingHz: 20,
     recordingFlushSeconds: 5,
+    sequenceReorderWindow: 16,
+    sequenceWrapBits: 0,
     ...overrides,
   };
 }

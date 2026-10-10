@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: DTOs de respuesta de los comandos del ventilador
- * Descripción: Comando aceptado (identificador para seguir ventilator:command-status), estado del control exclusivo para quien consulta y elemento del historial de comandos de una reserva
- * Versión: 1.0
+ * Descripción: Comando aceptado (identificador para seguir ventilator:command-status), estado del control exclusivo para quien consulta (sin identificadores para quien no es titular de la reserva activa ni docente o administrador) y elemento del historial de comandos de una reserva
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 import { COMMAND_ENCODING_VALUES } from "@/features/ventilator-commands/domain/encoders/command-encoder";
 import { VENTILATOR_COMMAND_STATUS_VALUES } from "@/features/ventilator-commands/domain/value-objects/ventilator-command-status";
@@ -34,21 +34,29 @@ export class SentVentilatorCommandDTO {
   }
 }
 
+export interface VentilatorControlStateDetails {
+  readonly reservationId: string | null;
+  readonly operatorUserId: string | null;
+  readonly since: string | null;
+  readonly lastSeenAt: string | null;
+  readonly presenceExpiresAt: string | null;
+}
+
 export class VentilatorControlStateDTO {
-  @ApiProperty({ description: "Active reservation, null when the ventilator is free", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e70", nullable: true, type: String })
-  public reservationId: string | null;
+  @ApiPropertyOptional({ description: "Active reservation, null when the ventilator is free; omitted for students who are not holders of the active reservation", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e70", nullable: true, type: String })
+  public reservationId?: string | null;
 
-  @ApiProperty({ description: "Current operator, null when nobody controls the ventilator", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e71", nullable: true, type: String })
-  public operatorUserId: string | null;
+  @ApiPropertyOptional({ description: "Current operator, null when nobody controls the ventilator; omitted for students who are not holders of the active reservation", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e71", nullable: true, type: String })
+  public operatorUserId?: string | null;
 
-  @ApiProperty({ description: "When the operator took control (ISO 8601)", example: "2026-10-10T12:00:00.000Z", nullable: true, type: String })
-  public since: string | null;
+  @ApiPropertyOptional({ description: "When the operator took control (ISO 8601); omitted for students who are not holders of the active reservation", example: "2026-10-10T12:00:00.000Z", nullable: true, type: String })
+  public since?: string | null;
 
-  @ApiProperty({ description: "Last presence signal of the operator (ISO 8601)", example: "2026-10-10T12:05:00.000Z", nullable: true, type: String })
-  public lastSeenAt: string | null;
+  @ApiPropertyOptional({ description: "Last presence signal of the operator (ISO 8601); omitted for students who are not holders of the active reservation", example: "2026-10-10T12:05:00.000Z", nullable: true, type: String })
+  public lastSeenAt?: string | null;
 
-  @ApiProperty({ description: "When control is released if the operator does not reconnect (ISO 8601)", example: "2026-10-10T12:05:15.000Z", nullable: true, type: String })
-  public presenceExpiresAt: string | null;
+  @ApiPropertyOptional({ description: "When control is released if the operator does not reconnect (ISO 8601); omitted for students who are not holders of the active reservation", example: "2026-10-10T12:05:15.000Z", nullable: true, type: String })
+  public presenceExpiresAt?: string | null;
 
   @ApiProperty({ description: "Whether the caller is the operator", example: false })
   public isOperator: boolean;
@@ -59,24 +67,22 @@ export class VentilatorControlStateDTO {
   @ApiProperty({ description: "Whether the caller can take over the control from the current operator", example: false })
   public canTakeover: boolean;
 
-  public constructor(init: {
-    reservationId: string | null;
-    operatorUserId: string | null;
-    since: string | null;
-    lastSeenAt: string | null;
-    presenceExpiresAt: string | null;
-    isOperator: boolean;
-    canTake: boolean;
-    canTakeover: boolean;
-  }) {
-    this.reservationId = init.reservationId;
-    this.operatorUserId = init.operatorUserId;
-    this.since = init.since;
-    this.lastSeenAt = init.lastSeenAt;
-    this.presenceExpiresAt = init.presenceExpiresAt;
+  @ApiProperty({ description: "Whether a reservation is active now", example: true })
+  public occupied: boolean;
+
+  public constructor(init: { isOperator: boolean; canTake: boolean; canTakeover: boolean; occupied: boolean; details?: VentilatorControlStateDetails }) {
+    if (init.details) {
+      this.reservationId = init.details.reservationId;
+      this.operatorUserId = init.details.operatorUserId;
+      this.since = init.details.since;
+      this.lastSeenAt = init.details.lastSeenAt;
+      this.presenceExpiresAt = init.details.presenceExpiresAt;
+    }
+
     this.isOperator = init.isOperator;
     this.canTake = init.canTake;
     this.canTakeover = init.canTakeover;
+    this.occupied = init.occupied;
   }
 }
 

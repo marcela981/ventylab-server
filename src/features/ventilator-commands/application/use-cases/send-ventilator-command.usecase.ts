@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso SendVentilatorCommandUseCase
  * Descripción: Único camino hacia el ventilador físico. En orden: reserva activa (403), titular o docente/administrador (403), operador actual (423), cubo de fichas por usuario (429), validación de dominio (422), dispositivo en línea y MQTT conectado (503, sin publicar); después codifica con la estrategia configurada, publica con QoS 1 por la conexión única de VentilatorTelemetryFacade y entrega el comando al seguimiento de su ciclo de vida
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -110,6 +110,8 @@ export class SendVentilatorCommandUseCase {
       encodedPayload: encoded.printable,
       now: new Date(),
     });
+
+    this._lifecycle.track(record);
 
     try {
       await connection.publish(this._settings.commandTopic, encoded.payload, { qos: COMMAND_QOS });

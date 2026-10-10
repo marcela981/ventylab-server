@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO de respuesta de la telemetría del ventilador
  * Descripción: Respuestas de las métricas del pipeline (tasas, contadores incluidos los descartes del búfer y resumen de percentiles por tipo de latencia), y de las tramas grabadas de una reserva
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -57,6 +57,9 @@ export class TelemetryMetricsDTO {
   @ApiProperty({ description: "Messages lost according to sequence gaps", example: 0 })
   public lostMessages: number;
 
+  @ApiProperty({ description: "Late frames that arrived within VENTILATOR_SEQ_REORDER_WINDOW of the newest sequence number", example: 0 })
+  public reorderedMessages: number;
+
   @ApiProperty({ description: "Oldest frames dropped because the batch buffer reached VENTILATOR_MAX_BUFFERED_FRAMES", example: 0 })
   public bufferDrops: number;
 
@@ -83,6 +86,7 @@ export class TelemetryMetricsDTO {
     totalMessages: number;
     invalidMessages: number;
     lostMessages: number;
+    reorderedMessages: number;
     bufferDrops: number;
     volatileEmits: number;
     processingMs: LatencySummaryDTO;
@@ -97,6 +101,7 @@ export class TelemetryMetricsDTO {
     this.totalMessages = fields.totalMessages;
     this.invalidMessages = fields.invalidMessages;
     this.lostMessages = fields.lostMessages;
+    this.reorderedMessages = fields.reorderedMessages;
     this.bufferDrops = fields.bufferDrops;
     this.volatileEmits = fields.volatileEmits;
     this.processingMs = fields.processingMs;

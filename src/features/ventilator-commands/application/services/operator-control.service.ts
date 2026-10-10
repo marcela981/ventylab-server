@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Control exclusivo del operador del ventilador
- * Descripción: Estado en memoria (una sola instancia) del operador que controla el ventilador físico {reservationId, operatorUserId, since, lastSeenAt}: asignación, arrebato, liberación, presencia con gracia VENTILATOR_OPERATOR_GRACE_SECONDS cuando el operador cierra su último socket, revocación inmediata al terminar o desplazarse la reserva y refresco periódico de la reserva activa cada VENTILATOR_CONTROL_REFRESH_MS; emite ventilator:control-changed a la sala ventilator, docentes y administradores. Nunca envía comandos al dispositivo
- * Versión: 1.0
+ * Descripción: Estado en memoria (una sola instancia) del operador que controla el ventilador físico {reservationId, operatorUserId, since, lastSeenAt}: asignación y arrebato con comparación del estado leído (compare-and-set), liberación, presencia con gracia VENTILATOR_OPERATOR_GRACE_SECONDS cuando el operador cierra su último socket, revocación inmediata al terminar o desplazarse la reserva y refresco periódico de la reserva activa cada VENTILATOR_CONTROL_REFRESH_MS; emite ventilator:control-changed a la sala ventilator, docentes y administradores (solo al operador afectado, docentes y administradores si la sala ya pertenece a otra reserva). Nunca envía comandos al dispositivo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,12 +14,13 @@ import { type IRealtimePublisher, REALTIME_PUBLISHER_TOKEN } from "@/common/appl
 import { type ActiveReservationSummary } from "@/features/reservations/application/results/active-reservation-summary.result";
 import { ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
 import {
-  VENTILATOR_COMMANDS_AUDIENCE,
   VENTILATOR_CONTROL_CHANGED_EVENT,
   type VentilatorControlChangedPayload,
   type VentilatorControlChangeReason,
+  ventilatorCommandsAudience,
 } from "@/features/ventilator-commands/application/realtime/ventilator-commands-events";
 import { VENTILATOR_COMMANDS_SETTINGS_TOKEN, type VentilatorCommandsSettings } from "@/features/ventilator-commands/application/tokens/ventilator-commands-settings.token";
+import { VentilatorTelemetryFacade } from "@/features/ventilator-telemetry/application/services/ventilator-telemetry.facade";
 
 export interface OperatorControlSnapshot {
   readonly reservationId: string;
@@ -54,6 +55,7 @@ export class OperatorControlService {
     private readonly _realtimePublisher: IRealtimePublisher,
     @Inject(VENTILATOR_COMMANDS_SETTINGS_TOKEN)
     private readonly _settings: VentilatorCommandsSettings,
+    private readonly _telemetryFacade: VentilatorTelemetryFacade,
   ) {}
 
   public get state(): OperatorControlSnapshot | undefined {
@@ -93,12 +95,18 @@ export class OperatorControlService {
     return this._state !== undefined && this._state.operatorUserId === userId && this._state.reservationId === reservationId;
   }
 
-  public assign(reservationId: string, operatorUserId: string, reason: ControlAssignReason): void {
+  public assign(reservationId: string, operatorUserId: string, reason: ControlAssignReason, expected: OperatorControlSnapshot | undefined): boolean {
+    if (!this._isUnchanged(reservationId, expected)) {
+      return false;
+    }
+
     const now: Date = new Date();
 
     this._clearGraceTimer();
     this._state = { reservationId, operatorUserId, since: now, lastSeenAt: now };
-    this._emit({ reservationId, operatorUserId, reason });
+    this._emit({ reservationId, operatorUserId, reason }, operatorUserId);
+
+    return true;
   }
 
   public release(reason: VentilatorControlChangeReason): void {
@@ -110,7 +118,7 @@ export class OperatorControlService {
 
     this._clearGraceTimer();
     this._state = undefined;
-    this._emit({ reservationId: state.reservationId, operatorUserId: null, reason });
+    this._emit({ reservationId: state.reservationId, operatorUserId: null, reason }, state.operatorUserId);
   }
 
   public revokeForReservation(reservationId: string, reason: VentilatorControlChangeReason): void {
@@ -191,8 +199,22 @@ export class OperatorControlService {
     this._presenceExpiresAt = undefined;
   }
 
-  private _emit(payload: VentilatorControlChangedPayload): void {
-    for (const room of VENTILATOR_COMMANDS_AUDIENCE) {
+  private _isUnchanged(reservationId: string, expected: OperatorControlSnapshot | undefined): boolean {
+    const state: ControlState | undefined = this._state;
+
+    if (this._activeReservation !== undefined && this._activeReservation.id !== reservationId) {
+      return false;
+    }
+
+    if (!state || !expected) {
+      return state === undefined && expected === undefined;
+    }
+
+    return state.reservationId === expected.reservationId && state.operatorUserId === expected.operatorUserId && state.since.getTime() === expected.since.getTime();
+  }
+
+  private _emit(payload: VentilatorControlChangedPayload, userId: string): void {
+    for (const room of ventilatorCommandsAudience(payload.reservationId, this._telemetryFacade.ventilatorRoomReservationId, userId)) {
       this._realtimePublisher.emitToRoom(room, VENTILATOR_CONTROL_CHANGED_EVENT, payload);
     }
   }

@@ -64,16 +64,18 @@ One operator at a time, kept in memory by `OperatorControlService` (single insta
 
 - Take: needs an active reservation; a holder, teacher or administrator takes free control. When someone else operates, a plain take answers 423.
 - Takeover: only the leader of the holder group (`ReservationsFacade.isGroupLeaderOfHolder`, false for user reservations), a teacher or an administrator. Audited.
+- Compare-and-set: take and takeover read the control state, await the holder and leadership checks, and then assign only if the state is still the one they read (same operator, same `since`, same active reservation). If another take, takeover or release happened meanwhile, the request answers 423 instead of silently replacing the new operator, so two concurrent takes never both succeed.
+- `GET control`: holders of the active reservation (or the leader of the holder group), teachers and administrators receive `{ reservationId, operatorUserId, since, lastSeenAt, presenceExpiresAt, isOperator, canTake, canTakeover, occupied }`. Any other caller receives only `{ isOperator, canTake, canTakeover, occupied }`, without reservation or user identifiers.
 - Release: the operator, a teacher or an administrator.
 - Presence: when the operator's last socket disconnects (`realtime.client-disconnected` with `remainingSockets = 0`), a timer of `VENTILATOR_OPERATOR_GRACE_SECONDS` starts; a reconnection (`realtime.client-authenticated`), a `ventilator:heartbeat` socket message or `POST control/heartbeat` cancels it; on expiry the control is freed (`presence_timeout`). The current frontend sends no heartbeat, so the socket connection is the default presence signal.
 - Revocation: immediately on `ReservationPreemptedEvent` (`reservation_preempted`), `ReservationCancelledEvent` or `ReservationCompletedEvent` (`reservation_ended`) for the operator's reservation, and on the periodic refresh (`VENTILATOR_CONTROL_REFRESH_MS`) or any request that reads a different active reservation. After a preemption the next command of the former operator answers 403.
 
-`ventilator:control-changed` `{ reservationId, operatorUserId | null, reason }` with reason `taken`, `takeover`, `released`, `presence_timeout`, `reservation_ended` or `reservation_preempted` goes to rooms `ventilator`, `role:TEACHER` and `role:ADMIN` (one emit per room, so a user in several of them receives it more than once).
+`ventilator:control-changed` `{ reservationId, operatorUserId | null, reason }` with reason `taken`, `takeover`, `released`, `presence_timeout`, `reservation_ended` or `reservation_preempted` goes to rooms `ventilator`, `role:TEACHER` and `role:ADMIN` (one emit per room, so a user in several of them receives it more than once). When the `ventilator` room already belongs to another reservation (`VentilatorTelemetryFacade.ventilatorRoomReservationId`), an event of the previous reservation goes to `user:{operatorUserId}` (the new or the previous operator), `role:TEACHER` and `role:ADMIN` instead, so it never reaches the next reservation's holders.
 
 ## Lifecycle
 
 ```text
-                 publish resolved (PUBACK)
+   tracked before publish; publish resolved (PUBACK)
    PENDING ─────────────────────────────────► SENT
       │                                         │
       │ publish failed                          ├─ ACK applied|pending ──► ACKED     (terminal)
@@ -82,11 +84,12 @@ One operator at a time, kept in memory by `OperatorControlService` (single insta
                                                 └─ VENTILATOR_COMMAND_TIMEOUT_MS ─► TIMEOUT (terminal)
 ```
 
-- Illegal transitions throw. A timer is armed for every SENT command and cleared on resolution; shutdown resolves pending commands as `TIMEOUT`, so no command stays SENT. `latencyMs = resolvedAt - sentAt`.
+- Illegal transitions throw. The command is tracked before the publish starts: an ACK or a matching frame that arrives before the broker confirms the publish is kept and applied right after the SENT transition (latency close to 0); a failed publish drops the tracking and ends in REJECTED. A timer is armed for every SENT command and cleared on resolution; shutdown resolves SENT commands as `TIMEOUT` and commands still waiting for the broker as REJECTED (`server_shutdown`), so every command reaches exactly one terminal state. `latencyMs = resolvedAt - sentAt`. When the early resolution happens, the `POST` response already reports the terminal status instead of SENT.
 - ACK: when `MQTT_COMMAND_ACK_TOPIC` is set, it is subscribed with QoS 1 and JSON messages `{ commandId | correlationId, status: "applied" | "rejected" | "pending", reason? }` (design schema `docs/json-specs/ventilator-command-ack.schema.json`) resolve the command. `pending` counts as ACKED. ACKED is terminal for the API: a later "applied" is not tracked.
 - APPLIED: without an ACK topic, a telemetry frame whose `settings` report every numeric parameter of the command under the same name within `VENTILATOR_APPLY_TOLERANCE_RATIO` (and the same `mode` when reported) resolves it.
 - With today's firmware (no settings in frames, no ACK evidence) commands end in `TIMEOUT`.
-- `ventilator:command-status` `{ commandId, reservationId, userId, status, sentAt?, resolvedAt?, latencyMs?, reason? }` is emitted on each transition to the same three rooms.
+- `ventilator:command-status` `{ commandId, reservationId, userId, status, sentAt?, resolvedAt?, latencyMs?, reason? }` is emitted on each transition to the same three rooms, or to `user:{userId}` (the sender), `role:TEACHER` and `role:ADMIN` when the `ventilator` room already belongs to another reservation.
+- Shutdown: the module's `onModuleDestroy` stops the timers, resolves the in-flight commands and waits up to 2 s (`COMMANDS_SHUTDOWN_FLUSH_TIMEOUT_MS`) for the pending writes. Nest destroys feature modules before the global database module, so these writes run before Prisma disconnects; `beforeApplicationShutdown` would run after it.
 - Persistence (`ventilator_commands`, upsert by correlation identifier) never blocks the publish: the publish happens first, then each state is written through a per-command ordered promise chain whose errors are logged. PENDING is never written; the first row already holds SENT or REJECTED.
 
 ## Encoders
@@ -102,7 +105,7 @@ One operator at a time, kept in memory by `OperatorControlService` (single insta
 | --- | --- | --- |
 | `MQTT_COMMAND_TOPIC` | `ventilab/device/001/command` | Published with QoS 1. |
 | `MQTT_COMMAND_ACK_TOPIC` | empty | Empty disables ACK tracking. |
-| `MQTT_TEST_TOPIC_PREFIX` | `test/ventylab` | Prepended to the command and ACK topics whenever `NODE_ENV=test`, so automated tests never reach the real topic. |
+| `MQTT_TEST_TOPIC_PREFIX` | `test/ventylab` | Prepended to the command and ACK topics whenever `NODE_ENV=test`, so automated tests never reach the real topic. Must match `^[A-Za-z0-9][A-Za-z0-9_\-/]*$` (startup validation and the settings reader both reject values such as `/`). |
 | `VENTILATOR_COMMAND_ENCODING` | `json` | `json` or `hex`. |
 | `VENTILATOR_COMMAND_TIMEOUT_MS` | 3000 | SENT → TIMEOUT. The UPPAAL model uses `ACK_TIMEOUT = 1000`. |
 | `VENTILATOR_COMMAND_RATE_PER_SECOND` | 5 | Per-user token bucket (burst = rate). |
@@ -121,7 +124,7 @@ One operator at a time, kept in memory by `OperatorControlService` (single insta
 
 | Query | Test |
 | --- | --- |
-| S2/SM1 `A[] (mqttClient.PUBLISHING imply params_in_safe_range)` | 3000 seeded random commands (NaN, infinities, strings, booleans, out of range): only commands passing validation are published, and every published payload re-validates. |
+| S2/SM1 `A[] (mqttClient.PUBLISHING imply params_in_safe_range)` | 3000 seeded random commands (NaN, infinities, strings, booleans, out of range): only commands passing validation are published, and every published payload re-validates and passes an independent oracle built from the shared ranges and the test safety caps written as literals in the test (a validator that accepted, for example, PEEP 16–20 makes the test fail). |
 | S6/P1 `A[] (apiGateway.EXECUTING imply hasPermission())`, S7/P2 `A[] not (user_role == 1 and is_real_ventilator and apiGateway.EXECUTING)` | 2000 seeded random actions: a publish happens only with an active reservation and the caller as operator; a student without a reservation never publishes. Deviation: the model allows only ADMIN on the real ventilator, the code allows the reservation operator. |
 | L1 `commandValidator.APPROVED --> mqttClient.PUBLISHING` | Approved command from the operator with the device online is published. |
 | L2 `mqttClient.AWAITING_ACK --> (SUCCESS or ERROR)` | 200 commands with random ACKs, fake timers: all terminal after the timeout, none SENT. |

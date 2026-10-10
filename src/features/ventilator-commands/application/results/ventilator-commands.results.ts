@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados de la feature de comandos del ventilador
- * Descripción: Comando aceptado (identificador de correlación, reserva, estado y hora de envío) y estado del control exclusivo para quien consulta (reserva activa, operador, desde cuándo, última presencia, si es el operador y si puede tomar o arrebatar el control)
- * Versión: 1.0
+ * Descripción: Comando aceptado (identificador de correlación, reserva, estado y hora de envío) y estado del control exclusivo para quien consulta (reserva activa, operador, desde cuándo, última presencia, si es el operador, si puede tomar o arrebatar el control, si hay una reserva activa y si la vista se restringe por no ser titular, docente ni administrador)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -33,6 +33,8 @@ export class VentilatorControlStateResult {
   public readonly isOperator: boolean;
   public readonly canTake: boolean;
   public readonly canTakeover: boolean;
+  public readonly occupied: boolean;
+  public readonly restricted: boolean;
 
   public constructor({
     reservationId,
@@ -43,6 +45,8 @@ export class VentilatorControlStateResult {
     isOperator,
     canTake,
     canTakeover,
+    occupied,
+    restricted,
   }: {
     reservationId?: string;
     operatorUserId?: string;
@@ -52,6 +56,8 @@ export class VentilatorControlStateResult {
     isOperator: boolean;
     canTake: boolean;
     canTakeover: boolean;
+    occupied: boolean;
+    restricted: boolean;
   }) {
     this.reservationId = reservationId;
     this.operatorUserId = operatorUserId;
@@ -61,5 +67,7 @@ export class VentilatorControlStateResult {
     this.isOperator = isOperator;
     this.canTake = canTake;
     this.canTakeover = canTakeover;
+    this.occupied = occupied;
+    this.restricted = restricted;
   }
 }

@@ -149,6 +149,53 @@ Tests:       3 passed, 3 total
 
 The only failure is the wall-clock budget of the simulation engine test under full parallel load (outside these features, untouched); it passes alone. See [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) item 5.
 
+## 19. T5 verification fixes
+
+Fixes for the independently verified findings F1–F9 (2026-10-10, on `7853683` plus uncommitted changes). Specs that existed before the fix and failed against the previous code are marked RED.
+
+| Finding | Fix | Proof (spec › test) |
+| --- | --- | --- |
+| F1 control take race | `OperatorControlService.assign` takes the snapshot read by the use case and refuses (423) when the operator, its `since` or the active reservation changed (compare-and-set) | `operator-control.service.spec.ts` › "concurrent take requests (compare-and-set)": "refuses a student take with 423 when a teacher takes over while the holder check is pending", "lets only one of two concurrent takes by holders succeed", "refuses a leader takeover with 423 when the operator changed while the leadership check was pending" — RED (all three) before the fix |
+| F2 control state leaks identifiers | Callers who are not holders, group leaders of the holder, teachers or administrators get `{ isOperator, canTake, canTakeover, occupied }` only | `operator-control.service.spec.ts` › "control state visibility" (5 tests, JSON without other user or reservation identifiers) — RED before the fix |
+| F3 late events reach the next reservation | `ventilatorCommandsAudience`: when the `ventilator` room belongs to another reservation, `ventilator:command-status` / `ventilator:control-changed` go to `user:{id}`, `role:TEACHER`, `role:ADMIN` | `operator-control.service.spec.ts` › "announces the revocation only to the previous operator, teachers and administrators once the room belongs to the next reservation"; `send-ventilator-command.usecase.spec.ts` › "announces late statuses of a previous reservation only to the sender, teachers and administrators" — RED before the fix |
+| F4 early ACK ignored | `CommandLifecycleService.track` before publish; early ACK/APPLIED buffered and applied right after SENT; failed publish drops the tracking; shutdown rejects unsent commands (`server_shutdown`) | `send-ventilator-command.usecase.spec.ts` › "resolves ACKED when the device acknowledges before the broker confirms the publish", "resolves APPLIED when a matching frame arrives before the broker confirms the publish" (RED before the fix), "keeps exactly one terminal state when the early acknowledgement is followed by a failed publish"; `command-lifecycle.service.spec.ts` › "rejects a command still waiting for the broker on shutdown and ignores its late publish confirmation" |
+| F5 shutdown ordering | Flush moved to `onModuleDestroy` (bounded to 2 s): Nest runs `onModuleDestroy` before `beforeApplicationShutdown`, and the global `DatabaseModule` (distance `MAX_VALUE`) is destroyed last, so this is the hook that still runs before `PrismaService.$disconnect()`; `beforeApplicationShutdown` would run after it (`node_modules/@nestjs/core/nest-application-context.js` `close()`, `injector/container.js`) | `telemetry-recorder.service.spec.ts` › "waits on shutdown until the last chunk is saved", "gives up waiting for a stuck chunk write after the shutdown timeout"; `command-lifecycle.service.spec.ts` › "stops waiting for pending writes after the shutdown timeout"; `ventilator-commands-lifecycle.service.spec.ts` › "persists the shutdown transitions of sent commands before the module is destroyed" |
+| F6 legacy reserve-now skips limits | Shared `assertWithinUpcomingReservationLimits` used by create and reserve-now (students only) | `legacy-reservation-adapters.usecase.spec.ts` › "upcoming reservation limits" (5 tests) — the student and group limit tests were RED before the fix |
+| F7 false sequence losses | Reorder window (`VENTILATOR_SEQ_REORDER_WINDOW`, default 16), restart on larger backward jumps, optional 16/32-bit wrap (`VENTILATOR_SEQ_WRAP_BITS`), new `reorderedMessages` metric | `sequence-gap-tracker.spec.ts` (12 tests); `telemetry-pipeline.service.spec.ts` › "does not report losses for reordered frames (10, 8, 11)" — RED before the fix (the new specs failed against the previous tracker) |
+| F8 self-referential S2/SM1 oracle | Independent oracle with literal shared ranges and safety caps | `uppaal-commands-properties.spec.ts` › S2/SM1 (3 tests). Mutation check: with `VENTILATOR_SAFETY_MAX_PEEP` raised to 20 in the test doubles the S2/SM1 random test fails (`1 failed`); it passes with 15 |
+| F9 unsafe test topic prefix | `@Matches(^[A-Za-z0-9][A-Za-z0-9_\-/]*$)` in `env.validation.ts` and the same check in `readVentilatorCommandsSettings` | `ventilator-commands-config.spec.ts` › "rejects the test topic prefix %p, which could map test topics onto real ones" (9 cases, RED before the fix), "validates MQTT_TEST_TOPIC_PREFIX=%p at startup with %i errors" (4 cases) |
+
+```text
+$ npx tsc --noEmit
+(no output)
+
+$ npx jest src/features/reservations src/features/ventilator-telemetry src/features/ventilator-commands src/features/simulation
+Test Suites: 48 passed, 48 total
+Tests:       441 passed, 441 total
+
+$ npx jest
+Test Suites: 1 failed, 177 passed, 178 total
+Tests:       1 failed, 1359 passed, 1360 total
+  ● engine determinism › replays ten simulated minutes at 50 Hz sampling in under 500 ms
+
+$ npx jest src/features/simulation/domain/engine/engine-determinism.spec.ts
+Tests:       3 passed, 3 total
+
+$ npx eslint src/features/ventilator-commands src/features/ventilator-telemetry src/features/reservations src/common/infrastructure/config/env.validation.ts
+(no output)
+
+$ npx madge --circular --extensions ts --ts-config tsconfig.json src
+✔ No circular dependency found!
+
+$ grep -rnE "mqtt\.connect|connectAsync" src --include=*.ts | wc -l
+1
+
+$ grep -rL "Autor: Marcela Mazo Castro" src --include=*.ts
+(no output)
+```
+
+Pre-existing issues found in the same review are listed, not fixed, in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) items 25–33.
+
 ## Manual items not run here
 
 | Item | Procedure |

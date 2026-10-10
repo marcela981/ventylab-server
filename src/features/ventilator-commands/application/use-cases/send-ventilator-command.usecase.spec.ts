@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del envío de comandos al ventilador físico
  * Descripción: Verifica el orden de las guardas (403 sin reserva o no titular, 423 no operador, 429 frecuencia, 422 validación con violaciones, 503 dispositivo fuera de línea sin publicar), la publicación QoS 1 en el tópico con prefijo de pruebas con el JSON plano y el correlationId, el estado SENT emitido y persistido, el fallo de publicación registrado como REJECTED y la pérdida inmediata del control al desplazarse la reserva
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import { type SentVentilatorCommandResult } from "@/features/ventilator-commands
 import {
   createVentilatorCommandsHarness,
   OTHER_RESERVATION,
+  REAL_ACK_TOPIC,
   REAL_COMMAND_TOPIC,
   RESERVATION,
   TEST_TOPIC_PREFIX,
@@ -34,8 +35,12 @@ function sendAs(harness: VentilatorCommandsHarness, userId: string, role: string
   return harness.send.execute(new SendVentilatorCommandCommand({ userId, role, params }));
 }
 
-async function operatorHarness(): Promise<VentilatorCommandsHarness> {
-  const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness();
+function commandStatuses(harness: VentilatorCommandsHarness): string[] {
+  return harness.realtime.payloadsOf<VentilatorCommandStatusPayload>(VENTILATOR_COMMAND_STATUS_EVENT).map((payload: VentilatorCommandStatusPayload): string => payload.status);
+}
+
+async function operatorHarness(overrides: Parameters<typeof createVentilatorCommandsHarness>[0] = {}): Promise<VentilatorCommandsHarness> {
+  const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness(overrides);
 
   harness.reservations.activate(RESERVATION, ["student-1", "leader-1"], ["leader-1"]);
   await harness.takeControl.execute(new VentilatorControlCommand({ userId: "student-1", role: "STUDENT" }), "take");
@@ -182,5 +187,75 @@ describe("SendVentilatorCommandUseCase", () => {
     expect(harness.control.state).toBeUndefined();
     await expect(sendAs(harness, "student-1", "STUDENT")).rejects.toBeInstanceOf(NotReservationHolderError);
     expect(harness.mqtt.publishes).toHaveLength(0);
+  });
+
+  describe("acknowledgements and matching frames that arrive before the publish resolves", () => {
+    const ACK_TOPIC: string = `${TEST_TOPIC_PREFIX}/${REAL_ACK_TOPIC}`;
+
+    function correlationIdOf(payload: string | Buffer): string {
+      return String((JSON.parse(String(payload)) as { correlationId: string }).correlationId);
+    }
+
+    it("resolves ACKED when the device acknowledges before the broker confirms the publish", async () => {
+      jest.useFakeTimers({ now: new Date("2026-10-10T12:10:00Z") });
+      const harness: VentilatorCommandsHarness = await operatorHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
+
+      harness.mqtt.beforePublishResolves = (_topic: string, payload: string | Buffer): void => {
+        harness.mqtt.deliver(ACK_TOPIC, JSON.stringify({ commandId: correlationIdOf(payload), status: "applied" }));
+      };
+
+      await sendAs(harness, "student-1", "STUDENT");
+      jest.advanceTimersByTime(10_000);
+      await harness.lifecycle.flushPersistence();
+
+      expect(commandStatuses(harness)).toEqual(["SENT", "ACKED"]);
+      expect(harness.repository.writes.map((command: { status: string }): string => command.status)).toEqual(["SENT", "ACKED"]);
+      expect(harness.lifecycle.inFlightCount).toBe(0);
+    });
+
+    it("resolves APPLIED when a matching frame arrives before the broker confirms the publish", async () => {
+      jest.useFakeTimers({ now: new Date("2026-10-10T12:10:00Z") });
+      const harness: VentilatorCommandsHarness = await operatorHarness();
+
+      harness.mqtt.beforePublishResolves = (): void => {
+        harness.telemetry.emitFrame({ serverTs: Date.now(), pressure: 10, flow: 0, volume: 0, deviceId: "dev", settings: { tidalVolume: 450, respiratoryRate: 14, peep: 5, fio2: 0.4 }, mode: "VCV" });
+      };
+
+      await sendAs(harness, "student-1", "STUDENT");
+      jest.advanceTimersByTime(10_000);
+
+      expect(commandStatuses(harness)).toEqual(["SENT", "APPLIED"]);
+      expect(harness.lifecycle.inFlightCount).toBe(0);
+    });
+
+    it("keeps exactly one terminal state when the early acknowledgement is followed by a failed publish", async () => {
+      const harness: VentilatorCommandsHarness = await operatorHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
+
+      harness.mqtt.beforePublishResolves = (_topic: string, payload: string | Buffer): void => {
+        harness.mqtt.deliver(ACK_TOPIC, JSON.stringify({ commandId: correlationIdOf(payload), status: "applied" }));
+        harness.mqtt.failPublish = true;
+      };
+
+      await expect(sendAs(harness, "student-1", "STUDENT")).rejects.toBeInstanceOf(VentilatorDeviceOfflineError);
+      await harness.lifecycle.flushPersistence();
+
+      expect(commandStatuses(harness)).toEqual(["REJECTED"]);
+      expect(harness.lifecycle.inFlightCount).toBe(0);
+    });
+  });
+
+  it("announces late statuses of a previous reservation only to the sender, teachers and administrators", async () => {
+    jest.useFakeTimers({ now: new Date("2026-10-10T12:10:00Z") });
+    const harness: VentilatorCommandsHarness = await operatorHarness();
+
+    await sendAs(harness, "student-1", "STUDENT");
+    harness.reservations.activate(OTHER_RESERVATION, ["teacher-1"]);
+    harness.realtime.roomEmits.length = 0;
+    jest.advanceTimersByTime(3000);
+
+    const timeouts: { room: string; payload: unknown }[] = harness.realtime.roomEmits.filter((emit: { event: string }): boolean => emit.event === VENTILATOR_COMMAND_STATUS_EVENT);
+
+    expect(timeouts.map((emit: { room: string }): string => emit.room)).toEqual(["user:student-1", "role:TEACHER", "role:ADMIN"]);
+    expect((timeouts[0].payload as VentilatorCommandStatusPayload).status).toBe("TIMEOUT");
   });
 });

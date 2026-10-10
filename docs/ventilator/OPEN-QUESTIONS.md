@@ -157,7 +157,7 @@ Decisions taken without the author while building `reservations`, `ventilator-te
 ### 22. `POST /api/ventilator/commands` returns 202 with data
 
 - **Question.** Mutations normally return `data: null`.
-- **Decision.** `202 Accepted` with `{ commandId, reservationId, status: "SENT", sentAt }`, because the client needs the correlation identifier to follow `ventilator:command-status`.
+- **Decision.** `202 Accepted` with `{ commandId, reservationId, status, sentAt }`, because the client needs the correlation identifier to follow `ventilator:command-status`. `status` is normally `SENT`; it is already terminal (`ACKED`, `APPLIED` or `REJECTED`) when the device answered before the broker confirmed the publish.
 - **Where.** `ventilator-commands/presentation/controllers/ventilator-commands.controller.ts`.
 - **How to change.** Return `null` and let the client match the first `ventilator:command-status` of its own user.
 
@@ -175,3 +175,59 @@ Decisions taken without the author while building `reservations`, `ventilator-te
 - **Question.** Several checks need a database, a broker or the device.
 - **Decision.** Documented as manual in [VERIFICATION.md](VERIFICATION.md): live PostgreSQL concurrency (`RUN_DB_INTEGRATION=1`), the MQTTX bench ([telemetry-bench.md](telemetry-bench.md)), broker down/up with a live broker (stop the broker, watch `ventilator:disconnected` and the reconnection backoff in the logs, start it again, watch `ventilator:connected`), and physical ventilator tests (commands and telemetry against the real device, first on test topics set through `MQTT_COMMAND_TOPIC` and `MQTT_TELEMETRY_TOPIC`; `MQTT_TEST_TOPIC_PREFIX` only applies when `NODE_ENV=test`).
 - **How to change.** Run them after applying the migration, with a broker you control.
+
+## Follow-ups outside this change (pre-existing)
+
+Found during the T5 verification review. They predate the ventilator features or belong to code these features do not own, so they are listed here and not fixed.
+
+### 25. Public simulation health exposes user identifiers
+
+- **Finding.** `GET api/simulation/health` is public and returns the user identifiers of the connected sockets and the identifier of the reservation holder.
+- **Where.** `simulation` feature (health controller and its use case).
+- **How to change.** Return counts only, or require `simulation:control` / a teacher role for the detailed view.
+
+### 26. Simulation status shows the holder name to any student
+
+- **Finding.** `GET api/simulation/status` returns `currentUserName` to any authenticated student, which conflicts with the rule that students who are not holders see only whether the ventilator is occupied.
+- **Where.** `simulation` feature (status use case and DTO).
+- **How to change.** Apply the same role-based view as `GET api/reservations/current`.
+
+### 27. Legacy `ventilator:reserved` broadcast carries personal data
+
+- **Finding.** The legacy `ventilator:reserved` event is broadcast to every socket, including unauthenticated ones, with `userId` and `userName`. It was kept unchanged for frontend compatibility, which conflicts with the privacy rule.
+- **Where.** `simulation/infrastructure/events/simulation-realtime.handlers.ts`.
+- **How to change.** Needs a frontend change: switch the client to `ventilator:availability` (no personal data) and then drop the identifiers from `ventilator:reserved`, or emit it only to holders, teachers and administrators.
+
+### 28. `ventilator:alarm` is broadcast to everyone
+
+- **Finding.** Device alarms go to every socket, including unauthenticated ones.
+- **Where.** `ventilator-telemetry` alarm handling (legacy contract kept).
+- **How to change.** Emit to the `ventilator` room plus `role:TEACHER` and `role:ADMIN`, like the telemetry batches, once the frontend no longer relies on the broadcast.
+
+### 29. Re-authenticated sockets keep their previous rooms
+
+- **Finding.** A socket that authenticates again as another user keeps the `user:` and `role:` rooms (and the `ventilator` room) joined for the first identity.
+- **Where.** `src/common/infrastructure/realtime/realtime.gateway.ts`.
+- **How to change.** Leave every server-managed room before joining the rooms of the new identity, or reject re-authentication on a live socket.
+
+### 30. Demoted teachers keep `role:TEACHER` until they reconnect
+
+- **Finding.** A teacher demoted to student keeps the `role:TEACHER` room until the socket reconnects, so they keep receiving teacher events and, since the telemetry features, physical ventilator telemetry.
+- **Where.** `realtime.gateway.ts` (rooms joined on authentication only).
+- **How to change.** Publish a role-changed event from the users feature and move the user's sockets to the new role room, or disconnect them.
+
+### 31. Integration specs are not matched by the default Jest run
+
+- **Finding.** `*.integration-spec.ts` files are outside the default `testRegex`, so `npx jest` never runs them.
+- **How to run.** `RUN_DB_INTEGRATION=1 npx jest --testRegex 'integration-spec\.ts$'` against a database with the migration applied.
+- **How to change.** Add a dedicated npm script or a Jest project for integration specs.
+
+### 32. `applied` and `pending` acknowledgements are both terminal
+
+- **Finding.** By design both resolve the command as `ACKED` (terminal); a later `applied` after `pending` is not tracked (see item 19 and [commands.md](commands.md)).
+- **How to change.** Add a non-terminal `ACKNOWLEDGED_PENDING` state if the firmware ever sends `pending` followed by `applied`.
+
+### 33. Migration without explicit transaction
+
+- **Finding.** `prisma/migrations/20261010120000_ventilator_features/migration.sql` has no explicit `BEGIN`/`COMMIT`. Prisma Migrate runs each migration in a transaction on PostgreSQL, but a manual `psql -f` run would not.
+- **How to change.** Run it only through `prisma migrate deploy`, or wrap it in `BEGIN; ... COMMIT;` before applying it by hand (see [MIGRATION.md](MIGRATION.md)).

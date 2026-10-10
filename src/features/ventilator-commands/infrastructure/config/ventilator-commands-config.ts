@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Configuración de los comandos del ventilador
- * Descripción: Resuelve desde ConfigService los ajustes de los comandos: tópicos de comando y de acuse (acuse deshabilitado cuando está vacío) con MQTT_TEST_TOPIC_PREFIX antepuesto siempre que NODE_ENV=test para que las pruebas nunca publiquen en el tópico real, codificación, tiempos, frecuencia, gracia del operador, tolerancia y límites de seguridad recortados a los límites compartidos
- * Versión: 1.0
+ * Descripción: Resuelve desde ConfigService los ajustes de los comandos: tópicos de comando y de acuse (acuse deshabilitado cuando está vacío) con MQTT_TEST_TOPIC_PREFIX (que debe empezar por letra o dígito; se rechaza un prefijo como "/") antepuesto siempre que NODE_ENV=test para que las pruebas nunca publiquen en el tópico real, codificación, tiempos, frecuencia, gracia del operador, tolerancia y límites de seguridad recortados a los límites compartidos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,7 @@
  */
 import { type ConfigService } from "@nestjs/config";
 
-import { Environment, type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
+import { Environment, type EnvironmentVariables, MQTT_TEST_TOPIC_PREFIX_PATTERN } from "@/common/infrastructure/config/env.validation";
 import { type VentilatorCommandsSettings } from "@/features/ventilator-commands/application/tokens/ventilator-commands-settings.token";
 import { clampSafetyLimits } from "@/features/ventilator-commands/domain/validation/ventilator-command-safety-limits";
 
@@ -24,9 +24,19 @@ export function applyTestTopicPrefix(topic: string, nodeEnv: Environment, testTo
   return `${testTopicPrefix.replace(/\/+$/, "")}/${topic.replace(/^\/+/, "")}`;
 }
 
+function readTestTopicPrefix(configService: ConfigService<EnvironmentVariables, true>): string {
+  const prefix: string = configService.get("MQTT_TEST_TOPIC_PREFIX", { infer: true });
+
+  if (!MQTT_TEST_TOPIC_PREFIX_PATTERN.test(prefix)) {
+    throw new Error(`Invalid ventilator commands configuration: MQTT_TEST_TOPIC_PREFIX "${prefix}" must start with a letter or digit and contain only letters, digits, _, - and /`);
+  }
+
+  return prefix;
+}
+
 export function readVentilatorCommandsSettings(configService: ConfigService<EnvironmentVariables, true>): VentilatorCommandsSettings {
   const nodeEnv: Environment = configService.get("NODE_ENV", { infer: true });
-  const testTopicPrefix: string = configService.get("MQTT_TEST_TOPIC_PREFIX", { infer: true });
+  const testTopicPrefix: string = readTestTopicPrefix(configService);
   const ackTopic: string = configService.get("MQTT_COMMAND_ACK_TOPIC", { infer: true }).trim();
 
   return {

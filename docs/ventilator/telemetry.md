@@ -11,7 +11,7 @@
 | `pressure` | cmH2O | Required, finite number. |
 | `flow` | L/min | Required, finite number (negative during expiration). |
 | `volume` | mL | Required, finite number. |
-| `seq` | non-negative integer | Optional. Gaps add `gap - 1` to `lostMessages`; a lower value resets the tracker (device restart). |
+| `seq` | non-negative integer | Optional. Gaps add `gap - 1` to `lostMessages`; see [Sequence gaps](#sequence-gaps) for late frames, restarts and wraparound. |
 | `deviceTs` | epoch ms | Optional. A legacy `timestamp` is used when it is an epoch value (> 10^12 ms). |
 | `serverTs` | epoch ms | Stamped by the server when the message is received. |
 | `mode` | string | Optional ventilation mode reported by the device. |
@@ -43,9 +43,13 @@ The `ventilator` room is managed by the server: every `VENTILATOR_ROOM_REFRESH_M
 
 The flush every 33 ms adds up to 33 ms of queue wait, so the "receive → emit p95 < 10 ms" target applies to the processing latency (`processingMs`), reported separately from the total latency (`totalMs`). `deviceLatencyMs` depends on the device and server clocks being synchronized. See `telemetry-bench.md`.
 
+## Sequence gaps
+
+`lostMessages` adds `gap - 1` for every forward jump of `seq`. A frame whose `seq` is at most `VENTILATOR_SEQ_REORDER_WINDOW` (default 16) behind the newest one is late or repeated: it is counted in `reorderedMessages`, adds no loss and does not move the baseline (`10, 8, 11` → 0 lost, 1 reordered). A larger backward jump is a device restart and resets the baseline. A frame that was counted as lost and arrives later stays counted as lost. With `VENTILATOR_SEQ_WRAP_BITS` set to 16 or 32, a jump from the last sixteenth of the range to the first one is a wraparound (`65535, 0` is consecutive); with 0 (default) it is a restart.
+
 ## Recording
 
-Off by default. `POST /api/ventilator/telemetry/recordings/start|stop` (holders of the active reservation, teachers, administrators) subsamples frames to `VENTILATOR_RECORDING_HZ` and writes one `telemetry_chunks` row (`gzip-json`) every `VENTILATOR_RECORDING_FLUSH_SECONDS`, asynchronously and never on the hot path. The recording stops when the active reservation changes (ends, is cancelled or preempted). `GET /api/ventilator/telemetry/recordings/:reservationId` returns the decompressed frames ordered by time.
+Off by default. `POST /api/ventilator/telemetry/recordings/start|stop` (holders of the active reservation, teachers, administrators) subsamples frames to `VENTILATOR_RECORDING_HZ` and writes one `telemetry_chunks` row (`gzip-json`) every `VENTILATOR_RECORDING_FLUSH_SECONDS`, asynchronously and never on the hot path. The recording stops when the active reservation changes (ends, is cancelled or preempted). On shutdown the module's `onModuleDestroy` writes the last chunk and waits up to 2 s (`RECORDING_SHUTDOWN_FLUSH_TIMEOUT_MS`) for the pending chunk writes, before the global database module disconnects Prisma. `GET /api/ventilator/telemetry/recordings/:reservationId` returns the decompressed frames ordered by time.
 
 ## Configuration
 
@@ -67,4 +71,6 @@ Off by default. `POST /api/ventilator/telemetry/recordings/start|stop` (holders 
 | `VENTILATOR_INVALID_LOG_INTERVAL_MS` | 5000 | Minimum time between invalid-message warnings. |
 | `VENTILATOR_RECORDING_HZ` | 20 | Recording sample rate. |
 | `VENTILATOR_RECORDING_FLUSH_SECONDS` | 5 | Chunk period. |
+| `VENTILATOR_SEQ_REORDER_WINDOW` | 16 | 0–1024. Late frames within this distance of the newest `seq` count as reordered, not lost. |
+| `VENTILATOR_SEQ_WRAP_BITS` | 0 | `0`, `16` or `32`. Width of the device sequence counter for wraparound; 0 disables it. |
 | `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET` | unset | Optional InfluxDB sink fed with every frame when all four are set. |

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada pública de la telemetría del ventilador
- * Descripción: API que VentilatorTelemetryModule exporta para otras features (simulación heredada y comandos del ventilador): estado de la telemetría, actividad del dispositivo, últimos parámetros informados, alarmas activas, datos de conexión, oyentes de tramas y el puerto de la conexión MQTT única para publicar comandos con QoS 1
- * Versión: 1.0
+ * Descripción: API que VentilatorTelemetryModule exporta para otras features (simulación heredada y comandos del ventilador): estado de la telemetría, actividad del dispositivo, últimos parámetros informados, alarmas activas, datos de conexión, oyentes de tramas, la reserva a la que pertenece hoy la sala ventilator y el puerto de la conexión MQTT única para publicar comandos con QoS 1
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import { type VentilatorTelemetryConnectionInfo, type VentilatorTelemetryStatus 
 import { DeviceStalenessService } from "@/features/ventilator-telemetry/application/services/device-staleness.service";
 import { TelemetryMetricsService } from "@/features/ventilator-telemetry/application/services/telemetry-metrics.service";
 import { type TelemetryFrameListener, TelemetryPipelineService } from "@/features/ventilator-telemetry/application/services/telemetry-pipeline.service";
+import { VentilatorRoomAccessService } from "@/features/ventilator-telemetry/application/services/ventilator-room-access.service";
 import { VENTILATOR_TELEMETRY_SETTINGS_TOKEN, type VentilatorTelemetrySettings } from "@/features/ventilator-telemetry/application/tokens/ventilator-telemetry-settings.token";
 import { type VentilatorAlarm } from "@/features/ventilator-telemetry/domain/value-objects/ventilator-alarm";
 
@@ -31,10 +32,15 @@ export class VentilatorTelemetryFacade {
     private readonly _pipeline: TelemetryPipelineService,
     private readonly _metrics: TelemetryMetricsService,
     private readonly _staleness: DeviceStalenessService,
+    private readonly _roomAccess: VentilatorRoomAccessService,
   ) {}
 
   public get mqttConnection(): IMqttConnection {
     return this._connection;
+  }
+
+  public get ventilatorRoomReservationId(): string | undefined {
+    return this._roomAccess.activeReservationId;
   }
 
   public getStatus(): VentilatorTelemetryStatus {

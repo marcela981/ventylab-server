@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del pipeline de telemetría
  * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia, el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas y la forma heredada de ventilator:data, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -101,14 +101,25 @@ describe("TelemetryPipelineService", () => {
   });
 
   describe("sequence gaps", () => {
-    it("adds gap - 1 lost messages and resets when the sequence goes back", () => {
+    it("adds gap - 1 lost messages and counts late frames as reordered without resetting the baseline", () => {
       const { pipeline, metrics }: PipelineFixture = buildPipeline();
 
       for (const seq of [1, 2, 5, 3, 4, 10]) {
         pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1, seq }));
       }
 
-      expect(metrics.lostMessages).toBe(7);
+      expect(metrics.lostMessages).toBe(6);
+      expect(metrics.reorderedMessages).toBe(2);
+    });
+
+    it("does not report losses for reordered frames (10, 8, 11)", () => {
+      const { pipeline, metrics, clock }: PipelineFixture = buildPipeline();
+
+      for (const seq of [10, 8, 11]) {
+        pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1, seq }));
+      }
+
+      expect([metrics.lostMessages, metrics.snapshot(clock.nowMs).reorderedMessages]).toEqual([0, 1]);
     });
   });
 

@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Ciclo de vida de la telemetría del ventilador
- * Descripción: Al iniciar registra las suscripciones (telemetría QoS 0, alarmas QoS 1), conecta el pipeline, el vigilante de actividad, el acceso a la sala, la grabación y el destino InfluxDB, y abre la conexión MQTT; al apagar (SIGTERM incluido) detiene los temporizadores, guarda la grabación pendiente y cierra el cliente MQTT y el destino
- * Versión: 1.0
+ * Descripción: Al iniciar registra las suscripciones (telemetría QoS 0, alarmas QoS 1), conecta el pipeline, el vigilante de actividad, el acceso a la sala, la grabación y el destino InfluxDB, y abre la conexión MQTT; al destruirse el módulo (antes de que el módulo global de base de datos desconecte Prisma) guarda la grabación pendiente y espera su escritura hasta RECORDING_SHUTDOWN_FLUSH_TIMEOUT_MS; al apagar (SIGTERM incluido) detiene los temporizadores y cierra el cliente MQTT y el destino
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Inject, Injectable, Logger, type OnApplicationShutdown, type OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnApplicationShutdown, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 
 import { type MqttQos } from "@/features/ventilator-telemetry/application/ports/mqtt-connection.interface";
 import { type ITelemetrySink, TELEMETRY_SINK_TOKEN } from "@/features/ventilator-telemetry/application/ports/telemetry-sink.interface";
@@ -24,8 +24,10 @@ const TELEMETRY_QOS: MqttQos = 0;
 // Alarms are rare and must not be lost, so they keep QoS 1 while high-rate telemetry uses QoS 0
 const ALARM_QOS: MqttQos = 1;
 
+export const RECORDING_SHUTDOWN_FLUSH_TIMEOUT_MS: number = 2000;
+
 @Injectable()
-export class VentilatorTelemetryLifecycleService implements OnModuleInit, OnApplicationShutdown {
+export class VentilatorTelemetryLifecycleService implements OnModuleInit, OnModuleDestroy, OnApplicationShutdown {
   private readonly _logger: Logger = new Logger(VentilatorTelemetryLifecycleService.name);
 
   public constructor(
@@ -65,11 +67,15 @@ export class VentilatorTelemetryLifecycleService implements OnModuleInit, OnAppl
     this._connection.start();
   }
 
+  // Nest destroys feature modules before the global database module, so the last chunk still reaches Prisma here
+  public async onModuleDestroy(): Promise<void> {
+    await this._recorder.stopAndFlush(RECORDING_SHUTDOWN_FLUSH_TIMEOUT_MS);
+  }
+
   public async onApplicationShutdown(): Promise<void> {
     this._roomAccess.stop();
     this._staleness.stop();
     this._pipeline.stop();
-    this._recorder.stop();
     this._connection.stop();
 
     await this._sink.close();

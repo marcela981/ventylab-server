@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de los comandos del ventilador
  * Descripción: Convierte el cuerpo tipado en parámetros sin validar para el dominio y los resultados y entidades en DTOs de respuesta con fechas ISO 8601 y nulos explícitos
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,7 +11,7 @@
 import { type SentVentilatorCommandResult, type VentilatorControlStateResult } from "@/features/ventilator-commands/application/results/ventilator-commands.results";
 import { type VentilatorCommand } from "@/features/ventilator-commands/domain/entities/ventilator-command.entity";
 import { type SendVentilatorCommandRequestDTO } from "@/features/ventilator-commands/presentation/dtos/ventilator-command-request.dto";
-import { SentVentilatorCommandDTO, VentilatorCommandDTO, VentilatorControlStateDTO } from "@/features/ventilator-commands/presentation/dtos/ventilator-command.dto";
+import { SentVentilatorCommandDTO, VentilatorCommandDTO, type VentilatorControlStateDetails, VentilatorControlStateDTO } from "@/features/ventilator-commands/presentation/dtos/ventilator-command.dto";
 
 export class VentilatorCommandsMapper {
   public static toParams(dto: SendVentilatorCommandRequestDTO): Record<string, unknown> {
@@ -35,14 +35,11 @@ export class VentilatorCommandsMapper {
 
   public static toControlStateDTO(result: VentilatorControlStateResult): VentilatorControlStateDTO {
     return new VentilatorControlStateDTO({
-      reservationId: result.reservationId ?? null,
-      operatorUserId: result.operatorUserId ?? null,
-      since: result.since?.toISOString() ?? null,
-      lastSeenAt: result.lastSeenAt?.toISOString() ?? null,
-      presenceExpiresAt: result.presenceExpiresAt?.toISOString() ?? null,
       isOperator: result.isOperator,
       canTake: result.canTake,
       canTakeover: result.canTakeover,
+      occupied: result.occupied,
+      details: result.restricted ? undefined : VentilatorCommandsMapper._toControlDetails(result),
     });
   }
 
@@ -60,5 +57,15 @@ export class VentilatorCommandsMapper {
       latencyMs: command.latencyMs ?? null,
       createdAt: command.createdAt.toISOString(),
     });
+  }
+
+  private static _toControlDetails(result: VentilatorControlStateResult): VentilatorControlStateDetails {
+    return {
+      reservationId: result.reservationId ?? null,
+      operatorUserId: result.operatorUserId ?? null,
+      since: result.since?.toISOString() ?? null,
+      lastSeenAt: result.lastSeenAt?.toISOString() ?? null,
+      presenceExpiresAt: result.presenceExpiresAt?.toISOString() ?? null,
+    };
   }
 }

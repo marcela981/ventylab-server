@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del ciclo de vida de los comandos enviados
  * Descripción: Verifica la resolución por acuse (applied y pending → ACKED, rejected → REJECTED con motivo, acuses desconocidos o mal formados ignorados), por parámetros aplicados en la telemetría (APPLIED dentro de la tolerancia), por tiempo máximo (TIMEOUT) y al apagar, la latencia, el orden de las escrituras por comando y la suscripción al tópico de acuse con prefijo de pruebas
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,6 +36,14 @@ function frame(settings: Record<string, number>, mode?: string): TelemetryFrame 
   return { serverTs: Date.now(), pressure: 10, flow: 0, volume: 0, deviceId: "dev", settings, mode };
 }
 
+function lifecycleHarness(overrides: Parameters<typeof createVentilatorCommandsHarness>[0] = {}): VentilatorCommandsHarness {
+  const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness(overrides);
+
+  harness.telemetry.roomReservationResolver = (): string => "res-1";
+
+  return harness;
+}
+
 function statuses(harness: VentilatorCommandsHarness): string[] {
   return harness.realtime.payloadsOf<VentilatorCommandStatusPayload>(VENTILATOR_COMMAND_STATUS_EVENT).map((payload: VentilatorCommandStatusPayload): string => payload.status);
 }
@@ -50,13 +58,13 @@ describe("CommandLifecycleService", () => {
   });
 
   it("subscribes to the prefixed acknowledgement topic with QoS 1 when it is configured", () => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
+    const harness: VentilatorCommandsHarness = lifecycleHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
 
     expect(harness.mqtt.subscriptions).toEqual([{ topic: ACK_TOPIC, qos: 1 }]);
   });
 
   it.each(["applied", "pending"])("resolves an acknowledgement with status %s as ACKED with its latency", async (status: string) => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
+    const harness: VentilatorCommandsHarness = lifecycleHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
     const command: VentilatorCommand = newCommand();
 
     harness.lifecycle.recordSent(command);
@@ -72,7 +80,7 @@ describe("CommandLifecycleService", () => {
   });
 
   it("resolves a rejected acknowledgement as REJECTED with the device reason", () => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
+    const harness: VentilatorCommandsHarness = lifecycleHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
     const command: VentilatorCommand = newCommand();
 
     harness.lifecycle.recordSent(command);
@@ -82,7 +90,7 @@ describe("CommandLifecycleService", () => {
   });
 
   it("ignores acknowledgements for unknown commands, malformed messages and other topics", () => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
+    const harness: VentilatorCommandsHarness = lifecycleHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
     const command: VentilatorCommand = newCommand();
 
     harness.lifecycle.recordSent(command);
@@ -95,7 +103,7 @@ describe("CommandLifecycleService", () => {
   });
 
   it("resolves APPLIED when a frame reports the same settings within the tolerance and no acknowledgement topic is configured", () => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness();
+    const harness: VentilatorCommandsHarness = lifecycleHarness();
     const command: VentilatorCommand = newCommand();
 
     harness.lifecycle.recordSent(command);
@@ -108,7 +116,7 @@ describe("CommandLifecycleService", () => {
   });
 
   it("does not resolve APPLIED from frames without settings or with another mode", () => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness();
+    const harness: VentilatorCommandsHarness = lifecycleHarness();
     const command: VentilatorCommand = newCommand();
 
     harness.lifecycle.recordSent(command);
@@ -119,7 +127,7 @@ describe("CommandLifecycleService", () => {
   });
 
   it("times out after VENTILATOR_COMMAND_TIMEOUT_MS and never leaves a command SENT", () => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness();
+    const harness: VentilatorCommandsHarness = lifecycleHarness();
     const command: VentilatorCommand = newCommand();
 
     harness.lifecycle.recordSent(command);
@@ -133,7 +141,7 @@ describe("CommandLifecycleService", () => {
   });
 
   it("does not time out a command already acknowledged", () => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
+    const harness: VentilatorCommandsHarness = lifecycleHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
     const command: VentilatorCommand = newCommand();
 
     harness.lifecycle.recordSent(command);
@@ -144,7 +152,7 @@ describe("CommandLifecycleService", () => {
   });
 
   it("resolves every SENT command as TIMEOUT on shutdown", () => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness();
+    const harness: VentilatorCommandsHarness = lifecycleHarness();
     const commands: VentilatorCommand[] = [newCommand("a"), newCommand("b")];
 
     commands.forEach((command: VentilatorCommand): void => harness.lifecycle.recordSent(command));
@@ -154,7 +162,7 @@ describe("CommandLifecycleService", () => {
   });
 
   it("keeps the writes of each command in transition order", async () => {
-    const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness();
+    const harness: VentilatorCommandsHarness = lifecycleHarness();
     const command: VentilatorCommand = newCommand();
 
     harness.lifecycle.recordSent(command);
@@ -163,5 +171,31 @@ describe("CommandLifecycleService", () => {
 
     expect(harness.repository.writes.map((write: VentilatorCommand): string => write.status)).toEqual(["SENT", "TIMEOUT"]);
     expect(harness.repository.rows.get("cmd-1")?.status).toBe("TIMEOUT");
+  });
+
+  it("rejects a command still waiting for the broker on shutdown and ignores its late publish confirmation", () => {
+    const harness: VentilatorCommandsHarness = lifecycleHarness();
+    const command: VentilatorCommand = newCommand();
+
+    harness.lifecycle.track(command);
+    harness.lifecycle.stop();
+    harness.lifecycle.recordSent(command);
+
+    expect([command.status, command.rejectReason]).toEqual(["REJECTED", "server_shutdown"]);
+    expect(statuses(harness)).toEqual(["REJECTED"]);
+    expect(harness.lifecycle.inFlightCount).toBe(0);
+  });
+
+  it("stops waiting for pending writes after the shutdown timeout", async () => {
+    const harness: VentilatorCommandsHarness = lifecycleHarness();
+
+    harness.repository.save = async (): Promise<void> => await new Promise<void>((): void => undefined);
+    harness.lifecycle.recordSent(newCommand());
+
+    const flushed: Promise<boolean> = harness.lifecycle.flushPersistence(2000);
+
+    await jest.advanceTimersByTimeAsync(2000);
+
+    expect(await flushed).toBe(false);
   });
 });

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Validación de variables de entorno
- * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo) y de la telemetría del ventilador físico (conexión MQTT habilitada solo con MQTT_BROKER_URL, tópicos, retroceso de reconexión, decodificador, intervalos de envío, máximo de tramas en el búfer de lotes, inactividad, sala, métricas y grabación) y de los comandos del ventilador (tópico de acuse opcional, prefijo de tópicos de pruebas, codificación, tiempo máximo de espera, frecuencia por usuario, gracia del operador, refresco del control, tolerancia de parámetros aplicados y límites de seguridad); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL
- * Versión: 1.10
+ * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo) y de la telemetría del ventilador físico (conexión MQTT habilitada solo con MQTT_BROKER_URL, tópicos, retroceso de reconexión, decodificador, intervalos de envío, máximo de tramas en el búfer de lotes, inactividad, sala, métricas, grabación, ventana de reordenamiento y vuelta opcional de 16 o 32 bits de la secuencia) y de los comandos del ventilador (tópico de acuse opcional, prefijo de tópicos de pruebas, que debe empezar por letra o dígito, codificación, tiempo máximo de espera, frecuencia por usuario, gracia del operador, refresco del control, tolerancia de parámetros aplicados y límites de seguridad); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL
+ * Versión: 1.11
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,13 +9,16 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Transform, Type, plainToInstance } from "class-transformer";
-import { IsBoolean, IsEmail, IsEnum, IsIn, IsInt, IsJSON, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, Max, Min, type ValidationError, validateSync } from "class-validator";
+import { IsBoolean, IsEmail, IsEnum, IsIn, IsInt, IsJSON, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, Matches, Max, Min, type ValidationError, validateSync } from "class-validator";
 
 export enum Environment {
   Development = "development",
   Production = "production",
   Test = "test",
 }
+
+// A test prefix such as "/" would map the test topics onto the real ones
+export const MQTT_TEST_TOPIC_PREFIX_PATTERN: RegExp = /^[A-Za-z0-9][A-Za-z0-9_\-/]*$/;
 
 const ToBoolean = (): PropertyDecorator =>
   Transform(({ value }: { value: unknown }): unknown => {
@@ -162,7 +165,7 @@ export class EnvironmentVariables {
   public MQTT_COMMAND_ACK_TOPIC: string = "";
 
   @IsString()
-  @IsNotEmpty()
+  @Matches(MQTT_TEST_TOPIC_PREFIX_PATTERN, { message: "MQTT_TEST_TOPIC_PREFIX must start with a letter or digit and contain only letters, digits, _, - and /" })
   public MQTT_TEST_TOPIC_PREFIX: string = "test/ventylab";
 
   @IsIn(["json", "hex"])
@@ -280,6 +283,16 @@ export class EnvironmentVariables {
   @Max(3600)
   @Type(() => Number)
   public VENTILATOR_RECORDING_FLUSH_SECONDS: number = 5;
+
+  @IsInt()
+  @Min(0)
+  @Max(1024)
+  @Type(() => Number)
+  public VENTILATOR_SEQ_REORDER_WINDOW: number = 16;
+
+  @IsIn([0, 16, 32])
+  @Type(() => Number)
+  public VENTILATOR_SEQ_WRAP_BITS: 0 | 16 | 32 = 0;
 
   @IsString()
   @IsOptional()

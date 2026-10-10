@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pipeline de telemetría del ventilador
- * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia, actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada VENTILATOR_FLUSH_INTERVAL_MS emite un lote volátil ventilator:telemetry y la lectura heredada ventilator:data a la sala ventilator y a docentes y administradores, y registra las latencias
- * Versión: 1.1
+ * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia (con ventana de reordenamiento VENTILATOR_SEQ_REORDER_WINDOW y vuelta opcional VENTILATOR_SEQ_WRAP_BITS), actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada VENTILATOR_FLUSH_INTERVAL_MS emite un lote volátil ventilator:telemetry y la lectura heredada ventilator:data a la sala ventilator y a docentes y administradores, y registra las latencias
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -29,7 +29,7 @@ import {
 } from "@/features/ventilator-telemetry/application/tokens/ventilator-telemetry-settings.token";
 import { decodeJsonAlarm } from "@/features/ventilator-telemetry/domain/decoders/json-alarm.decoder";
 import { type DecodeResult, type TelemetryDecoder, type TelemetryDecoderName } from "@/features/ventilator-telemetry/domain/decoders/telemetry-decoder";
-import { SequenceGapTracker } from "@/features/ventilator-telemetry/domain/services/sequence-gap-tracker";
+import { type SequenceObservation, SequenceGapTracker } from "@/features/ventilator-telemetry/domain/services/sequence-gap-tracker";
 import { stampTelemetryFrame, type TelemetryFrame, toVentilatorReading } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-frame";
 import { type VentilatorAlarm } from "@/features/ventilator-telemetry/domain/value-objects/ventilator-alarm";
 
@@ -48,7 +48,7 @@ export class TelemetryPipelineService {
   private readonly _audience: readonly string[] = [VENTILATOR_ROOM, ...TELEMETRY_PRIVILEGED_ROLES.map(roleRoom)];
   private readonly _listeners: Set<TelemetryFrameListener> = new Set<TelemetryFrameListener>();
   private readonly _activeAlarms: Map<string, VentilatorAlarm> = new Map<string, VentilatorAlarm>();
-  private readonly _sequence: SequenceGapTracker = new SequenceGapTracker();
+  private readonly _sequence: SequenceGapTracker;
   private _pending: PendingFrame[] = [];
   private _latestSettings: Readonly<Record<string, number>> | undefined;
   private _timer: ReturnType<typeof setInterval> | undefined;
@@ -67,7 +67,9 @@ export class TelemetryPipelineService {
     private readonly _recorder: TelemetryRecorderService,
     @Inject(TELEMETRY_CLOCK_TOKEN)
     private readonly _clock: ITelemetryClock,
-  ) {}
+  ) {
+    this._sequence = new SequenceGapTracker({ reorderWindow: _settings.sequenceReorderWindow, wrapBits: _settings.sequenceWrapBits });
+  }
 
   public get decoderName(): TelemetryDecoderName {
     return this._decoder.name;
@@ -170,10 +172,14 @@ export class TelemetryPipelineService {
   }
 
   private _acceptFrame(frame: TelemetryFrame, receivedAt: number): void {
-    const lost: number = this._sequence.observe(frame.seq);
+    const sequence: SequenceObservation = this._sequence.observe(frame.seq);
 
-    if (lost > 0) {
-      this._metrics.recordLost(lost);
+    if (sequence.lost > 0) {
+      this._metrics.recordLost(sequence.lost);
+    }
+
+    if (sequence.reordered) {
+      this._metrics.recordReordered();
     }
 
     if (frame.settings !== undefined) {

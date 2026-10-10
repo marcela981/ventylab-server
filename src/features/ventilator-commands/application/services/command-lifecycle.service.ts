@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Ciclo de vida de los comandos enviados
- * Descripción: Sigue cada comando publicado hasta un estado terminal: arma siempre un temporizador de VENTILATOR_COMMAND_TIMEOUT_MS (TIMEOUT), resuelve ACKED o REJECTED con los acuses del tópico MQTT_COMMAND_ACK_TOPIC cuando está configurado, o APPLIED cuando una trama de telemetría informa los mismos parámetros dentro de la tolerancia; emite ventilator:command-status en cada transición y persiste cada estado sin bloquear la publicación mediante una cadena de promesas ordenada por comando
- * Versión: 1.0
+ * Descripción: Sigue cada comando hasta un estado terminal: lo registra antes de publicarlo (un acuse o una trama que llegue antes de la confirmación del broker se guarda y se aplica justo después de SENT; un fallo de publicación lo descarta como REJECTED), arma siempre un temporizador de VENTILATOR_COMMAND_TIMEOUT_MS al quedar SENT (TIMEOUT), resuelve ACKED o REJECTED con los acuses del tópico MQTT_COMMAND_ACK_TOPIC cuando está configurado, o APPLIED cuando una trama de telemetría informa los mismos parámetros dentro de la tolerancia; emite ventilator:command-status en cada transición (solo al remitente, docentes y administradores si la sala ventilator ya pertenece a otra reserva), espera la persistencia pendiente con un límite de tiempo al apagar y persiste cada estado sin bloquear la publicación mediante una cadena de promesas ordenada por comando
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,24 +13,37 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { type IRealtimePublisher, REALTIME_PUBLISHER_TOKEN } from "@/common/application/ports/realtime-publisher.interface";
 import {
   VENTILATOR_COMMAND_STATUS_EVENT,
-  VENTILATOR_COMMANDS_AUDIENCE,
   type VentilatorCommandStatusPayload,
+  ventilatorCommandsAudience,
 } from "@/features/ventilator-commands/application/realtime/ventilator-commands-events";
 import { VENTILATOR_COMMANDS_SETTINGS_TOKEN, type VentilatorCommandsSettings } from "@/features/ventilator-commands/application/tokens/ventilator-commands-settings.token";
 import { type VentilatorCommand } from "@/features/ventilator-commands/domain/entities/ventilator-command.entity";
 import { type IVentilatorCommandsRepository, VENTILATOR_COMMANDS_REPOSITORY_TOKEN } from "@/features/ventilator-commands/domain/repositories/ventilator-commands.repository";
 import { settingsMatchCommand } from "@/features/ventilator-commands/domain/services/applied-settings-match";
 import { type CommandAck, parseCommandAck } from "@/features/ventilator-commands/domain/services/command-ack";
+import { PENDING_COMMAND_STATUS, SENT_COMMAND_STATUS } from "@/features/ventilator-commands/domain/value-objects/ventilator-command-status";
 import { type MqttQos } from "@/features/ventilator-telemetry/application/ports/mqtt-connection.interface";
 import { VentilatorTelemetryFacade } from "@/features/ventilator-telemetry/application/services/ventilator-telemetry.facade";
 import { type TelemetryFrame } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-frame";
 
 const ACK_QOS: MqttQos = 1;
 const DEFAULT_DEVICE_REJECT_REASON: string = "rejected_by_device";
+const SHUTDOWN_REJECT_REASON: string = "server_shutdown";
+
+type CommandTransition = (command: VentilatorCommand) => void;
 
 interface InFlightCommand {
   readonly command: VentilatorCommand;
-  readonly timer: ReturnType<typeof setTimeout>;
+  timer: ReturnType<typeof setTimeout> | undefined;
+  earlyResolution: CommandTransition | undefined;
+}
+
+function markTimedOut(command: VentilatorCommand): void {
+  command.markTimedOut(new Date());
+}
+
+function markShutdownRejected(command: VentilatorCommand): void {
+  command.markPublishFailed(SHUTDOWN_REJECT_REASON, new Date());
 }
 
 @Injectable()
@@ -84,26 +97,47 @@ export class CommandLifecycleService {
 
     this._unsubscribers = [];
 
-    for (const id of [...this._inFlight.keys()]) {
-      this._resolve(id, (command: VentilatorCommand): void => command.markTimedOut(new Date()));
+    for (const [id, inFlight] of [...this._inFlight]) {
+      this._resolve(id, inFlight.command.status === SENT_COMMAND_STATUS ? markTimedOut : markShutdownRejected);
     }
   }
 
+  public track(command: VentilatorCommand): void {
+    this._inFlight.set(command.id, { command, timer: undefined, earlyResolution: undefined });
+  }
+
   public recordPublishFailure(command: VentilatorCommand, reason: string): void {
+    this._inFlight.delete(command.id);
+
+    if (command.status !== PENDING_COMMAND_STATUS) {
+      return;
+    }
+
     command.markPublishFailed(reason, new Date());
     this._announce(command);
   }
 
   public recordSent(command: VentilatorCommand): void {
+    if (command.status !== PENDING_COMMAND_STATUS) {
+      return;
+    }
+
+    const inFlight: InFlightCommand = this._inFlight.get(command.id) ?? { command, timer: undefined, earlyResolution: undefined };
+
     command.markSent(new Date());
-
-    const timer: ReturnType<typeof setTimeout> = setTimeout((): void => {
-      this._resolve(command.id, (pending: VentilatorCommand): void => pending.markTimedOut(new Date()));
-    }, this._settings.timeoutMs);
-
-    timer.unref();
-    this._inFlight.set(command.id, { command, timer });
+    this._inFlight.set(command.id, inFlight);
     this._announce(command);
+
+    if (inFlight.earlyResolution !== undefined) {
+      this._resolve(command.id, inFlight.earlyResolution);
+
+      return;
+    }
+
+    inFlight.timer = setTimeout((): void => {
+      this._resolve(command.id, markTimedOut);
+    }, this._settings.timeoutMs);
+    inFlight.timer.unref();
   }
 
   public handleAck(payload: Buffer | string): void {
@@ -114,12 +148,12 @@ export class CommandLifecycleService {
     }
 
     if (ack.status === "rejected") {
-      this._resolve(ack.commandId, (command: VentilatorCommand): void => command.markRejected(ack.reason ?? DEFAULT_DEVICE_REJECT_REASON, new Date()));
+      this._resolveOrBuffer(ack.commandId, (command: VentilatorCommand): void => command.markRejected(ack.reason ?? DEFAULT_DEVICE_REJECT_REASON, new Date()));
 
       return;
     }
 
-    this._resolve(ack.commandId, (command: VentilatorCommand): void => command.markAcked(new Date()));
+    this._resolveOrBuffer(ack.commandId, (command: VentilatorCommand): void => command.markAcked(new Date()));
   }
 
   public handleFrame(frame: TelemetryFrame): void {
@@ -131,16 +165,52 @@ export class CommandLifecycleService {
 
     for (const [id, inFlight] of [...this._inFlight]) {
       if (settingsMatchCommand(inFlight.command.params, settings, frame.mode, this._settings.applyToleranceRatio)) {
-        this._resolve(id, (command: VentilatorCommand): void => command.markApplied(new Date()));
+        this._resolveOrBuffer(id, (command: VentilatorCommand): void => command.markApplied(new Date()));
       }
     }
   }
 
-  public async flushPersistence(): Promise<void> {
-    await Promise.all([...this._persistChains.values()]);
+  public async flushPersistence(timeoutMs?: number): Promise<boolean> {
+    const pending: Promise<boolean> = Promise.all([...this._persistChains.values()]).then((): boolean => true);
+
+    if (timeoutMs === undefined) {
+      return await pending;
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout: Promise<boolean> = new Promise<boolean>((resolve: (flushed: boolean) => void): void => {
+      timer = setTimeout((): void => resolve(false), timeoutMs);
+    });
+
+    const flushed: boolean = await Promise.race([pending, timeout]);
+
+    clearTimeout(timer);
+
+    if (!flushed) {
+      this._logger.warn(`Ventilator command persistence did not finish within ${timeoutMs} ms on shutdown`);
+    }
+
+    return flushed;
   }
 
-  private _resolve(id: string, transition: (command: VentilatorCommand) => void): void {
+  // A device acknowledgement or a matching frame may arrive before the broker confirms the publish
+  private _resolveOrBuffer(id: string, transition: CommandTransition): void {
+    const inFlight: InFlightCommand | undefined = this._inFlight.get(id);
+
+    if (!inFlight) {
+      return;
+    }
+
+    if (inFlight.command.status === PENDING_COMMAND_STATUS) {
+      inFlight.earlyResolution = inFlight.earlyResolution ?? transition;
+
+      return;
+    }
+
+    this._resolve(id, transition);
+  }
+
+  private _resolve(id: string, transition: CommandTransition): void {
     const inFlight: InFlightCommand | undefined = this._inFlight.get(id);
 
     if (!inFlight) {
@@ -167,6 +237,7 @@ export class CommandLifecycleService {
   }
 
   private _emit(command: VentilatorCommand): void {
+    const audience: readonly string[] = ventilatorCommandsAudience(command.reservationId, this._telemetryFacade.ventilatorRoomReservationId, command.userId);
     const payload: VentilatorCommandStatusPayload = {
       commandId: command.id,
       reservationId: command.reservationId,
@@ -178,7 +249,7 @@ export class CommandLifecycleService {
       reason: command.rejectReason,
     };
 
-    for (const room of VENTILATOR_COMMANDS_AUDIENCE) {
+    for (const room of audience) {
       this._realtimePublisher.emitToRoom(room, VENTILATOR_COMMAND_STATUS_EVENT, payload);
     }
   }
