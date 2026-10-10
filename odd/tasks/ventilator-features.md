@@ -88,7 +88,7 @@ Allowed dependencies:
       limits, cancel rules, legacy reserve adapter). Route: delegated (writer trigger: many files).
 - [x] T2 ventilator-telemetry (MQTT singleton, decoders, batching, room access, staleness, seq,
       metrics + CSV, recording, legacy relay removal, Influx sink). Route: delegated.
-- [ ] T3 ventilator-commands (operator control + heartbeat, validation, rate limit, encoders,
+- [x] T3 ventilator-commands (operator control + heartbeat, validation, rate limit, encoders,
       lifecycle, persistence, legacy command adapter). Route: delegated.
 - [ ] T4 UPPAAL property tests + docs (audit report, traceability, open questions, verification
       evidence). Route: delegated.
@@ -115,3 +115,7 @@ mqttx bench against a broker, physical ventilator tests.
 - RDD: user granted review for range 6b9d737..1693093, but START stopped with
   `lens_context_budget_exceeded` (21.6k lines incl. baseline). No authority created. Pending:
   review smaller per-feature commit slices (new consent per candidate).
+- T3 done (delegated writer). Evidence: tsc 0 errors; jest commands 115 passed; full jest 1290/1291
+  (same engine-determinism load flake, passes alone 3/3); madge 0 cycles; mqtt.connect 1; no
+  simulation imports in the 3 features. UPPAAL command properties S2, S3, S6/S7, L1, L2, R1-R3 in
+  `uppaal-commands-properties.spec.ts`.

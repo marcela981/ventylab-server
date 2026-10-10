@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de dominio de simulación
- * Descripción: Errores del ventilador físico (reserva ocupada, sin reserva activa, comando fuera de rango, usuario que no lidera la reserva, dispositivo desconectado), del paciente simulado (datos faltantes, paciente sin configurar, caso clínico inexistente) y de las sesiones con eventos (sesión inexistente, sin acceso o inactiva, examen no válido, caso no simulable, rúbrica inválida, lote, tiempo, id o payload de evento inválidos y ajuste fuera de rango) y asistencia de IA deshabilitada por la política del examen
- * Versión: 1.2
+ * Descripción: Errores del ventilador físico (reserva ocupada, sin reserva activa), del paciente simulado (datos faltantes, paciente sin configurar, caso clínico inexistente) y de las sesiones con eventos (sesión inexistente, sin acceso o inactiva, examen no válido, caso no simulable, rúbrica inválida, lote, tiempo, id o payload de evento inválidos y ajuste fuera de rango) y asistencia de IA deshabilitada por la política del examen
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,27 +19,6 @@ export class VentilatorAlreadyReservedError extends DomainError {
 export class NoActiveReservationError extends DomainError {
   public constructor() {
     super("No active reservation found for the user", "simulation.no_active_reservation");
-  }
-}
-
-export class InvalidVentilatorCommandError extends DomainError {
-  public readonly errors: string[];
-
-  public constructor(errors: string[]) {
-    super(`Command validation failed: ${errors.join("; ")}`, "simulation.invalid_ventilator_command");
-    this.errors = errors;
-  }
-}
-
-export class NotReservationLeaderError extends DomainError {
-  public constructor() {
-    super("Only the reservation leader can send commands", "simulation.not_reservation_leader");
-  }
-}
-
-export class VentilatorNotConnectedError extends DomainError {
-  public constructor() {
-    super("The ventilator connection is not available", "simulation.ventilator_not_connected");
   }
 }
 

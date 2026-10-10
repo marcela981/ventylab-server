@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetSimulationHealthUseCase
- * Descripción: Arma la instantánea de salud del módulo sin E/S: estado y tópico MQTT y tramas por segundo leídos de VentilatorTelemetryFacade, usuarios autenticados por WebSocket (IRealtimePublisher) y reserva activa en caché
- * Versión: 1.1
+ * Descripción: Arma la instantánea de salud del módulo sin E/S: estado y tópico MQTT y tramas por segundo leídos de VentilatorTelemetryFacade, usuarios autenticados por WebSocket (IRealtimePublisher) y la última reserva activa observada por el control del ventilador (VentilatorCommandsFacade)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,8 +12,8 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { type IRealtimePublisher, REALTIME_PUBLISHER_TOKEN } from "@/common/application/ports/realtime-publisher.interface";
 import { SimulationHealthResult } from "@/features/simulation/application/results/simulation-health.result";
-import { type CachedReservation, ReservationCacheService } from "@/features/simulation/application/services/reservation-cache.service";
 import { CONNECTED_STATUS_VALUE, DISCONNECTED_STATUS_VALUE } from "@/features/simulation/domain/value-objects/ventilator-telemetry";
+import { type VentilatorControlOverview, VentilatorCommandsFacade } from "@/features/ventilator-commands/application/services/ventilator-commands.facade";
 import { type VentilatorTelemetryConnectionInfo, type VentilatorTelemetryStatus } from "@/features/ventilator-telemetry/application/results/ventilator-telemetry-status.result";
 import { VentilatorTelemetryFacade } from "@/features/ventilator-telemetry/application/services/ventilator-telemetry.facade";
 
@@ -23,12 +23,12 @@ export class GetSimulationHealthUseCase {
     @Inject(REALTIME_PUBLISHER_TOKEN)
     private readonly _realtimePublisher: IRealtimePublisher,
     private readonly _telemetryFacade: VentilatorTelemetryFacade,
-    private readonly _reservationCache: ReservationCacheService,
+    private readonly _commandsFacade: VentilatorCommandsFacade,
   ) {}
 
   public execute(): SimulationHealthResult {
     const userIds: string[] = this._realtimePublisher.getConnectedUserIds();
-    const reservation: CachedReservation | undefined = this._reservationCache.current;
+    const control: VentilatorControlOverview = this._commandsFacade.getControlOverview();
     const status: VentilatorTelemetryStatus = this._telemetryFacade.getStatus();
     const connection: VentilatorTelemetryConnectionInfo = this._telemetryFacade.getConnectionInfo();
     const now: number = Date.now();
@@ -48,8 +48,8 @@ export class GetSimulationHealthUseCase {
         lastFrameAgeMs: status.lastMessageAt !== undefined ? now - status.lastMessageAt : null,
         framesPerSecond: status.msgRate,
       },
-      reservation: reservation
-        ? { isReserved: true, currentUser: reservation.userId, endsAt: reservation.endTime }
+      reservation: control.activeReservation
+        ? { isReserved: true, currentUser: control.activeReservation.userId ?? control.activeReservation.createdById, endsAt: control.activeReservation.endsAt.getTime() }
         : { isReserved: false },
     });
   }

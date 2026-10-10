@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetVentilatorStatusUseCase
- * Descripción: Devuelve el estado del ventilador físico: conexión MQTT, último mensaje y alarmas activas leídos de VentilatorTelemetryFacade y reserva activa leída de ReservationsFacade con el nombre de su titular (UsersFacade); refresca la caché de la reserva en segundo plano
- * Versión: 1.2
+ * Descripción: Devuelve el estado del ventilador físico: conexión MQTT, último mensaje y alarmas activas leídos de VentilatorTelemetryFacade y reserva activa leída de ReservationsFacade con el nombre de su titular (UsersFacade)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,7 +13,6 @@ import { Inject, Injectable } from "@nestjs/common";
 import { type ActiveReservationSummary } from "@/features/reservations/application/results/active-reservation-summary.result";
 import { ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
 import { VentilatorStatusResult } from "@/features/simulation/application/results/ventilator-status.result";
-import { ReservationCacheService } from "@/features/simulation/application/services/reservation-cache.service";
 import { SIMULATION_SETTINGS_TOKEN, type SimulationSettings } from "@/features/simulation/application/tokens/simulation-settings.token";
 import { CONNECTED_STATUS_VALUE, DISCONNECTED_STATUS_VALUE, type VentilatorStatusValue } from "@/features/simulation/domain/value-objects/ventilator-telemetry";
 import { UsersFacade } from "@/features/users/application/services/users.facade";
@@ -29,15 +28,12 @@ export class GetVentilatorStatusUseCase {
     private readonly _telemetryFacade: VentilatorTelemetryFacade,
     private readonly _reservationsFacade: ReservationsFacade,
     private readonly _usersFacade: UsersFacade,
-    private readonly _reservationCache: ReservationCacheService,
   ) {}
 
   public async execute(deviceId?: string): Promise<VentilatorStatusResult> {
     const telemetry: VentilatorTelemetryStatus = this._telemetryFacade.getStatus();
     const status: VentilatorStatusValue = telemetry.brokerConnected ? CONNECTED_STATUS_VALUE : DISCONNECTED_STATUS_VALUE;
     const targetDeviceId: string = deviceId ?? this._settings.deviceId;
-
-    this._reservationCache.refreshInBackground();
 
     const active: ActiveReservationSummary | undefined = targetDeviceId === this._settings.deviceId ? await this._reservationsFacade.getActiveReservation(new Date()) : undefined;
     const currentUser: string | undefined = active ? active.userId ?? active.createdById : undefined;

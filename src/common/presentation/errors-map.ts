@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.26
+ * Versión: 1.27
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -221,9 +221,7 @@ import { InvalidScorePointsError, ScoreNotFoundError, ScoreNotOwnedError } from 
 import { InvalidSectionReorderError, SectionNotFoundError, SectionSlugAlreadyExistsError } from "@/features/sections/domain/sections.errors";
 import {
   InvalidSimulationEventPayloadError,
-  InvalidVentilatorCommandError,
   NoActiveReservationError,
-  NotReservationLeaderError,
   PatientDataRequiredError,
   PatientNotConfiguredError,
   SimulationCaseNotFoundError,
@@ -241,7 +239,6 @@ import {
   SimulationSessionNotActiveError,
   SimulationSessionNotFoundError,
   VentilatorAlreadyReservedError,
-  VentilatorNotConnectedError,
 } from "@/features/simulation/domain/simulation.errors";
 import {
   InactiveLessonStepCreationError,
@@ -267,6 +264,17 @@ import {
   UserNotFoundError,
   UserNotStudentError,
 } from "@/features/users/domain/users.errors";
+import {
+  IllegalVentilatorCommandTransitionError,
+  InvalidVentilatorCommandError,
+  NoActiveVentilatorReservationError,
+  NotReservationHolderError,
+  NotVentilatorOperatorError,
+  VentilatorCommandRateLimitedError,
+  VentilatorCommandReservationNotFoundError,
+  VentilatorControlLockedError,
+  VentilatorDeviceOfflineError,
+} from "@/features/ventilator-commands/domain/ventilator-commands.errors";
 import {
   TelemetryNoActiveReservationError,
   TelemetryRecordingForbiddenError,
@@ -417,9 +425,6 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [StudentRoleRequiredError, HttpStatus.FORBIDDEN],
   [VentilatorAlreadyReservedError, HttpStatus.CONFLICT],
   [NoActiveReservationError, HttpStatus.NOT_FOUND],
-  [InvalidVentilatorCommandError, HttpStatus.UNPROCESSABLE_ENTITY],
-  [NotReservationLeaderError, HttpStatus.FORBIDDEN],
-  [VentilatorNotConnectedError, HttpStatus.SERVICE_UNAVAILABLE],
   [PatientDataRequiredError, HttpStatus.BAD_REQUEST],
   [PatientNotConfiguredError, HttpStatus.NOT_FOUND],
   [SimulationCaseNotFoundError, HttpStatus.NOT_FOUND],
@@ -504,4 +509,13 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [TelemetryNoActiveReservationError, HttpStatus.CONFLICT],
   [TelemetryRecordingForbiddenError, HttpStatus.FORBIDDEN],
   [TelemetryReservationNotFoundError, HttpStatus.NOT_FOUND],
+  [NoActiveVentilatorReservationError, HttpStatus.FORBIDDEN],
+  [NotReservationHolderError, HttpStatus.FORBIDDEN],
+  [VentilatorControlLockedError, HttpStatus.LOCKED],
+  [NotVentilatorOperatorError, HttpStatus.LOCKED],
+  [VentilatorCommandRateLimitedError, HttpStatus.TOO_MANY_REQUESTS],
+  [InvalidVentilatorCommandError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [VentilatorDeviceOfflineError, HttpStatus.SERVICE_UNAVAILABLE],
+  [VentilatorCommandReservationNotFoundError, HttpStatus.NOT_FOUND],
+  [IllegalVentilatorCommandTransitionError, HttpStatus.CONFLICT],
 ]);

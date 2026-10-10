@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de simulación
  * Descripción: Endpoints /api/simulation: salud pública del módulo, estado del ventilador, envío de comandos (simulación sintética o ventilador físico), reserva y liberación, apertura y guardado de sesiones y listado de sesiones del usuario
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -110,14 +110,17 @@ export class SimulationController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Send ventilator command",
-    description: "Adjusts the running synthetic simulation, starts it when a patient is configured, or validates and publishes the command to the physical ventilator over MQTT",
+    description:
+      "Adjusts the running synthetic simulation, starts it when a patient is configured, or delegates the command to the physical ventilator (same rules as POST /api/ventilator/commands: active reservation, holder, exclusive operator, rate limit, validation, device online)",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Command accepted", type: CommandResultDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Not the reservation leader" })
-  @ApiResponseDoc({ status: HttpStatus.UNPROCESSABLE_ENTITY, description: "Command parameters out of the safe ranges" })
-  @ApiResponseDoc({ status: HttpStatus.SERVICE_UNAVAILABLE, description: "Ventilator not connected" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "No active reservation or not a reservation holder" })
+  @ApiResponseDoc({ status: HttpStatus.LOCKED, description: "The user is not the ventilator operator" })
+  @ApiResponseDoc({ status: HttpStatus.UNPROCESSABLE_ENTITY, description: "Command out of range, incoherent or beyond the safety limits" })
+  @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many commands" })
+  @ApiResponseDoc({ status: HttpStatus.SERVICE_UNAVAILABLE, description: "Ventilator offline" })
   public async sendCommand(
     @Body() dto: SendVentilatorCommandDTO,
     @CurrentUser() currentUser: JwtPayload,
@@ -126,6 +129,7 @@ export class SimulationController {
     const result: SendVentilatorCommandResult = await this._sendVentilatorCommandUseCase.execute(
       new SendVentilatorCommandCommand({
         userId: currentUser.sub,
+        userRole: currentUser.role,
         command: PatientConfigurationMapper.toVentilatorCommand(dto.command),
       }),
     );

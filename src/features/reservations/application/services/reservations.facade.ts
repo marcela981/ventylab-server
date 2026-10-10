@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada pública de reservas
- * Descripción: API que ReservationsModule exporta para otras features (simulación heredada, telemetría y comandos del ventilador): reserva activa en un instante, titularidad, usuarios titulares, estadísticas de uso y los adaptadores heredados de reserva inmediata y liberación
- * Versión: 1.0
+ * Descripción: API que ReservationsModule exporta para otras features (simulación heredada, telemetría y comandos del ventilador): reserva activa en un instante, reserva por identificador, titularidad, liderazgo del grupo titular (vía GroupsFacade), usuarios titulares, estadísticas de uso y los adaptadores heredados de reserva inmediata y liberación
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { Inject, Injectable } from "@nestjs/common";
 
+import { GroupsFacade } from "@/features/groups/application/services/groups.facade";
 import { ReserveNowCommand } from "@/features/reservations/application/commands/reserve-now.command";
 import { type ActiveReservationSummary, toActiveReservationSummary } from "@/features/reservations/application/results/active-reservation-summary.result";
 import { type ReleasedReservationResult } from "@/features/reservations/application/results/released-reservation.result";
@@ -46,6 +47,7 @@ export class ReservationsFacade {
     private readonly _accessService: ReservationAccessService,
     private readonly _reserveNowUseCase: ReserveNowUseCase,
     private readonly _releaseActiveReservationUseCase: ReleaseActiveReservationUseCase,
+    private readonly _groupsFacade: GroupsFacade,
   ) {}
 
   public async getActiveReservation(now: Date): Promise<ActiveReservationSummary | undefined> {
@@ -60,6 +62,16 @@ export class ReservationsFacade {
 
   public async listHolderUserIds(reservation: ActiveReservationSummary): Promise<string[]> {
     return await this._accessService.listHolderUserIds(ReservationsFacade._toHolder(reservation));
+  }
+
+  public async getReservationById(id: string): Promise<ActiveReservationSummary | undefined> {
+    const reservation: Reservation | undefined = await this._reservationsRepository.getById(id);
+
+    return reservation ? toActiveReservationSummary(reservation) : undefined;
+  }
+
+  public async isGroupLeaderOfHolder(userId: string, reservation: ActiveReservationSummary): Promise<boolean> {
+    return reservation.groupId !== undefined && (await this._groupsFacade.isGroupLeader(userId, reservation.groupId));
   }
 
   public async getUsageStats(range: ReservationUsageRange, groupId?: string): Promise<ReservationUsageStats> {

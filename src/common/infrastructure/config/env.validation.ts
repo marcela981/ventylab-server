@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Validación de variables de entorno
- * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo) y de la telemetría del ventilador físico (conexión MQTT habilitada solo con MQTT_BROKER_URL, tópicos, retroceso de reconexión, decodificador, intervalos de envío, inactividad, sala, métricas y grabación); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL
- * Versión: 1.8
+ * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo) y de la telemetría del ventilador físico (conexión MQTT habilitada solo con MQTT_BROKER_URL, tópicos, retroceso de reconexión, decodificador, intervalos de envío, inactividad, sala, métricas y grabación) y de los comandos del ventilador (tópico de acuse opcional, prefijo de tópicos de pruebas, codificación, tiempo máximo de espera, frecuencia por usuario, gracia del operador, refresco del control, tolerancia de parámetros aplicados y límites de seguridad); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL
+ * Versión: 1.9
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -157,6 +157,71 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   public MQTT_ALARM_TOPIC: string = "ventilab/device/001/alarm";
+
+  @IsString()
+  public MQTT_COMMAND_ACK_TOPIC: string = "";
+
+  @IsString()
+  @IsNotEmpty()
+  public MQTT_TEST_TOPIC_PREFIX: string = "test/ventylab";
+
+  @IsIn(["json", "hex"])
+  public VENTILATOR_COMMAND_ENCODING: "json" | "hex" = "json";
+
+  @IsInt()
+  @Min(100)
+  @Max(60000)
+  @Type(() => Number)
+  public VENTILATOR_COMMAND_TIMEOUT_MS: number = 3000;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0.1)
+  @Max(100)
+  @Type(() => Number)
+  public VENTILATOR_COMMAND_RATE_PER_SECOND: number = 5;
+
+  @IsInt()
+  @Min(0)
+  @Max(600)
+  @Type(() => Number)
+  public VENTILATOR_OPERATOR_GRACE_SECONDS: number = 15;
+
+  @IsInt()
+  @Min(100)
+  @Type(() => Number)
+  public VENTILATOR_CONTROL_REFRESH_MS: number = 1000;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0)
+  @Max(1)
+  @Type(() => Number)
+  public VENTILATOR_APPLY_TOLERANCE_RATIO: number = 0.05;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0)
+  @Type(() => Number)
+  public VENTILATOR_SAFETY_MAX_PEEP: number = 15;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0)
+  @Type(() => Number)
+  public VENTILATOR_SAFETY_MAX_PRESSURE_LIMIT: number = 40;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0)
+  @Type(() => Number)
+  public VENTILATOR_SAFETY_MAX_TIDAL_VOLUME: number = 700;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0)
+  @Type(() => Number)
+  public VENTILATOR_SAFETY_MAX_RESPIRATORY_RATE: number = 35;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0.1)
+  @Max(4)
+  @Type(() => Number)
+  public VENTILATOR_SAFETY_MAX_IE_RATIO: number = 1;
 
   @IsInt()
   @Min(100)

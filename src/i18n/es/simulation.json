@@ -1,9 +1,6 @@
 {
   "ventilator_already_reserved": "El ventilador ya está reservado por otro usuario",
   "no_active_reservation": "No tiene una reserva activa del ventilador",
-  "invalid_ventilator_command": "La validación del comando falló: uno o más parámetros están fuera de los rangos seguros",
-  "not_reservation_leader": "Solo el líder de la reserva puede enviar comandos",
-  "ventilator_not_connected": "La conexión con el ventilador no está disponible",
   "patient_data_required": "Se requieren datos del paciente: indique un caso clínico o los datos demográficos y la condición",
   "patient_not_configured": "No hay un paciente configurado para la simulación",
   "case_not_found": "Caso clínico de simulación no encontrado",

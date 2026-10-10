@@ -1,0 +1,22 @@
+{
+  "control_retrieved": "Estado del control del ventilador obtenido correctamente",
+  "control_taken": "Control del ventilador tomado",
+  "control_released": "Control del ventilador liberado",
+  "heartbeat_received": "Presencia del operador renovada",
+  "command_sent": "Comando del ventilador enviado",
+  "commands_retrieved": "Comandos del ventilador obtenidos correctamente",
+  "no_active_reservation": "No hay una reserva activa del ventilador",
+  "not_reservation_holder": "Solo los titulares de la reserva, los docentes y los administradores pueden hacer esto",
+  "control_locked": "El ventilador está controlado por otro operador",
+  "not_operator": "Solo el operador actual del ventilador puede hacer esto",
+  "rate_limited": "Demasiados comandos al ventilador, inténtalo más tarde",
+  "invalid_command": "El comando del ventilador no es válido; revisa las violaciones listadas",
+  "device_offline": "El ventilador está fuera de línea",
+  "reservation_not_found": "Reserva no encontrada",
+  "illegal_transition": "Un comando del ventilador no puede pasar de {from} a {to}",
+  "validation": {
+    "mode_invalid": "mode debe ser VCV, PCV, SIMV o PSV",
+    "number": "{property} debe ser un número finito",
+    "reservation_id_required": "reservationId es obligatorio"
+  }
+}

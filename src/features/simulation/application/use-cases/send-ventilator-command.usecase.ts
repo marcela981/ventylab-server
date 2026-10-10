@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Caso de uso SendVentilatorCommandUseCase
- * Descripción: Enruta los ajustes del ventilador: ajusta la simulación sintética en curso, la arranca si el paciente está configurado, o valida rangos, verifica el líder de la reserva y publica el comando al ventilador físico con QoS 1 por la conexión MQTT única de VentilatorTelemetryFacade
- * Versión: 1.1
+ * Descripción: Enruta los ajustes del ventilador: ajusta la simulación sintética en curso, la arranca si el paciente está configurado, o delega el comando al ventilador físico en VentilatorCommandsFacade, que valida, autoriza por reserva activa y operador, limita la frecuencia, publica con QoS 1 y sigue su ciclo de vida
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import { SendVentilatorCommandCommand } from "@/features/simulation/application/commands/send-ventilator-command.command";
 import {
@@ -18,32 +18,22 @@ import {
   SYNTHETIC_UPDATE_TARGET,
 } from "@/features/simulation/application/results/send-ventilator-command.result";
 import { PatientSimulationSessionsService } from "@/features/simulation/application/services/patient-simulation-sessions.service";
-import { type CachedReservation, ReservationCacheService } from "@/features/simulation/application/services/reservation-cache.service";
-import { SIMULATION_SETTINGS_TOKEN, type SimulationSettings } from "@/features/simulation/application/tokens/simulation-settings.token";
-import { getCommandValidationErrors } from "@/features/simulation/domain/services/hex-command-encoder";
-import {
-  InvalidVentilatorCommandError,
-  NotReservationLeaderError,
-  VentilatorNotConnectedError,
-} from "@/features/simulation/domain/simulation.errors";
-import { type IMqttConnection, type MqttQos } from "@/features/ventilator-telemetry/application/ports/mqtt-connection.interface";
-import { VentilatorTelemetryFacade } from "@/features/ventilator-telemetry/application/services/ventilator-telemetry.facade";
-
-const COMMAND_QOS: MqttQos = 1;
+import { type SentVentilatorCommandResult } from "@/features/ventilator-commands/application/results/ventilator-commands.results";
+import { VentilatorCommandsFacade } from "@/features/ventilator-commands/application/services/ventilator-commands.facade";
 
 /**
- * @throws {InvalidVentilatorCommandError} If a physical command parameter is outside the safe ranges
- * @throws {NotReservationLeaderError} If the ventilator is reserved and the user is not the reservation leader
- * @throws {VentilatorNotConnectedError} If the MQTT connection to the ventilator is not established
+ * @throws {NoActiveVentilatorReservationError} If a physical command is sent while no reservation is active
+ * @throws {NotReservationHolderError} If the user is neither a holder of the active reservation nor a teacher or administrator
+ * @throws {NotVentilatorOperatorError} If the user does not hold the exclusive control of the ventilator
+ * @throws {VentilatorCommandRateLimitedError} If the user exceeded the command rate
+ * @throws {InvalidVentilatorCommandError} If a physical command is malformed, out of range, incoherent or beyond the safety limits
+ * @throws {VentilatorDeviceOfflineError} If the ventilator is offline
  */
 @Injectable()
 export class SendVentilatorCommandUseCase {
   public constructor(
-    @Inject(SIMULATION_SETTINGS_TOKEN)
-    private readonly _settings: SimulationSettings,
-    private readonly _telemetryFacade: VentilatorTelemetryFacade,
+    private readonly _commandsFacade: VentilatorCommandsFacade,
     private readonly _patientSessions: PatientSimulationSessionsService,
-    private readonly _reservationCache: ReservationCacheService,
   ) {}
 
   public async execute(command: SendVentilatorCommandCommand): Promise<SendVentilatorCommandResult> {
@@ -61,28 +51,8 @@ export class SendVentilatorCommandUseCase {
       return new SendVentilatorCommandResult({ commandId: `sim-start-${now}`, target: SYNTHETIC_START_TARGET, timestamp: now });
     }
 
-    const errors: string[] = getCommandValidationErrors(command.command);
+    const sent: SentVentilatorCommandResult = await this._commandsFacade.send({ userId: command.userId, role: command.userRole, params: command.command });
 
-    if (errors.length > 0) {
-      throw new InvalidVentilatorCommandError(errors);
-    }
-
-    const reservation: CachedReservation | undefined = this._reservationCache.current;
-
-    if (reservation && command.userId !== (reservation.leaderId ?? reservation.userId)) {
-      throw new NotReservationLeaderError();
-    }
-
-    const connection: IMqttConnection = this._telemetryFacade.mqttConnection;
-
-    if (!connection.isConnected) {
-      throw new VentilatorNotConnectedError();
-    }
-
-    await connection.publish(this._settings.commandTopic, JSON.stringify(command.command), { qos: COMMAND_QOS });
-
-    const sentAt: number = Date.now();
-
-    return new SendVentilatorCommandResult({ commandId: `cmd-${sentAt}`, target: PHYSICAL_TARGET, timestamp: sentAt });
+    return new SendVentilatorCommandResult({ commandId: sent.commandId, target: PHYSICAL_TARGET, timestamp: sent.sentAt.getTime() });
   }
 }

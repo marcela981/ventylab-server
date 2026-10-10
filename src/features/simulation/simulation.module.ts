@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo SimulationModule
- * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (caché de reserva, pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, ajustes desde ConfigService, la fachada de telemetría del ventilador (VentilatorTelemetryModule) para estado, alarmas y publicación de comandos, manejadores realtime y ciclo de vida; exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService
- * Versión: 1.4
+ * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, ajustes desde ConfigService, la fachada de telemetría del ventilador (VentilatorTelemetryModule) para estado y alarmas, la fachada de comandos del ventilador (VentilatorCommandsModule) para el camino físico de POST /api/simulation/command, manejadores realtime y ciclo de vida; exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,7 +21,6 @@ import { AssistSimulationUseCase } from "@/features/simulation/application/assis
 import { EXAM_ATTEMPT_READER_TOKEN } from "@/features/simulation/application/ports/exam-attempt-reader.interface";
 import { SIMULATION_SEED_GENERATOR_TOKEN } from "@/features/simulation/application/ports/simulation-seed-generator.interface";
 import { PatientSimulationSessionsService } from "@/features/simulation/application/services/patient-simulation-sessions.service";
-import { ReservationCacheService } from "@/features/simulation/application/services/reservation-cache.service";
 import { SimulationAssistContextService } from "@/features/simulation/application/services/simulation-assist-context.service";
 import { SimulationSessionAccessService } from "@/features/simulation/application/services/simulation-session-access.service";
 import { SimulationSessionReader } from "@/features/simulation/application/services/simulation-session-reader.service";
@@ -55,7 +54,6 @@ import { StopPatientSimulationUseCase } from "@/features/simulation/application/
 import { SIMULATION_SESSIONS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/simulation-sessions.repository";
 import { SIMULATOR_SESSIONS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/simulator-sessions.repository";
 import { SimulationRealtimeHandlers } from "@/features/simulation/infrastructure/events/simulation-realtime.handlers";
-import { SimulationReservationsHandlers } from "@/features/simulation/infrastructure/events/simulation-reservations.handlers";
 import { SimulationLifecycleService } from "@/features/simulation/infrastructure/lifecycle/simulation-lifecycle.service";
 import { ExamAttemptsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/exam-attempts-prisma.repository";
 import { SimulationSessionsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/simulation-sessions-prisma.repository";
@@ -67,6 +65,7 @@ import { SimulationAssistController } from "@/features/simulation/presentation/c
 import { SimulationSessionsController } from "@/features/simulation/presentation/controllers/simulation-sessions.controller";
 import { SimulationController } from "@/features/simulation/presentation/controllers/simulation.controller";
 import { UsersModule } from "@/features/users/users.module";
+import { VentilatorCommandsModule } from "@/features/ventilator-commands/ventilator-commands.module";
 import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/ventilator-telemetry.module";
 
 const MS_PER_MINUTE: number = 60_000;
@@ -74,7 +73,6 @@ const MS_PER_MINUTE: number = 60_000;
 function createSimulationSettings(configService: ConfigService<EnvironmentVariables, true>): SimulationSettings {
   return {
     deviceId: configService.get("VENTILATOR_DEVICE_ID", { infer: true }),
-    commandTopic: configService.get("MQTT_COMMAND_TOPIC", { infer: true }),
   };
 }
 
@@ -87,7 +85,7 @@ function createSimulationSessionSettings(configService: ConfigService<Environmen
 }
 
 @Module({
-  imports: [AuthModule, AiModule, UsersModule, GroupsModule, ClinicalCasesModule, ReservationsModule, VentilatorTelemetryModule],
+  imports: [AuthModule, AiModule, UsersModule, GroupsModule, ClinicalCasesModule, ReservationsModule, VentilatorTelemetryModule, VentilatorCommandsModule],
   controllers: [SimulationController, PatientSimulationController, SimulationSessionsController, SimulationAssistController, ClinicalCaseTestRunController],
   providers: [
     {
@@ -116,7 +114,6 @@ function createSimulationSessionSettings(configService: ConfigService<Environmen
       provide: SIMULATION_SEED_GENERATOR_TOKEN,
       useClass: CryptoSimulationSeedGenerator,
     },
-    ReservationCacheService,
     PatientSimulationSessionsService,
     GetSimulationHealthUseCase,
     GetVentilatorStatusUseCase,
@@ -131,7 +128,6 @@ function createSimulationSessionSettings(configService: ConfigService<Environmen
     StopPatientSimulationUseCase,
     GetActivePatientUseCase,
     SimulationRealtimeHandlers,
-    SimulationReservationsHandlers,
     SimulationLifecycleService,
     SimulationSessionRuntime,
     SimulationSessionAccessService,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso ReserveVentilatorUseCase
- * Descripción: Adaptador heredado de POST /api/simulation/reserve: delega en ReservationsFacade.reserveNow (mismo bloqueo del dispositivo y reglas de solapamiento que las reservas programadas), conserva la recuperación de la reserva del mismo usuario y el error de ventilador ocupado, publica el evento que difunde `ventilator:reserved` y refresca la caché en memoria
- * Versión: 1.1
+ * Descripción: Adaptador heredado de POST /api/simulation/reserve: delega en ReservationsFacade.reserveNow (mismo bloqueo del dispositivo y reglas de solapamiento que las reservas programadas), conserva la recuperación de la reserva del mismo usuario y el error de ventilador ocupado, publica el evento que difunde `ventilator:reserved`
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,7 +15,6 @@ import { type ReserveNowResult } from "@/features/reservations/application/resul
 import { ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
 import { ReserveVentilatorCommand } from "@/features/simulation/application/commands/reserve-ventilator.command";
 import { ReserveVentilatorResult } from "@/features/simulation/application/results/reserve-ventilator.result";
-import { ReservationCacheService } from "@/features/simulation/application/services/reservation-cache.service";
 import { VentilatorReservedEvent } from "@/features/simulation/domain/events/ventilator-reservation.events";
 import { VentilatorAlreadyReservedError } from "@/features/simulation/domain/simulation.errors";
 
@@ -30,7 +29,6 @@ export class ReserveVentilatorUseCase {
     private readonly _reservationsFacade: ReservationsFacade,
     @Inject(EVENT_BUS_TOKEN)
     private readonly _eventBus: IEventBus,
-    private readonly _reservationCache: ReservationCacheService,
   ) {}
 
   public async execute(command: ReserveVentilatorCommand): Promise<ReserveVentilatorResult> {
@@ -57,8 +55,6 @@ export class ReserveVentilatorUseCase {
         }),
       ]);
     }
-
-    await this._reservationCache.refresh();
 
     return new ReserveVentilatorResult({
       reservationId: result.reservationId,
