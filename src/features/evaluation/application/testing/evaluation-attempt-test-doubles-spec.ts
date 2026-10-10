@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de intentos de evaluación
  * Descripción: Repositorio de intentos en memoria con transacciones simuladas (cambios preparados que se confirman al terminar sin error) y candados por nombre serializados con un mutex que se libera al cerrar la transacción, como pg_advisory_xact_lock; más evaluaciones, asignaciones, alcance de grupos, proveedor de puntaje práctico y propietario de sesiones simulados
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,7 +13,10 @@ import { type ITransactionManager } from "@/common/application/persistence/trans
 import { type DomainEvent } from "@/common/domain/events/domain-event";
 import { type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
 import { type IPracticalScoreProvider, type PracticalScoreResult } from "@/features/evaluation/application/ports/practical-score-provider.interface";
-import { type ISimulationSessionOwnership } from "@/features/evaluation/application/ports/simulation-session-ownership.interface";
+import {
+  type ISimulationSessionBindingReader,
+  type SimulationSessionBinding,
+} from "@/features/evaluation/application/ports/simulation-session-binding.interface";
 import { EvaluationAssignmentAccess } from "@/features/evaluation/application/services/evaluation-assignment-access";
 import { EvaluationAttemptCloser } from "@/features/evaluation/application/services/evaluation-attempt-closer";
 import { StudentAnswerRecorder } from "@/features/evaluation/application/services/student-answer-recorder";
@@ -297,6 +300,7 @@ export interface AttemptState {
   attempts?: StudentEvaluationAttempt[];
   practicalScore?: PracticalScoreResult;
   sessionOwnerId?: string;
+  sessionBinding?: Partial<SimulationSessionBinding>;
   passingGrade?: number;
 }
 
@@ -312,7 +316,7 @@ export interface AttemptDoubles {
   gradingConfig: EvaluationGradingConfig;
   publish: jest.Mock;
   getSessionScore: jest.Mock;
-  getSessionOwnerId: jest.Mock;
+  getSessionBinding: jest.Mock;
 }
 
 export function buildAttemptDoubles(state: AttemptState = {}): AttemptDoubles {
@@ -321,7 +325,13 @@ export function buildAttemptDoubles(state: AttemptState = {}): AttemptDoubles {
   const attemptsRepository: InMemoryAttemptsRepository = new InMemoryAttemptsRepository(state.attempts ?? []);
   const publish: jest.Mock = jest.fn();
   const getSessionScore: jest.Mock = jest.fn().mockResolvedValue(state.practicalScore ?? { available: false, reason: "SESSION_NOT_FOUND" });
-  const getSessionOwnerId: jest.Mock = jest.fn().mockResolvedValue(state.sessionOwnerId ?? STUDENT_ID);
+  const getSessionBinding: jest.Mock = jest.fn().mockImplementation((sessionId: string, userId: string): Promise<SimulationSessionBinding | undefined> => {
+    const ownerId: string = state.sessionOwnerId ?? STUDENT_ID;
+
+    return Promise.resolve(
+      userId === ownerId ? { sessionId, userId: ownerId, mode: "EXAM", attemptId: "attempt-1", questionId: "q1", ...state.sessionBinding } : undefined,
+    );
+  });
   const gradingConfig: EvaluationGradingConfig = { passingGrade: state.passingGrade ?? 3 };
 
   const evaluationsRepository: IEvaluationsRepository = {
@@ -371,7 +381,7 @@ export function buildAttemptDoubles(state: AttemptState = {}): AttemptDoubles {
 
   const eventBus: IEventBus = { publish };
   const practicalScoreProvider: IPracticalScoreProvider = { getSessionScore };
-  const sessionOwnership: ISimulationSessionOwnership = { getSessionOwnerId };
+  const sessionBindingReader: ISimulationSessionBindingReader = { getSessionBinding };
 
   return {
     attemptsRepository,
@@ -389,11 +399,11 @@ export function buildAttemptDoubles(state: AttemptState = {}): AttemptDoubles {
       transactionManager,
       eventBus,
     ),
-    recorder: new StudentAnswerRecorder(sessionOwnership),
+    recorder: new StudentAnswerRecorder(sessionBindingReader),
     gradingConfig,
     publish,
     getSessionScore,
-    getSessionOwnerId,
+    getSessionBinding,
   };
 }
 

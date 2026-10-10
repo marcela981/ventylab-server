@@ -42,7 +42,15 @@
  *   más la key especial `ventilationMode` para la prioridad del modo.
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * Versión       : 1.0
+ *                 Además siembra 4 casos listos para el motor fisiológico
+ *                 (pulmón normal, SDRA en obesidad, EPOC exacerbado, asma
+ *                 grave) desde `engine-ready-clinical-cases.data.ts`, donde
+ *                 cada valor numérico cita su fuente bibliográfica y cae
+ *                 dentro de `clinical-case-physiological-ranges.ts`.
+ *                 Todos quedan PUBLISHED y sin validación por experto.
+ *                 `isActive` se mantiene igual a (status === PUBLISHED).
+ *
+ * Versión       : 1.1
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Desarrollo de una aplicación web para la enseñanza de
@@ -53,8 +61,9 @@
  * =============================================================================
  */
 
-import { PrismaClient, CaseDifficulty, Pathology } from '@prisma/client';
+import { PrismaClient, CaseDifficulty, ClinicalCaseStatus, Pathology } from '@prisma/client';
 import { SIMULATION_CLINICAL_CASES as CLINICAL_CASES, type SimulationClinicalCase as ClinicalCase } from '../src/features/simulation/domain/services/simulation-case-catalog';
+import { ENGINE_READY_CLINICAL_CASES, type EngineReadySeedCase } from '../src/features/clinical-cases/infrastructure/persistence/seed/engine-ready-clinical-cases.data';
 
 const prisma = new PrismaClient();
 
@@ -280,6 +289,7 @@ async function seedCase(c: ClinicalCase): Promise<void> {
     pathology: toPathology(c.category),
     educationalGoal: c.learningObjectives.join(' • '),
     isActive: true,
+    status: ClinicalCaseStatus.PUBLISHED,
   };
 
   await prisma.clinicalCase.upsert({
@@ -314,6 +324,52 @@ async function seedCase(c: ClinicalCase): Promise<void> {
   );
 }
 
+/** Valor JSON listo para Prisma (descarta `undefined`). */
+function toJson(value: unknown): any {
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+}
+
+/** Upsert de un caso listo para el motor; los valores y sus fuentes viven en el archivo de datos. */
+async function seedEngineReadyCase(seedCase: EngineReadySeedCase): Promise<void> {
+  const { content } = seedCase;
+  const sim = content.simulation;
+
+  const caseFields = {
+    title: content.title,
+    description: content.description,
+    summary: content.summary ?? null,
+    history: toJson(content.history),
+    patientAge: content.patientAge,
+    patientWeight: content.patientWeight,
+    patientSex: sim.patientSex ?? null,
+    patientHeightCm: sim.patientHeightCm ?? null,
+    mainDiagnosis: content.mainDiagnosis,
+    comorbidities: [...content.comorbidities],
+    labData: toJson(content.labData),
+    difficulty: content.difficulty as CaseDifficulty,
+    pathology: content.pathology as Pathology,
+    educationalGoal: content.educationalGoal,
+    mechanics: toJson(sim.mechanics),
+    initialVentilatorSettings: toJson(sim.initialVentilatorSettings),
+    initialState: toJson(sim.initialState),
+    events: toJson(sim.events),
+    targets: toJson(sim.targets),
+    defaultRubric: toJson(sim.defaultRubric),
+    status: ClinicalCaseStatus.PUBLISHED,
+    isActive: true,
+    validatedByExpert: false,
+    validatedById: null,
+  };
+
+  await prisma.clinicalCase.upsert({
+    where: { id: seedCase.id },
+    update: caseFields,
+    create: { id: seedCase.id, ...caseFields },
+  });
+
+  console.log(`  ✅ ${seedCase.id}  [${caseFields.pathology}/${caseFields.difficulty}]  motor fisiológico (PUBLISHED, sin validar)`);
+}
+
 async function main() {
   console.log('\n🩺  seed-clinical-cases — VentyLab (OE2/OE3)');
   console.log('    Fuente: src/modules/simulation/patient/clinical-cases.data.ts\n');
@@ -326,6 +382,11 @@ async function main() {
       continue;
     }
     await seedCase(c);
+    seeded++;
+  }
+
+  for (const engineCase of ENGINE_READY_CLINICAL_CASES) {
+    await seedEngineReadyCase(engineCase);
     seeded++;
   }
 

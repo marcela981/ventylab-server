@@ -6,6 +6,19 @@
   "clinical_case_retrieved": "Caso clínico obtenido correctamente",
   "clinical_case_evaluated": "Configuración evaluada correctamente",
   "attempts_retrieved": "Intentos del caso clínico obtenidos correctamente",
+  "clinical_case_definition_retrieved": "Definición del caso clínico obtenida correctamente",
+  "clinical_case_created": "Caso clínico creado correctamente",
+  "clinical_case_updated": "Caso clínico actualizado correctamente",
+  "clinical_case_status_changed": "Estado del caso clínico actualizado correctamente",
+  "clinical_case_duplicated": "Caso clínico duplicado correctamente",
+  "clinical_case_validated": "Caso clínico marcado como validado por un experto",
+  "clinical_case_deleted": "Caso clínico eliminado correctamente",
+  "duplicate_title_suffix": " (copia)",
+  "physiological_range_violation": "{field} = {value} está fuera del rango fisiológicamente plausible {min}-{max} {unit}",
+  "invalid_definition": "La definición del caso clínico es inconsistente en {field}",
+  "clinical_case_in_use": "El caso clínico está en uso por sesiones de simulación, intentos o preguntas de evaluación; archívelo en lugar de eliminarlo",
+  "clinical_case_has_simulation_sessions": "El caso clínico ya tiene sesiones de simulación; duplíquelo para cambiar su definición",
+  "clinical_case_not_simulation_ready": "Al caso clínico le falta la mecánica, los ajustes iniciales del ventilador, el estado inicial, el sexo o la talla necesarios para simular",
   "validation": {
     "difficulty_invalid": "La dificultad debe ser una de: BEGINNER, INTERMEDIATE, ADVANCED",
     "pathology_invalid": "La patología debe ser una de las opciones válidas",
@@ -15,6 +28,13 @@
     "respiratory_rate_invalid": "La frecuencia respiratoria debe ser un número positivo",
     "peep_invalid": "La PEEP debe ser un número positivo",
     "fio2_invalid": "La FiO2 debe ser un número entre 0 y 100",
-    "max_pressure_invalid": "La presión máxima debe ser un número positivo"
+    "max_pressure_invalid": "La presión máxima debe ser un número positivo",
+    "status_invalid": "El estado debe ser uno de: DRAFT, PUBLISHED, ARCHIVED",
+    "number_invalid": "{property} debe ser un número finito",
+    "integer_invalid": "{property} debe ser un número entero",
+    "min_zero": "{property} debe ser cero o mayor",
+    "object_required": "{property} debe ser un objeto",
+    "array_required": "{property} debe ser una lista",
+    "text_required": "{property} es obligatorio"
   }
 }

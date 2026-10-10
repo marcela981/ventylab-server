@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del resolvedor de objetivos de valoración de IA
- * Descripción: Verifica con un cliente Prisma y una fachada de telemetría simulados el destinatario y el aiCallId de cada tipo de objetivo: retroalimentación de calificación publicada (con la última llamada SUCCESS o FALLBACK enlazada al intento), mensaje del asistente, análisis de notas y asistencia de simulación (aún sin persistencia)
- * Versión: 1.1
+ * Descripción: Verifica con un cliente Prisma y una fachada de telemetría simulados el destinatario y el aiCallId de cada tipo de objetivo: retroalimentación de calificación publicada (con la última llamada SUCCESS o FALLBACK enlazada al intento), mensaje del asistente, análisis de notas y asistencia de simulación (evento AI_HELP de la sesión, dueño de la sesión y aiCallId del payload)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { type AiCallSummary } from "@/features/ai-telemetry/domain/read-models/a
 interface PrismaMock {
   gradeFeedback: { findUnique: jest.Mock };
   aiMessage: { findUnique: jest.Mock };
+  simulationEvent: { findUnique: jest.Mock };
 }
 
 const PUBLISHED_AT: Date = new Date("2026-10-01T00:00:00Z");
@@ -40,7 +41,7 @@ describe("RatingTargetPrismaResolver", () => {
   let resolver: RatingTargetPrismaResolver;
 
   beforeEach(() => {
-    prisma = { gradeFeedback: { findUnique: jest.fn() }, aiMessage: { findUnique: jest.fn() } };
+    prisma = { gradeFeedback: { findUnique: jest.fn() }, aiMessage: { findUnique: jest.fn() }, simulationEvent: { findUnique: jest.fn() } };
     telemetry = { getCallById: jest.fn(), getLatestCallByRef: jest.fn().mockResolvedValue(undefined) };
     resolver = new RatingTargetPrismaResolver(prisma as unknown as PrismaService, telemetry as unknown as AiTelemetryFacade);
   });
@@ -122,8 +123,34 @@ describe("RatingTargetPrismaResolver", () => {
     });
   });
 
-  it("returns undefined for SIM_ASSIST until the simulation assistant is persisted", async () => {
-    await expect(resolver.resolve("SIM_ASSIST", "anything")).resolves.toBeUndefined();
-    expect(telemetry.getCallById).not.toHaveBeenCalled();
+  describe("SIM_ASSIST", () => {
+    it("resolves an AI help event to the session owner and the call stored in its payload", async () => {
+      prisma.simulationEvent.findUnique.mockResolvedValue({ type: "AI_HELP", payload: { aiCallId: "call-sim", source: "LLM" }, session: { userId: "student-1" } });
+
+      const target: RatingTarget | undefined = await resolver.resolve("SIM_ASSIST", "event-1");
+
+      expect(target).toEqual({ recipientUserId: "student-1", aiCallId: "call-sim" });
+      expect(prisma.simulationEvent.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "event-1" } }));
+      expect(telemetry.getCallById).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["has no call id", { source: "DETERMINISTIC" }],
+      ["has a non-text call id", { aiCallId: 42 }],
+      ["is not an object", "call-sim"],
+    ])("resolves without a call when the payload %s", async (_label: string, payload: unknown) => {
+      prisma.simulationEvent.findUnique.mockResolvedValue({ type: "AI_HELP", payload, session: { userId: "student-1" } });
+
+      await expect(resolver.resolve("SIM_ASSIST", "event-1")).resolves.toEqual({ recipientUserId: "student-1", aiCallId: undefined });
+    });
+
+    it.each([
+      ["missing", null],
+      ["not an AI help event", { type: "PARAM_CHANGE", payload: {}, session: { userId: "student-1" } }],
+    ])("returns undefined when the event is %s", async (_label: string, row: unknown) => {
+      prisma.simulationEvent.findUnique.mockResolvedValue(row);
+
+      await expect(resolver.resolve("SIM_ASSIST", "event-1")).resolves.toBeUndefined();
+    });
   });
 });

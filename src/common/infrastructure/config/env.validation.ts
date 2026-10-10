@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Validación de variables de entorno
- * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor)
- * Versión: 1.5
+ * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos)
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -280,6 +280,22 @@ export class EnvironmentVariables {
   @Max(5)
   @Type(() => Number)
   public EVALUATION_PASSING_GRADE: number = 3.0;
+
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  public SIMULATION_EVENT_TIME_TOLERANCE_MS: number = 5000;
+
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  public SIMULATION_ABANDON_AFTER_MINUTES: number = 30;
+
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  @Type(() => Number)
+  public SIMULATION_MAX_EVENT_BATCH_SIZE: number = 200;
 }
 
 function formatValidationErrors(errors: ValidationError[]): string {

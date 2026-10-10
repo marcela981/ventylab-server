@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del caso de uso SubmitEvaluationAttemptUseCase
  * Descripción: Verifica la entrega idempotente con calificación automática, la publicación inmediata según showResultsImmediately, la revisión pendiente de preguntas abiertas, el puntaje práctico, las respuestas finales del cuerpo dentro del plazo con 30 s de gracia, el cierre con lo autoguardado tras el plazo, los candados por usuario y de estructura compartido, y dos entregas concurrentes calificadas una sola vez
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -97,7 +97,7 @@ describe("SubmitEvaluationAttemptUseCase", () => {
 
     const result: SubmitEvaluationAttemptResult = await submit(doubles);
 
-    expect(doubles.getSessionScore).toHaveBeenCalledWith("session-1", { criteria: "expert" });
+    expect(doubles.getSessionScore).toHaveBeenCalledWith("session-1", { criteria: "expert" }, { userId: STUDENT_ID, attemptId: "attempt-1", questionId: "q1" });
     expect(result).toMatchObject({ status: "GRADED", score: 2, maxScore: 4, grade: 2.5, passed: false });
   });
 

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la cola, la vista de calificación y la publicación de notas
  * Descripción: Verifica la cola de revisión del profesor (solo PENDING_REVIEW en su alcance, cierre perezoso acotado de intentos vencidos antes de listar), la vista de calificación con respuestas correctas, puntajes y desglose práctico recalculado bajo demanda, la publicación individual idempotente solo de intentos GRADED y la publicación masiva por evaluación con el conteo y un evento por intento tras confirmar
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,7 @@ import {
   buildStoredAttempt,
   minutesFromNow,
   publishedEvents,
+  STUDENT_ID,
 } from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
 import { ADMIN, buildGradingDoubles, type GradingDoubles, TEACHER } from "@/features/evaluation/application/testing/evaluation-grading-test-doubles-spec";
 import { GetAttemptForGradingUseCase } from "@/features/evaluation/application/use-cases/get-attempt-for-grading.usecase";
@@ -93,7 +94,7 @@ describe("GetAttemptForGradingUseCase", () => {
     expect(result.evaluation.questions[0].options.find((option: { isCorrect: boolean }) => option.isCorrect)?.id).toBe("q1-ok");
     expect(result.practicalScores.get("q2")).toEqual({ available: true, score: 0.5, breakdown: [{ parameter: "peep", score: 0.5 }] });
     expect(result.passingGrade).toBe(3);
-    expect(doubles.getSessionScore).toHaveBeenCalledWith("session-1", { criteria: "expert" });
+    expect(doubles.getSessionScore).toHaveBeenCalledWith("session-1", { criteria: "expert" }, { userId: STUDENT_ID, attemptId: "attempt-1", questionId: "q2" });
   });
 
   it("forbids a teacher outside the student's groups", async () => {

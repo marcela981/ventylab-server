@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del caso de uso SaveEvaluationAnswerUseCase
  * Descripción: Verifica el autoguardado por (intento, pregunta) del propietario mientras el intento está IN_PROGRESS, la validación de la pregunta, las opciones y la forma de la respuesta, la propiedad de la sesión del simulador y el rechazo 409 con cierre perezoso persistido tras el plazo más la gracia
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -81,7 +81,35 @@ describe("SaveEvaluationAnswerUseCase", () => {
     });
 
     await expect(save(doubles, { simulationSessionId: "session-1" })).rejects.toMatchObject({ reason: "session_not_owned" });
-    expect(doubles.getSessionOwnerId).toHaveBeenCalledWith("session-1");
+    expect(doubles.getSessionBinding).toHaveBeenCalledWith("session-1", STUDENT_ID);
+  });
+
+  it.each([
+    ["another attempt", { attemptId: "attempt-9" }],
+    ["another question", { questionId: "q9" }],
+    ["free practice", { mode: "FREE", attemptId: undefined, questionId: undefined }],
+  ])("rejects a simulation session bound to %s", async (_label: string, sessionBinding: Record<string, unknown>) => {
+    const doubles: AttemptDoubles = buildAttemptDoubles({
+      evaluation: buildAttemptEvaluation({ questions: [attemptQuestion("q1", "SIMULATION")] }),
+      attempts: [buildStoredAttempt()],
+      sessionBinding,
+    });
+
+    await expect(save(doubles, { simulationSessionId: "session-1" })).rejects.toMatchObject({ reason: "session_not_owned" });
+    expect(stored(doubles)?.answers).toEqual([]);
+  });
+
+  it("stores only the session reference of a bound simulation answer, never a client score", async () => {
+    const doubles: AttemptDoubles = buildAttemptDoubles({
+      evaluation: buildAttemptEvaluation({ questions: [attemptQuestion("q1", "SIMULATION")] }),
+      attempts: [buildStoredAttempt()],
+    });
+    const tampered: { simulationSessionId: string } = { simulationSessionId: "session-1", score: 1, autoScore: 1 } as { simulationSessionId: string };
+
+    await save(doubles, tampered);
+
+    expect(stored(doubles)?.answers).toEqual([expect.objectContaining({ questionId: "q1", simulationSessionId: "session-1" })]);
+    expect(stored(doubles)?.answers[0].autoScore).toBeUndefined();
   });
 
   it("rejects after the deadline plus grace and keeps the lazy close (check 10)", async () => {

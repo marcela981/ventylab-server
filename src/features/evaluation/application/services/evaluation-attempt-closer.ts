@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Cierre y calificación de intentos de evaluación
  * Descripción: Servicio compartido por los casos de uso de intentos: carga un intento solo para su propietario (404 en otro caso), toma el candado exclusivo por evaluación y usuario y el compartido de estructura de la evaluación (pg_advisory_xact_lock_shared sobre la misma clave que el editor), carga la evaluación y el plazo efectivo (plazo del intento ajustado por un cierre anticipado de la asignación), califica con el calificador puro y el puntaje práctico de IPracticalScoreProvider, cierra el intento y lo cierra de forma perezosa en su propia transacción cuando venció (plazo + 30 s), publicando los eventos tras confirmar
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -166,7 +166,11 @@ export class EvaluationAttemptCloser {
         continue;
       }
 
-      const result: PracticalScoreResult = await this._practicalScoreProvider.getSessionScore(sessionId, question.rubric);
+      const result: PracticalScoreResult = await this._practicalScoreProvider.getSessionScore(sessionId, question.rubric, {
+        userId: attempt.userId,
+        attemptId: attempt.id,
+        questionId: question.id,
+      });
 
       if (result.available) {
         scores.set(question.id, result.score);

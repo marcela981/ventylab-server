@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Valores de patología de caso clínico
  * Descripción: Constantes del enum Pathology usadas para filtrar casos clínicos
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,7 +19,10 @@ export type PathologyValue =
   | "TEP"
   | "BRONQUIOLITIS"
   | "SINDROME_DE_DISTRES_RESPIRATORIO"
-  | "OTRAS";
+  | "OTRAS"
+  | "NORMAL"
+  | "OBESIDAD"
+  | "POSTOPERATORIO";
 
 export const PATHOLOGY_VALUES: readonly PathologyValue[] = [
   "EPOC",
@@ -33,4 +36,7 @@ export const PATHOLOGY_VALUES: readonly PathologyValue[] = [
   "BRONQUIOLITIS",
   "SINDROME_DE_DISTRES_RESPIRATORIO",
   "OTRAS",
+  "NORMAL",
+  "OBESIDAD",
+  "POSTOPERATORIO",
 ] as const;

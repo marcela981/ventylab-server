@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.21
+ * Versión: 1.24
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -62,9 +62,14 @@ import {
   UserInactiveError,
 } from "@/features/auth/domain/auth.errors";
 import {
+  ClinicalCaseHasSimulationSessionsError,
+  ClinicalCaseInUseError,
   ClinicalCaseNotFoundError,
+  ClinicalCaseNotSimulationReadyError,
+  ClinicalCasePhysiologicalRangeError,
   ClinicalCaseUnavailableError,
   ExpertConfigurationMissingError,
+  InvalidClinicalCaseDefinitionError,
 } from "@/features/clinical-cases/domain/clinical-cases.errors";
 import { CurriculumNodeHasStudentDataError } from "@/features/curriculum/domain/curriculum.errors";
 import {
@@ -199,12 +204,26 @@ import { QuizAlreadyAttemptedError, QuizInactiveError, QuizNotFoundError } from 
 import { InvalidScorePointsError, ScoreNotFoundError, ScoreNotOwnedError } from "@/features/scores/domain/scores.errors";
 import { InvalidSectionReorderError, SectionNotFoundError, SectionSlugAlreadyExistsError } from "@/features/sections/domain/sections.errors";
 import {
+  InvalidSimulationEventPayloadError,
   InvalidVentilatorCommandError,
   NoActiveReservationError,
   NotReservationLeaderError,
   PatientDataRequiredError,
   PatientNotConfiguredError,
   SimulationCaseNotFoundError,
+  SimulationCaseNotReadyError,
+  SimulationAssistanceDisabledError,
+  SimulationCaseRequiredError,
+  SimulationEventBatchTooLargeError,
+  SimulationEventIdConflictError,
+  SimulationEventTimeAheadError,
+  SimulationEventTimeNotMonotonicError,
+  SimulationExamAccessDeniedError,
+  SimulationParameterOutOfRangeError,
+  SimulationRubricInvalidError,
+  SimulationSessionAccessDeniedError,
+  SimulationSessionNotActiveError,
+  SimulationSessionNotFoundError,
   VentilatorAlreadyReservedError,
   VentilatorNotConnectedError,
 } from "@/features/simulation/domain/simulation.errors";
@@ -354,6 +373,11 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [QuizAlreadyAttemptedError, HttpStatus.CONFLICT],
   [ClinicalCaseNotFoundError, HttpStatus.NOT_FOUND],
   [ClinicalCaseUnavailableError, HttpStatus.FORBIDDEN],
+  [ClinicalCasePhysiologicalRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [InvalidClinicalCaseDefinitionError, HttpStatus.BAD_REQUEST],
+  [ClinicalCaseInUseError, HttpStatus.CONFLICT],
+  [ClinicalCaseHasSimulationSessionsError, HttpStatus.CONFLICT],
+  [ClinicalCaseNotSimulationReadyError, HttpStatus.CONFLICT],
   [ExpertConfigurationMissingError, HttpStatus.UNPROCESSABLE_ENTITY],
   [ActivityNotFoundError, HttpStatus.NOT_FOUND],
   [ActivityNotOwnedError, HttpStatus.FORBIDDEN],
@@ -378,6 +402,20 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [PatientDataRequiredError, HttpStatus.BAD_REQUEST],
   [PatientNotConfiguredError, HttpStatus.NOT_FOUND],
   [SimulationCaseNotFoundError, HttpStatus.NOT_FOUND],
+  [SimulationSessionNotFoundError, HttpStatus.NOT_FOUND],
+  [SimulationSessionAccessDeniedError, HttpStatus.FORBIDDEN],
+  [SimulationSessionNotActiveError, HttpStatus.CONFLICT],
+  [SimulationExamAccessDeniedError, HttpStatus.FORBIDDEN],
+  [SimulationAssistanceDisabledError, HttpStatus.FORBIDDEN],
+  [SimulationCaseRequiredError, HttpStatus.BAD_REQUEST],
+  [SimulationCaseNotReadyError, HttpStatus.CONFLICT],
+  [SimulationRubricInvalidError, HttpStatus.CONFLICT],
+  [SimulationEventBatchTooLargeError, HttpStatus.BAD_REQUEST],
+  [SimulationEventTimeNotMonotonicError, HttpStatus.BAD_REQUEST],
+  [SimulationEventTimeAheadError, HttpStatus.FORBIDDEN],
+  [SimulationEventIdConflictError, HttpStatus.CONFLICT],
+  [InvalidSimulationEventPayloadError, HttpStatus.BAD_REQUEST],
+  [SimulationParameterOutOfRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
   [MediaNotFoundError, HttpStatus.NOT_FOUND],
   [MediaInUseError, HttpStatus.CONFLICT],
   [MediaStorageUnavailableError, HttpStatus.SERVICE_UNAVAILABLE],

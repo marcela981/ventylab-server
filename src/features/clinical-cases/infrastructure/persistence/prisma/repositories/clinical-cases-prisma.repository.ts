@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de casos clínicos
- * Descripción: Implementa IClinicalCasesRepository sobre las tablas clinical_cases, expert_configurations y evaluation_attempts con PrismaService y guarda la auditoría del intento
- * Versión: 1.0
+ * Descripción: Implementa IClinicalCasesRepository sobre las tablas clinical_cases, expert_configurations y evaluation_attempts con PrismaService: listado filtrado por estado, lectura y escritura del agregado ClinicalCase, bloqueo FOR UPDATE de la fila del caso, conteo de uso (sesiones de simulación, sesiones heredadas, intentos y preguntas) y auditoría del intento
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import { AUDIT_LOG_REPOSITORY_TOKEN, type IAuditLogRepository } from "@/common/d
 import { Paginated } from "@/common/domain/utils/paginated";
 import { type PrismaExecutor, resolveClient } from "@/common/infrastructure/persistence/prisma/prisma-client";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
+import { type ClinicalCase } from "@/features/clinical-cases/domain/entities/clinical-case.entity";
 import {
   type EvaluationAttempt,
   EVALUATION_ATTEMPT_ENTITY_COLLECTION,
@@ -28,6 +29,7 @@ import {
   type CaseAttemptRecord,
   type ClinicalCaseDetail,
   type ClinicalCaseSummary,
+  type ClinicalCaseUsage,
 } from "@/features/clinical-cases/domain/read-models/clinical-case.read-model";
 import { type ExpertConfigurationData } from "@/features/clinical-cases/domain/read-models/configuration-comparison.read-model";
 import {
@@ -71,13 +73,14 @@ export class ClinicalCasesPrismaRepository implements IClinicalCasesRepository {
     private readonly _auditLogRepository: IAuditLogRepository,
   ) {}
 
-  public async getActiveCases(query: GetClinicalCasesQuery): Promise<Paginated<ClinicalCaseSummary>> {
-    const { page, limit, difficulty, pathology } = query;
+  public async getCases(query: GetClinicalCasesQuery): Promise<Paginated<ClinicalCaseSummary>> {
+    const { page, limit, difficulty, pathology, status } = query;
 
-    const where: Prisma.ClinicalCaseWhereInput = { isActive: true };
+    const where: Prisma.ClinicalCaseWhereInput = {};
 
     if (difficulty) where.difficulty = difficulty;
     if (pathology) where.pathology = pathology;
+    if (status) where.status = status;
 
     const [rows, total] = await Promise.all([
       this._prisma.clinicalCase.findMany({
@@ -102,6 +105,50 @@ export class ClinicalCasesPrismaRepository implements IClinicalCasesRepository {
     const row: ClinicalCaseModel | null = await this._prisma.clinicalCase.findUnique({ where: { id: caseId } });
 
     return row ? ClinicalCasesMapper.toDetail(row) : undefined;
+  }
+
+  public async getCaseById(caseId: string, transaction?: unknown): Promise<ClinicalCase | undefined> {
+    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+    const row: ClinicalCaseModel | null = await client.clinicalCase.findUnique({ where: { id: caseId } });
+
+    return row ? ClinicalCasesMapper.toClinicalCase(row) : undefined;
+  }
+
+  public async lockCase(caseId: string, transaction: unknown): Promise<void> {
+    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+
+    // FOR UPDATE conflicts with the FOR KEY SHARE lock that inserting a referencing row takes, so usage counts stay exact until commit
+    await client.$executeRaw`SELECT id FROM clinical_cases WHERE id = ${caseId} FOR UPDATE`;
+  }
+
+  public async getUsage(caseId: string, transaction?: unknown): Promise<ClinicalCaseUsage> {
+    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+
+    const [simulationSessions, legacySimulatorSessions, evaluationAttempts, evaluationQuestions] = await Promise.all([
+      client.simulationSession.count({ where: { caseId } }),
+      client.simulatorSession.count({ where: { clinicalCaseId: caseId } }),
+      client.evaluationAttempt.count({ where: { clinicalCaseId: caseId } }),
+      client.evaluationQuestion.count({ where: { clinicalCaseId: caseId } }),
+    ]);
+
+    return { simulationSessions, legacySimulatorSessions, evaluationAttempts, evaluationQuestions };
+  }
+
+  public async saveCase(clinicalCase: ClinicalCase, transaction?: unknown): Promise<void> {
+    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+    const data: Prisma.ClinicalCaseUncheckedCreateInput = ClinicalCasesMapper.toCasePersistence(clinicalCase);
+
+    await client.clinicalCase.upsert({
+      where: { id: clinicalCase.id },
+      create: data,
+      update: data,
+    });
+  }
+
+  public async deleteCase(caseId: string, transaction?: unknown): Promise<void> {
+    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+
+    await client.clinicalCase.delete({ where: { id: caseId } });
   }
 
   public async getExpertConfiguration(caseId: string): Promise<ExpertConfigurationData | undefined> {

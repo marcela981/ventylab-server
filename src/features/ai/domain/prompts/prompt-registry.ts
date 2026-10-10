@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registro de plantillas de prompt de IA
- * Descripción: Define una plantilla versionada (semver) por caso de uso de IA con su entrada tipada; GRADE_FEEDBACK y NOTES_ANALYSIS reciben el prompt ya construido por el consumidor y solo le anteponen el prompt de sistema común, el resto delimita el contenido externo
- * Versión: 1.0
+ * Descripción: Define una plantilla versionada (semver) por caso de uso de IA con su entrada tipada; GRADE_FEEDBACK y NOTES_ANALYSIS reciben el prompt ya construido por el consumidor y solo le anteponen el prompt de sistema común, el resto delimita el contenido externo; SIM_ASSIST guía al estudiante (qué va bien, qué revisar y por qué) sin dictar valores y, sin pregunta, analiza el estado actual
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,20 @@ import { type AiMessage, type BuiltPrompt, type PromptTemplate } from "@/feature
 import { type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 
 export const MAX_TOPIC_CHECK_MESSAGE_LENGTH: number = 2000;
+
+const SIM_ASSIST_STATE_MAX_LENGTH: number = 3000;
+const SIM_ASSIST_QUESTION_MAX_LENGTH: number = 1000;
+const SIM_ASSIST_DEFAULT_QUESTION: string = "(Sin pregunta: analiza el estado actual de la simulación.)";
+
+// The assistant tutors during practice: it explains the reasoning so the student learns to adjust the ventilator instead of receiving the values to program.
+const SIM_ASSIST_INSTRUCTIONS: string = [
+  "Eres un tutor que acompaña al estudiante mientras ajusta un ventilador simulado. Tu objetivo es que aprenda a razonar, no resolverle el caso.",
+  "1. Señala primero qué está bien (objetivos cumplidos, presiones seguras) y por qué.",
+  "2. Explica qué está mal o en riesgo (alarmas, presión meseta o de distensión altas, volumen por kg excesivo, auto-PEEP, oxigenación o ventilación fuera de objetivo) y qué mecanismo fisiológico lo explica.",
+  "3. Indica qué variable conviene revisar, en qué dirección y por qué, relacionándola con los cambios recientes de parámetros; no dictes el valor exacto a programar.",
+  "4. Si el estudiante hace una pregunta, respóndela con ese mismo enfoque guiado.",
+  "Sé breve. Usa solo los datos del estado de la simulación y dilo cuando falte información. No des indicaciones para pacientes reales.",
+].join("\n");
 
 export interface ConsumerPromptInput {
   readonly userPrompt: string;
@@ -150,16 +164,16 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplates = {
   },
   SIM_ASSIST: {
     id: "SIM_ASSIST",
-    version: "1.0.0",
+    version: "1.1.0",
     build: (input: SimAssistPromptInput): BuiltPrompt => ({
-      system: withCommonSystemPrompt(
-        "Ayuda al estudiante a interpretar el estado del ventilador simulado y a entender el efecto de los parámetros; no des indicaciones para pacientes reales.",
-        input.language,
-      ),
+      system: withCommonSystemPrompt(SIM_ASSIST_INSTRUCTIONS, input.language),
       messages: [
         {
           role: "user",
-          content: [delimit("estado_simulacion", input.simulationState, 3000), delimit("pregunta", input.question, 1000)].join("\n\n"),
+          content: [
+            delimit("estado_simulacion", input.simulationState, SIM_ASSIST_STATE_MAX_LENGTH),
+            delimit("pregunta", input.question.trim().length > 0 ? input.question : SIM_ASSIST_DEFAULT_QUESTION, SIM_ASSIST_QUESTION_MAX_LENGTH),
+          ].join("\n\n"),
         },
       ],
       responseFormat: "text",

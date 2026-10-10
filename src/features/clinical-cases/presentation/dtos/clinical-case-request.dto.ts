@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de solicitud de casos clínicos
- * Descripción: Valida los filtros paginados del listado (dificultad, patología) y la configuración del ventilador enviada para evaluar un caso
- * Versión: 1.0
+ * Descripción: Valida los filtros paginados del listado (dificultad, patología, estado; el estado solo aplica con permiso de gestión) y la configuración del ventilador enviada para evaluar un caso
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import { i18nValidationMessage } from "nestjs-i18n";
 
 import { ListQueryDTO } from "@/common/presentation/dtos/list-query.dto";
 import { CASE_DIFFICULTY_VALUES } from "@/features/clinical-cases/domain/value-objects/case-difficulty";
+import { CLINICAL_CASE_STATUS_VALUES } from "@/features/clinical-cases/domain/value-objects/clinical-case-status";
 import { PATHOLOGY_VALUES } from "@/features/clinical-cases/domain/value-objects/pathology";
 
 const toUpperCase = ({ value }: { value: unknown }): unknown => (typeof value === "string" ? value.toUpperCase() : value);
@@ -31,6 +32,16 @@ export class GetClinicalCasesQueryDTO extends ListQueryDTO {
   @Transform(toUpperCase)
   @IsIn([...PATHOLOGY_VALUES], { message: i18nValidationMessage("clinical-cases.validation.pathology_invalid") })
   public pathology?: string;
+
+  @ApiPropertyOptional({
+    description: "Filter by status (case-insensitive); only applied for callers holding clinical-cases:manage, others always get published cases",
+    enum: CLINICAL_CASE_STATUS_VALUES,
+    example: "DRAFT",
+  })
+  @IsOptional()
+  @Transform(toUpperCase)
+  @IsIn([...CLINICAL_CASE_STATUS_VALUES], { message: i18nValidationMessage("clinical-cases.validation.status_invalid") })
+  public status?: string;
 }
 
 export class VentilatorConfigurationDTO {

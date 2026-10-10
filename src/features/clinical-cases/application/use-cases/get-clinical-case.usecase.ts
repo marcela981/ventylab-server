@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetClinicalCaseUseCase
- * Descripción: Obtiene un caso clínico activo sin su configuración experta, junto con los últimos 5 intentos del usuario, su mejor puntaje y la fecha del último intento
- * Versión: 1.0
+ * Descripción: Obtiene un caso clínico sin su configuración experta, junto con los últimos 5 intentos del usuario, su mejor puntaje y la fecha del último intento; sin permiso de gestión solo se ven los casos publicados
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,12 +18,13 @@ import {
   type IClinicalCasesRepository,
 } from "@/features/clinical-cases/domain/repositories/clinical-cases.repository";
 import { findBestAttempt } from "@/features/clinical-cases/domain/services/case-attempt-statistics";
+import { PUBLISHED_STATUS_VALUE } from "@/features/clinical-cases/domain/value-objects/clinical-case-status";
 
 const RECENT_ATTEMPTS_LIMIT: number = 5;
 
 /**
  * @throws {ClinicalCaseNotFoundError} If the clinical case does not exist
- * @throws {ClinicalCaseUnavailableError} If the clinical case is inactive
+ * @throws {ClinicalCaseUnavailableError} If the clinical case is not published and the caller cannot view every status
  */
 @Injectable()
 export class GetClinicalCaseUseCase {
@@ -32,14 +33,14 @@ export class GetClinicalCaseUseCase {
     private readonly _clinicalCasesRepository: IClinicalCasesRepository,
   ) {}
 
-  public async execute(caseId: string, userId: string): Promise<ClinicalCaseDetailResult> {
+  public async execute(caseId: string, userId: string, canViewAllStatuses: boolean = false): Promise<ClinicalCaseDetailResult> {
     const clinicalCase: ClinicalCaseDetail | undefined = await this._clinicalCasesRepository.getById(caseId);
 
     if (!clinicalCase) {
       throw new ClinicalCaseNotFoundError();
     }
 
-    if (!clinicalCase.isActive) {
+    if (!canViewAllStatuses && clinicalCase.status !== PUBLISHED_STATUS_VALUE) {
       throw new ClinicalCaseUnavailableError();
     }
 

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del servicio EvaluationFeedbackGenerator
  * Descripción: Verifica que la retroalimentación del caso clínico se pida al gateway de IA con GRADE_FEEDBACK, idioma, referencia, usuario y rol; que use la respuesta del modelo; y que el respaldo determinista (por el gateway o ante un error) no revele los valores de la configuración experta
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,6 +37,7 @@ const CLINICAL_CASE: ClinicalCaseDetail = {
   educationalGoal: "Ventilación protectora",
   labData: { paO2: 60 },
   isActive: true,
+  status: "PUBLISHED",
 };
 
 const USER_CONFIG: VentilatorConfiguration = { ventilationMode: "volume", peep: 8, fio2: 60 };

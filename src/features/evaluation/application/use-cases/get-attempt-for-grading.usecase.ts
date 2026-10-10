@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetAttemptForGradingUseCase
  * Descripción: Vista de calificación de un intento para un profesor en su alcance (o un administrador): cierra antes de forma perezosa un intento en curso vencido y devuelve la evaluación completa (respuestas correctas, explicaciones y rúbricas), las respuestas del estudiante con puntajes automáticos y manuales y el desglose práctico de las preguntas SIMULATION recalculado bajo demanda con IPracticalScoreProvider (solo lectura, no se almacena), más los medios resueltos y la nota mínima aprobatoria
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -87,7 +87,7 @@ export class GetAttemptForGradingUseCase {
       const sessionId: string | undefined = attempt.answerFor(question.id)?.simulationSessionId;
 
       if (question.type === SIMULATION_QUESTION_TYPE && sessionId !== undefined) {
-        scores.set(question.id, await this._practicalScoreProvider.getSessionScore(sessionId, question.rubric));
+        scores.set(question.id, await this._practicalScoreProvider.getSessionScore(sessionId, question.rubric, { userId: attempt.userId, attemptId: attempt.id, questionId: question.id }));
       }
     }
 

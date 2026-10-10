@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la retroalimentación de evaluación de casos clínicos
  * Descripción: Verifica que el respaldo determinístico y el prompt no revelen los valores de la configuración experta al estudiante, y que el prompt delimite el texto externo del caso clínico como datos neutralizando las etiquetas inyectadas
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -102,6 +102,7 @@ describe("buildFeedbackPrompt", () => {
     educationalGoal: "Ventilación protectora",
     labData: { paO2: 60 },
     isActive: true,
+    status: "PUBLISHED",
   };
   const userConfig: VentilatorConfiguration = { ventilationMode: "volume", peep: 8, fio2: 60 };
   const expertConfig: ExpertConfigurationData = { id: "expert-1", ventilationMode: "pressure", peep: EXPERT_PEEP, fio2: EXPERT_FIO2, justification: "Estrategia protectora" };

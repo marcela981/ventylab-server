@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetClinicalCasesUseCase
- * Descripción: Lista paginada de casos clínicos activos (más recientes primero) filtrable por dificultad y patología, sin configuración experta, con el resumen de intentos del usuario por caso
- * Versión: 1.0
+ * Descripción: Lista paginada de casos clínicos (más recientes primero) filtrable por dificultad y patología, sin configuración experta, con el resumen de intentos del usuario por caso; sin permiso de gestión solo se listan los publicados, con él cualquier estado (filtro opcional)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,7 @@ import {
   type IClinicalCasesRepository,
 } from "@/features/clinical-cases/domain/repositories/clinical-cases.repository";
 import { NO_ATTEMPTS_SUMMARY, summarizeAttemptsByCase } from "@/features/clinical-cases/domain/services/case-attempt-statistics";
+import { PUBLISHED_STATUS_VALUE } from "@/features/clinical-cases/domain/value-objects/clinical-case-status";
 
 @Injectable()
 export class GetClinicalCasesUseCase {
@@ -31,8 +32,9 @@ export class GetClinicalCasesUseCase {
     private readonly _clinicalCasesRepository: IClinicalCasesRepository,
   ) {}
 
-  public async execute(query: GetClinicalCasesQuery, userId: string): Promise<Paginated<ClinicalCaseListItem>> {
-    const cases: Paginated<ClinicalCaseSummary> = await this._clinicalCasesRepository.getActiveCases(query);
+  public async execute(query: GetClinicalCasesQuery, userId: string, canViewAllStatuses: boolean = false): Promise<Paginated<ClinicalCaseListItem>> {
+    const visibleQuery: GetClinicalCasesQuery = canViewAllStatuses ? query : { ...query, status: PUBLISHED_STATUS_VALUE };
+    const cases: Paginated<ClinicalCaseSummary> = await this._clinicalCasesRepository.getCases(visibleQuery);
 
     if (cases.data.length === 0) {
       return cases.map((clinicalCase: ClinicalCaseSummary) => ({ clinicalCase, userAttempts: NO_ATTEMPTS_SUMMARY }));

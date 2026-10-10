@@ -6,6 +6,19 @@
   "clinical_case_retrieved": "Clinical case retrieved successfully",
   "clinical_case_evaluated": "Configuration evaluated successfully",
   "attempts_retrieved": "Clinical case attempts retrieved successfully",
+  "clinical_case_definition_retrieved": "Clinical case definition retrieved successfully",
+  "clinical_case_created": "Clinical case created successfully",
+  "clinical_case_updated": "Clinical case updated successfully",
+  "clinical_case_status_changed": "Clinical case status changed successfully",
+  "clinical_case_duplicated": "Clinical case duplicated successfully",
+  "clinical_case_validated": "Clinical case marked as validated by an expert",
+  "clinical_case_deleted": "Clinical case deleted successfully",
+  "duplicate_title_suffix": " (copy)",
+  "physiological_range_violation": "{field} = {value} is outside the physiologically plausible range {min}-{max} {unit}",
+  "invalid_definition": "The clinical case definition is inconsistent at {field}",
+  "clinical_case_in_use": "The clinical case is used by simulation sessions, evaluation attempts or evaluation questions; archive it instead of deleting it",
+  "clinical_case_has_simulation_sessions": "The clinical case already has simulation sessions; duplicate it to change its definition",
+  "clinical_case_not_simulation_ready": "The clinical case is missing mechanics, initial ventilator settings, initial state, sex or height required for simulation",
   "validation": {
     "difficulty_invalid": "The difficulty must be one of: BEGINNER, INTERMEDIATE, ADVANCED",
     "pathology_invalid": "The pathology must be one of the valid options",
@@ -15,6 +28,13 @@
     "respiratory_rate_invalid": "Respiratory rate must be a positive number",
     "peep_invalid": "PEEP must be a positive number",
     "fio2_invalid": "FiO2 must be a number between 0 and 100",
-    "max_pressure_invalid": "Maximum pressure must be a positive number"
+    "max_pressure_invalid": "Maximum pressure must be a positive number",
+    "status_invalid": "The status must be one of: DRAFT, PUBLISHED, ARCHIVED",
+    "number_invalid": "{property} must be a finite number",
+    "integer_invalid": "{property} must be an integer",
+    "min_zero": "{property} must be zero or greater",
+    "object_required": "{property} must be an object",
+    "array_required": "{property} must be an array",
+    "text_required": "{property} is required"
   }
 }
