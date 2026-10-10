@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Módulo SimulationModule
- * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (caché de reserva, monitor de telemetría, pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, adaptadores MQTT e InfluxDB, ajustes desde ConfigService, manejadores realtime y ciclo de vida; exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService
- * Versión: 1.3
+ * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (caché de reserva, pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, ajustes desde ConfigService, la fachada de telemetría del ventilador (VentilatorTelemetryModule) para estado, alarmas y publicación de comandos, manejadores realtime y ciclo de vida; exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Logger, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
@@ -20,8 +20,6 @@ import { ReservationsModule } from "@/features/reservations/reservations.module"
 import { AssistSimulationUseCase } from "@/features/simulation/application/assist/assist-simulation.usecase";
 import { EXAM_ATTEMPT_READER_TOKEN } from "@/features/simulation/application/ports/exam-attempt-reader.interface";
 import { SIMULATION_SEED_GENERATOR_TOKEN } from "@/features/simulation/application/ports/simulation-seed-generator.interface";
-import { type ITelemetryStore, TELEMETRY_STORE_TOKEN } from "@/features/simulation/application/ports/telemetry-store.interface";
-import { VENTILATOR_DEVICE_GATEWAY_TOKEN } from "@/features/simulation/application/ports/ventilator-device-gateway.interface";
 import { PatientSimulationSessionsService } from "@/features/simulation/application/services/patient-simulation-sessions.service";
 import { ReservationCacheService } from "@/features/simulation/application/services/reservation-cache.service";
 import { SimulationAssistContextService } from "@/features/simulation/application/services/simulation-assist-context.service";
@@ -29,7 +27,6 @@ import { SimulationSessionAccessService } from "@/features/simulation/applicatio
 import { SimulationSessionReader } from "@/features/simulation/application/services/simulation-session-reader.service";
 import { SimulationSessionRuntime } from "@/features/simulation/application/services/simulation-session-runtime.service";
 import { SimulationFacade } from "@/features/simulation/application/services/simulation.facade";
-import { TelemetryMonitorService } from "@/features/simulation/application/services/telemetry-monitor.service";
 import {
   SIMULATION_SESSION_SETTINGS_TOKEN,
   type SimulationSessionSettings,
@@ -47,7 +44,6 @@ import { GetSimulationSessionSummaryUseCase } from "@/features/simulation/applic
 import { GetSimulationSessionsUseCase } from "@/features/simulation/application/use-cases/get-simulation-sessions.usecase";
 import { GetSimulatorSessionsUseCase } from "@/features/simulation/application/use-cases/get-simulator-sessions.usecase";
 import { GetVentilatorStatusUseCase } from "@/features/simulation/application/use-cases/get-ventilator-status.usecase";
-import { RelayVentilatorTelemetryUseCase } from "@/features/simulation/application/use-cases/relay-ventilator-telemetry.usecase";
 import { ReleaseVentilatorUseCase } from "@/features/simulation/application/use-cases/release-ventilator.usecase";
 import { ReserveVentilatorUseCase } from "@/features/simulation/application/use-cases/reserve-ventilator.usecase";
 import { RunClinicalCaseTestUseCase } from "@/features/simulation/application/use-cases/run-clinical-case-test.usecase";
@@ -58,14 +54,9 @@ import { StartSimulationSessionUseCase } from "@/features/simulation/application
 import { StopPatientSimulationUseCase } from "@/features/simulation/application/use-cases/stop-patient-simulation.usecase";
 import { SIMULATION_SESSIONS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/simulation-sessions.repository";
 import { SIMULATOR_SESSIONS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/simulator-sessions.repository";
-import { DEFAULT_VENTILATOR_DEVICE_ID } from "@/features/simulation/domain/value-objects/ventilator-telemetry";
-import { type InfluxSettings, readInfluxSettings, resolveWsMaxHz } from "@/features/simulation/infrastructure/config/simulation-config";
 import { SimulationRealtimeHandlers } from "@/features/simulation/infrastructure/events/simulation-realtime.handlers";
 import { SimulationReservationsHandlers } from "@/features/simulation/infrastructure/events/simulation-reservations.handlers";
-import { DisabledTelemetryStore } from "@/features/simulation/infrastructure/influx/disabled-telemetry.store";
-import { InfluxTelemetryStore } from "@/features/simulation/infrastructure/influx/influx-telemetry.store";
 import { SimulationLifecycleService } from "@/features/simulation/infrastructure/lifecycle/simulation-lifecycle.service";
-import { MqttVentilatorDeviceGateway } from "@/features/simulation/infrastructure/mqtt/mqtt-ventilator-device.gateway";
 import { ExamAttemptsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/exam-attempts-prisma.repository";
 import { SimulationSessionsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/simulation-sessions-prisma.repository";
 import { SimulatorSessionsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/simulator-sessions-prisma.repository";
@@ -76,17 +67,15 @@ import { SimulationAssistController } from "@/features/simulation/presentation/c
 import { SimulationSessionsController } from "@/features/simulation/presentation/controllers/simulation-sessions.controller";
 import { SimulationController } from "@/features/simulation/presentation/controllers/simulation.controller";
 import { UsersModule } from "@/features/users/users.module";
+import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/ventilator-telemetry.module";
 
 const MS_PER_MINUTE: number = 60_000;
 
-function createSimulationSettings(configService: ConfigService<EnvironmentVariables>): SimulationSettings {
-  const { maxHz, isFallback }: { maxHz: number; isFallback: boolean } = resolveWsMaxHz(configService.get("WS_MAX_HZ", { infer: true }));
-
-  if (isFallback) {
-    new Logger(SimulationModule.name).warn(`WS_MAX_HZ invalid, using ${maxHz}`);
-  }
-
-  return { deviceId: DEFAULT_VENTILATOR_DEVICE_ID, telemetryThrottleMs: 1000 / maxHz };
+function createSimulationSettings(configService: ConfigService<EnvironmentVariables, true>): SimulationSettings {
+  return {
+    deviceId: configService.get("VENTILATOR_DEVICE_ID", { infer: true }),
+    commandTopic: configService.get("MQTT_COMMAND_TOPIC", { infer: true }),
+  };
 }
 
 function createSimulationSessionSettings(configService: ConfigService<EnvironmentVariables, true>): SimulationSessionSettings {
@@ -97,14 +86,8 @@ function createSimulationSessionSettings(configService: ConfigService<Environmen
   };
 }
 
-function createTelemetryStore(configService: ConfigService<EnvironmentVariables>): ITelemetryStore {
-  const settings: InfluxSettings | undefined = readInfluxSettings(configService);
-
-  return settings ? new InfluxTelemetryStore(settings) : new DisabledTelemetryStore();
-}
-
 @Module({
-  imports: [AuthModule, AiModule, UsersModule, GroupsModule, ClinicalCasesModule, ReservationsModule],
+  imports: [AuthModule, AiModule, UsersModule, GroupsModule, ClinicalCasesModule, ReservationsModule, VentilatorTelemetryModule],
   controllers: [SimulationController, PatientSimulationController, SimulationSessionsController, SimulationAssistController, ClinicalCaseTestRunController],
   providers: [
     {
@@ -116,15 +99,6 @@ function createTelemetryStore(configService: ConfigService<EnvironmentVariables>
       provide: SIMULATION_SESSION_SETTINGS_TOKEN,
       useFactory: createSimulationSessionSettings,
       inject: [ConfigService],
-    },
-    {
-      provide: TELEMETRY_STORE_TOKEN,
-      useFactory: createTelemetryStore,
-      inject: [ConfigService],
-    },
-    {
-      provide: VENTILATOR_DEVICE_GATEWAY_TOKEN,
-      useClass: MqttVentilatorDeviceGateway,
     },
     {
       provide: SIMULATOR_SESSIONS_REPOSITORY_TOKEN,
@@ -143,9 +117,7 @@ function createTelemetryStore(configService: ConfigService<EnvironmentVariables>
       useClass: CryptoSimulationSeedGenerator,
     },
     ReservationCacheService,
-    TelemetryMonitorService,
     PatientSimulationSessionsService,
-    RelayVentilatorTelemetryUseCase,
     GetSimulationHealthUseCase,
     GetVentilatorStatusUseCase,
     SendVentilatorCommandUseCase,

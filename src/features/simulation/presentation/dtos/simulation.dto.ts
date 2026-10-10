@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de simulación
  * Descripción: Serializan el estado del ventilador y sus alarmas, el resultado de un comando, la reserva, las sesiones del simulador y la salud del módulo (MQTT, WebSocket, telemetría y reserva)
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -250,7 +250,7 @@ export class MqttHealthDTO {
   @ApiProperty({ description: "MQTT connection status", example: "CONNECTED" })
   public status: string;
 
-  @ApiProperty({ description: "Broker URL without credentials", example: "mqtt://test.mosquitto.org:1883" })
+  @ApiProperty({ description: "Broker URL without credentials", example: "mqtt://broker.example.org:1883" })
   public brokerUrl: string;
 
   @ApiProperty({ description: "Telemetry topic", example: "/ventynet/data" })

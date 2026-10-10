@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Gateway RealtimeGateway
- * Descripción: Gateway de Socket.io que autentica por JWT en el handshake o con el evento authenticate, une a las salas de usuario y rol, e implementa IRealtimePublisher
- * Versión: 1.0
+ * Descripción: Gateway de Socket.io que autentica por JWT en el handshake o con el evento authenticate, une a las salas de usuario y rol, implementa IRealtimePublisher (incluida la emisión volátil a varias salas y el vaciado de salas) y publica por EventEmitter2 los eventos internos de cliente autenticado, cliente desconectado y mensajes entrantes permitidos (prefijo ventilator:)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Inject, Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   ConnectedSocket,
   MessageBody,
@@ -26,8 +27,15 @@ import {
   type IAccessTokenVerifier,
 } from "@/common/application/ports/access-token-verifier.interface";
 import {
+  FORWARDED_CLIENT_EVENT_PREFIXES,
   groupRoom,
   type IRealtimePublisher,
+  REALTIME_CLIENT_AUTHENTICATED_EVENT,
+  REALTIME_CLIENT_DISCONNECTED_EVENT,
+  REALTIME_CLIENT_MESSAGE_EVENT,
+  type RealtimeClientAuthenticatedPayload,
+  type RealtimeClientDisconnectedPayload,
+  type RealtimeClientMessagePayload,
   roleRoom,
   userRoom,
 } from "@/common/application/ports/realtime-publisher.interface";
@@ -40,6 +48,7 @@ const INVALID_TOKEN_MESSAGE: string = "Invalid token";
 
 interface RealtimeSocketData {
   userId?: string;
+  role?: string;
 }
 
 @WebSocketGateway()
@@ -51,6 +60,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   public constructor(
     @Inject(ACCESS_TOKEN_VERIFIER_TOKEN)
     private readonly _accessTokenVerifier: IAccessTokenVerifier,
+    private readonly _eventEmitter: EventEmitter2,
   ) {}
 
   public afterInit(server: Server): void {
@@ -58,6 +68,8 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   }
 
   public async handleConnection(client: Socket): Promise<void> {
+    client.onAny((event: string, payload: unknown): void => this._forwardClientMessage(client, event, payload));
+
     const token: string | undefined = RealtimeGateway._extractHandshakeToken(client);
 
     if (token === undefined) {
@@ -70,9 +82,14 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   public handleDisconnect(client: Socket): void {
     const data: RealtimeSocketData = client.data as RealtimeSocketData;
 
-    if (data.userId !== undefined) {
-      this._untrack(data.userId, client.id);
+    if (data.userId === undefined) {
+      return;
     }
+
+    const remainingSockets: number = this._untrack(data.userId, client.id);
+    const payload: RealtimeClientDisconnectedPayload = { userId: data.userId, socketId: client.id, remainingSockets };
+
+    this._eventEmitter.emit(REALTIME_CLIENT_DISCONNECTED_EVENT, payload);
   }
 
   @SubscribeMessage(AUTHENTICATE_EVENT)
@@ -96,6 +113,10 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     this._server?.to(room).emit(event, payload);
   }
 
+  public emitToRoomsVolatile(rooms: readonly string[], event: string, payload: unknown): void {
+    this._server?.to([...rooms]).volatile.emit(event, payload);
+  }
+
   public broadcast(event: string, payload: unknown): void {
     this._server?.emit(event, payload);
   }
@@ -106,6 +127,10 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   public leaveRoom(userId: string, room: string): void {
     this._server?.in(userRoom(userId)).socketsLeave(room);
+  }
+
+  public clearRoom(room: string): void {
+    this._server?.in(room).socketsLeave(room);
   }
 
   public isUserConnected(userId: string): boolean {
@@ -135,6 +160,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     }
 
     data.userId = claims.sub;
+    data.role = claims.role;
 
     await client.join([userRoom(claims.sub), roleRoom(claims.role)]);
 
@@ -143,6 +169,26 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     this._logger.debug(`Socket ${client.id} authenticated as user ${claims.sub}`);
 
     client.emit(AUTHENTICATED_EVENT, { userId: claims.sub });
+
+    const payload: RealtimeClientAuthenticatedPayload = { userId: claims.sub, role: claims.role, socketId: client.id };
+
+    this._eventEmitter.emit(REALTIME_CLIENT_AUTHENTICATED_EVENT, payload);
+  }
+
+  private _forwardClientMessage(client: Socket, event: string, payload: unknown): void {
+    const data: RealtimeSocketData = client.data as RealtimeSocketData;
+
+    if (data.userId === undefined || data.role === undefined) {
+      return;
+    }
+
+    if (!FORWARDED_CLIENT_EVENT_PREFIXES.some((prefix: string): boolean => event.startsWith(prefix))) {
+      return;
+    }
+
+    const message: RealtimeClientMessagePayload = { event, userId: data.userId, role: data.role, socketId: client.id, payload };
+
+    this._eventEmitter.emit(REALTIME_CLIENT_MESSAGE_EVENT, message);
   }
 
   private _track(userId: string, socketId: string): void {
@@ -153,11 +199,11 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     this._connectedUsers.set(userId, sockets);
   }
 
-  private _untrack(userId: string, socketId: string): void {
+  private _untrack(userId: string, socketId: string): number {
     const sockets: Set<string> | undefined = this._connectedUsers.get(userId);
 
     if (!sockets) {
-      return;
+      return 0;
     }
 
     sockets.delete(socketId);
@@ -165,6 +211,8 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     if (sockets.size === 0) {
       this._connectedUsers.delete(userId);
     }
+
+    return sockets.size;
   }
 
   private static _extractHandshakeToken(client: Socket): string | undefined {

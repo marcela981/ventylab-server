@@ -1,0 +1,10 @@
+{
+  "metrics_retrieved": "Ventilator telemetry metrics retrieved successfully",
+  "metrics_reset": "Ventilator telemetry metrics reset successfully",
+  "recording_started": "Telemetry recording started",
+  "recording_stopped": "Telemetry recording stopped",
+  "recording_retrieved": "Telemetry recording retrieved successfully",
+  "no_active_reservation": "There is no active ventilator reservation",
+  "recording_forbidden": "Only the reservation holders, teachers or administrators can access this telemetry recording",
+  "reservation_not_found": "Reservation not found"
+}

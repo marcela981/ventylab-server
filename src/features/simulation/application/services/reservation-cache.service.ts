@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caché de la reserva activa
- * Descripción: Espejo en memoria de la reserva activa leído en cada trama de telemetría sin consultar la base de datos; se alimenta de ReservationsFacade (reserva programada cuya ventana contiene el instante actual) y se refresca al reservar, liberar, al cambiar cualquier reserva, periódicamente y al vencer la reserva en caché
- * Versión: 1.1
+ * Descripción: Espejo en memoria de la reserva activa leído al validar comandos al ventilador físico y en la salud del módulo sin consultar la base de datos; se alimenta de ReservationsFacade (reserva programada cuya ventana contiene el instante actual) y se refresca al reservar, liberar, al cambiar cualquier reserva y periódicamente
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -47,12 +47,6 @@ export class ReservationCacheService {
         endTime: active.endsAt.getTime(),
       }
       : undefined;
-  }
-
-  public expireOverdue(): Promise<void> {
-    this._refreshInBackground();
-
-    return Promise.resolve();
   }
 
   public refreshInBackground(): void {

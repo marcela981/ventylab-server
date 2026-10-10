@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Validación de variables de entorno
- * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL
- * Versión: 1.7
+ * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo) y de la telemetría del ventilador físico (conexión MQTT habilitada solo con MQTT_BROKER_URL, tópicos, retroceso de reconexión, decodificador, intervalos de envío, inactividad, sala, métricas y grabación); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL
+ * Versión: 1.8
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Transform, Type, plainToInstance } from "class-transformer";
-import { IsBoolean, IsEmail, IsEnum, IsInt, IsJSON, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, Max, Min, type ValidationError, validateSync } from "class-validator";
+import { IsBoolean, IsEmail, IsEnum, IsIn, IsInt, IsJSON, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, Max, Min, type ValidationError, validateSync } from "class-validator";
 
 export enum Environment {
   Development = "development",
@@ -147,21 +147,68 @@ export class EnvironmentVariables {
   public MQTT_PASSWORD?: string;
 
   @IsString()
-  @IsOptional()
-  public MQTT_TELEMETRY_TOPIC?: string;
+  @IsNotEmpty()
+  public MQTT_TELEMETRY_TOPIC: string = "/ventynet/data";
 
   @IsString()
-  @IsOptional()
-  public MQTT_COMMAND_TOPIC?: string;
+  @IsNotEmpty()
+  public MQTT_COMMAND_TOPIC: string = "ventilab/device/001/command";
 
   @IsString()
-  @IsOptional()
-  public MQTT_ALARM_TOPIC?: string;
+  @IsNotEmpty()
+  public MQTT_ALARM_TOPIC: string = "ventilab/device/001/alarm";
 
-  @IsNumber()
+  @IsInt()
+  @Min(100)
   @Type(() => Number)
-  @IsOptional()
-  public WS_MAX_HZ?: number;
+  public MQTT_RECONNECT_BASE_MS: number = 1000;
+
+  @IsInt()
+  @Min(1000)
+  @Type(() => Number)
+  public MQTT_RECONNECT_MAX_MS: number = 30000;
+
+  @IsIn(["auto", "json", "hex"])
+  public VENTILATOR_TELEMETRY_DECODER: "auto" | "json" | "hex" = "auto";
+
+  @IsInt()
+  @Min(5)
+  @Max(1000)
+  @Type(() => Number)
+  public VENTILATOR_FLUSH_INTERVAL_MS: number = 33;
+
+  @IsInt()
+  @Min(250)
+  @Type(() => Number)
+  public VENTILATOR_STALE_AFTER_MS: number = 2000;
+
+  @IsInt()
+  @Min(100)
+  @Type(() => Number)
+  public VENTILATOR_ROOM_REFRESH_MS: number = 1000;
+
+  @IsInt()
+  @Min(10)
+  @Max(1_000_000)
+  @Type(() => Number)
+  public VENTILATOR_METRICS_WINDOW: number = 10000;
+
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  public VENTILATOR_INVALID_LOG_INTERVAL_MS: number = 5000;
+
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  @Type(() => Number)
+  public VENTILATOR_RECORDING_HZ: number = 20;
+
+  @IsInt()
+  @Min(1)
+  @Max(3600)
+  @Type(() => Number)
+  public VENTILATOR_RECORDING_FLUSH_SECONDS: number = 5;
 
   @IsString()
   @IsOptional()

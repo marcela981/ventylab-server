@@ -86,7 +86,7 @@ Allowed dependencies:
 ## Tasks
 - [x] T1 Shared limits + schema + offline migration + reservations feature (preemption, role DTO,
       limits, cancel rules, legacy reserve adapter). Route: delegated (writer trigger: many files).
-- [ ] T2 ventilator-telemetry (MQTT singleton, decoders, batching, room access, staleness, seq,
+- [x] T2 ventilator-telemetry (MQTT singleton, decoders, batching, room access, staleness, seq,
       metrics + CSV, recording, legacy relay removal, Influx sink). Route: delegated.
 - [ ] T3 ventilator-commands (operator control + heartbeat, validation, rate limit, encoders,
       lifecycle, persistence, legacy command adapter). Route: delegated.
@@ -107,3 +107,11 @@ mqttx bench against a broker, physical ventilator tests.
   reservations/simulation/groups/authorization/admin green, eslint clean, madge 0 cycles, header grep
   empty; concurrency spec: 20 concurrent creates -> 1 created / 19 conflicts (20/20 without the lock).
   Migration `20261010120000_ventilator_features` written offline, NOT applied.
+- T2 done (delegated writer). Evidence: tsc 0 errors; jest telemetry+simulation+reservations+common
+  285 passed; full jest 1170/1171 (engine-determinism 500 ms wall-clock test flaky under full parallel
+  load, passes alone, untouched code); madge (with --ts-config) 0 cycles; `mqtt.connect` exactly 1;
+  no test.mosquitto.org in src; perf spec 3600 frames processing p95 < 10 ms.
+  Decision change: connection enabled iff MQTT_BROKER_URL is set (no VENTILATOR_ENABLED flag).
+- RDD: user granted review for range 6b9d737..1693093, but START stopped with
+  `lens_context_budget_exceeded` (21.6k lines incl. baseline). No authority created. Pending:
+  review smaller per-feature commit slices (new consent per candidate).

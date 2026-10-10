@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso SendVentilatorCommandUseCase
- * Descripción: Enruta los ajustes del ventilador: ajusta la simulación sintética en curso, la arranca si el paciente está configurado, o valida rangos, verifica el líder de la reserva y publica el comando al ventilador físico por IVentilatorDeviceGateway
- * Versión: 1.0
+ * Descripción: Enruta los ajustes del ventilador: ajusta la simulación sintética en curso, la arranca si el paciente está configurado, o valida rangos, verifica el líder de la reserva y publica el comando al ventilador físico con QoS 1 por la conexión MQTT única de VentilatorTelemetryFacade
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,7 +11,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { SendVentilatorCommandCommand } from "@/features/simulation/application/commands/send-ventilator-command.command";
-import { type IVentilatorDeviceGateway, VENTILATOR_DEVICE_GATEWAY_TOKEN } from "@/features/simulation/application/ports/ventilator-device-gateway.interface";
 import {
   PHYSICAL_TARGET,
   SendVentilatorCommandResult,
@@ -20,12 +19,17 @@ import {
 } from "@/features/simulation/application/results/send-ventilator-command.result";
 import { PatientSimulationSessionsService } from "@/features/simulation/application/services/patient-simulation-sessions.service";
 import { type CachedReservation, ReservationCacheService } from "@/features/simulation/application/services/reservation-cache.service";
+import { SIMULATION_SETTINGS_TOKEN, type SimulationSettings } from "@/features/simulation/application/tokens/simulation-settings.token";
 import { getCommandValidationErrors } from "@/features/simulation/domain/services/hex-command-encoder";
 import {
   InvalidVentilatorCommandError,
   NotReservationLeaderError,
   VentilatorNotConnectedError,
 } from "@/features/simulation/domain/simulation.errors";
+import { type IMqttConnection, type MqttQos } from "@/features/ventilator-telemetry/application/ports/mqtt-connection.interface";
+import { VentilatorTelemetryFacade } from "@/features/ventilator-telemetry/application/services/ventilator-telemetry.facade";
+
+const COMMAND_QOS: MqttQos = 1;
 
 /**
  * @throws {InvalidVentilatorCommandError} If a physical command parameter is outside the safe ranges
@@ -35,8 +39,9 @@ import {
 @Injectable()
 export class SendVentilatorCommandUseCase {
   public constructor(
-    @Inject(VENTILATOR_DEVICE_GATEWAY_TOKEN)
-    private readonly _deviceGateway: IVentilatorDeviceGateway,
+    @Inject(SIMULATION_SETTINGS_TOKEN)
+    private readonly _settings: SimulationSettings,
+    private readonly _telemetryFacade: VentilatorTelemetryFacade,
     private readonly _patientSessions: PatientSimulationSessionsService,
     private readonly _reservationCache: ReservationCacheService,
   ) {}
@@ -68,11 +73,13 @@ export class SendVentilatorCommandUseCase {
       throw new NotReservationLeaderError();
     }
 
-    if (!this._deviceGateway.isConnected()) {
+    const connection: IMqttConnection = this._telemetryFacade.mqttConnection;
+
+    if (!connection.isConnected) {
       throw new VentilatorNotConnectedError();
     }
 
-    await this._deviceGateway.publishCommand(command.command);
+    await connection.publish(this._settings.commandTopic, JSON.stringify(command.command), { qos: COMMAND_QOS });
 
     const sentAt: number = Date.now();
 

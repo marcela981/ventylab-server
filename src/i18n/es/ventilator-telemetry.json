@@ -1,0 +1,10 @@
+{
+  "metrics_retrieved": "Métricas de telemetría del ventilador obtenidas correctamente",
+  "metrics_reset": "Métricas de telemetría del ventilador reiniciadas correctamente",
+  "recording_started": "Grabación de telemetría iniciada",
+  "recording_stopped": "Grabación de telemetría detenida",
+  "recording_retrieved": "Grabación de telemetría obtenida correctamente",
+  "no_active_reservation": "No hay una reserva activa del ventilador",
+  "recording_forbidden": "Solo los titulares de la reserva, docentes o administradores pueden acceder a esta grabación de telemetría",
+  "reservation_not_found": "Reserva no encontrada"
+}

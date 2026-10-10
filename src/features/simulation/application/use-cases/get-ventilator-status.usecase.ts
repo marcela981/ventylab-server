@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetVentilatorStatusUseCase
- * Descripción: Devuelve el estado del ventilador físico: conexión MQTT, reserva activa leída de ReservationsFacade con el nombre de su titular (UsersFacade), última trama y alarmas activas; refresca la caché de la reserva en segundo plano
- * Versión: 1.1
+ * Descripción: Devuelve el estado del ventilador físico: conexión MQTT, último mensaje y alarmas activas leídos de VentilatorTelemetryFacade y reserva activa leída de ReservationsFacade con el nombre de su titular (UsersFacade); refresca la caché de la reserva en segundo plano
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,30 +12,29 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { type ActiveReservationSummary } from "@/features/reservations/application/results/active-reservation-summary.result";
 import { ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
-import { type IVentilatorDeviceGateway, VENTILATOR_DEVICE_GATEWAY_TOKEN } from "@/features/simulation/application/ports/ventilator-device-gateway.interface";
 import { VentilatorStatusResult } from "@/features/simulation/application/results/ventilator-status.result";
 import { ReservationCacheService } from "@/features/simulation/application/services/reservation-cache.service";
-import { TelemetryMonitorService } from "@/features/simulation/application/services/telemetry-monitor.service";
 import { SIMULATION_SETTINGS_TOKEN, type SimulationSettings } from "@/features/simulation/application/tokens/simulation-settings.token";
-import { type VentilatorStatusValue } from "@/features/simulation/domain/value-objects/ventilator-telemetry";
+import { CONNECTED_STATUS_VALUE, DISCONNECTED_STATUS_VALUE, type VentilatorStatusValue } from "@/features/simulation/domain/value-objects/ventilator-telemetry";
 import { UsersFacade } from "@/features/users/application/services/users.facade";
 import { type UserAccount } from "@/features/users/domain/read-models/user-account.read-model";
+import { type VentilatorTelemetryStatus } from "@/features/ventilator-telemetry/application/results/ventilator-telemetry-status.result";
+import { VentilatorTelemetryFacade } from "@/features/ventilator-telemetry/application/services/ventilator-telemetry.facade";
 
 @Injectable()
 export class GetVentilatorStatusUseCase {
   public constructor(
-    @Inject(VENTILATOR_DEVICE_GATEWAY_TOKEN)
-    private readonly _deviceGateway: IVentilatorDeviceGateway,
     @Inject(SIMULATION_SETTINGS_TOKEN)
     private readonly _settings: SimulationSettings,
+    private readonly _telemetryFacade: VentilatorTelemetryFacade,
     private readonly _reservationsFacade: ReservationsFacade,
     private readonly _usersFacade: UsersFacade,
     private readonly _reservationCache: ReservationCacheService,
-    private readonly _telemetryMonitor: TelemetryMonitorService,
   ) {}
 
   public async execute(deviceId?: string): Promise<VentilatorStatusResult> {
-    const status: VentilatorStatusValue = this._deviceGateway.getStatus();
+    const telemetry: VentilatorTelemetryStatus = this._telemetryFacade.getStatus();
+    const status: VentilatorStatusValue = telemetry.brokerConnected ? CONNECTED_STATUS_VALUE : DISCONNECTED_STATUS_VALUE;
     const targetDeviceId: string = deviceId ?? this._settings.deviceId;
 
     this._reservationCache.refreshInBackground();
@@ -54,8 +53,8 @@ export class GetVentilatorStatusUseCase {
       groupId: active?.groupId,
       leaderId: undefined,
       reservationEndsAt: active?.endsAt.getTime(),
-      lastDataTimestamp: this._telemetryMonitor.lastDataTimestamp,
-      activeAlarms: this._telemetryMonitor.activeAlarms,
+      lastDataTimestamp: telemetry.lastMessageAt,
+      activeAlarms: this._telemetryFacade.getActiveAlarms(),
     });
   }
 }
