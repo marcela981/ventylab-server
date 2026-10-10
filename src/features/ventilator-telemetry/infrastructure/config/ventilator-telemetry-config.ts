@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Configuración de la telemetría del ventilador
  * Descripción: Resuelve desde ConfigService los ajustes de la telemetría (conexión MQTT solo cuando MQTT_BROKER_URL está definido, identificador de cliente único por proceso, tópicos, decodificador, intervalos y grabación) y de InfluxDB, y oculta las credenciales de la URL del bróker
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,6 +30,7 @@ export function readVentilatorTelemetrySettings(configService: ConfigService<Env
     decoder: configService.get("VENTILATOR_TELEMETRY_DECODER", { infer: true }),
     deviceId: configService.get("VENTILATOR_DEVICE_ID", { infer: true }),
     flushIntervalMs: configService.get("VENTILATOR_FLUSH_INTERVAL_MS", { infer: true }),
+    maxBufferedFrames: configService.get("VENTILATOR_MAX_BUFFERED_FRAMES", { infer: true }),
     staleAfterMs: configService.get("VENTILATOR_STALE_AFTER_MS", { infer: true }),
     roomRefreshMs: configService.get("VENTILATOR_ROOM_REFRESH_MS", { infer: true }),
     metricsWindow: configService.get("VENTILATOR_METRICS_WINDOW", { infer: true }),

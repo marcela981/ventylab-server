@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pipeline de telemetría del ventilador
- * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia, actualiza parámetros y actividad, notifica a los oyentes de tramas y encola; cada VENTILATOR_FLUSH_INTERVAL_MS emite un lote volátil ventilator:telemetry y la lectura heredada ventilator:data a la sala ventilator y a docentes y administradores, y registra las latencias
- * Versión: 1.0
+ * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia, actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada VENTILATOR_FLUSH_INTERVAL_MS emite un lote volátil ventilator:telemetry y la lectura heredada ventilator:data a la sala ventilator y a docentes y administradores, y registra las latencias
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -186,6 +186,13 @@ export class TelemetryPipelineService {
       } catch (error: unknown) {
         this._logger.error(`Telemetry frame listener failed: ${error instanceof Error ? error.message : String(error)}`);
       }
+    }
+
+    if (this._pending.length >= this._settings.maxBufferedFrames) {
+      const dropped: number = this._pending.length - this._settings.maxBufferedFrames + 1;
+
+      this._pending.splice(0, dropped);
+      this._metrics.recordBufferDrops(dropped);
     }
 
     this._pending.push({ frame, receivedAt });

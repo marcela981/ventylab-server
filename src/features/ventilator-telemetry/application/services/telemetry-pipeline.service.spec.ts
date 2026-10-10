@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del pipeline de telemetría
- * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia, el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas y la forma heredada de ventilator:data, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
- * Versión: 1.0
+ * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia, el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas y la forma heredada de ventilator:data, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -164,6 +164,37 @@ describe("TelemetryPipelineService", () => {
       expect(snapshot.flushMs.count).toBe(1);
       expect(snapshot.deviceLatencyMs.p50).toBe(7);
       expect(snapshot.volatileEmits).toBe(2);
+    });
+  });
+
+  describe("bounded buffer", () => {
+    it("drops the oldest frames beyond VENTILATOR_MAX_BUFFERED_FRAMES and counts them as buffer drops", () => {
+      const { pipeline, publisher, metrics, clock }: PipelineFixture = buildPipeline({ maxBufferedFrames: 3 });
+
+      for (const seq of [1, 2, 3, 4, 5]) {
+        pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1, seq }));
+      }
+
+      pipeline.flush();
+      const batch: RecordedEmit[] = publisher.emitsOf("ventilator:telemetry");
+
+      expect((batch[0].payload as { frames: TelemetryFrame[] }).frames.map((frame: TelemetryFrame): number | undefined => frame.seq)).toEqual([3, 4, 5]);
+      expect(metrics.bufferDrops).toBe(2);
+      expect(metrics.snapshot(clock.nowMs).bufferDrops).toBe(2);
+      expect(metrics.lostMessages).toBe(0);
+    });
+
+    it("does not drop anything while the buffer stays below the cap", () => {
+      const { pipeline, metrics }: PipelineFixture = buildPipeline({ maxBufferedFrames: 3 });
+
+      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1 }));
+      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1 }));
+      pipeline.flush();
+      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1 }));
+      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1 }));
+      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1 }));
+
+      expect(metrics.bufferDrops).toBe(0);
     });
   });
 

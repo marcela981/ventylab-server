@@ -79,8 +79,8 @@ Allowed dependencies:
 9. MQTT: single client in ventilator-telemetry (`mqtt.connect` appears exactly once in src),
    guarded on `globalThis` for hot reload, infinite exponential backoff with cap, QoS 0 subscribe
    for telemetry, QoS 1 publish for commands, graceful end on shutdown. Default broker no longer
-   test.mosquitto.org: `MQTT_BROKER_URL` required when the ventilator is enabled
-   (`VENTILATOR_ENABLED`, default false -> no connection).
+   test.mosquitto.org: the connection is enabled iff `MQTT_BROKER_URL` (alias `MQTT_URL`) is set;
+   there is no `VENTILATOR_ENABLED` flag (changed during T2).
 10. Notifications: `ReservationNotifier` port, realtime adapter. Audit: existing `IAuditRecorder`.
 
 ## Tasks
@@ -90,8 +90,9 @@ Allowed dependencies:
       metrics + CSV, recording, legacy relay removal, Influx sink). Route: delegated.
 - [x] T3 ventilator-commands (operator control + heartbeat, validation, rate limit, encoders,
       lifecycle, persistence, legacy command adapter). Route: delegated.
-- [ ] T4 UPPAAL property tests + docs (audit report, traceability, open questions, verification
-      evidence). Route: delegated.
+- [x] T4 UPPAAL property tests + docs (audit report, traceability, open questions, verification
+      evidence) + bounded telemetry buffer (`VENTILATOR_MAX_BUFFERED_FRAMES`, UPPAAL S8).
+      Route: delegated (writer trigger: 2 specs + 9 source files + 6 docs + skills).
 
 ## Checks per task
 `npx tsc --noEmit`; `npx jest <feature>`; `npx madge --circular --extensions ts src`;
@@ -116,6 +117,20 @@ mqttx bench against a broker, physical ventilator tests.
   `lens_context_budget_exceeded` (21.6k lines incl. baseline). No authority created. Pending:
   review smaller per-feature commit slices (new consent per candidate).
 - T3 done (delegated writer). Evidence: tsc 0 errors; jest commands 115 passed; full jest 1290/1291
-  (same engine-determinism load flake, passes alone 3/3); madge 0 cycles; mqtt.connect 1; no
+  (same engine-determinism load flake, passes alone, 3/3 tests); madge 0 cycles; mqtt.connect 1; no
   simulation imports in the 3 features. UPPAAL command properties S2, S3, S6/S7, L1, L2, R1-R3 in
   `uppaal-commands-properties.spec.ts`.
+- T4 done (delegated writer, uncommitted). New `uppaal-reservations-properties.spec.ts` (S2 mutual
+  exclusion with seeded concurrent waves, BL1 30 vs 120 min deviation, S3 leader deviation, S7/N1,
+  R3; 9 tests; S2 fails when `lockDevice` is a no-op) and `uppaal-telemetry-properties.spec.ts`
+  (S3, S5, S7, S8, R1-R3; 7 tests). S8: batch buffer capped by `VENTILATOR_MAX_BUFFERED_FRAMES`
+  (default 256, env + settings), oldest frames dropped and counted as `bufferDrops` (metrics, DTO,
+  pipeline spec). Docs: `docs/ventilator/{README,AUDIT,UPPAAL-TRACEABILITY,MIGRATION,OPEN-QUESTIONS,
+  VERIFICATION}.md`; telemetry docs updated. Skills `application-layer` (realtime port additions and
+  `realtime.client-*` events) and `error-handling` (`details` -> response `data`), CLAUDE.md
+  Realtime bullet. Evidence: tsc 0 errors; eslint 0 on changed .ts; jest 3 features 28 suites /
+  243 tests; full jest 1308/1309 (same engine-determinism flake, passes alone, 3/3 tests); madge 0 cycles
+  (both forms); prisma validate OK (4 pre-existing warnings); header grep empty; `mqtt.connect` 1.
+  Requirement status (AUDIT.md): 43 implemented, 10 partial, 4 not implemented.
+  Pending (author): review/commit T4, apply the migration (MIGRATION.md), manual checks
+  (VERIFICATION.md), `.env.example` changes (README.md), RDD review per feature commit slice.

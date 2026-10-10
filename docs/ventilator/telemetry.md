@@ -60,6 +60,7 @@ Off by default. `POST /api/ventilator/telemetry/recordings/start|stop` (holders 
 | `MQTT_RECONNECT_BASE_MS` / `MQTT_RECONNECT_MAX_MS` | 1000 / 30000 | Infinite exponential backoff with jitter, capped at the maximum. |
 | `VENTILATOR_TELEMETRY_DECODER` | `auto` | `auto`, `json` or `hex`. |
 | `VENTILATOR_FLUSH_INTERVAL_MS` | 33 | Batch emit period. |
+| `VENTILATOR_MAX_BUFFERED_FRAMES` | 256 | Batch buffer cap. When a frame arrives with the buffer full, the oldest frames are dropped and counted in the `bufferDrops` metric. |
 | `VENTILATOR_STALE_AFTER_MS` | 2000 | Device silence before `ventilator:disconnected`. |
 | `VENTILATOR_ROOM_REFRESH_MS` | 1000 | Active reservation polling period. |
 | `VENTILATOR_METRICS_WINDOW` | 10000 | Retained samples per latency kind. |

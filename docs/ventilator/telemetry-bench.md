@@ -11,6 +11,7 @@ This bench measures the MQTT → Socket.io telemetry pipeline of `src/features/v
 | `flushMs` | Duration of one batch emit (`ventilator:telemetry` + `ventilator:data`). |
 | `deviceLatencyMs` | `serverTs - deviceTs` when the frame carries `deviceTs`. Only meaningful when the device and server clocks are synchronized (NTP); clock skew shifts every value by the same offset and can make it negative. |
 | `invalidMessages` / `lostMessages` | Dropped invalid payloads / sequence gaps (`seq`). |
+| `bufferDrops` | Oldest frames dropped because the batch buffer reached `VENTILATOR_MAX_BUFFERED_FRAMES`. |
 
 ## Prerequisites
 
@@ -55,6 +56,6 @@ This bench measures the MQTT → Socket.io telemetry pipeline of `src/features/v
 ## Expected results
 
 - `messagesPerSecond` ≈ 60 and `batchesPerSecond` ≈ 30 (one batch every 33 ms carrying ~2 frames).
-- `invalidMessages` = 0 and `lostMessages` = 0.
+- `invalidMessages` = 0, `lostMessages` = 0 and `bufferDrops` = 0.
 - `processingMs.p95` < 10 ms.
 - `totalMs.p95` ≤ `VENTILATOR_FLUSH_INTERVAL_MS` + `processingMs.p95` + `flushMs.p95`.
