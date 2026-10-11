@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de los comandos del ventilador
- * Descripción: Comando aceptado (identificador para seguir ventilator:command-status), estado del control exclusivo para quien consulta (sin identificadores para quien no es titular de la reserva activa ni docente o administrador) y elemento del historial de comandos de una reserva
- * Versión: 1.1
+ * Descripción: Comando aceptado (identificador para seguir ventilator:command-status, estado real y hora de envío solo cuando el broker confirmó la publicación), estado del control exclusivo para quien consulta (sin identificadores para quien no es titular de la reserva activa ni docente o administrador) y elemento del historial de comandos de una reserva
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,13 +20,13 @@ export class SentVentilatorCommandDTO {
   @ApiProperty({ description: "Reservation the command was sent under", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e70" })
   public reservationId: string;
 
-  @ApiProperty({ description: "Status right after publishing", enum: VENTILATOR_COMMAND_STATUS_VALUES, example: "SENT" })
+  @ApiProperty({ description: "Actual status when the response is built: SENT, an early terminal status, or TIMEOUT when the server shut down before the broker confirmed the publish", enum: VENTILATOR_COMMAND_STATUS_VALUES, example: "SENT" })
   public status: string;
 
-  @ApiProperty({ description: "When the broker acknowledged the publish (ISO 8601)", example: "2026-10-10T12:00:00.000Z" })
-  public sentAt: string;
+  @ApiPropertyOptional({ description: "When the broker acknowledged the publish (ISO 8601); omitted when the publish was never confirmed", example: "2026-10-10T12:00:00.000Z", type: String })
+  public sentAt?: string;
 
-  public constructor({ commandId, reservationId, status, sentAt }: { commandId: string; reservationId: string; status: string; sentAt: string }) {
+  public constructor({ commandId, reservationId, status, sentAt }: { commandId: string; reservationId: string; status: string; sentAt?: string }) {
     this.commandId = commandId;
     this.reservationId = reservationId;
     this.status = status;

@@ -98,6 +98,11 @@ Allowed dependencies:
       disconnects, legacy reserve-now limits, sequence reorder/wrap, independent S2/SM1 oracle,
       test topic prefix validation) + pre-existing follow-ups listed in OPEN-QUESTIONS.md.
       Route: delegated (writer trigger: ~35 source/spec files + 4 docs).
+- [x] T6 final review fixes G1–G4 (unconfirmed publish on shutdown -> TIMEOUT
+      `server_shutdown_unconfirmed` and real status/`sentAt?` in the POST response; publish
+      confirmation timer -> TIMEOUT `publish_unconfirmed`; duplicate seq counter and bounded wrap;
+      docs). Route: delegated (writer trigger: ~15 source/spec files + 5 docs). Parent closed the legacy
+      simulation adapter fallback `(sent.sentAt ?? new Date()).getTime()`.
 
 ## Checks per task
 `npx tsc --noEmit`; `npx jest <feature>`; `npx madge --circular --extensions ts src`;
@@ -149,3 +154,16 @@ mqttx bench against a broker, physical ventilator tests.
   disconnected Prisma. New env vars `VENTILATOR_SEQ_REORDER_WINDOW` (16) and
   `VENTILATOR_SEQ_WRAP_BITS` (0) need `.env.example` entries (outside the T5 edit surface).
   Pre-existing follow-ups: OPEN-QUESTIONS.md items 25–33.
+- T6 done (delegated writer + parent one-line adapter fix, base `2db002e`). Evidence in VERIFICATION.md item 20.
+  RED observed before the fix: 11 tests (lifecycle 4, use case 1, entity 2, tracker 3, pipeline 1).
+  After the fix: jest reservations+telemetry+commands+simulation 48 suites / 452 tests (one run showed
+  1 unidentified failure that did not reproduce on rerun); full jest 178 suites / 1371 tests passed;
+  eslint clean on ventilator-commands and ventilator-telemetry; madge 0 cycles; header grep empty;
+  `mqtt.connect` 1. Parent fixed `simulation/.../send-ventilator-command.usecase.ts:56` (optional
+  `sentAt` fallback); then tsc 0 errors, `npm run build` OK, jest simulation+commands 30 suites / 301.
+- Independent verification (native RDD review impossible: every candidate, even the 1,456-line fix
+  commit, stopped with `lens_context_budget_exceeded`; no authority created). Read-only general
+  verifiers reviewed 15d7095..7d828aa (security: no severe; reliability: 7 findings -> T5) and
+  7d828aa..2db002e (no severe; 4 findings -> T6). Full suite at 2db002e: 1360/1360, build OK.
+- Delivery: commits pushed to origin/main on user request. Pending for the author: apply migration
+  (MIGRATION.md), `.env.example` entries (README.md), manual checks (VERIFICATION.md), Engram mirror.

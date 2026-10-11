@@ -139,6 +139,8 @@ All defaults come from `src/common/infrastructure/config/env.validation.ts`.
 | `VENTILATOR_STALE_AFTER_MS` | 2000 | telemetry | |
 | `VENTILATOR_ROOM_REFRESH_MS` | 1000 | telemetry | |
 | `VENTILATOR_METRICS_WINDOW` | 10000 | telemetry | |
+| `VENTILATOR_SEQ_REORDER_WINDOW` | 16 | telemetry | 0–1024. Late frames within this distance of the newest `seq` count as reordered; a wraparound is accepted only when the implied loss is at most 64 times this window. |
+| `VENTILATOR_SEQ_WRAP_BITS` | 0 | telemetry | `0`, `16` or `32`. Width of the device sequence counter; 0 disables wraparound. |
 | `VENTILATOR_INVALID_LOG_INTERVAL_MS` | 5000 | telemetry | |
 | `VENTILATOR_RECORDING_HZ` | 20 | telemetry | |
 | `VENTILATOR_RECORDING_FLUSH_SECONDS` | 5 | telemetry | |

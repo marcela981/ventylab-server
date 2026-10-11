@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del ciclo de vida del comando del ventilador
- * Descripción: Verifica la máquina de estados PENDING → SENT → ACKED | APPLIED | REJECTED | TIMEOUT y PENDING → REJECTED, la latencia calculada y que toda transición no permitida lance un error
- * Versión: 1.0
+ * Descripción: Verifica la máquina de estados PENDING → SENT → ACKED | APPLIED | REJECTED | TIMEOUT, PENDING → REJECTED y PENDING → TIMEOUT (publicación sin confirmar), la latencia calculada y que toda transición no permitida lance un error
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -79,7 +79,17 @@ describe("VentilatorCommand lifecycle", () => {
     expect(command.rejectReason).toBe("broker_not_connected");
   });
 
+  it("times out a PENDING command whose publish outcome is unknown, with its reason and without send time or latency", () => {
+    const command: VentilatorCommand = pendingCommand();
+
+    command.markPublishUnconfirmed("publish_unconfirmed", RESOLVED_AT);
+
+    expect([command.status, command.rejectReason, command.sentAt, command.latencyMs, command.resolvedAt]).toEqual(["TIMEOUT", "publish_unconfirmed", undefined, undefined, RESOLVED_AT]);
+    expect(command.isTerminal).toBe(true);
+  });
+
   it.each([
+    ["mark the publish of a SENT command as unconfirmed", (command: VentilatorCommand): void => command.markPublishUnconfirmed("x", RESOLVED_AT), sentCommand],
     ["ack a PENDING command", (command: VentilatorCommand): void => command.markAcked(RESOLVED_AT), pendingCommand],
     ["time out a PENDING command", (command: VentilatorCommand): void => command.markTimedOut(RESOLVED_AT), pendingCommand],
     ["send a SENT command again", (command: VentilatorCommand): void => command.markSent(RESOLVED_AT), sentCommand],

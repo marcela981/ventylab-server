@@ -15,7 +15,7 @@ All routes are under `/api/ventilator`, need a JWT and the `ventilator:control` 
 | `POST control/takeover` | leader of the holder group, teacher, administrator | Takes the control from the current operator (`takeover`), audited as `ventilator_control_taken_over` on target `VentilatorControl`. When the control is free it behaves as `POST control`. |
 | `DELETE control` | the operator, teacher, administrator | Releases the control (`released`). Idempotent when nobody holds it. |
 | `POST control/heartbeat` | the operator | Refreshes `lastSeenAt` and cancels a pending presence timeout. |
-| `POST commands` | the operator | `202 Accepted` with `{ commandId, reservationId, status: "SENT", sentAt }`. |
+| `POST commands` | the operator | `202 Accepted` with `{ commandId, reservationId, status, sentAt? }`: `status` is the command's actual status (normally `SENT`, an early terminal status, or `TIMEOUT` when the server shut down before the broker confirmed the publish) and `sentAt` is present only when the broker confirmed the publish. |
 | `GET commands?reservationId=&page=&limit=&sortOrder=` | holders of that reservation, teacher, administrator | Paginated history, newest `sentAt` first by default. |
 
 `POST commands` returns data although mutations normally return `null`: the client needs the correlation identifier to follow `ventilator:command-status`.
@@ -78,13 +78,15 @@ One operator at a time, kept in memory by `OperatorControlService` (single insta
    tracked before publish; publish resolved (PUBACK)
    PENDING ─────────────────────────────────► SENT
       │                                         │
-      │ publish failed                          ├─ ACK applied|pending ──► ACKED     (terminal)
-      ▼                                         ├─ ACK rejected ─────────► REJECTED  (terminal, reason)
-   REJECTED (terminal, reason)                  ├─ settings match ───────► APPLIED   (terminal, no ACK topic)
-                                                └─ VENTILATOR_COMMAND_TIMEOUT_MS ─► TIMEOUT (terminal)
+      ├─ publish failed ─► REJECTED (reason)    ├─ ACK applied|pending ──► ACKED     (terminal)
+      │                                         ├─ ACK rejected ─────────► REJECTED  (terminal, reason)
+      ├─ no PUBACK within                       ├─ settings match ───────► APPLIED   (terminal, no ACK topic)
+      │  VENTILATOR_COMMAND_TIMEOUT_MS          └─ VENTILATOR_COMMAND_TIMEOUT_MS ─► TIMEOUT (terminal)
+      │  ─► TIMEOUT (publish_unconfirmed)
+      └─ shutdown ─► TIMEOUT (server_shutdown_unconfirmed)
 ```
 
-- Illegal transitions throw. The command is tracked before the publish starts: an ACK or a matching frame that arrives before the broker confirms the publish is kept and applied right after the SENT transition (latency close to 0); a failed publish drops the tracking and ends in REJECTED. A timer is armed for every SENT command and cleared on resolution; shutdown resolves SENT commands as `TIMEOUT` and commands still waiting for the broker as REJECTED (`server_shutdown`), so every command reaches exactly one terminal state. `latencyMs = resolvedAt - sentAt`. When the early resolution happens, the `POST` response already reports the terminal status instead of SENT.
+- Illegal transitions throw. The command is tracked before the publish starts: an ACK or a matching frame that arrives before the broker confirms the publish is kept and applied right after the SENT transition (latency close to 0); a failed publish drops the tracking and ends in REJECTED. A publish-confirmation timer of `VENTILATOR_COMMAND_TIMEOUT_MS` is armed when the command is tracked: if the publish neither resolves nor fails in time, the command ends as `TIMEOUT` with reason `publish_unconfirmed` and a later publish outcome is ignored. On SENT that timer is replaced by the response timer of the same length, cleared on resolution. Shutdown resolves SENT commands as `TIMEOUT` and commands whose publish was dispatched but not yet confirmed as `TIMEOUT` with reason `server_shutdown_unconfirmed`: the device may have received them, so the outcome is unknown rather than rejected. Every command reaches exactly one terminal state and no timer outlives it. A PENDING → TIMEOUT command has no `sentAt` and no `latencyMs`. `latencyMs = resolvedAt - sentAt`. When the early resolution happens, the `POST` response already reports the terminal status instead of SENT; when the server shuts down while the publish is in flight it reports `TIMEOUT` without `sentAt`.
 - ACK: when `MQTT_COMMAND_ACK_TOPIC` is set, it is subscribed with QoS 1 and JSON messages `{ commandId | correlationId, status: "applied" | "rejected" | "pending", reason? }` (design schema `docs/json-specs/ventilator-command-ack.schema.json`) resolve the command. `pending` counts as ACKED. ACKED is terminal for the API: a later "applied" is not tracked.
 - APPLIED: without an ACK topic, a telemetry frame whose `settings` report every numeric parameter of the command under the same name within `VENTILATOR_APPLY_TOLERANCE_RATIO` (and the same `mode` when reported) resolves it.
 - With today's firmware (no settings in frames, no ACK evidence) commands end in `TIMEOUT`.

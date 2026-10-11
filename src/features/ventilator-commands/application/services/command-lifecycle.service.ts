@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Ciclo de vida de los comandos enviados
- * Descripción: Sigue cada comando hasta un estado terminal: lo registra antes de publicarlo (un acuse o una trama que llegue antes de la confirmación del broker se guarda y se aplica justo después de SENT; un fallo de publicación lo descarta como REJECTED), arma siempre un temporizador de VENTILATOR_COMMAND_TIMEOUT_MS al quedar SENT (TIMEOUT), resuelve ACKED o REJECTED con los acuses del tópico MQTT_COMMAND_ACK_TOPIC cuando está configurado, o APPLIED cuando una trama de telemetría informa los mismos parámetros dentro de la tolerancia; emite ventilator:command-status en cada transición (solo al remitente, docentes y administradores si la sala ventilator ya pertenece a otra reserva), espera la persistencia pendiente con un límite de tiempo al apagar y persiste cada estado sin bloquear la publicación mediante una cadena de promesas ordenada por comando
- * Versión: 1.1
+ * Descripción: Sigue cada comando hasta un estado terminal: lo registra antes de publicarlo con un temporizador de confirmación de VENTILATOR_COMMAND_TIMEOUT_MS (si el broker nunca confirma ni rechaza la publicación termina en TIMEOUT publish_unconfirmed; un acuse o una trama que llegue antes de la confirmación se guarda y se aplica justo después de SENT; un fallo de publicación lo descarta como REJECTED), lo reemplaza por un temporizador de VENTILATOR_COMMAND_TIMEOUT_MS al quedar SENT (TIMEOUT), al apagar resuelve como TIMEOUT los SENT y como TIMEOUT server_shutdown_unconfirmed los que tenían la publicación en curso (resultado desconocido), resuelve ACKED o REJECTED con los acuses del tópico MQTT_COMMAND_ACK_TOPIC cuando está configurado, o APPLIED cuando una trama de telemetría informa los mismos parámetros dentro de la tolerancia; emite ventilator:command-status en cada transición (solo al remitente, docentes y administradores si la sala ventilator ya pertenece a otra reserva), espera la persistencia pendiente con un límite de tiempo al apagar y persiste cada estado sin bloquear la publicación mediante una cadena de promesas ordenada por comando
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,7 +28,8 @@ import { type TelemetryFrame } from "@/features/ventilator-telemetry/domain/valu
 
 const ACK_QOS: MqttQos = 1;
 const DEFAULT_DEVICE_REJECT_REASON: string = "rejected_by_device";
-const SHUTDOWN_REJECT_REASON: string = "server_shutdown";
+const PUBLISH_UNCONFIRMED_REASON: string = "publish_unconfirmed";
+const SHUTDOWN_UNCONFIRMED_REASON: string = "server_shutdown_unconfirmed";
 
 type CommandTransition = (command: VentilatorCommand) => void;
 
@@ -42,8 +43,8 @@ function markTimedOut(command: VentilatorCommand): void {
   command.markTimedOut(new Date());
 }
 
-function markShutdownRejected(command: VentilatorCommand): void {
-  command.markPublishFailed(SHUTDOWN_REJECT_REASON, new Date());
+function markPublishUnconfirmed(reason: string): CommandTransition {
+  return (command: VentilatorCommand): void => command.markPublishUnconfirmed(reason, new Date());
 }
 
 @Injectable()
@@ -98,15 +99,19 @@ export class CommandLifecycleService {
     this._unsubscribers = [];
 
     for (const [id, inFlight] of [...this._inFlight]) {
-      this._resolve(id, inFlight.command.status === SENT_COMMAND_STATUS ? markTimedOut : markShutdownRejected);
+      this._resolve(id, inFlight.command.status === SENT_COMMAND_STATUS ? markTimedOut : markPublishUnconfirmed(SHUTDOWN_UNCONFIRMED_REASON));
     }
   }
 
   public track(command: VentilatorCommand): void {
-    this._inFlight.set(command.id, { command, timer: undefined, earlyResolution: undefined });
+    const inFlight: InFlightCommand = { command, timer: undefined, earlyResolution: undefined };
+
+    this._inFlight.set(command.id, inFlight);
+    inFlight.timer = this._armTimer(command.id, markPublishUnconfirmed(PUBLISH_UNCONFIRMED_REASON));
   }
 
   public recordPublishFailure(command: VentilatorCommand, reason: string): void {
+    clearTimeout(this._inFlight.get(command.id)?.timer);
     this._inFlight.delete(command.id);
 
     if (command.status !== PENDING_COMMAND_STATUS) {
@@ -124,6 +129,8 @@ export class CommandLifecycleService {
 
     const inFlight: InFlightCommand = this._inFlight.get(command.id) ?? { command, timer: undefined, earlyResolution: undefined };
 
+    clearTimeout(inFlight.timer);
+    inFlight.timer = undefined;
     command.markSent(new Date());
     this._inFlight.set(command.id, inFlight);
     this._announce(command);
@@ -134,10 +141,7 @@ export class CommandLifecycleService {
       return;
     }
 
-    inFlight.timer = setTimeout((): void => {
-      this._resolve(command.id, markTimedOut);
-    }, this._settings.timeoutMs);
-    inFlight.timer.unref();
+    inFlight.timer = this._armTimer(command.id, markTimedOut);
   }
 
   public handleAck(payload: Buffer | string): void {
@@ -191,6 +195,16 @@ export class CommandLifecycleService {
     }
 
     return flushed;
+  }
+
+  private _armTimer(id: string, transition: CommandTransition): ReturnType<typeof setTimeout> {
+    const timer: ReturnType<typeof setTimeout> = setTimeout((): void => {
+      this._resolve(id, transition);
+    }, this._settings.timeoutMs);
+
+    timer.unref();
+
+    return timer;
   }
 
   // A device acknowledgement or a matching frame may arrive before the broker confirms the publish

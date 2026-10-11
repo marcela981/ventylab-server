@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del envío de comandos al ventilador físico
- * Descripción: Verifica el orden de las guardas (403 sin reserva o no titular, 423 no operador, 429 frecuencia, 422 validación con violaciones, 503 dispositivo fuera de línea sin publicar), la publicación QoS 1 en el tópico con prefijo de pruebas con el JSON plano y el correlationId, el estado SENT emitido y persistido, el fallo de publicación registrado como REJECTED y la pérdida inmediata del control al desplazarse la reserva
- * Versión: 1.1
+ * Descripción: Verifica el orden de las guardas (403 sin reserva o no titular, 423 no operador, 429 frecuencia, 422 validación con violaciones, 503 dispositivo fuera de línea sin publicar), la publicación QoS 1 en el tópico con prefijo de pruebas con el JSON plano y el correlationId, el estado SENT emitido y persistido, el fallo de publicación registrado como REJECTED, el estado real sin hora de envío inventada cuando el servidor se apaga con la publicación en curso y la pérdida inmediata del control al desplazarse la reserva
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -240,6 +240,22 @@ describe("SendVentilatorCommandUseCase", () => {
       await harness.lifecycle.flushPersistence();
 
       expect(commandStatuses(harness)).toEqual(["REJECTED"]);
+      expect(harness.lifecycle.inFlightCount).toBe(0);
+    });
+
+    it("returns the actual TIMEOUT status without a send time when the server shuts down while the publish is in flight", async () => {
+      const harness: VentilatorCommandsHarness = await operatorHarness();
+
+      harness.mqtt.beforePublishResolves = (): void => {
+        harness.lifecycle.stop();
+      };
+
+      const result: SentVentilatorCommandResult = await sendAs(harness, "student-1", "STUDENT");
+      await harness.lifecycle.flushPersistence();
+
+      expect([result.status, result.sentAt]).toEqual(["TIMEOUT", undefined]);
+      expect(commandStatuses(harness)).toEqual(["TIMEOUT"]);
+      expect(harness.repository.writes.map((command: { status: string; rejectReason?: string }): string => `${command.status}:${command.rejectReason}`)).toEqual(["TIMEOUT:server_shutdown_unconfirmed"]);
       expect(harness.lifecycle.inFlightCount).toBe(0);
     });
   });

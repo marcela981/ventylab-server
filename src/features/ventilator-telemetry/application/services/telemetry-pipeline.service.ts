@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pipeline de telemetría del ventilador
- * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia (con ventana de reordenamiento VENTILATOR_SEQ_REORDER_WINDOW y vuelta opcional VENTILATOR_SEQ_WRAP_BITS), actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada VENTILATOR_FLUSH_INTERVAL_MS emite un lote volátil ventilator:telemetry y la lectura heredada ventilator:data a la sala ventilator y a docentes y administradores, y registra las latencias
- * Versión: 1.2
+ * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia y tramas duplicadas (con ventana de reordenamiento VENTILATOR_SEQ_REORDER_WINDOW y vuelta opcional VENTILATOR_SEQ_WRAP_BITS), actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada VENTILATOR_FLUSH_INTERVAL_MS emite un lote volátil ventilator:telemetry y la lectura heredada ventilator:data a la sala ventilator y a docentes y administradores, y registra las latencias
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -180,6 +180,10 @@ export class TelemetryPipelineService {
 
     if (sequence.reordered) {
       this._metrics.recordReordered();
+    }
+
+    if (sequence.duplicate) {
+      this._metrics.recordDuplicate();
     }
 
     if (frame.settings !== undefined) {

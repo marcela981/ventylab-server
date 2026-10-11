@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de los comandos del ventilador
- * Descripción: Convierte el cuerpo tipado en parámetros sin validar para el dominio y los resultados y entidades en DTOs de respuesta con fechas ISO 8601 y nulos explícitos
- * Versión: 1.1
+ * Descripción: Convierte el cuerpo tipado en parámetros sin validar para el dominio y los resultados y entidades en DTOs de respuesta con fechas ISO 8601, nulos explícitos y la hora de envío omitida cuando la publicación no se confirmó
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,7 +30,7 @@ export class VentilatorCommandsMapper {
   }
 
   public static toSentDTO(result: SentVentilatorCommandResult): SentVentilatorCommandDTO {
-    return new SentVentilatorCommandDTO({ commandId: result.commandId, reservationId: result.reservationId, status: result.status, sentAt: result.sentAt.toISOString() });
+    return new SentVentilatorCommandDTO({ commandId: result.commandId, reservationId: result.reservationId, status: result.status, sentAt: result.sentAt?.toISOString() });
   }
 
   public static toControlStateDTO(result: VentilatorControlStateResult): VentilatorControlStateDTO {

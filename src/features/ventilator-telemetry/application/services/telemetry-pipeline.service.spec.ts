@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del pipeline de telemetría
- * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia, el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas y la forma heredada de ventilator:data, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
- * Versión: 1.2
+ * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia (con tramas duplicadas contadas aparte), el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas y la forma heredada de ventilator:data, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -120,6 +120,18 @@ describe("TelemetryPipelineService", () => {
       }
 
       expect([metrics.lostMessages, metrics.snapshot(clock.nowMs).reorderedMessages]).toEqual([0, 1]);
+    });
+
+    it("counts a repeated sequence number as a duplicate instead of a reordered frame (7, 7, 8)", () => {
+      const { pipeline, metrics, clock }: PipelineFixture = buildPipeline();
+
+      for (const seq of [7, 7, 8]) {
+        pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1, seq }));
+      }
+
+      const snapshot: TelemetryMetricsSnapshot = metrics.snapshot(clock.nowMs);
+
+      expect([snapshot.lostMessages, snapshot.reorderedMessages, snapshot.duplicateMessages, metrics.duplicateMessages]).toEqual([0, 0, 1, 1]);
     });
   });
 

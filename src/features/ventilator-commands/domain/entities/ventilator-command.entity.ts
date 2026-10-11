@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad VentilatorCommand
- * Descripción: Comando enviado al ventilador físico con su identificador de correlación, reserva, usuario, parámetros validados, codificación y carga legible, y una máquina de estados explícita (PENDING → SENT | REJECTED; SENT → ACKED | APPLIED | REJECTED | TIMEOUT) que lanza un error ante toda transición no permitida y calcula la latencia resolvedAt − sentAt
- * Versión: 1.0
+ * Descripción: Comando enviado al ventilador físico con su identificador de correlación, reserva, usuario, parámetros validados, codificación y carga legible, y una máquina de estados explícita (PENDING → SENT | REJECTED | TIMEOUT con motivo cuando la publicación nunca se confirmó; SENT → ACKED | APPLIED | REJECTED | TIMEOUT) que lanza un error ante toda transición no permitida y calcula la latencia resolvedAt − sentAt
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -163,6 +163,15 @@ export class VentilatorCommand {
     }
 
     this._resolve(REJECTED_COMMAND_STATUS, at);
+    this._rejectReason = reason;
+  }
+
+  public markPublishUnconfirmed(reason: string, at: Date): void {
+    if (this._status !== PENDING_COMMAND_STATUS) {
+      throw new IllegalVentilatorCommandTransitionError(this._status, TIMEOUT_COMMAND_STATUS);
+    }
+
+    this._resolve(TIMEOUT_COMMAND_STATUS, at);
     this._rejectReason = reason;
   }
 

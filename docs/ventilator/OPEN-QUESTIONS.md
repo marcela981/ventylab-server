@@ -231,3 +231,10 @@ Found during the T5 verification review. They predate the ventilator features or
 
 - **Finding.** `prisma/migrations/20261010120000_ventilator_features/migration.sql` has no explicit `BEGIN`/`COMMIT`. Prisma Migrate runs each migration in a transaction on PostgreSQL, but a manual `psql -f` run would not.
 - **How to change.** Run it only through `prisma migrate deploy`, or wrap it in `BEGIN; ... COMMIT;` before applying it by hand (see [MIGRATION.md](MIGRATION.md)).
+
+### 34. Control take refused with 423 when the active reservation switched mid-request (accepted)
+
+- **Finding.** Take and takeover (F1 compare-and-set) read the active reservation, await the holder and leadership checks, and assign only if the state is unchanged. When the active reservation switched while the checks were awaited, the request answers `VentilatorControlLockedError` (423, `control_locked`) instead of "no active reservation" (403).
+- **Where.** `src/features/ventilator-commands/application/use-cases/ventilator-control.usecases.ts`.
+- **Decision.** Accepted: the control is never assigned to the wrong reservation; only the error code differs in a race of a few milliseconds, and a retry gets the code that matches the new state.
+- **How to change.** Re-read the active reservation after the refusal and map the error to 403 when it changed.

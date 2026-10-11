@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Métricas de la telemetría del ventilador
- * Descripción: Métricas en memoria del pipeline de telemetría: mensajes y lotes por segundo, mensajes inválidos descartados, perdidos por huecos de secuencia, tramas tardías reordenadas, emisiones volátiles y búferes circulares (VENTILATOR_METRICS_WINDOW) de latencia de procesamiento, total, de envío del lote y dispositivo→servidor con p50/p95/p99
- * Versión: 1.2
+ * Descripción: Métricas en memoria del pipeline de telemetría: mensajes y lotes por segundo, mensajes inválidos descartados, perdidos por huecos de secuencia, tramas tardías reordenadas, tramas duplicadas, emisiones volátiles y búferes circulares (VENTILATOR_METRICS_WINDOW) de latencia de procesamiento, total, de envío del lote y dispositivo→servidor con p50/p95/p99
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -38,6 +38,7 @@ export interface TelemetryMetricsSnapshot {
   readonly invalidMessages: number;
   readonly lostMessages: number;
   readonly reorderedMessages: number;
+  readonly duplicateMessages: number;
   readonly bufferDrops: number;
   readonly volatileEmits: number;
   readonly processingMs: LatencySummary;
@@ -58,6 +59,7 @@ export class TelemetryMetricsService {
   private _invalidMessages: number = 0;
   private _lostMessages: number = 0;
   private _reorderedMessages: number = 0;
+  private _duplicateMessages: number = 0;
   private _bufferDrops: number = 0;
   private _volatileEmits: number = 0;
 
@@ -90,6 +92,10 @@ export class TelemetryMetricsService {
     return this._reorderedMessages;
   }
 
+  public get duplicateMessages(): number {
+    return this._duplicateMessages;
+  }
+
   public get bufferDrops(): number {
     return this._bufferDrops;
   }
@@ -105,6 +111,10 @@ export class TelemetryMetricsService {
 
   public recordReordered(): void {
     this._reorderedMessages += 1;
+  }
+
+  public recordDuplicate(): void {
+    this._duplicateMessages += 1;
   }
 
   public recordLost(count: number): void {
@@ -141,6 +151,7 @@ export class TelemetryMetricsService {
       invalidMessages: this._invalidMessages,
       lostMessages: this._lostMessages,
       reorderedMessages: this._reorderedMessages,
+      duplicateMessages: this._duplicateMessages,
       bufferDrops: this._bufferDrops,
       volatileEmits: this._volatileEmits,
       processingMs: this._latencies.processing.summary(),
@@ -169,6 +180,7 @@ export class TelemetryMetricsService {
     this._invalidMessages = 0;
     this._lostMessages = 0;
     this._reorderedMessages = 0;
+    this._duplicateMessages = 0;
     this._bufferDrops = 0;
     this._volatileEmits = 0;
   }

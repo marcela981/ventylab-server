@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados de la feature de comandos del ventilador
- * Descripción: Comando aceptado (identificador de correlación, reserva, estado y hora de envío) y estado del control exclusivo para quien consulta (reserva activa, operador, desde cuándo, última presencia, si es el operador, si puede tomar o arrebatar el control, si hay una reserva activa y si la vista se restringe por no ser titular, docente ni administrador)
- * Versión: 1.1
+ * Descripción: Comando aceptado (identificador de correlación, reserva, estado real y hora de envío solo si el broker confirmó la publicación) y estado del control exclusivo para quien consulta (reserva activa, operador, desde cuándo, última presencia, si es el operador, si puede tomar o arrebatar el control, si hay una reserva activa y si la vista se restringe por no ser titular, docente ni administrador)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,9 +14,9 @@ export class SentVentilatorCommandResult {
   public readonly commandId: string;
   public readonly reservationId: string;
   public readonly status: VentilatorCommandStatusValue;
-  public readonly sentAt: Date;
+  public readonly sentAt?: Date;
 
-  public constructor({ commandId, reservationId, status, sentAt }: { commandId: string; reservationId: string; status: VentilatorCommandStatusValue; sentAt: Date }) {
+  public constructor({ commandId, reservationId, status, sentAt }: { commandId: string; reservationId: string; status: VentilatorCommandStatusValue; sentAt?: Date }) {
     this.commandId = commandId;
     this.reservationId = reservationId;
     this.status = status;

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del ciclo de vida de los comandos enviados
- * Descripción: Verifica la resolución por acuse (applied y pending → ACKED, rejected → REJECTED con motivo, acuses desconocidos o mal formados ignorados), por parámetros aplicados en la telemetría (APPLIED dentro de la tolerancia), por tiempo máximo (TIMEOUT) y al apagar, la latencia, el orden de las escrituras por comando y la suscripción al tópico de acuse con prefijo de pruebas
- * Versión: 1.1
+ * Descripción: Verifica la resolución por acuse (applied y pending → ACKED, rejected → REJECTED con motivo, acuses desconocidos o mal formados ignorados), por parámetros aplicados en la telemetría (APPLIED dentro de la tolerancia), por tiempo máximo (TIMEOUT), por publicación sin confirmar (TIMEOUT publish_unconfirmed, sin fugas de temporizadores ni doble resolución) y al apagar (TIMEOUT server_shutdown_unconfirmed si la publicación seguía en curso), la latencia, el orden de las escrituras por comando y la suscripción al tópico de acuse con prefijo de pruebas
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -173,17 +173,97 @@ describe("CommandLifecycleService", () => {
     expect(harness.repository.rows.get("cmd-1")?.status).toBe("TIMEOUT");
   });
 
-  it("rejects a command still waiting for the broker on shutdown and ignores its late publish confirmation", () => {
+  it("ends a command whose publish is still unconfirmed on shutdown as TIMEOUT server_shutdown_unconfirmed and ignores its late publish outcome", () => {
     const harness: VentilatorCommandsHarness = lifecycleHarness();
     const command: VentilatorCommand = newCommand();
 
     harness.lifecycle.track(command);
     harness.lifecycle.stop();
     harness.lifecycle.recordSent(command);
+    harness.lifecycle.recordPublishFailure(command, "MqttNotConnectedError");
 
-    expect([command.status, command.rejectReason]).toEqual(["REJECTED", "server_shutdown"]);
-    expect(statuses(harness)).toEqual(["REJECTED"]);
+    expect([command.status, command.rejectReason, command.sentAt]).toEqual(["TIMEOUT", "server_shutdown_unconfirmed", undefined]);
+    expect(statuses(harness)).toEqual(["TIMEOUT"]);
     expect(harness.lifecycle.inFlightCount).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  describe("publish confirmation timeout", () => {
+    it("ends a command whose publish never settles as TIMEOUT publish_unconfirmed after VENTILATOR_COMMAND_TIMEOUT_MS", () => {
+      const harness: VentilatorCommandsHarness = lifecycleHarness();
+      const command: VentilatorCommand = newCommand();
+
+      harness.lifecycle.track(command);
+      jest.advanceTimersByTime(2999);
+      expect(command.status).toBe("PENDING");
+
+      jest.advanceTimersByTime(1);
+
+      expect([command.status, command.rejectReason, command.sentAt]).toEqual(["TIMEOUT", "publish_unconfirmed", undefined]);
+      expect(statuses(harness)).toEqual(["TIMEOUT"]);
+      expect(harness.lifecycle.inFlightCount).toBe(0);
+    });
+
+    it("ignores a publish that settles after the publish confirmation timeout", () => {
+      const harness: VentilatorCommandsHarness = lifecycleHarness();
+      const resolved: VentilatorCommand = newCommand("late-resolve");
+      const rejected: VentilatorCommand = newCommand("late-reject");
+
+      harness.lifecycle.track(resolved);
+      harness.lifecycle.track(rejected);
+      jest.advanceTimersByTime(3000);
+      harness.lifecycle.recordSent(resolved);
+      harness.lifecycle.recordPublishFailure(rejected, "MqttNotConnectedError");
+      jest.advanceTimersByTime(10_000);
+
+      expect([resolved.status, rejected.status]).toEqual(["TIMEOUT", "TIMEOUT"]);
+      expect(statuses(harness)).toEqual(["TIMEOUT", "TIMEOUT"]);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    it("replaces the publish confirmation timer with the response timer once the publish is confirmed", () => {
+      const harness: VentilatorCommandsHarness = lifecycleHarness();
+      const command: VentilatorCommand = newCommand();
+
+      harness.lifecycle.track(command);
+      jest.advanceTimersByTime(2000);
+      harness.lifecycle.recordSent(command);
+      jest.advanceTimersByTime(2999);
+      expect([command.status, jest.getTimerCount()]).toEqual(["SENT", 1]);
+
+      jest.advanceTimersByTime(1);
+
+      expect([command.status, command.rejectReason, command.latencyMs]).toEqual(["TIMEOUT", undefined, 3000]);
+      expect(statuses(harness)).toEqual(["SENT", "TIMEOUT"]);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    it("clears the publish confirmation timer when the publish fails", () => {
+      const harness: VentilatorCommandsHarness = lifecycleHarness();
+      const command: VentilatorCommand = newCommand();
+
+      harness.lifecycle.track(command);
+      harness.lifecycle.recordPublishFailure(command, "MqttNotConnectedError");
+
+      expect(jest.getTimerCount()).toBe(0);
+      jest.advanceTimersByTime(10_000);
+      expect([command.status, command.rejectReason]).toEqual(["REJECTED", "MqttNotConnectedError"]);
+      expect(statuses(harness)).toEqual(["REJECTED"]);
+    });
+
+    it("discards an early acknowledgement when the publish is never confirmed and keeps exactly one terminal state", () => {
+      const harness: VentilatorCommandsHarness = lifecycleHarness({ MQTT_COMMAND_ACK_TOPIC: REAL_ACK_TOPIC });
+      const command: VentilatorCommand = newCommand();
+
+      harness.lifecycle.track(command);
+      harness.mqtt.deliver(ACK_TOPIC, JSON.stringify({ commandId: "cmd-1", status: "applied" }));
+      jest.advanceTimersByTime(3000);
+      harness.lifecycle.recordSent(command);
+
+      expect([command.status, command.rejectReason]).toEqual(["TIMEOUT", "publish_unconfirmed"]);
+      expect(statuses(harness)).toEqual(["TIMEOUT"]);
+      expect(harness.lifecycle.inFlightCount).toBe(0);
+    });
   });
 
   it("stops waiting for pending writes after the shutdown timeout", async () => {

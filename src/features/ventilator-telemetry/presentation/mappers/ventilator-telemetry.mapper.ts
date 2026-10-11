@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de la telemetría del ventilador
- * Descripción: Convierte la instantánea de métricas, las tramas grabadas y las muestras de latencia (filas CSV) en sus DTO de respuesta
- * Versión: 1.2
+ * Descripción: Convierte la instantánea de métricas (con los duplicados de secuencia), las tramas grabadas y las muestras de latencia (filas CSV) en sus DTO de respuesta
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,6 +31,7 @@ export class VentilatorTelemetryMapper {
       invalidMessages: snapshot.invalidMessages,
       lostMessages: snapshot.lostMessages,
       reorderedMessages: snapshot.reorderedMessages,
+      duplicateMessages: snapshot.duplicateMessages,
       bufferDrops: snapshot.bufferDrops,
       volatileEmits: snapshot.volatileEmits,
       processingMs: VentilatorTelemetryMapper._toLatencyDTO(snapshot.processingMs),

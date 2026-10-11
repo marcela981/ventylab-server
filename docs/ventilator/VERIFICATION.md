@@ -196,6 +196,19 @@ $ grep -rL "Autor: Marcela Mazo Castro" src --include=*.ts
 
 Pre-existing issues found in the same review are listed, not fixed, in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) items 25–33.
 
+## 20. T6 final review fixes
+
+Fixes for the final review findings G1–G4 (2026-10-11, on `2db002e` plus uncommitted changes). RED marks specs that failed against the previous code. They supersede the F4 shutdown behavior of item 19 (`server_shutdown` REJECTED) and the F7 duplicate counting.
+
+| Finding | Fix | Proof (spec › test) |
+| --- | --- | --- |
+| G1 shutdown rejects a command the device may have received | New domain transition PENDING → TIMEOUT (`VentilatorCommand.markPublishUnconfirmed`); `CommandLifecycleService.stop` ends commands whose publish was dispatched but not confirmed as `TIMEOUT` with reason `server_shutdown_unconfirmed`; `SendVentilatorCommandUseCase` returns the entity's actual status and `sentAt` only when recorded (`SentVentilatorCommandResult.sentAt?`, `SentVentilatorCommandDTO.sentAt?`) | `command-lifecycle.service.spec.ts` › "ends a command whose publish is still unconfirmed on shutdown as TIMEOUT server_shutdown_unconfirmed and ignores its late publish outcome" (RED); `send-ventilator-command.usecase.spec.ts` › "returns the actual TIMEOUT status without a send time when the server shuts down while the publish is in flight" (RED); `ventilator-command.entity.spec.ts` › "times out a PENDING command whose publish outcome is unknown, with its reason and without send time or latency" (RED), "throws when trying to mark the publish of a SENT command as unconfirmed" (RED) |
+| G2 a publish that never settles stays in flight forever | `track` arms a publish-confirmation timer of `VENTILATOR_COMMAND_TIMEOUT_MS`; on expiry before SENT the command ends as `TIMEOUT` (`publish_unconfirmed`) and leaves the in-flight map; `recordSent` replaces it with the response timer and `recordPublishFailure` clears it; a later publish outcome is a no-op | `command-lifecycle.service.spec.ts` › "publish confirmation timeout": "ends a command whose publish never settles as TIMEOUT publish_unconfirmed after VENTILATOR_COMMAND_TIMEOUT_MS" (RED), "ignores a publish that settles after the publish confirmation timeout" (RED), "discards an early acknowledgement when the publish is never confirmed and keeps exactly one terminal state" (RED), "replaces the publish confirmation timer with the response timer once the publish is confirmed", "clears the publish confirmation timer when the publish fails" (timer-leak guards, green before and after) |
+| G3 duplicates counted as reordered; phantom losses on reboot near the wrap edge | `SequenceGapTracker` returns `duplicate` for a repeated `seq` (new `duplicateMessages` metric in the metrics service, snapshot, DTO and mapper); with wrap enabled, a jump into the first sixteenth is a wraparound only when the implied loss is at most 64 reorder windows, otherwise a restart | `sequence-gap-tracker.spec.ts` › "counts a repeated sequence number as duplicate, not as reordered or lost" (RED), "treats a jump into the first sixteenth as a restart when the implied loss exceeds 64 reorder windows" (RED), "keeps a wraparound whose implied loss is within 64 reorder windows"; `telemetry-pipeline.service.spec.ts` › "counts a repeated sequence number as a duplicate instead of a reordered frame (7, 7, 8)" (RED) |
+| G4 docs | `VENTILATOR_SEQ_REORDER_WINDOW` and `VENTILATOR_SEQ_WRAP_BITS` in the README catalogue; commands.md and telemetry.md updated; OPEN-QUESTIONS.md item 34 | Structural readback |
+
+Verification output is recorded in `odd/tasks/ventilator-features.md` (T6).
+
 ## Manual items not run here
 
 | Item | Procedure |

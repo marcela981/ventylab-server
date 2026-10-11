@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del detector de huecos de secuencia
- * Descripción: Verifica que los saltos hacia adelante sumen pérdidas, que las tramas tardías dentro de la ventana de reordenamiento se cuenten como reordenadas sin pérdidas falsas ni reinicio de la referencia, que un retroceso grande reinicie la referencia (reinicio del dispositivo) y que la secuencia de 16 o 32 bits pueda dar la vuelta
- * Versión: 1.0
+ * Descripción: Verifica que los saltos hacia adelante sumen pérdidas, que las tramas tardías dentro de la ventana de reordenamiento se cuenten como reordenadas sin pérdidas falsas ni reinicio de la referencia, que un retroceso grande reinicie la referencia (reinicio del dispositivo), que un número repetido se cuente como duplicado y que la secuencia de 16 o 32 bits pueda dar la vuelta solo cuando la pérdida implícita no supera 64 ventanas de reordenamiento (si la supera es un reinicio)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -34,7 +34,7 @@ describe("SequenceGapTracker", () => {
   it("ignores frames without a sequence number", () => {
     const tracker: SequenceGapTracker = new SequenceGapTracker();
 
-    expect(tracker.observe(undefined)).toEqual({ lost: 0, reordered: false, restarted: false });
+    expect(tracker.observe(undefined)).toEqual({ lost: 0, reordered: false, duplicate: false, restarted: false });
   });
 
   it("counts a late frame inside the reorder window as reordered without false losses", () => {
@@ -45,8 +45,15 @@ describe("SequenceGapTracker", () => {
     expect(observeAll(new SequenceGapTracker(), [1, 2, 5, 3, 4, 10])).toEqual({ lost: 6, reordered: 2, restarts: 0 });
   });
 
-  it("treats a repeated sequence number as reordered", () => {
-    expect(observeAll(new SequenceGapTracker(), [7, 7, 8])).toEqual({ lost: 0, reordered: 1, restarts: 0 });
+  it("counts a repeated sequence number as duplicate, not as reordered or lost", () => {
+    const tracker: SequenceGapTracker = new SequenceGapTracker();
+
+    tracker.observe(7);
+    const repeated: SequenceObservation = tracker.observe(7);
+    const next: SequenceObservation = tracker.observe(8);
+
+    expect(repeated).toEqual({ lost: 0, reordered: false, duplicate: true, restarted: false });
+    expect(next).toEqual({ lost: 0, reordered: false, duplicate: false, restarted: false });
   });
 
   it("resets the baseline on a backward jump beyond the reorder window (device restart)", () => {
@@ -73,6 +80,16 @@ describe("SequenceGapTracker", () => {
 
   it("still treats a jump to 0 from far below the maximum as a restart when wrapping is enabled", () => {
     expect(observeAll(new SequenceGapTracker({ wrapBits: 16 }), [40_000, 0, 1])).toEqual({ lost: 0, reordered: 0, restarts: 1 });
+  });
+
+  it("treats a jump into the first sixteenth as a restart when the implied loss exceeds 64 reorder windows", () => {
+    expect(observeAll(new SequenceGapTracker({ wrapBits: 16 }), [62_000, 0, 1])).toEqual({ lost: 0, reordered: 0, restarts: 1 });
+    expect(observeAll(new SequenceGapTracker({ wrapBits: 32, reorderWindow: 1 }), [4_294_967_200, 0])).toEqual({ lost: 0, reordered: 0, restarts: 1 });
+  });
+
+  it("keeps a wraparound whose implied loss is within 64 reorder windows", () => {
+    expect(observeAll(new SequenceGapTracker({ wrapBits: 16 }), [65_000, 100])).toEqual({ lost: 635, reordered: 0, restarts: 0 });
+    expect(observeAll(new SequenceGapTracker({ wrapBits: 32, reorderWindow: 1 }), [4_294_967_290, 50])).toEqual({ lost: 55, reordered: 0, restarts: 0 });
   });
 
   it("treats a jump to 0 from the maximum as a restart when wrapping is disabled", () => {

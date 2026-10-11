@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso SendVentilatorCommandUseCase
  * Descripción: Enruta los ajustes del ventilador: ajusta la simulación sintética en curso, la arranca si el paciente está configurado, o delega el comando al ventilador físico en VentilatorCommandsFacade, que valida, autoriza por reserva activa y operador, limita la frecuencia, publica con QoS 1 y sigue su ciclo de vida
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -53,6 +53,6 @@ export class SendVentilatorCommandUseCase {
 
     const sent: SentVentilatorCommandResult = await this._commandsFacade.send({ userId: command.userId, role: command.userRole, params: command.command });
 
-    return new SendVentilatorCommandResult({ commandId: sent.commandId, target: PHYSICAL_TARGET, timestamp: sent.sentAt.getTime() });
+    return new SendVentilatorCommandResult({ commandId: sent.commandId, target: PHYSICAL_TARGET, timestamp: (sent.sentAt ?? new Date()).getTime() });
   }
 }
