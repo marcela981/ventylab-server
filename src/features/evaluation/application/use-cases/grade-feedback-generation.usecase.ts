@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GenerateGradeFeedbackUseCase
- * Descripción: Genera la retroalimentación de un intento calificado: reserva bajo candado por intento una fila global PENDING (idempotente: omite si ya hay una PENDING o READY, salvo que se complete una reserva de regeneración), arma el contexto sin datos personales, llama a IGradeFeedbackGenerator fuera de toda transacción (con el identificador del intento solo para la telemetría) y guarda en otra transacción la fila global y una por pregunta como READY con origen, proveedor y modelo, solo si la reserva sigue vigente; ante un error inesperado marca la reserva FAILED y relanza
- * Versión: 1.1
+ * Descripción: Genera la retroalimentación de un intento calificado: reserva bajo candado por intento una fila global PENDING (idempotente: omite si ya hay una PENDING o READY, salvo que se complete una reserva de regeneración), arma el contexto sin datos personales, llama a IGradeFeedbackGenerator fuera de toda transacción (con el identificador del intento solo para la telemetría) y guarda en otra transacción la fila global y una por pregunta como READY con origen, proveedor y modelo, solo si la reserva sigue vigente y, tras confirmarse esa transacción, publica GradeFeedbackReadyEvent; ante un error inesperado marca la reserva FAILED y relanza
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { Inject, Injectable } from "@nestjs/common";
 
+import { EVENT_BUS_TOKEN, type IEventBus } from "@/common/application/events/event-bus.interface";
 import { type ITransactionManager, TRANSACTION_MANAGER_TOKEN } from "@/common/application/persistence/transaction-manager.interface";
 import { type GenerateGradeFeedbackCommand } from "@/features/evaluation/application/commands/grade-feedback-generation.command";
 import { EVALUATION_GRADING_CONFIG_TOKEN, type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
@@ -17,6 +18,7 @@ import { GRADE_FEEDBACK_GENERATOR_TOKEN, type IGradeFeedbackGenerator } from "@/
 import { type Evaluation } from "@/features/evaluation/domain/entities/evaluation.entity";
 import { type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import { EvaluationAttemptNotFoundError, EvaluationNotFoundError } from "@/features/evaluation/domain/evaluation.errors";
+import { GradeFeedbackReadyEvent } from "@/features/evaluation/domain/events/grade-feedback.events";
 import { type GradeFeedbackRecord } from "@/features/evaluation/domain/read-models/grade-feedback.read-model";
 import { EVALUATIONS_REPOSITORY_TOKEN, type IEvaluationsRepository } from "@/features/evaluation/domain/repositories/evaluations.repository";
 import { GRADE_FEEDBACKS_REPOSITORY_TOKEN, type IGradeFeedbacksRepository } from "@/features/evaluation/domain/repositories/grade-feedbacks.repository";
@@ -56,6 +58,8 @@ export class GenerateGradeFeedbackUseCase {
     private readonly _gradingConfig: EvaluationGradingConfig,
     @Inject(TRANSACTION_MANAGER_TOKEN)
     private readonly _transactionManager: ITransactionManager,
+    @Inject(EVENT_BUS_TOKEN)
+    private readonly _eventBus: IEventBus,
   ) {}
 
   public async execute(command: GenerateGradeFeedbackCommand): Promise<GradeFeedbackGenerationOutcome> {
@@ -81,12 +85,20 @@ export class GenerateGradeFeedbackUseCase {
         { attemptId: attempt.id },
       );
 
-      return (await this._store(attempt.id, pendingId, generated)) ? "ready" : "superseded";
+      if (!(await this._store(attempt.id, pendingId, generated))) {
+        return "superseded";
+      }
     } catch (error) {
       await this._markFailed(attempt.id, pendingId);
 
       throw error;
     }
+
+    this._eventBus.publish([
+      new GradeFeedbackReadyEvent({ attemptId: attempt.id, evaluationId: attempt.evaluationId, userId: attempt.userId, feedbackId: pendingId }),
+    ]);
+
+    return "ready";
   }
 
   private async _loadEvaluation(attempt: StudentEvaluationAttempt): Promise<Evaluation> {

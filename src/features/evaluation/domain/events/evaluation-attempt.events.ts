@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Eventos de dominio de intentos de evaluación
- * Descripción: Eventos emitidos al cerrar un intento: calificado por completo (gancho para la retroalimentación de E6) y nota publicada al estudiante (notificación en tiempo real grade:published), y nota recalculada por el profesor sobre un intento ya calificado (indica si la nota ya estaba publicada)
- * Versión: 1.1
+ * Descripción: Eventos emitidos al cerrar un intento: calificado por completo (gancho para la retroalimentación de E6) y nota publicada al estudiante (notificación en tiempo real grade:published), y nota recalculada por el profesor sobre un intento ya calificado (indica si la nota ya estaba publicada); la nota publicada se publica también como grade.published
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { DomainEvent } from "@/common/domain/events/domain-event";
+import { type CatalogDomainEvent, catalogMeta, type GradePublishedPayload } from "@/common/domain/events/domain-event-catalog";
 
 export class EvaluationAttemptGradedEvent extends DomainEvent {
   public readonly attemptId: string;
@@ -45,7 +46,7 @@ export class EvaluationAttemptGradedEvent extends DomainEvent {
   }
 }
 
-export class EvaluationGradePublishedEvent extends DomainEvent {
+export class EvaluationGradePublishedEvent extends DomainEvent implements CatalogDomainEvent<"grade.published"> {
   public readonly attemptId: string;
   public readonly evaluationId: string;
   public readonly userId: string;
@@ -85,6 +86,24 @@ export class EvaluationGradePublishedEvent extends DomainEvent {
     this.grade = grade;
     this.passed = passed;
     this.publishedAt = publishedAt;
+  }
+
+  public get catalogName(): "grade.published" {
+    return "grade.published";
+  }
+
+  public toCatalogPayload(): GradePublishedPayload {
+    return {
+      ...catalogMeta(this),
+      attemptId: this.attemptId,
+      evaluationId: this.evaluationId,
+      userId: this.userId,
+      score: this.score,
+      maxScore: this.maxScore,
+      grade: this.grade,
+      passed: this.passed,
+      publishedAt: this.publishedAt,
+    };
   }
 }
 

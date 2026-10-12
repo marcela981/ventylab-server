@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Vigilancia de actividad del ventilador
- * Descripción: Vigilante que cada 250 ms marca el dispositivo como inactivo cuando no llega ningún mensaje durante más de VENTILATOR_STALE_AFTER_MS (o el bróker se desconecta) y emite una sola vez ventilator:disconnected; el primer mensaje posterior emite ventilator:connected
- * Versión: 1.0
+ * Descripción: Vigilante que cada 250 ms marca el dispositivo como inactivo cuando no llega ningún mensaje durante más de VENTILATOR_STALE_AFTER_MS (o el bróker se desconecta) y emite una sola vez ventilator:disconnected y VentilatorDeviceOfflineEvent; el primer mensaje posterior emite ventilator:connected y VentilatorDeviceOnlineEvent por IEventBus
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
+import { EVENT_BUS_TOKEN, type IEventBus } from "@/common/application/events/event-bus.interface";
 import { type IRealtimePublisher, REALTIME_PUBLISHER_TOKEN } from "@/common/application/ports/realtime-publisher.interface";
 import { type ITelemetryClock, TELEMETRY_CLOCK_TOKEN } from "@/features/ventilator-telemetry/application/ports/telemetry-clock.interface";
 import {
@@ -19,6 +20,7 @@ import {
   type VentilatorDisconnectedReason,
 } from "@/features/ventilator-telemetry/application/realtime/ventilator-telemetry-events";
 import { VENTILATOR_TELEMETRY_SETTINGS_TOKEN, type VentilatorTelemetrySettings } from "@/features/ventilator-telemetry/application/tokens/ventilator-telemetry-settings.token";
+import { VentilatorDeviceOfflineEvent, VentilatorDeviceOnlineEvent } from "@/features/ventilator-telemetry/domain/events/ventilator-device.events";
 
 export type DeviceStalenessValue = "online" | "stale" | "never";
 
@@ -38,6 +40,8 @@ export class DeviceStalenessService {
     private readonly _realtimePublisher: IRealtimePublisher,
     @Inject(TELEMETRY_CLOCK_TOKEN)
     private readonly _clock: ITelemetryClock,
+    @Inject(EVENT_BUS_TOKEN)
+    private readonly _eventBus: IEventBus,
   ) {}
 
   public get state(): DeviceStalenessValue {
@@ -73,6 +77,7 @@ export class DeviceStalenessService {
 
     this._state = "online";
     this._emit(VENTILATOR_CONNECTED_EVENT, { at: now });
+    this._eventBus.publish([new VentilatorDeviceOnlineEvent({ at: new Date(now) })]);
   }
 
   public markBrokerDisconnected(): void {
@@ -96,6 +101,9 @@ export class DeviceStalenessService {
 
     this._state = "stale";
     this._emit(VENTILATOR_DISCONNECTED_EVENT, { at: this._clock.now(), reason });
+    this._eventBus.publish([
+      new VentilatorDeviceOfflineEvent({ reason, lastMessageAt: this._lastMessageAt === undefined ? undefined : new Date(this._lastMessageAt) }),
+    ]);
   }
 
   private _emit(event: string, payload: VentilatorConnectionPayload): void {

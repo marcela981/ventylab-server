@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba de rendimiento del pipeline de telemetría
  * Descripción: Alimenta 3600 tramas JSON (60 s a 60 Hz) por el pipeline real decodificar→encolar→enviar con el reloj del sistema y comprueba que el p95 de procesamiento sea menor de 10 ms y que no haya mensajes inválidos
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -38,7 +38,7 @@ describe("TelemetryPipelineService performance", () => {
       createTelemetryDecoder("json", settings.deviceId),
       publisher,
       metrics,
-      new DeviceStalenessService(settings, publisher, clock),
+      new DeviceStalenessService(settings, publisher, clock, { publish: jest.fn() }),
       new TelemetryRecorderService(settings, new InMemoryTelemetryChunksRepository(), new JsonTelemetryChunkCodec(), clock),
       clock,
     );

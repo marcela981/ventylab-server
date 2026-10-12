@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del pipeline de telemetría
  * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia (con tramas duplicadas contadas aparte), el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas y la forma heredada de ventilator:data, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
- * Versión: 1.3
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -42,7 +42,7 @@ function buildPipeline(overrides: Partial<VentilatorTelemetrySettings> = {}): Pi
   const clock: FakeTelemetryClock = new FakeTelemetryClock();
   const publisher: FakeRealtimePublisher = new FakeRealtimePublisher();
   const metrics: TelemetryMetricsService = new TelemetryMetricsService(settings, clock);
-  const staleness: DeviceStalenessService = new DeviceStalenessService(settings, publisher, clock);
+  const staleness: DeviceStalenessService = new DeviceStalenessService(settings, publisher, clock, { publish: jest.fn() });
   const recorder: TelemetryRecorderService = new TelemetryRecorderService(settings, new InMemoryTelemetryChunksRepository(), new JsonTelemetryChunkCodec(), clock);
   const pipeline: TelemetryPipelineService = new TelemetryPipelineService(
     settings,

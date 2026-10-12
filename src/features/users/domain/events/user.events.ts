@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Eventos de usuario
- * Descripción: Eventos de dominio de creación, actualización de perfil, cambio de contraseña y cambio de rol del usuario; incluye UserStatusChangedEvent y UserGoogleAccountLinkedEvent
- * Versión: 1.1
+ * Descripción: Eventos de dominio de creación, actualización de perfil, cambio de contraseña y cambio de rol del usuario; incluye UserStatusChangedEvent y UserGoogleAccountLinkedEvent; los cambios de rol y de estado se publican también como user.roleChanged y user.statusChanged
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,12 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { DomainEvent } from "@/common/domain/events/domain-event";
+import {
+  type CatalogDomainEvent,
+  catalogMeta,
+  type UserRoleChangedPayload,
+  type UserStatusChangedPayload,
+} from "@/common/domain/events/domain-event-catalog";
 import { type User } from "@/features/users/domain/entities/user.entity";
 
 export class UserCreatedEvent extends DomainEvent {
@@ -48,7 +54,7 @@ export class UserPasswordChangedEvent extends DomainEvent {
   }
 }
 
-export class UserRoleChangedEvent extends DomainEvent {
+export class UserRoleChangedEvent extends DomainEvent implements CatalogDomainEvent<"user.roleChanged"> {
   public readonly entity: User;
   public readonly previousRole: string;
   public readonly newRole: string;
@@ -69,9 +75,17 @@ export class UserRoleChangedEvent extends DomainEvent {
     this.previousRole = previousRole;
     this.newRole = newRole;
   }
+
+  public get catalogName(): "user.roleChanged" {
+    return "user.roleChanged";
+  }
+
+  public toCatalogPayload(): UserRoleChangedPayload {
+    return { ...catalogMeta(this), userId: this.entity.id, previousRole: this.previousRole, newRole: this.newRole };
+  }
 }
 
-export class UserStatusChangedEvent extends DomainEvent {
+export class UserStatusChangedEvent extends DomainEvent implements CatalogDomainEvent<"user.statusChanged"> {
   public readonly entity: User;
   public readonly isActive: boolean;
 
@@ -79,6 +93,14 @@ export class UserStatusChangedEvent extends DomainEvent {
     super({ performedBy });
     this.entity = entity;
     this.isActive = isActive;
+  }
+
+  public get catalogName(): "user.statusChanged" {
+    return "user.statusChanged";
+  }
+
+  public toCatalogPayload(): UserStatusChangedPayload {
+    return { ...catalogMeta(this), userId: this.entity.id, isActive: this.isActive };
   }
 }
 

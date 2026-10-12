@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Eventos de Reservation
- * Descripción: Eventos de dominio de la reserva (creada, cancelada, desplazada por un docente o administrador, completada) con datos primitivos para que otras features (comandos y telemetría del ventilador) reaccionen sin depender de la entidad
- * Versión: 1.0
+ * Descripción: Eventos de dominio de la reserva (creada, cancelada, desplazada por un docente o administrador, completada) con datos primitivos para que otras features (comandos y telemetría del ventilador) reaccionen sin depender de la entidad; las tres primeras implementan CatalogDomainEvent (reservation.created, reservation.cancelled, reservation.preempted)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,13 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { DomainEvent } from "@/common/domain/events/domain-event";
+import {
+  type CatalogDomainEvent,
+  catalogMeta,
+  type ReservationCancelledPayload,
+  type ReservationCreatedPayload,
+  type ReservationPreemptedPayload,
+} from "@/common/domain/events/domain-event-catalog";
 import { type ReservationHolderSnapshot } from "@/features/reservations/domain/value-objects/reservation-holder";
 
 export interface ReservationEventWindow {
@@ -16,7 +23,7 @@ export interface ReservationEventWindow {
   readonly endsAt: Date;
 }
 
-export class ReservationCreatedEvent extends DomainEvent {
+export class ReservationCreatedEvent extends DomainEvent implements CatalogDomainEvent<"reservation.created"> {
   public readonly reservationId: string;
   public readonly holder: ReservationHolderSnapshot;
   public readonly window: ReservationEventWindow;
@@ -39,9 +46,24 @@ export class ReservationCreatedEvent extends DomainEvent {
     this.window = window;
     this.createdById = createdById;
   }
+
+  public get catalogName(): "reservation.created" {
+    return "reservation.created";
+  }
+
+  public toCatalogPayload(): ReservationCreatedPayload {
+    return {
+      ...catalogMeta(this),
+      reservationId: this.reservationId,
+      holder: this.holder,
+      startsAt: this.window.startsAt,
+      endsAt: this.window.endsAt,
+      createdById: this.createdById,
+    };
+  }
 }
 
-export class ReservationCancelledEvent extends DomainEvent {
+export class ReservationCancelledEvent extends DomainEvent implements CatalogDomainEvent<"reservation.cancelled"> {
   public readonly reservationId: string;
   public readonly holder: ReservationHolderSnapshot;
   public readonly window: ReservationEventWindow;
@@ -66,9 +88,24 @@ export class ReservationCancelledEvent extends DomainEvent {
     this.window = window;
     this.wasActive = wasActive;
   }
+
+  public get catalogName(): "reservation.cancelled" {
+    return "reservation.cancelled";
+  }
+
+  public toCatalogPayload(): ReservationCancelledPayload {
+    return {
+      ...catalogMeta(this),
+      reservationId: this.reservationId,
+      holder: this.holder,
+      startsAt: this.window.startsAt,
+      endsAt: this.window.endsAt,
+      wasActive: this.wasActive,
+    };
+  }
 }
 
-export class ReservationPreemptedEvent extends DomainEvent {
+export class ReservationPreemptedEvent extends DomainEvent implements CatalogDomainEvent<"reservation.preempted"> {
   public readonly reservationId: string;
   public readonly previousHolder: ReservationHolderSnapshot;
   public readonly window: ReservationEventWindow;
@@ -102,6 +139,24 @@ export class ReservationPreemptedEvent extends DomainEvent {
     this.wasActive = wasActive;
     this.preemptedById = preemptedById;
     this.replacedByReservationId = replacedByReservationId;
+  }
+
+  public get catalogName(): "reservation.preempted" {
+    return "reservation.preempted";
+  }
+
+  public toCatalogPayload(): ReservationPreemptedPayload {
+    return {
+      ...catalogMeta(this),
+      reservationId: this.reservationId,
+      previousHolder: this.previousHolder,
+      startsAt: this.window.startsAt,
+      endsAt: this.window.endsAt,
+      wasActive: this.wasActive,
+      reason: this.reason,
+      preemptedById: this.preemptedById,
+      replacedByReservationId: this.replacedByReservationId,
+    };
   }
 }
 

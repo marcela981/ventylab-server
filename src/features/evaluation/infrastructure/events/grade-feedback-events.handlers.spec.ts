@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GradeFeedbackEventsHandlers
  * Descripción: Verifica que los manejadores de retroalimentación escuchen de forma asíncrona, que la entrega del intento no espere ni se vea afectada por la generación, que con todos los proveedores del gateway de IA real fallando la retroalimentación quede READY con origen DETERMINISTIC (check 14) y que un error inesperado nunca se propague al emisor y solo registre el nombre del error
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -80,6 +80,7 @@ function buildPipeline(feedbacks: InMemoryGradeFeedbacksRepository = new InMemor
       new AIGradeFeedbackGenerator(failingGateway(providers, aiCalls)),
       doubles.gradingConfig,
       doubles.transactionManager,
+      new NestEventBus(emitter),
     ),
   );
 

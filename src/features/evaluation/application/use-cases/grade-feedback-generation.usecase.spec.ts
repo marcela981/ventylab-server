@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GenerateGradeFeedbackUseCase
  * Descripción: Verifica la generación de retroalimentación de un intento calificado: reserva PENDING idempotente por intento, filas READY global y por pregunta con origen, proveedor y modelo, regeneración de una fila FAILED, descarte cuando una regeneración la reemplazó, FAILED ante un error inesperado e intentos sin calificar ignorados
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { GenerateGradeFeedbackCommand } from "@/features/evaluation/application/commands/grade-feedback-generation.command";
-import { type AttemptDoubles, buildAttemptDoubles, buildStoredAttempt } from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
+import { type AttemptDoubles, buildAttemptDoubles, buildStoredAttempt, publishedEvents } from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
 import {
   feedbackGenerator,
   feedbackRecord,
@@ -23,6 +23,7 @@ import {
 } from "@/features/evaluation/application/use-cases/grade-feedback-generation.usecase";
 import { type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import { EvaluationAttemptNotFoundError } from "@/features/evaluation/domain/evaluation.errors";
+import { GradeFeedbackReadyEvent } from "@/features/evaluation/domain/events/grade-feedback.events";
 import { type GradeFeedbackRecord } from "@/features/evaluation/domain/read-models/grade-feedback.read-model";
 import { type GradeFeedbackContext } from "@/features/evaluation/domain/value-objects/grade-feedback";
 
@@ -48,6 +49,7 @@ function setup({
     feedbackGenerator(generate),
     doubles.gradingConfig,
     doubles.transactionManager,
+    doubles.eventBus,
   );
 
   return { useCase, feedbacks, generate, doubles };
@@ -107,8 +109,20 @@ describe("GenerateGradeFeedbackUseCase", () => {
     expect(feedbacks.records[0]).toEqual(expect.objectContaining({ id: "pending-1", status: "READY" }));
   });
 
+  it("publishes GradeFeedbackReadyEvent under the catalog name once the feedback is stored", async () => {
+    const pending: GradeFeedbackRecord = feedbackRecord({ id: "pending-1", status: "PENDING", content: "", source: "DETERMINISTIC", provider: undefined, model: undefined });
+    const { useCase, doubles } = setup({ records: [pending] });
+
+    await useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1", pendingFeedbackId: "pending-1" }));
+
+    const [event] = publishedEvents(doubles, GradeFeedbackReadyEvent);
+
+    expect(event.catalogName).toBe("grade.feedbackReady");
+    expect(event.toCatalogPayload()).toEqual(expect.objectContaining({ attemptId: "attempt-1", userId: "student-1", feedbackId: "pending-1" }));
+  });
+
   it("discards the result when a regeneration replaced the pending feedback meanwhile", async () => {
-    const { useCase, feedbacks, generate } = setup();
+    const { useCase, feedbacks, generate, doubles } = setup();
     const newer: GradeFeedbackRecord = feedbackRecord({ id: "pending-2", status: "PENDING", content: "" });
 
     generate.mockImplementation(async (): Promise<typeof GENERATED_FEEDBACK> => {
@@ -121,6 +135,7 @@ describe("GenerateGradeFeedbackUseCase", () => {
 
     expect(outcome).toBe("superseded");
     expect(feedbacks.records).toEqual([expect.objectContaining({ id: "pending-2", status: "PENDING" })]);
+    expect(doubles.publish).not.toHaveBeenCalled();
   });
 
   it("marks the feedback FAILED and rethrows on an unexpected error", async () => {

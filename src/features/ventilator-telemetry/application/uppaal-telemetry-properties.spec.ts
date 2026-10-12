@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Propiedades UPPAAL del camino de telemetría
  * Descripción: Contrasta la implementación con las consultas del modelo ventilab-uppaal.xml (S3, S5, S7, S8, R1, R2, R3) mediante pruebas ejecutables sobre el pipeline real y el servicio de acceso a la sala con dobles en memoria, reloj falso o reloj del sistema; las consultas de tiempos de extremo a extremo y del frontend (S2, S4, S6) no se pueden probar en pruebas unitarias del backend. No sustituye a verifyta: es evidencia de prueba, no una verificación de modelos
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -82,7 +82,7 @@ function buildPipeline(clock: ITelemetryClock, overrides: Partial<VentilatorTele
     createTelemetryDecoder(settings.decoder, settings.deviceId),
     publisher,
     metrics,
-    new DeviceStalenessService(settings, publisher, clock),
+    new DeviceStalenessService(settings, publisher, clock, { publish: jest.fn() }),
     new TelemetryRecorderService(settings, new InMemoryTelemetryChunksRepository(), new JsonTelemetryChunkCodec(), clock),
     clock,
   );

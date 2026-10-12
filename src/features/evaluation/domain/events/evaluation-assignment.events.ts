@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Eventos de dominio de asignaciones de evaluación
- * Descripción: Evento emitido al activar una evaluación para un grupo, con los datos que la notificación en tiempo real envía a la sala del grupo
- * Versión: 1.0
+ * Descripción: Evento emitido al activar una evaluación para un grupo, con los datos que la notificación en tiempo real envía a la sala del grupo; se publica también como evaluation.activated
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,9 +9,10 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { DomainEvent } from "@/common/domain/events/domain-event";
+import { type CatalogDomainEvent, catalogMeta, type EvaluationActivatedPayload } from "@/common/domain/events/domain-event-catalog";
 import { type EvaluationTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-type";
 
-export class EvaluationActivatedEvent extends DomainEvent {
+export class EvaluationActivatedEvent extends DomainEvent implements CatalogDomainEvent<"evaluation.activated"> {
   public readonly assignmentId: string;
   public readonly evaluationId: string;
   public readonly groupId: string;
@@ -47,5 +48,22 @@ export class EvaluationActivatedEvent extends DomainEvent {
     this.type = type;
     this.startsAt = startsAt;
     this.endsAt = endsAt;
+  }
+
+  public get catalogName(): "evaluation.activated" {
+    return "evaluation.activated";
+  }
+
+  public toCatalogPayload(): EvaluationActivatedPayload {
+    return {
+      ...catalogMeta(this),
+      assignmentId: this.assignmentId,
+      evaluationId: this.evaluationId,
+      groupId: this.groupId,
+      title: this.title,
+      type: this.type,
+      startsAt: this.startsAt,
+      endsAt: this.endsAt,
+    };
   }
 }
