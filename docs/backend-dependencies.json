@@ -1,0 +1,266 @@
+{
+  "generated": "2026-10-11",
+  "source": "madge --json src/features (aggregated by feature)",
+  "features": {
+    "activities": 63,
+    "admin": 15,
+    "ai-ratings": 33,
+    "ai-telemetry": 25,
+    "ai-tutor": 50,
+    "ai": 46,
+    "analytics": 33,
+    "audit-log": 20,
+    "auth": 50,
+    "authorization": 7,
+    "changelog": 24,
+    "clinical-cases": 58,
+    "curriculum-editor": 16,
+    "curriculum": 45,
+    "evaluation": 211,
+    "groups": 65,
+    "lessons": 37,
+    "levels": 47,
+    "media": 32,
+    "modules": 47,
+    "notes": 36,
+    "notifications": 26,
+    "overrides": 26,
+    "pages": 40,
+    "platform-settings": 26,
+    "progress": 71,
+    "quizzes": 25,
+    "reservations": 56,
+    "scores": 21,
+    "sections": 23,
+    "simulation": 141,
+    "steps": 27,
+    "system-status": 20,
+    "teacher-students": 28,
+    "users": 58,
+    "ventilator-commands": 50,
+    "ventilator-telemetry": 63
+  },
+  "edges": {
+    "activities": {
+      "auth": 13,
+      "groups": 2,
+      "users": 1
+    },
+    "admin": {
+      "auth": 5,
+      "progress": 4,
+      "users": 6
+    },
+    "ai-ratings": {
+      "ai-telemetry": 4,
+      "auth": 8
+    },
+    "ai-telemetry": {
+      "auth": 4
+    },
+    "ai-tutor": {
+      "ai": 11,
+      "lessons": 4,
+      "modules": 4,
+      "pages": 8,
+      "users": 2,
+      "notes": 1,
+      "auth": 4,
+      "curriculum": 1
+    },
+    "ai": {
+      "ai-telemetry": 4
+    },
+    "analytics": {
+      "ai-ratings": 3,
+      "ai-telemetry": 2,
+      "ai-tutor": 2,
+      "evaluation": 7,
+      "groups": 4,
+      "notes": 2,
+      "progress": 4,
+      "reservations": 4,
+      "simulation": 4,
+      "auth": 9,
+      "authorization": 1
+    },
+    "audit-log": {
+      "auth": 7,
+      "authorization": 1
+    },
+    "auth": {
+      "authorization": 3,
+      "users": 17
+    },
+    "authorization": {
+      "users": 2,
+      "auth": 2
+    },
+    "changelog": {
+      "users": 1,
+      "auth": 5
+    },
+    "clinical-cases": {
+      "ai": 3,
+      "auth": 5
+    },
+    "curriculum-editor": {
+      "levels": 7,
+      "modules": 7,
+      "auth": 5,
+      "lessons": 6
+    },
+    "curriculum": {
+      "levels": 1,
+      "auth": 6
+    },
+    "evaluation": {
+      "groups": 3,
+      "notes": 3,
+      "ai": 5,
+      "auth": 21,
+      "simulation": 3,
+      "clinical-cases": 1
+    },
+    "groups": {
+      "users": 2,
+      "auth": 5
+    },
+    "lessons": {
+      "users": 3,
+      "modules": 5,
+      "curriculum": 13,
+      "changelog": 6,
+      "quizzes": 3,
+      "auth": 6
+    },
+    "levels": {
+      "curriculum": 23,
+      "sections": 5,
+      "changelog": 6,
+      "auth": 6
+    },
+    "media": {
+      "users": 1,
+      "auth": 5
+    },
+    "modules": {
+      "curriculum": 16,
+      "levels": 8,
+      "changelog": 6,
+      "quizzes": 2,
+      "lessons": 1,
+      "auth": 6
+    },
+    "notes": {
+      "ai": 3,
+      "auth": 5
+    },
+    "notifications": {
+      "groups": 3,
+      "reservations": 6,
+      "auth": 4
+    },
+    "overrides": {
+      "users": 5,
+      "lessons": 2,
+      "levels": 2,
+      "steps": 3,
+      "changelog": 6,
+      "auth": 5
+    },
+    "pages": {
+      "lessons": 7,
+      "curriculum": 17,
+      "modules": 3,
+      "auth": 6
+    },
+    "platform-settings": {
+      "ai": 3,
+      "simulation": 1,
+      "users": 1,
+      "auth": 4
+    },
+    "progress": {
+      "curriculum": 23,
+      "modules": 4,
+      "levels": 2,
+      "sections": 1,
+      "pages": 2,
+      "lessons": 1,
+      "quizzes": 1,
+      "auth": 12,
+      "users": 2
+    },
+    "quizzes": {
+      "progress": 4,
+      "notes": 1,
+      "auth": 5
+    },
+    "reservations": {
+      "groups": 4,
+      "users": 4,
+      "auth": 4
+    },
+    "scores": {
+      "users": 4,
+      "activities": 1,
+      "auth": 5
+    },
+    "sections": {
+      "curriculum": 11,
+      "auth": 6
+    },
+    "simulation": {
+      "ai": 4,
+      "users": 4,
+      "groups": 3,
+      "clinical-cases": 5,
+      "ventilator-commands": 5,
+      "ventilator-telemetry": 3,
+      "reservations": 4,
+      "auth": 20
+    },
+    "steps": {
+      "lessons": 5,
+      "curriculum": 2,
+      "changelog": 6,
+      "auth": 5
+    },
+    "system-status": {
+      "ventilator-telemetry": 3,
+      "ai-telemetry": 2,
+      "ai": 7,
+      "reservations": 2,
+      "simulation": 2,
+      "auth": 7,
+      "authorization": 1
+    },
+    "teacher-students": {
+      "users": 10,
+      "progress": 2,
+      "auth": 14
+    },
+    "users": {
+      "progress": 2,
+      "auth": 4
+    },
+    "ventilator-commands": {
+      "ventilator-telemetry": 4,
+      "reservations": 8,
+      "auth": 4
+    },
+    "ventilator-telemetry": {
+      "reservations": 4,
+      "auth": 4
+    }
+  },
+  "featureLevelBidirectional": [
+    "auth <-> authorization",
+    "auth <-> users",
+    "curriculum <-> levels",
+    "lessons <-> modules",
+    "progress <-> quizzes",
+    "progress <-> users"
+  ]
+}

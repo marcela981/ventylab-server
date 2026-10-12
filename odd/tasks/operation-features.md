@@ -41,7 +41,7 @@ Decisions from the audit:
 - [x] T4 notifications: model, bus subscribers, templates, owner endpoints, `notification:new`, ReservationNotifier removed.
 - [x] T5 system-status: `/health/ready`, `/system/status`, change event, AI probe.
 - [x] T6 analytics: batch facade functions, group/student/evaluation panels, `/me/summary`, CSV + anonymized export.
-- [ ] T7 Verification evidence (`docs/operation/VERIFICATION.md`) + dependency graph.
+- [x] T7 Verification evidence (`docs/operation/VERIFICATION.md`) + dependency graph.
 
 ## Progress / evidence
 (updated per task: route, checks, review, commit)
@@ -166,3 +166,17 @@ Decisions from the audit:
 - Research export pseudonymizes evaluation ids (domain-separated HMAC); spec seeds identifiers and checks every column.
 - Timeline reports per-source truncation; redundant group read removed (teacher dashboard 14 Prisma operations).
 - Checks: tsc 0; jest 63 suites / 410 tests pass; eslint clean; coupling grep empty.
+
+### T5/T6 fixes — native review (range d29800d..9418d23, 1 lens): approved, acknowledged; advisory only.
+
+### T7 — done
+- `docs/operation/VERIFICATION.md` "Final verification (2026-10-11)": tsc 0; madge 0 cycles (1762 files);
+  prisma validate OK (4 pre-existing SetNull warnings); no `prisma.` outside repositories; headers complete;
+  provisional grep only `NoopFileStorageAdapter` (decided fallback) + 1 false positive; coupling grep empty.
+- Graph: Graphviz not installed -> `docs/backend-dependencies.dot` + `.json` (render the SVG with `dot`).
+- Behavioural checks 12, 13, 15, 16, 17, 19 pass by unit specs; 9, 11, 14, 18 pass by unit specs and are
+  pending a real DB; 10 (trigger) pending DB.
+
+## Next step (author)
+Apply migrations 20261009120000, 20261010120000, 20261011120000, 20261011130000, 20261011140000 with DIRECT_URL,
+run the manual SQL checks in VERIFICATION.md, set `ANALYTICS_EXPORT_SALT`, render the SVG.
