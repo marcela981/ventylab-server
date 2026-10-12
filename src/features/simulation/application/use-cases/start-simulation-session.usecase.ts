@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso StartSimulationSessionUseCase
- * Descripción: Inicia una sesión de simulación con eventos con un multiplicador de tiempo permitido por los ajustes. Modo libre: caso publicado y listo para simular según ClinicalCasesFacade, sin depender de reservas. Modo examen: intento propio en curso y vigente y pregunta de tipo SIMULATION de la misma evaluación; el caso sale de la pregunta (se ignora el del cliente) y la rúbrica de la pregunta, del caso o la de por defecto debe ser válida. El servidor genera la semilla, fija ENGINE_VERSION, valida el caso en el motor y registra el evento START
- * Versión: 1.1
+ * Descripción: Inicia una sesión de simulación con eventos con un multiplicador de tiempo permitido por los ajustes. Modo libre: caso publicado y listo para simular según ClinicalCasesFacade, sin depender de reservas. Modo examen: intento propio en curso y vigente y pregunta de tipo SIMULATION de la misma evaluación; el caso sale de la pregunta (se ignora el del cliente) y la rúbrica de la pregunta, del caso o la de por defecto debe ser válida. El servidor genera la semilla, fija ENGINE_VERSION, valida el caso en el motor y registra el evento START con una copia de los umbrales vigentes de la rúbrica por defecto, con los que se califica la sesión aunque el ajuste cambie después
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,7 +35,7 @@ import {
   type ISimulationSessionsRepository,
   SIMULATION_SESSIONS_REPOSITORY_TOKEN,
 } from "@/features/simulation/domain/repositories/simulation-sessions.repository";
-import { resolveSessionRubric } from "@/features/simulation/domain/sessions/simulation-session-rubric";
+import { resolveSessionRubric, START_RUBRIC_THRESHOLDS_FIELD } from "@/features/simulation/domain/sessions/simulation-session-rubric";
 import {
   SimulationCaseNotReadyError,
   SimulationCaseRequiredError,
@@ -114,7 +114,13 @@ export class StartSimulationSessionUseCase {
             sessionId: session.id,
             simTimeMs: 0,
             type: START_EVENT_TYPE,
-            payload: { caseId: session.caseId, mode: session.mode, timeMultiplier: session.timeMultiplier, engineVersion: ENGINE_VERSION },
+            payload: {
+              caseId: session.caseId,
+              mode: session.mode,
+              timeMultiplier: session.timeMultiplier,
+              engineVersion: ENGINE_VERSION,
+              [START_RUBRIC_THRESHOLDS_FIELD]: this._runtime.defaultRubricThresholds,
+            },
             receivedAt: now,
           },
         ],

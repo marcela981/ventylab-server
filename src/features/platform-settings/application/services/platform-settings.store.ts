@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caché de ajustes de la plataforma
- * Descripción: Mantiene en memoria las sobrescrituras validadas contra el registro (cargadas al iniciar el módulo; si la tabla no existe o la base no responde, registra una advertencia y sirve los valores por defecto), resuelve el valor efectivo (sobrescritura o valor por defecto, con su origen y versión), aplica o retira sobrescrituras tras confirmar la transacción y notifica a los suscriptores de cada clave
- * Versión: 1.0
+ * Descripción: Mantiene en memoria las filas guardadas validadas contra el registro (cargadas al iniciar el módulo; si la tabla no existe o la base no responde, registra una advertencia y sirve los valores por defecto), resuelve el valor efectivo (sobrescritura o valor por defecto, con su origen y su versión real en la base, también para marcas de restablecimiento y sobrescrituras que ya no son válidas), aplica tras confirmar la transacción solo filas con una versión mayor a la cacheada y notifica a los suscriptores de cada clave
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { PLATFORM_SETTING_DEFAULTS_TOKEN, type PlatformSettingDefaults } from "@/features/platform-settings/application/ports/platform-setting-defaults.interface";
 import {
+  isResetPlatformSetting,
   type PlatformSettingKey,
   type PlatformSettingOriginValue,
   type PlatformSettingOverride,
@@ -34,7 +35,8 @@ export interface PlatformSettingEntry {
   readonly updatedById?: string;
 }
 
-interface CachedOverride {
+interface CachedRow {
+  readonly isOverride: boolean;
   readonly value: unknown;
   readonly version: number;
   readonly updatedAt: Date;
@@ -44,7 +46,7 @@ interface CachedOverride {
 @Injectable()
 export class PlatformSettingsStore implements OnModuleInit {
   private readonly _logger: Logger = new Logger(PlatformSettingsStore.name);
-  private readonly _overrides: Map<PlatformSettingKey, CachedOverride> = new Map<PlatformSettingKey, CachedOverride>();
+  private readonly _rows: Map<PlatformSettingKey, CachedRow> = new Map<PlatformSettingKey, CachedRow>();
   private readonly _listeners: Map<PlatformSettingKey, Set<PlatformSettingListener<unknown>>> = new Map<PlatformSettingKey, Set<PlatformSettingListener<unknown>>>();
 
   public constructor(
@@ -69,43 +71,43 @@ export class PlatformSettingsStore implements OnModuleInit {
       return;
     }
 
-    const previous: Map<PlatformSettingKey, CachedOverride> = new Map<PlatformSettingKey, CachedOverride>(this._overrides);
+    const previous: Map<PlatformSettingKey, CachedRow> = new Map<PlatformSettingKey, CachedRow>(this._rows);
 
-    this._overrides.clear();
+    this._rows.clear();
 
     for (const row of rows) {
       this._cache(row);
     }
 
     for (const key of PLATFORM_SETTING_KEYS) {
-      if (previous.get(key)?.version !== this._overrides.get(key)?.version) {
+      if (previous.get(key)?.version !== this._rows.get(key)?.version) {
         this._notify(key);
       }
     }
   }
 
   public get<K extends PlatformSettingKey>(key: K): PlatformSettingValues[K] {
-    const override: CachedOverride | undefined = this._overrides.get(key);
+    const row: CachedRow | undefined = this._rows.get(key);
 
-    return override === undefined ? this._defaults[key] : (override.value as PlatformSettingValues[K]);
+    return row?.isOverride === true ? (row.value as PlatformSettingValues[K]) : this._defaults[key];
   }
 
   public getEntry(key: PlatformSettingKey): PlatformSettingEntry {
-    const override: CachedOverride | undefined = this._overrides.get(key);
+    const row: CachedRow | undefined = this._rows.get(key);
     const defaultValue: unknown = this._defaults[key];
 
-    if (override === undefined) {
+    if (row === undefined) {
       return { key, value: defaultValue, defaultValue, origin: "DEFAULT", version: DEFAULT_SETTING_VERSION };
     }
 
     return {
       key,
-      value: override.value,
+      value: row.isOverride ? row.value : defaultValue,
       defaultValue,
-      origin: "OVERRIDE",
-      version: override.version,
-      updatedAt: override.updatedAt,
-      updatedById: override.updatedById,
+      origin: row.isOverride ? "OVERRIDE" : "DEFAULT",
+      version: row.version,
+      updatedAt: row.updatedAt,
+      updatedById: row.updatedById,
     };
   }
 
@@ -116,12 +118,6 @@ export class PlatformSettingsStore implements OnModuleInit {
   public applyOverride(override: PlatformSettingOverride): void {
     if (this._cache(override)) {
       this._notify(override.key as PlatformSettingKey);
-    }
-  }
-
-  public removeOverride(key: PlatformSettingKey): void {
-    if (this._overrides.delete(key)) {
-      this._notify(key);
     }
   }
 
@@ -144,16 +140,30 @@ export class PlatformSettingsStore implements OnModuleInit {
       return false;
     }
 
-    try {
-      const value: unknown = getPlatformSettingDefinition(row.key).parse(row.value);
+    const cachedVersion: number = this._rows.get(row.key)?.version ?? DEFAULT_SETTING_VERSION;
 
-      this._overrides.set(row.key, { value, version: row.version, updatedAt: row.updatedAt, updatedById: row.updatedById });
-
-      return true;
-    } catch (error: unknown) {
-      this._logger.warn(`Ignoring invalid stored override of platform setting ${row.key}: ${error instanceof Error ? error.message : "invalid value"}`);
-
+    if (row.version <= cachedVersion) {
       return false;
+    }
+
+    this._rows.set(row.key, { ...this._resolveStoredValue(row.key, row), version: row.version, updatedAt: row.updatedAt, updatedById: row.updatedById });
+
+    return true;
+  }
+
+  private _resolveStoredValue(key: PlatformSettingKey, row: PlatformSettingOverride): Pick<CachedRow, "isOverride" | "value"> {
+    if (isResetPlatformSetting(row)) {
+      return { isOverride: false, value: undefined };
+    }
+
+    try {
+      return { isOverride: true, value: getPlatformSettingDefinition(key).parse(row.value) };
+    } catch (error: unknown) {
+      this._logger.warn(
+        `Serving the default of platform setting ${key} because its stored override (version ${row.version}) is invalid: ${error instanceof Error ? error.message : "invalid value"}`,
+      );
+
+      return { isOverride: false, value: undefined };
     }
   }
 

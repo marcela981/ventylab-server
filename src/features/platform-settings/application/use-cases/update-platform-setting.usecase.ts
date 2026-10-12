@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso UpdatePlatformSetting
- * Descripción: Valida el nuevo valor contra el registro y sus límites duros, exige credenciales a los proveedores de IA que entran en una cadena, y en una transacción bajo el bloqueo de la clave compara la versión (concurrencia optimista), guarda la sobrescritura y registra SETTINGS_CHANGED en la auditoría con el valor anterior y el nuevo; tras confirmar actualiza la caché y notifica a los suscriptores
- * Versión: 1.0
+ * Descripción: Valida el nuevo valor contra el registro y sus límites duros, exige credenciales a los proveedores de IA que entran en una cadena, y en una transacción bajo el bloqueo de la clave compara la versión (concurrencia optimista), guarda la sobrescritura con la versión siguiente (también tras una marca de restablecimiento o una sobrescritura que ya no es válida) y registra SETTINGS_CHANGED en la auditoría con el valor anterior y el nuevo; tras confirmar actualiza la caché y notifica a los suscriptores
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,6 +18,7 @@ import { DEFAULT_SETTING_VERSION, PlatformSettingsStore } from "@/features/platf
 import { AiProviderNotConfiguredError, PlatformSettingVersionConflictError } from "@/features/platform-settings/domain/platform-settings.errors";
 import {
   type AiUseCaseSettingValue,
+  isResetPlatformSetting,
   PLATFORM_SETTINGS_AUDIT_TARGET,
   type PlatformSettingOverride,
   SETTINGS_CHANGED_AUDIT_ACTION,
@@ -66,9 +67,10 @@ export class UpdatePlatformSettingUseCase {
         throw new PlatformSettingVersionConflictError(definition.key, currentVersion);
       }
 
-      const before: unknown = current === undefined ? this._store.getDefault(definition.key) : current.value;
+      const effective: PlatformSettingOverride | undefined = current === undefined || isResetPlatformSetting(current) ? undefined : current;
+      const before: unknown = effective === undefined ? this._store.getDefault(definition.key) : effective.value;
 
-      this._assertProvidersConfigured(definition, current, value);
+      this._assertProvidersConfigured(definition, effective, value);
 
       const override: PlatformSettingOverride = await this._repository.save(
         { key: definition.key, value, version: currentVersion + 1, updatedById: command.performedBy },
@@ -80,7 +82,7 @@ export class UpdatePlatformSettingUseCase {
         SETTINGS_CHANGED_AUDIT_ACTION,
         PLATFORM_SETTINGS_AUDIT_TARGET,
         definition.key,
-        { value: before, origin: current === undefined ? "DEFAULT" : "OVERRIDE", version: currentVersion },
+        { value: before, origin: effective === undefined ? "DEFAULT" : "OVERRIDE", version: currentVersion },
         { value, origin: "OVERRIDE", version: override.version },
         transaction,
       );

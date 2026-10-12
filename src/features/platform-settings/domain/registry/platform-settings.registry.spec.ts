@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del registro de ajustes de la plataforma
  * Descripción: Verifica la validación de tipo y forma, los límites duros (incluidos los límites de seguridad de los comandos acotados por VENTILATOR_PARAMETER_LIMITS), los multiplicadores de tiempo, la cadena de proveedores de IA y las claves desconocidas
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,6 +21,8 @@ import {
   getPlatformSettingDefinition,
   PLATFORM_SETTING_KEYS,
   PLATFORM_SETTINGS_REGISTRY,
+  type PlatformSettingDefaultResolution,
+  resolvePlatformSettingDefault,
 } from "@/features/platform-settings/domain/registry/platform-settings.registry";
 
 function parse(key: string, value: unknown): unknown {
@@ -89,5 +91,37 @@ describe("platform settings registry", () => {
 
   it("sorts the allowed time multipliers", () => {
     expect(parse("simulation.allowedTimeMultipliers", [4, 1])).toEqual([1, 4]);
+  });
+
+  it.each<[PlatformSettingKey, unknown, unknown]>([
+    ["telemetry.flushIntervalMs", 5000, 1000],
+    ["telemetry.flushIntervalMs", 2, 5],
+    ["reservations.slotMinutes", 12.6, 13],
+    ["simulation.allowedTimeMultipliers", [4, 3, 2, 2], [1, 2, 4]],
+    ["simulation.rubric.defaultThresholds", { targetsReached: 2, timeToStabilizeSeconds: 300, timeInRangePercent: 80, safetyToleranceSeconds: 0 }, { targetsReached: 1, timeToStabilizeSeconds: 300, timeInRangePercent: 80, safetyToleranceSeconds: 0 }],
+    ["ai.useCase.FREE_CHAT", { ...TEST_AI_USE_CASE, timeoutMs: 500_000 }, { ...TEST_AI_USE_CASE, timeoutMs: 120_000 }],
+  ])("resolves an invalid configured default of %s = %p to the nearest valid value with an issue", (key: PlatformSettingKey, configured: unknown, expected: unknown) => {
+    const resolution: PlatformSettingDefaultResolution = resolvePlatformSettingDefault(key, configured, (): unknown => undefined);
+
+    expect(resolution.value).toEqual(expected);
+    expect(resolution.issue).toContain("nearest valid value");
+  });
+
+  it("keeps a valid configured default without an issue", () => {
+    expect(resolvePlatformSettingDefault("telemetry.flushIntervalMs", 33, (): unknown => 40)).toEqual({ value: 33 });
+  });
+
+  it("falls back to the code default when the configured default cannot be adjusted", () => {
+    const resolution: PlatformSettingDefaultResolution = resolvePlatformSettingDefault("ai.tutor.topicCheck.enabled", "yes", (): unknown => true);
+
+    expect(resolution).toEqual({ value: true, issue: expect.stringContaining("using the code default") });
+  });
+
+  it("keeps the configured value and reports it when neither it nor the code default is valid", () => {
+    const resolution: PlatformSettingDefaultResolution = resolvePlatformSettingDefault("ai.tutor.topicCheck.enabled", "yes", (): unknown => {
+      throw new Error("unreadable");
+    });
+
+    expect(resolution).toEqual({ value: "yes", issue: expect.stringContaining("keeping the configured value") });
   });
 });

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la resolución de la rúbrica de una sesión de simulación
  * Descripción: Verifica que la rúbrica por defecto de un caso clínico convierte los límites de seguridad con peso 0 y penalización en un único criterio SAFETY_VIOLATIONS y la asistencia de IA en AI_ASSIST_USAGE, que esas penalizaciones se califican de verdad, y que las rúbricas de comparación de parámetros de las preguntas se omiten
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import {
 import {
   AI_PENALIZED_USES_TO_ZERO,
   CASE_SAFETY_FALLBACK_WEIGHT,
+  readStartRubricThresholds,
   resolveSessionRubric,
   toSimulationRubric,
 } from "@/features/simulation/domain/sessions/simulation-session-rubric";
@@ -127,5 +128,21 @@ describe("resolveSessionRubric", () => {
 
   it("rejects an invalid engine rubric", () => {
     expect(() => resolveSessionRubric([{ criteria: [] }])).toThrow(SimulationRubricInvalidError);
+  });
+});
+
+describe("readStartRubricThresholds", () => {
+  const receivedAt: Date = new Date("2026-10-08T12:00:00Z");
+
+  it("reads the thresholds copied into the START event and ignores a missing or malformed copy", () => {
+    const thresholds: Record<string, number> = { targetsReached: 1, timeToStabilizeSeconds: 300, timeInRangePercent: 80, safetyToleranceSeconds: 0 };
+
+    const read: unknown = readStartRubricThresholds([{ id: "e1", sessionId: "s1", simTimeMs: 0, type: "START", payload: { defaultRubricThresholds: thresholds }, receivedAt }]);
+    const missing: unknown = readStartRubricThresholds([{ id: "e1", sessionId: "s1", simTimeMs: 0, type: "START", payload: {}, receivedAt }]);
+    const malformed: unknown = readStartRubricThresholds([
+      { id: "e1", sessionId: "s1", simTimeMs: 0, type: "START", payload: { defaultRubricThresholds: { ...thresholds, timeInRangePercent: "80" } }, receivedAt },
+    ]);
+
+    expect([read, missing, malformed]).toEqual([thresholds, undefined, undefined]);
   });
 });

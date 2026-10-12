@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Grabación de telemetría
- * Descripción: Grabación opcional de la telemetría de la reserva activa: submuestrea las tramas a la frecuencia de grabación vigente y cada intervalo de bloque vigente al iniciar la grabación codifica y guarda un TelemetryChunk en segundo plano (sin esperar la escritura en el camino caliente); se detiene al terminar o cambiar la reserva activa y al apagar guarda el último bloque y espera las escrituras pendientes con un límite de tiempo
- * Versión: 1.2
+ * Descripción: Grabación opcional de la telemetría de la reserva activa: submuestrea las tramas a la frecuencia de grabación fijada al iniciar la grabación (un cambio del ajuste aplica a la siguiente grabación, así ningún bloque mezcla frecuencias) y cada intervalo de bloque vigente al iniciar la grabación codifica y guarda un TelemetryChunk en segundo plano (sin esperar la escritura en el camino caliente); se detiene al terminar o cambiar la reserva activa y al apagar guarda el último bloque y espera las escrituras pendientes con un límite de tiempo
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,6 +31,8 @@ export interface TelemetryRecordingStatus {
 interface RecordingSession {
   readonly reservationId: string;
   readonly startedAt: number;
+  readonly sampleRateHz: number;
+  readonly intervalMs: number;
   samples: RecordedTelemetrySample[];
   nextDueTs: number;
 }
@@ -55,15 +57,11 @@ export class TelemetryRecorderService {
     private readonly _clock: ITelemetryClock,
   ) {}
 
-  private get _intervalMs(): number {
-    return MS_PER_SECOND / this._settings.recordingHz;
-  }
-
   public get status(): TelemetryRecordingStatus {
     const session: RecordingSession | undefined = this._session;
 
     return session
-      ? { active: true, reservationId: session.reservationId, startedAt: session.startedAt, sampleRateHz: this._settings.recordingHz }
+      ? { active: true, reservationId: session.reservationId, startedAt: session.startedAt, sampleRateHz: session.sampleRateHz }
       : { active: false, sampleRateHz: this._settings.recordingHz };
   }
 
@@ -74,7 +72,9 @@ export class TelemetryRecorderService {
 
     this.stop();
 
-    this._session = { reservationId, startedAt: this._clock.now(), samples: [], nextDueTs: 0 };
+    const sampleRateHz: number = this._settings.recordingHz;
+
+    this._session = { reservationId, startedAt: this._clock.now(), sampleRateHz, intervalMs: MS_PER_SECOND / sampleRateHz, samples: [], nextDueTs: 0 };
     this._timer = setInterval((): void => this.flushChunk(), this._settings.recordingFlushSeconds * MS_PER_SECOND);
     this._timer.unref();
 
@@ -139,9 +139,9 @@ export class TelemetryRecorderService {
 
     session.samples.push(toRecordedSample(frame));
 
-    const next: number = session.nextDueTs + this._intervalMs;
+    const next: number = session.nextDueTs + session.intervalMs;
 
-    session.nextDueTs = next > frame.serverTs ? next : frame.serverTs + this._intervalMs;
+    session.nextDueTs = next > frame.serverTs ? next : frame.serverTs + session.intervalMs;
   }
 
   public flushChunk(): void {
@@ -155,7 +155,7 @@ export class TelemetryRecorderService {
 
     session.samples = [];
 
-    const write: Promise<void> = this._persist(session.reservationId, samples).catch((error: unknown): void => {
+    const write: Promise<void> = this._persist(session.reservationId, session.sampleRateHz, samples).catch((error: unknown): void => {
       this._logger.error(`Saving a telemetry chunk for reservation ${session.reservationId} failed: ${error instanceof Error ? error.message : String(error)}`);
     });
 
@@ -165,13 +165,13 @@ export class TelemetryRecorderService {
     });
   }
 
-  private async _persist(reservationId: string, samples: RecordedTelemetrySample[]): Promise<void> {
+  private async _persist(reservationId: string, sampleRateHz: number, samples: RecordedTelemetrySample[]): Promise<void> {
     const data: Buffer = await this._codec.encode(samples);
 
     await this._chunksRepository.save(createTelemetryChunk({
       reservationId,
       samples,
-      sampleRateHz: this._settings.recordingHz,
+      sampleRateHz,
       encoding: this._codec.encoding,
       data,
       createdAt: new Date(this._clock.now()),

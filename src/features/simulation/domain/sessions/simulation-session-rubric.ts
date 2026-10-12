@@ -1,22 +1,25 @@
 /*
  * Funcionalidad: Resolución de la rúbrica de una sesión de simulación
- * Descripción: Elige la rúbrica de calificación de una sesión (la primera candidata aplicable a la repetición del motor, o la rúbrica por defecto; las rúbricas de comparación de parámetros de las preguntas de evaluación se omiten), acepta tanto la forma de rúbrica de calificación como la rúbrica por defecto de un caso clínico (criterios con peso sobre 100; los límites de seguridad con sus penalizaciones se agrupan en un criterio SAFETY_VIOLATIONS y la asistencia de IA con penalización en AI_ASSIST_USAGE) y la valida con el validador de la calificación
- * Versión: 1.2
+ * Descripción: Elige la rúbrica de calificación de una sesión (la primera candidata aplicable a la repetición del motor, o la rúbrica por defecto; las rúbricas de comparación de parámetros de las preguntas de evaluación se omiten), acepta tanto la forma de rúbrica de calificación como la rúbrica por defecto de un caso clínico (criterios con peso sobre 100; los límites de seguridad con sus penalizaciones se agrupan en un criterio SAFETY_VIOLATIONS y la asistencia de IA con penalización en AI_ASSIST_USAGE) y la valida con el validador de la calificación; lee del evento START los umbrales de la rúbrica por defecto fijados al iniciar la sesión
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type SimulationEventRecord } from "@/features/simulation/domain/read-models/simulation-session.read-model";
 import {
   DEFAULT_SIMULATION_RUBRIC,
   type SafetyLimits,
   type SimulationRubric,
   type SimulationRubricCriterion,
+  type SimulationRubricThresholds,
   type SimulationRubricValidationResult,
   validateSimulationRubric,
 } from "@/features/simulation/domain/scoring";
 import { SimulationRubricInvalidError } from "@/features/simulation/domain/simulation.errors";
+import { START_EVENT_TYPE } from "@/features/simulation/domain/value-objects/simulation-session-values";
 
 /*
  * Clinical-case rubric conversion (case weights use a 0-100 scale; the scorer normalizes by the total weight):
@@ -60,6 +63,23 @@ export function resolveSessionRubric(candidates: readonly unknown[], fallback: S
   );
 
   return selected === undefined ? fallback : toSimulationRubric(selected);
+}
+
+export const START_RUBRIC_THRESHOLDS_FIELD: string = "defaultRubricThresholds";
+
+const RUBRIC_THRESHOLD_FIELDS: readonly (keyof SimulationRubricThresholds)[] = ["targetsReached", "timeToStabilizeSeconds", "timeInRangePercent", "safetyToleranceSeconds"];
+
+export function readStartRubricThresholds(events: readonly SimulationEventRecord[]): SimulationRubricThresholds | undefined {
+  const snapshot: unknown = events.find((event: SimulationEventRecord): boolean => event.type === START_EVENT_TYPE)?.payload[START_RUBRIC_THRESHOLDS_FIELD];
+
+  if (typeof snapshot !== "object" || snapshot === null) {
+    return undefined;
+  }
+
+  const record: Record<string, unknown> = snapshot as Record<string, unknown>;
+  const valid: boolean = RUBRIC_THRESHOLD_FIELDS.every((field: string): boolean => typeof record[field] === "number" && Number.isFinite(record[field]));
+
+  return valid ? (record as unknown as SimulationRubricThresholds) : undefined;
 }
 
 export function toSimulationRubric(raw: unknown): SimulationRubric {

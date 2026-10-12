@@ -87,3 +87,16 @@ Decisions from the audit:
 - `src/features/audit-log/` ADMIN (`audit:read`): `GET /api/audit`, `/api/audit/targets/:type/:id`, `/api/audit/export` (CSV, injection-safe, 50k cap).
 - Checks: prisma validate OK; tsc 0; jest 77 suites / 528 tests + 280 extra pass; eslint clean; coupling grep empty.
 - Manual DB checks in `docs/operation/VERIFICATION.md` (no DB integration-test setup applies migrations).
+
+### T2-fix — done
+- Reset keeps a JSON-null tombstone with version+1 (monotonic versions, no ABA); invalid stored override
+  keeps its real version; config defaults validated/clamped at boot; cache ignores versions <= cached;
+  rate change keeps bucket tokens capped; recorder snapshots Hz/interval at start; simulation START event
+  carries the rubric thresholds so re-scoring is stable (sessions started before this change still read
+  the current setting).
+- Checks: tsc 0; jest 45 suites / 465 tests pass; eslint clean. No schema change.
+
+### T3 — review (independent)
+- No blockers/majors. Minor fixes queued (T3-fix): broader redaction keys, validate client request id,
+  strip referer query string, free-text action filter, skip empty-diff rows. Documented only: audit IP
+  depends on `trust proxy 1`; actorRole is the JWT role at token issue time.

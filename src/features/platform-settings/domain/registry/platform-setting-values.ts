@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Tipos de valores de la configuración de la plataforma
- * Descripción: Categorías, claves y tipo del valor de cada ajuste editable (IA, evaluación, simulación, reservas, telemetría y comandos del ventilador), origen del valor efectivo y la forma de una sobrescritura guardada
- * Versión: 1.0
+ * Descripción: Categorías, claves y tipo del valor de cada ajuste editable (IA, evaluación, simulación, reservas, telemetría y comandos del ventilador), origen del valor efectivo y la forma de una fila guardada (sobrescritura o marca de restablecimiento que conserva la versión)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -95,6 +95,13 @@ export interface PlatformSettingOverride {
   readonly version: number;
   readonly updatedById?: string;
   readonly updatedAt: Date;
+}
+
+// A reset keeps the row with a null value so the version keeps growing and a stale version is never accepted again.
+export const RESET_PLATFORM_SETTING_VALUE: null = null;
+
+export function isResetPlatformSetting(row: PlatformSettingOverride): boolean {
+  return row.value === RESET_PLATFORM_SETTING_VALUE;
 }
 
 export const PLATFORM_SETTINGS_AUDIT_TARGET: string = "platform_settings";

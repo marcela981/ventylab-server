@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la grabación de telemetría
- * Descripción: Verifica el submuestreo a VENTILATOR_RECORDING_HZ, que la escritura del fragmento cada VENTILATOR_RECORDING_FLUSH_SECONDS no se espere en el camino caliente, la detención automática cuando cambia la reserva activa y la lectura de la grabación ordenada con autorización por titularidad o rol
- * Versión: 1.1
+ * Descripción: Verifica el submuestreo a VENTILATOR_RECORDING_HZ, que la frecuencia quede fija durante una grabación aunque cambie el ajuste, que la escritura del fragmento cada VENTILATOR_RECORDING_FLUSH_SECONDS no se espere en el camino caliente, la detención automática cuando cambia la reserva activa y la lectura de la grabación ordenada con autorización por titularidad o rol
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,7 +11,7 @@
 import { type ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
 import { GetTelemetryRecordingCommand } from "@/features/ventilator-telemetry/application/commands/telemetry-recording.command";
 import { type TelemetryRecordingResult } from "@/features/ventilator-telemetry/application/results/telemetry-recording.result";
-import { TelemetryRecorderService } from "@/features/ventilator-telemetry/application/services/telemetry-recorder.service";
+import { TelemetryRecorderService, type TelemetryRecordingStatus } from "@/features/ventilator-telemetry/application/services/telemetry-recorder.service";
 import { TelemetryRecordingAccessService } from "@/features/ventilator-telemetry/application/services/telemetry-recording-access.service";
 import {
   buildTelemetrySettings,
@@ -19,6 +19,7 @@ import {
   InMemoryTelemetryChunksRepository,
   JsonTelemetryChunkCodec,
 } from "@/features/ventilator-telemetry/application/testing/ventilator-telemetry-test-doubles-spec";
+import { type VentilatorTelemetrySettings } from "@/features/ventilator-telemetry/application/tokens/ventilator-telemetry-settings.token";
 import { GetTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/get-telemetry-recording.usecase";
 import { type RecordedTelemetrySample } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-chunk";
 import { type TelemetryFrame } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-frame";
@@ -60,6 +61,35 @@ describe("TelemetryRecorderService", () => {
       expect(repository.chunks[0].sampleRateHz).toBe(20);
       expect(offered).toHaveLength(60);
     });
+  });
+
+  it("keeps the sample rate fixed for the whole recording when the setting changes mid-recording", async () => {
+    const clock: FakeTelemetryClock = new FakeTelemetryClock();
+    const repository: InMemoryTelemetryChunksRepository = new InMemoryTelemetryChunksRepository();
+    let recordingHz: number = 20;
+    const settings: VentilatorTelemetrySettings = {
+      ...buildTelemetrySettings(),
+      get recordingHz(): number {
+        return recordingHz;
+      },
+    };
+    const recorder: TelemetryRecorderService = new TelemetryRecorderService(settings, repository, new JsonTelemetryChunkCodec(), clock);
+
+    recorder.start("reservation-1");
+    recordingHz = 5;
+
+    for (let index: number = 0; index < 60; index++) {
+      recorder.offer(frame(clock.nowMs + Math.round(index * (1000 / 60)), index));
+    }
+
+    const status: TelemetryRecordingStatus = recorder.status;
+
+    recorder.stop();
+    await flushMicrotasks();
+
+    expect(status.sampleRateHz).toBe(20);
+    expect(repository.chunks[0]).toMatchObject({ sampleCount: 20, sampleRateHz: 20 });
+    expect(recorder.status.sampleRateHz).toBe(5);
   });
 
   it("writes one chunk per flush period without awaiting the repository on the hot path", async () => {

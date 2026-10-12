@@ -1,21 +1,27 @@
 /*
  * Funcionalidad: Valores por defecto de los ajustes de la plataforma
- * Descripción: Resuelve el valor por defecto de cada ajuste del registro con los lectores puros de configuración de cada feature (variables de entorno vigentes: AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES, EVALUATION_PASSING_GRADE, SIMULATION_*, RESERVATION_*, VENTILATOR_*) o con las constantes del código (gracia de entrega, umbrales de la rúbrica, multiplicadores de tiempo, verificación de tema activa)
- * Versión: 1.0
+ * Descripción: Resuelve el valor por defecto de cada ajuste del registro con los lectores puros de configuración de cada feature (variables de entorno vigentes: AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES, EVALUATION_PASSING_GRADE, SIMULATION_*, RESERVATION_*, VENTILATOR_*) o con las constantes del código (gracia de entrega, umbrales de la rúbrica, multiplicadores de tiempo, verificación de tema activa); al arrancar valida cada valor contra su definición del registro y, si no cumple, registra un error y usa el valor válido más cercano o el valor por defecto del código, sin detener el arranque
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { Logger } from "@nestjs/common";
 import { type ConfigService } from "@nestjs/config";
 
-import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
+import { EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
 import { AI_USE_CASE_VALUES, type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 import { type AiSettingsSnapshot, buildAiSettingsSnapshot, readAiSettingsSource } from "@/features/ai/infrastructure/config/ai-settings.provider";
 import { ATTEMPT_SUBMIT_GRACE_MS } from "@/features/evaluation/domain/services/evaluation-attempt-policy";
 import { type PlatformSettingDefaults } from "@/features/platform-settings/application/ports/platform-setting-defaults.interface";
-import { type AiUseCaseSettingKey, type AiUseCaseSettingValue } from "@/features/platform-settings/domain/registry/platform-setting-values";
+import { type AiUseCaseSettingKey, type AiUseCaseSettingValue, type PlatformSettingKey } from "@/features/platform-settings/domain/registry/platform-setting-values";
+import {
+  PLATFORM_SETTING_KEYS,
+  type PlatformSettingDefaultResolution,
+  resolvePlatformSettingDefault,
+} from "@/features/platform-settings/domain/registry/platform-settings.registry";
 import { type ReservationSettings } from "@/features/reservations/application/tokens/reservation-settings.token";
 import { readReservationSettings } from "@/features/reservations/infrastructure/config/reservation-settings.config";
 import { type SimulationSessionSettings } from "@/features/simulation/application/tokens/simulation-session-settings.token";
@@ -27,7 +33,39 @@ import { readVentilatorTelemetrySettings } from "@/features/ventilator-telemetry
 
 const MS_PER_SECOND: number = 1000;
 
-export function readPlatformSettingDefaults(configService: ConfigService<EnvironmentVariables, true>): PlatformSettingDefaults {
+type Config = ConfigService<EnvironmentVariables, true>;
+
+export function readPlatformSettingDefaults(configService: Config): PlatformSettingDefaults {
+  const logger: Logger = new Logger("PlatformSettingDefaults");
+  const configured: PlatformSettingDefaults = readConfiguredDefaults(configService);
+  let codeDefaults: PlatformSettingDefaults | undefined;
+  const codeDefault = (key: PlatformSettingKey): unknown => {
+    codeDefaults ??= readConfiguredDefaults(codeDefaultsConfig());
+
+    return codeDefaults[key];
+  };
+  const resolved: Record<string, unknown> = {};
+
+  for (const key of PLATFORM_SETTING_KEYS) {
+    const resolution: PlatformSettingDefaultResolution = resolvePlatformSettingDefault(key, configured[key], (): unknown => codeDefault(key));
+
+    if (resolution.issue !== undefined) {
+      logger.error(`Invalid configured default of platform setting ${key}: ${resolution.issue}`);
+    }
+
+    resolved[key] = resolution.value;
+  }
+
+  return resolved as unknown as PlatformSettingDefaults;
+}
+
+function codeDefaultsConfig(): Config {
+  const values: Record<string, unknown> = { ...new EnvironmentVariables() };
+
+  return { get: (key: string): unknown => values[key] } as unknown as Config;
+}
+
+function readConfiguredDefaults(configService: Config): PlatformSettingDefaults {
   const ai: AiSettingsSnapshot = buildAiSettingsSnapshot(readAiSettingsSource(configService));
   const simulation: SimulationSessionSettings = readSimulationSessionSettings(configService);
   const reservations: ReservationSettings = readReservationSettings(configService);

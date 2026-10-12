@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio de sobrescrituras de ajustes de la plataforma
- * Descripción: Contrato para leer todas las sobrescrituras guardadas, leer una por clave, guardarla o borrarla y tomar el bloqueo transaccional de una clave
- * Versión: 1.0
+ * Descripción: Contrato para leer todas las filas guardadas, leer una por clave, guardarla (sobrescritura o marca de restablecimiento) y tomar el bloqueo transaccional de una clave
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,5 @@ export interface IPlatformSettingsRepository {
   getAll(): Promise<PlatformSettingOverride[]>;
   getByKey(key: string, transaction?: unknown): Promise<PlatformSettingOverride | undefined>;
   save(override: SavePlatformSettingOverride, transaction?: unknown): Promise<PlatformSettingOverride>;
-  delete(key: string, transaction?: unknown): Promise<void>;
   acquireTransactionLock(key: string, transaction: unknown): Promise<void>;
 }

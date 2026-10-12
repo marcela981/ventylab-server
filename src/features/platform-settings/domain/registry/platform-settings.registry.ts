@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registro de ajustes de la plataforma
- * Descripción: Define en código cada ajuste editable por un administrador (categoría, descripción, validación de tipo y forma y límites duros que ni un administrador puede superar): cadena de proveedores y modelos, tiempo límite, tokens y temperatura por caso de uso de IA, cuotas, precios y verificación de tema del tutor; nota aprobatoria y gracia de entrega de evaluaciones; umbrales de la rúbrica por defecto, multiplicadores de tiempo y abandono de simulaciones; reglas de reservas; intervalos de telemetría; frecuencia, tiempo de acuse y límites de seguridad de los comandos (dentro de VENTILATOR_PARAMETER_LIMITS)
- * Versión: 1.0
+ * Descripción: Define en código cada ajuste editable por un administrador (categoría, descripción, validación de tipo y forma y límites duros que ni un administrador puede superar): cadena de proveedores y modelos, tiempo límite, tokens y temperatura por caso de uso de IA, cuotas, precios y verificación de tema del tutor; nota aprobatoria y gracia de entrega de evaluaciones; umbrales de la rúbrica por defecto, multiplicadores de tiempo y abandono de simulaciones; reglas de reservas; intervalos de telemetría; frecuencia, tiempo de acuse y límites de seguridad de los comandos (dentro de VENTILATOR_PARAMETER_LIMITS). Cada ajuste valida (parse) y además ajusta un valor al válido más cercano (sanitize), con lo que se resuelven al arrancar los valores por defecto de la configuración (resolvePlatformSettingDefault)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,7 +35,15 @@ export interface PlatformSettingDefinition<K extends PlatformSettingKey = Platfo
   readonly description: string;
   readonly limits: PlatformSettingLimits;
   readonly parse: (value: unknown) => PlatformSettingValues[K];
+  readonly sanitize: (value: unknown) => PlatformSettingValues[K];
 }
+
+export interface PlatformSettingDefaultResolution {
+  readonly value: unknown;
+  readonly issue?: string;
+}
+
+type SettingReadFn<V> = (reader: PlatformSettingValueReader, value: unknown) => V;
 
 export type PlatformSettingsRegistry = { readonly [K in PlatformSettingKey]: PlatformSettingDefinition<K> };
 
@@ -66,18 +74,30 @@ function safetyLimits(parameter: VentilatorParameterLimit): NumberLimits {
   return { min: parameter.min, max: parameter.max, integer: false };
 }
 
-function numberSetting<K extends NumberSettingKey>(key: K, category: PlatformSettingCategoryValue, description: string, limits: NumberLimits): PlatformSettingDefinition<K> {
+function setting<K extends PlatformSettingKey>(
+  key: K,
+  category: PlatformSettingCategoryValue,
+  description: string,
+  limits: PlatformSettingLimits,
+  read: SettingReadFn<PlatformSettingValues[K]>,
+): PlatformSettingDefinition<K> {
   return {
     key,
     category,
     description,
-    limits: { ...limits },
-    parse: (value: unknown): PlatformSettingValues[K] => new PlatformSettingValueReader(key).number(VALUE_PATH, value, limits),
+    limits,
+    parse: (value: unknown): PlatformSettingValues[K] => read(new PlatformSettingValueReader(key), value),
+    sanitize: (value: unknown): PlatformSettingValues[K] => read(new PlatformSettingValueReader(key, true), value),
   };
 }
 
-function parseAiUseCase(key: string, value: unknown): AiUseCaseSettingValue {
-  const reader: PlatformSettingValueReader = new PlatformSettingValueReader(key);
+function numberSetting<K extends NumberSettingKey>(key: K, category: PlatformSettingCategoryValue, description: string, limits: NumberLimits): PlatformSettingDefinition<K> {
+  return setting(key, category, description, { ...limits }, (reader: PlatformSettingValueReader, value: unknown): PlatformSettingValues[K] =>
+    reader.number(VALUE_PATH, value, limits) as PlatformSettingValues[K],
+  );
+}
+
+function readAiUseCase(reader: PlatformSettingValueReader, value: unknown): AiUseCaseSettingValue {
   const record: Record<string, unknown> = reader.object(VALUE_PATH, value, ["providerChain", "models", "timeoutMs", "maxOutputTokens", "temperature"]);
   const providerChain: string[] = reader
     .array("providerChain", record.providerChain, 1, MAX_PROVIDER_CHAIN_LENGTH)
@@ -111,22 +131,21 @@ function parseAiUseCase(key: string, value: unknown): AiUseCaseSettingValue {
 function aiUseCaseSetting(useCase: AiUseCaseValue): PlatformSettingDefinition<AiUseCaseSettingKey> {
   const key: AiUseCaseSettingKey = `ai.useCase.${useCase}`;
 
-  return {
+  return setting(
     key,
-    category: "ai",
-    description: `Provider chain (in order), model per provider, timeout, max output tokens and temperature of the ${useCase} AI use case`,
-    limits: {
+    "ai",
+    `Provider chain (in order), model per provider, timeout, max output tokens and temperature of the ${useCase} AI use case`,
+    {
       providerChain: { minLength: 1, maxLength: MAX_PROVIDER_CHAIN_LENGTH, requiresCredentials: true },
       timeoutMs: AI_TIMEOUT_LIMITS,
       maxOutputTokens: AI_MAX_OUTPUT_TOKENS_LIMITS,
       temperature: AI_TEMPERATURE_LIMITS,
     },
-    parse: (value: unknown): AiUseCaseSettingValue => parseAiUseCase(key, value),
-  };
+    readAiUseCase,
+  );
 }
 
-function parseAiQuotas(key: string, value: unknown): AiQuotasSettingValue {
-  const reader: PlatformSettingValueReader = new PlatformSettingValueReader(key);
+function readAiQuotas(reader: PlatformSettingValueReader, value: unknown): AiQuotasSettingValue {
   const quotaUseCases: readonly string[] = [...AI_USE_CASE_VALUES, AI_QUOTA_ANY_USE_CASE];
   const result: Record<string, Record<string, AiQuotaLimitValue>> = {};
 
@@ -148,8 +167,7 @@ function parseAiQuotas(key: string, value: unknown): AiQuotasSettingValue {
   return result;
 }
 
-function parseAiPrices(key: string, value: unknown): AiPricesSettingValue {
-  const reader: PlatformSettingValueReader = new PlatformSettingValueReader(key);
+function readAiPrices(reader: PlatformSettingValueReader, value: unknown): AiPricesSettingValue {
   const result: Record<string, Record<string, AiModelPriceValue>> = {};
 
   for (const [provider, models] of Object.entries(reader.object(VALUE_PATH, value))) {
@@ -168,8 +186,7 @@ function parseAiPrices(key: string, value: unknown): AiPricesSettingValue {
   return result;
 }
 
-function parseRubricThresholds(key: string, value: unknown): SimulationRubricThresholdsValue {
-  const reader: PlatformSettingValueReader = new PlatformSettingValueReader(key);
+function readRubricThresholds(reader: PlatformSettingValueReader, value: unknown): SimulationRubricThresholdsValue {
   const record: Record<string, unknown> = reader.object(VALUE_PATH, value, Object.keys(RUBRIC_THRESHOLD_LIMITS));
 
   return {
@@ -180,11 +197,21 @@ function parseRubricThresholds(key: string, value: unknown): SimulationRubricThr
   };
 }
 
-function parseTimeMultipliers(key: string, value: unknown): readonly number[] {
-  const reader: PlatformSettingValueReader = new PlatformSettingValueReader(key);
+function readTimeMultipliers(reader: PlatformSettingValueReader, value: unknown): readonly number[] {
   const allowed: readonly number[] = TIME_MULTIPLIER_VALUES;
+  const entryLimits: NumberLimits = { min: Math.min(...allowed), max: Math.max(...allowed), integer: true };
+
+  if (reader.clamping) {
+    const kept: number[] = reader
+      .array(VALUE_PATH, value, 0, Number.MAX_SAFE_INTEGER)
+      .map((entry: unknown, index: number): number => reader.number(`${VALUE_PATH}[${index}]`, entry, entryLimits))
+      .filter((multiplier: number): boolean => allowed.includes(multiplier));
+
+    return [...new Set([REQUIRED_TIME_MULTIPLIER, ...kept])].sort((left: number, right: number): number => left - right);
+  }
+
   const multipliers: number[] = reader.array(VALUE_PATH, value, 1, allowed.length).map((entry: unknown, index: number): number => {
-    const multiplier: number = reader.number(`${VALUE_PATH}[${index}]`, entry, { min: Math.min(...allowed), max: Math.max(...allowed), integer: true });
+    const multiplier: number = reader.number(`${VALUE_PATH}[${index}]`, entry, entryLimits);
 
     return allowed.includes(multiplier) ? multiplier : reader.outOfLimits(`${VALUE_PATH}[${index}]`, `must be one of ${allowed.join(", ")}`);
   });
@@ -206,27 +233,27 @@ const AI_USE_CASE_SETTINGS: { readonly [K in AiUseCaseSettingKey]: PlatformSetti
 
 export const PLATFORM_SETTINGS_REGISTRY: PlatformSettingsRegistry = {
   ...AI_USE_CASE_SETTINGS,
-  "ai.quotas": {
-    key: "ai.quotas",
-    category: "ai",
-    description: "Daily AI requests and tokens per role and use case (\"*\" applies to every use case without its own entry); roles without an entry are unlimited",
-    limits: { roles: USER_ROLE_VALUES, useCases: [...AI_USE_CASE_VALUES, AI_QUOTA_ANY_USE_CASE], requestsPerDay: AI_REQUESTS_PER_DAY_LIMITS, tokensPerDay: AI_TOKENS_PER_DAY_LIMITS },
-    parse: (value: unknown): AiQuotasSettingValue => parseAiQuotas("ai.quotas", value),
-  },
-  "ai.prices": {
-    key: "ai.prices",
-    category: "ai",
-    description: "USD price per 1k input and output tokens per provider and model, used for cost estimates",
-    limits: { inputPer1kUsd: AI_PRICE_PER_1K_LIMITS, outputPer1kUsd: AI_PRICE_PER_1K_LIMITS },
-    parse: (value: unknown): AiPricesSettingValue => parseAiPrices("ai.prices", value),
-  },
-  "ai.tutor.topicCheck.enabled": {
-    key: "ai.tutor.topicCheck.enabled",
-    category: "ai",
-    description: "Whether the AI tutor checks that free chat questions are on topic (TOPIC_CHECK) before answering",
-    limits: {},
-    parse: (value: unknown): boolean => new PlatformSettingValueReader("ai.tutor.topicCheck.enabled").boolean(VALUE_PATH, value),
-  },
+  "ai.quotas": setting(
+    "ai.quotas",
+    "ai",
+    "Daily AI requests and tokens per role and use case (\"*\" applies to every use case without its own entry); roles without an entry are unlimited",
+    { roles: USER_ROLE_VALUES, useCases: [...AI_USE_CASE_VALUES, AI_QUOTA_ANY_USE_CASE], requestsPerDay: AI_REQUESTS_PER_DAY_LIMITS, tokensPerDay: AI_TOKENS_PER_DAY_LIMITS },
+    readAiQuotas,
+  ),
+  "ai.prices": setting(
+    "ai.prices",
+    "ai",
+    "USD price per 1k input and output tokens per provider and model, used for cost estimates",
+    { inputPer1kUsd: AI_PRICE_PER_1K_LIMITS, outputPer1kUsd: AI_PRICE_PER_1K_LIMITS },
+    readAiPrices,
+  ),
+  "ai.tutor.topicCheck.enabled": setting(
+    "ai.tutor.topicCheck.enabled",
+    "ai",
+    "Whether the AI tutor checks that free chat questions are on topic (TOPIC_CHECK) before answering",
+    {},
+    (reader: PlatformSettingValueReader, value: unknown): boolean => reader.boolean(VALUE_PATH, value),
+  ),
   "evaluation.passingGrade": numberSetting("evaluation.passingGrade", "evaluation", "Minimum grade (0-5 scale) that passes an evaluation", { min: 0, max: 5, integer: false }),
   "evaluation.submitGraceSeconds": numberSetting(
     "evaluation.submitGraceSeconds",
@@ -234,20 +261,20 @@ export const PLATFORM_SETTINGS_REGISTRY: PlatformSettingsRegistry = {
     "Seconds after an attempt deadline during which a submission is still accepted",
     { min: 0, max: 600, integer: true },
   ),
-  "simulation.rubric.defaultThresholds": {
-    key: "simulation.rubric.defaultThresholds",
-    category: "simulation",
-    description: "Thresholds of the default simulation rubric, used when neither the question nor the case defines one",
-    limits: RUBRIC_THRESHOLD_LIMITS,
-    parse: (value: unknown): SimulationRubricThresholdsValue => parseRubricThresholds("simulation.rubric.defaultThresholds", value),
-  },
-  "simulation.allowedTimeMultipliers": {
-    key: "simulation.allowedTimeMultipliers",
-    category: "simulation",
-    description: "Slow-dynamics time multipliers a student may choose when starting a simulation session",
-    limits: { allowedValues: TIME_MULTIPLIER_VALUES, required: [REQUIRED_TIME_MULTIPLIER] },
-    parse: (value: unknown): readonly number[] => parseTimeMultipliers("simulation.allowedTimeMultipliers", value),
-  },
+  "simulation.rubric.defaultThresholds": setting(
+    "simulation.rubric.defaultThresholds",
+    "simulation",
+    "Thresholds of the default simulation rubric, used when neither the question nor the case defines one",
+    RUBRIC_THRESHOLD_LIMITS,
+    readRubricThresholds,
+  ),
+  "simulation.allowedTimeMultipliers": setting(
+    "simulation.allowedTimeMultipliers",
+    "simulation",
+    "Slow-dynamics time multipliers a student may choose when starting a simulation session",
+    { allowedValues: TIME_MULTIPLIER_VALUES, required: [REQUIRED_TIME_MULTIPLIER] },
+    readTimeMultipliers,
+  ),
   "simulation.abandonAfterMinutes": numberSetting(
     "simulation.abandonAfterMinutes",
     "simulation",
@@ -336,4 +363,28 @@ export function isAiUseCaseSettingKey(key: string): key is AiUseCaseSettingKey {
 
 export function platformSettingLockKey(key: string): string {
   return `platform-settings:key:${key}`;
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : "invalid value";
+}
+
+export function resolvePlatformSettingDefault(key: PlatformSettingKey, configured: unknown, codeDefault: () => unknown): PlatformSettingDefaultResolution {
+  const definition: PlatformSettingDefinition = PLATFORM_SETTINGS_REGISTRY[key];
+
+  try {
+    return { value: definition.parse(configured) };
+  } catch (error: unknown) {
+    const reason: string = describeError(error);
+
+    try {
+      return { value: definition.sanitize(configured), issue: `${reason}; using the nearest valid value` };
+    } catch {
+      try {
+        return { value: definition.sanitize(codeDefault()), issue: `${reason}; using the code default` };
+      } catch (fallbackError: unknown) {
+        return { value: configured, issue: `${reason}; the code default is not valid either (${describeError(fallbackError)}), keeping the configured value` };
+      }
+    }
+  }
 }

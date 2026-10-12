@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso ResetPlatformSetting
- * Descripción: Devuelve un ajuste de la plataforma a su valor por defecto: en una transacción bajo el bloqueo de la clave compara la versión (concurrencia optimista), borra la sobrescritura y registra SETTINGS_CHANGED en la auditoría con el valor anterior y el valor por defecto; tras confirmar actualiza la caché y notifica a los suscriptores
- * Versión: 1.0
+ * Descripción: Devuelve un ajuste de la plataforma a su valor por defecto: en una transacción bajo el bloqueo de la clave compara la versión (concurrencia optimista), reemplaza la sobrescritura por una marca de restablecimiento con la versión siguiente (la versión nunca vuelve a empezar, así una versión vieja no se acepta de nuevo) y registra SETTINGS_CHANGED en la auditoría con el valor anterior y el valor por defecto; tras confirmar actualiza la caché y notifica a los suscriptores
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,7 +15,13 @@ import { AUDIT_RECORDER_TOKEN, type IAuditRecorder } from "@/common/application/
 import { ResetPlatformSettingCommand } from "@/features/platform-settings/application/commands/reset-platform-setting.command";
 import { DEFAULT_SETTING_VERSION, PlatformSettingsStore } from "@/features/platform-settings/application/services/platform-settings.store";
 import { PlatformSettingVersionConflictError } from "@/features/platform-settings/domain/platform-settings.errors";
-import { PLATFORM_SETTINGS_AUDIT_TARGET, type PlatformSettingOverride, SETTINGS_CHANGED_AUDIT_ACTION } from "@/features/platform-settings/domain/registry/platform-setting-values";
+import {
+  isResetPlatformSetting,
+  PLATFORM_SETTINGS_AUDIT_TARGET,
+  type PlatformSettingOverride,
+  RESET_PLATFORM_SETTING_VALUE,
+  SETTINGS_CHANGED_AUDIT_ACTION,
+} from "@/features/platform-settings/domain/registry/platform-setting-values";
 import { getPlatformSettingDefinition, type PlatformSettingDefinition, platformSettingLockKey } from "@/features/platform-settings/domain/registry/platform-settings.registry";
 import { type IPlatformSettingsRepository, PLATFORM_SETTINGS_REPOSITORY_TOKEN } from "@/features/platform-settings/domain/repositories/platform-settings.repository";
 
@@ -38,7 +44,7 @@ export class ResetPlatformSettingUseCase {
   public async execute(command: ResetPlatformSettingCommand): Promise<void> {
     const definition: PlatformSettingDefinition = getPlatformSettingDefinition(command.key);
 
-    await this._transactionManager.run(async (transaction: unknown): Promise<void> => {
+    const saved: PlatformSettingOverride | undefined = await this._transactionManager.run(async (transaction: unknown): Promise<PlatformSettingOverride | undefined> => {
       await this._repository.acquireTransactionLock(platformSettingLockKey(definition.key), transaction);
 
       const current: PlatformSettingOverride | undefined = await this._repository.getByKey(definition.key, transaction);
@@ -48,11 +54,14 @@ export class ResetPlatformSettingUseCase {
         throw new PlatformSettingVersionConflictError(definition.key, currentVersion);
       }
 
-      if (current === undefined) {
-        return;
+      if (current === undefined || isResetPlatformSetting(current)) {
+        return undefined;
       }
 
-      await this._repository.delete(definition.key, transaction);
+      const tombstone: PlatformSettingOverride = await this._repository.save(
+        { key: definition.key, value: RESET_PLATFORM_SETTING_VALUE, version: currentVersion + 1, updatedById: command.performedBy },
+        transaction,
+      );
 
       await this._auditRecorder.record(
         command.performedBy,
@@ -60,11 +69,15 @@ export class ResetPlatformSettingUseCase {
         PLATFORM_SETTINGS_AUDIT_TARGET,
         definition.key,
         { value: current.value, origin: "OVERRIDE", version: currentVersion },
-        { value: this._store.getDefault(definition.key), origin: "DEFAULT", version: DEFAULT_SETTING_VERSION },
+        { value: this._store.getDefault(definition.key), origin: "DEFAULT", version: tombstone.version },
         transaction,
       );
+
+      return tombstone;
     });
 
-    this._store.removeOverride(definition.key);
+    if (saved !== undefined) {
+      this._store.applyOverride(saved);
+    }
   }
 }

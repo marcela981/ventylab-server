@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la raíz de composición
  * Descripción: Compila CompositionModule con dependencias globales falsas para verificar que cada puerto de ajustes de las features se resuelve, que el arranque sin la tabla platform_settings sirve los valores por defecto del entorno y que los puertos leen el valor vigente tras una actualización sin reiniciar; verifica además la conversión de precios y la disponibilidad de proveedores de IA
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,12 +19,14 @@ import { EnvironmentVariables } from "@/common/infrastructure/config/env.validat
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { createAiProviderAvailability, toPerMillionPriceTable } from "@/composition/adapters/ai-settings.adapters";
 import { CompositionModule } from "@/composition/composition.module";
+import { readPlatformSettingDefaults } from "@/composition/platform-setting-defaults";
 import { AI_SETTINGS_PROVIDER_TOKEN, type IAiSettingsProvider } from "@/features/ai/application/ports/ai-settings-provider.interface";
 import { AI_PRICE_TABLE_TOKEN, type IAiPriceTableProvider } from "@/features/ai-telemetry/application/ports/ai-price-table.interface";
 import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard";
 import { PermissionsGuard } from "@/features/auth/presentation/guards/permissions.guard";
 import { EVALUATION_GRADING_CONFIG_TOKEN, type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
 import { type IAiProviderAvailability } from "@/features/platform-settings/application/ports/ai-provider-availability.interface";
+import { type PlatformSettingDefaults } from "@/features/platform-settings/application/ports/platform-setting-defaults.interface";
 import { PlatformSettingsStore } from "@/features/platform-settings/application/services/platform-settings.store";
 import { RESERVATION_SETTINGS_TOKEN, type ReservationSettings } from "@/features/reservations/application/tokens/reservation-settings.token";
 import { SIMULATION_SESSION_SETTINGS_TOKEN, type SimulationSessionSettings } from "@/features/simulation/application/tokens/simulation-session-settings.token";
@@ -116,6 +118,31 @@ describe("CompositionModule", () => {
     store.applyOverride({ key: "ai.tutor.topicCheck.enabled", value: false, version: 1, updatedAt: UPDATED_AT });
 
     expect([telemetry.flushIntervalMs, commands.safety.maxPeep, ai.getTutorSettings().topicCheckEnabled]).toEqual([100, 12, false]);
+  });
+});
+
+describe("readPlatformSettingDefaults", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("accepts every environment and code default without logging an error", () => {
+    const errorSpy: jest.SpyInstance = jest.spyOn(Logger.prototype, "error").mockImplementation((): void => undefined);
+
+    const defaults: PlatformSettingDefaults = readPlatformSettingDefaults(fakeConfig());
+
+    expect(defaults["telemetry.flushIntervalMs"]).toBe(40);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it("logs an error and clamps a configured default outside the hard limits instead of failing the boot", () => {
+    const errorSpy: jest.SpyInstance = jest.spyOn(Logger.prototype, "error").mockImplementation((): void => undefined);
+
+    const defaults: PlatformSettingDefaults = readPlatformSettingDefaults(fakeConfig({ VENTILATOR_FLUSH_INTERVAL_MS: 5000, SIMULATION_ABANDON_AFTER_MINUTES: 0 }));
+
+    expect([defaults["telemetry.flushIntervalMs"], defaults["simulation.abandonAfterMinutes"]]).toEqual([1000, 1]);
+    expect(errorSpy).toHaveBeenCalledTimes(2);
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("telemetry.flushIntervalMs"));
   });
 });
 

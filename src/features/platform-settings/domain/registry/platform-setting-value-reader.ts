@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Lector de valores de ajustes de la plataforma
- * Descripción: Valida el tipo y la forma de un valor recibido (número, entero, booleano, cadena, objeto con campos conocidos) y sus límites duros, lanzando InvalidPlatformSettingValueError o PlatformSettingHardLimitExceededError con la ruta del campo
- * Versión: 1.0
+ * Descripción: Valida el tipo y la forma de un valor recibido (número, entero, booleano, cadena, objeto con campos conocidos) y sus límites duros, lanzando InvalidPlatformSettingValueError o PlatformSettingHardLimitExceededError con la ruta del campo; en modo de ajuste lleva los números, cadenas y listas fuera de límites al valor válido más cercano en lugar de rechazarlos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,7 +17,14 @@ export interface NumberLimits {
 }
 
 export class PlatformSettingValueReader {
-  public constructor(private readonly _key: string) {}
+  public constructor(
+    private readonly _key: string,
+    private readonly _clamp: boolean = false,
+  ) {}
+
+  public get clamping(): boolean {
+    return this._clamp;
+  }
 
   public invalid(path: string, reason: string): never {
     throw new InvalidPlatformSettingValueError(this._key, `${path} ${reason}`);
@@ -30,6 +37,12 @@ export class PlatformSettingValueReader {
   public number(path: string, value: unknown, limits: NumberLimits): number {
     if (typeof value !== "number" || !Number.isFinite(value)) {
       return this.invalid(path, "must be a number");
+    }
+
+    if (this._clamp) {
+      const rounded: number = limits.integer ? Math.round(value) : value;
+
+      return Math.min(limits.max, Math.max(limits.min, rounded));
     }
 
     if (limits.integer && !Number.isInteger(value)) {
@@ -60,6 +73,10 @@ export class PlatformSettingValueReader {
       return this.invalid(path, "must be a non-empty string");
     }
 
+    if (value.length > maxLength && this._clamp) {
+      return value.slice(0, maxLength);
+    }
+
     if (value.length > maxLength) {
       return this.outOfLimits(path, `must have at most ${maxLength} characters`);
     }
@@ -88,6 +105,10 @@ export class PlatformSettingValueReader {
   public array(path: string, value: unknown, minLength: number, maxLength: number): unknown[] {
     if (!Array.isArray(value)) {
       return this.invalid(path, "must be an array");
+    }
+
+    if (value.length > maxLength && this._clamp) {
+      return value.slice(0, maxLength);
     }
 
     if (value.length < minLength || value.length > maxLength) {

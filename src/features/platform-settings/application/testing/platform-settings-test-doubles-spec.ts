@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de ajustes de la plataforma
  * Descripción: Valores por defecto completos de prueba, repositorio en memoria de sobrescrituras (con fallo de carga opcional), gestor de transacciones que deshace los cambios si el trabajo falla, registrador de auditoría en memoria y disponibilidad de proveedores de IA configurable
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -85,12 +85,6 @@ export class InMemoryPlatformSettingsRepository implements IPlatformSettingsRepo
     this.rows.set(override.key, row);
 
     return Promise.resolve(row);
-  }
-
-  public delete(key: string): Promise<void> {
-    this.rows.delete(key);
-
-    return Promise.resolve();
   }
 
   public acquireTransactionLock(key: string): Promise<void> {

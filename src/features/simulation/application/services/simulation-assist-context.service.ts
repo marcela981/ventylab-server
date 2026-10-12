@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de contexto de asistencia de simulación
  * Descripción: Entrega a la asistencia de IA el estado de una sesión activa del actor (resumen del caso sin datos personales, modo, ajustes vigentes, métricas, alarmas, objetivos y últimos cambios de parámetros, repetidos en el servidor), la política de asistencia de la rúbrica de la sesión y registra en el servidor el evento AI_HELP con el id de la llamada y su origen
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -55,7 +55,7 @@ export class SimulationAssistContextService {
     const session: SimulationSession = await this._loadActiveOwnedSession(sessionId, userId);
     const context: SimulationSessionContext = await this._runtime.loadContext(session);
     const result: ReplayResult = this._runtime.replay(context, session.lastSimTimeMs);
-    const rubric: SimulationRubric = await this._runtime.resolveRubric(session, context.caseDefinition);
+    const rubric: SimulationRubric = await this._runtime.resolveRubric(context);
     const initialSettings: Partial<VentilatorSettings> = context.caseDefinition.engineCase.initialSettings;
 
     return {
@@ -78,7 +78,7 @@ export class SimulationAssistContextService {
   public async getAssistancePolicy(sessionId: string): Promise<AssistancePolicy> {
     const session: SimulationSession = await this._runtime.getSession(sessionId);
     const context: SimulationSessionContext = await this._runtime.loadContext(session);
-    const rubric: SimulationRubric = await this._runtime.resolveRubric(session, context.caseDefinition);
+    const rubric: SimulationRubric = await this._runtime.resolveRubric(context);
 
     return rubric.assistancePolicy ?? DEFAULT_ASSISTANCE_POLICY;
   }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de StartSimulationSessionUseCase
- * Descripción: Verifica el inicio de sesiones libres (caso publicado, semilla del servidor, versión del motor, evento START) y de examen (intento propio en curso y vigente, pregunta SIMULATION de la misma evaluación, caso tomado de la pregunta, vencimiento en la fecha límite y rúbrica válida), con 403 cuando el intento o la pregunta no lo permiten
- * Versión: 1.1
+ * Descripción: Verifica el inicio de sesiones libres (caso publicado, semilla del servidor, versión del motor, evento START con la copia de los umbrales de la rúbrica por defecto) y de examen (intento propio en curso y vigente, pregunta SIMULATION de la misma evaluación, caso tomado de la pregunta, vencimiento en la fecha límite y rúbrica válida), con 403 cuando el intento o la pregunta no lo permiten
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -111,6 +111,7 @@ describe("StartSimulationSessionUseCase", () => {
     expect(events).toHaveLength(1);
     expect(events[0].type).toBe("START");
     expect(events[0].simTimeMs).toBe(0);
+    expect(events[0].payload.defaultRubricThresholds).toEqual(TEST_SETTINGS.defaultRubricThresholds);
   });
 
   it("rejects a free session without caseId", async () => {

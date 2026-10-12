@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de ajustes de la plataforma
- * Descripción: Implementa IPlatformSettingsRepository sobre la tabla platform_settings (lectura de todas las sobrescrituras, lectura por clave, upsert, borrado) y el bloqueo transaccional pg_advisory_xact_lock de una clave
- * Versión: 1.0
+ * Descripción: Implementa IPlatformSettingsRepository sobre la tabla platform_settings (lectura de todas las filas, lectura por clave, upsert; una marca de restablecimiento se guarda como JSON null) y el bloqueo transaccional pg_advisory_xact_lock de una clave
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -41,19 +41,13 @@ export class PlatformSettingsPrismaRepository implements IPlatformSettingsReposi
     const client: PrismaExecutor = resolveClient(this._prisma, transaction);
     const data: Prisma.PlatformSettingUncheckedCreateInput = {
       key: override.key,
-      value: override.value as Prisma.InputJsonValue,
+      value: override.value === null ? Prisma.JsonNull : (override.value as Prisma.InputJsonValue),
       version: override.version,
       updatedById: override.updatedById ?? null,
     };
     const row: PlatformSettingModel = await client.platformSetting.upsert({ where: { key: override.key }, create: data, update: data });
 
     return toOverride(row);
-  }
-
-  public async delete(key: string, transaction?: unknown): Promise<void> {
-    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
-
-    await client.platformSetting.deleteMany({ where: { key } });
   }
 
   public async acquireTransactionLock(key: string, transaction: unknown): Promise<void> {

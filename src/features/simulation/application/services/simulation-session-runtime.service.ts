@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de ejecución de sesiones de simulación
- * Descripción: Carga el caso del motor de una sesión con ClinicalCasesFacade, sus eventos y su rúbrica (pregunta de examen, rúbrica del caso o la rúbrica por defecto con los umbrales configurados), valida el multiplicador de tiempo contra los permitidos, repite la simulación en el servidor con la semilla y el multiplicador de la sesión, calcula el resumen calificado y aplica las transiciones diferidas: una sesión de examen pasada la fecha límite del intento se termina con su resumen y una sesión sin actividad por más del umbral configurado pasa a ABANDONED, también en barrido para las sesiones activas de un usuario antes de listarlas
- * Versión: 1.2
+ * Descripción: Carga el caso del motor de una sesión con ClinicalCasesFacade, sus eventos y su rúbrica (pregunta de examen, rúbrica del caso o la rúbrica por defecto con los umbrales fijados en el evento START al iniciar la sesión, o los configurados para sesiones sin esa copia, así un cambio del ajuste no altera calificaciones pasadas), valida el multiplicador de tiempo contra los permitidos, repite la simulación en el servidor con la semilla y el multiplicador de la sesión, calcula el resumen calificado y aplica las transiciones diferidas: una sesión de examen pasada la fecha límite del intento se termina con su resumen y una sesión sin actividad por más del umbral configurado pasa a ABANDONED, también en barrido para las sesiones activas de un usuario antes de listarlas
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,9 +37,15 @@ import {
   type ISimulationSessionsRepository,
   SIMULATION_SESSIONS_REPOSITORY_TOKEN,
 } from "@/features/simulation/domain/repositories/simulation-sessions.repository";
-import { buildDefaultSimulationRubric, computeSimulationScore, type SimulationRubric, type SimulationScore } from "@/features/simulation/domain/scoring";
+import {
+  buildDefaultSimulationRubric,
+  computeSimulationScore,
+  type SimulationRubric,
+  type SimulationRubricThresholds,
+  type SimulationScore,
+} from "@/features/simulation/domain/scoring";
 import { toEngineEvents } from "@/features/simulation/domain/sessions/simulation-session-events";
-import { resolveSessionRubric } from "@/features/simulation/domain/sessions/simulation-session-rubric";
+import { readStartRubricThresholds, resolveSessionRubric } from "@/features/simulation/domain/sessions/simulation-session-rubric";
 import {
   SimulationCaseNotFoundError,
   SimulationCaseNotReadyError,
@@ -103,11 +109,17 @@ export class SimulationSessionRuntime {
     return { session, caseDefinition, events };
   }
 
-  public async resolveRubric(session: SimulationSession, caseDefinition: SimulationCaseDefinition, override?: unknown): Promise<SimulationRubric> {
+  public get defaultRubricThresholds(): SimulationRubricThresholds {
+    return this._settings.defaultRubricThresholds;
+  }
+
+  public async resolveRubric(context: SimulationSessionContext, override?: unknown): Promise<SimulationRubric> {
+    const { session, caseDefinition } = context;
     const question: ExamQuestionInfo | undefined =
       session.isExam && session.questionId !== undefined ? await this._examAttemptReader.getQuestion(session.questionId) : undefined;
+    const thresholds: SimulationRubricThresholds = readStartRubricThresholds(context.events) ?? this._settings.defaultRubricThresholds;
 
-    return resolveSessionRubric([override, question?.rubric, caseDefinition.defaultRubric], buildDefaultSimulationRubric(this._settings.defaultRubricThresholds));
+    return resolveSessionRubric([override, question?.rubric, caseDefinition.defaultRubric], buildDefaultSimulationRubric(thresholds));
   }
 
   public replay(context: SimulationSessionContext, untilMs: number): ReplayResult {
@@ -125,7 +137,7 @@ export class SimulationSessionRuntime {
   }
 
   public async computeScore(context: SimulationSessionContext, untilMs: number, rubricOverride?: unknown): Promise<{ result: ReplayResult; score: SimulationScore; aiHelpCount: number }> {
-    const rubric: SimulationRubric = await this.resolveRubric(context.session, context.caseDefinition, rubricOverride);
+    const rubric: SimulationRubric = await this.resolveRubric(context, rubricOverride);
     const result: ReplayResult = this.replay(context, untilMs);
     const aiHelpCount: number = context.events.filter((event: SimulationEventRecord): boolean => event.type === AI_HELP_EVENT_TYPE).length;
 

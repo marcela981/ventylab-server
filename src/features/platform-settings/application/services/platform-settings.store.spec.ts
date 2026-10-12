@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la caché de ajustes de la plataforma
  * Descripción: Verifica el valor efectivo con su origen, el arranque con la tabla ausente (valores por defecto), el descarte de sobrescrituras inválidas guardadas, la invalidación de la caché y la notificación a los suscriptores
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -74,20 +74,49 @@ describe("PlatformSettingsStore", () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("serving defaults"));
   });
 
-  it("ignores stored overrides that are unknown or break the hard limits", async () => {
+  it("ignores unknown stored overrides and serves the default with the real version of one that breaks the hard limits", async () => {
     const repository: InMemoryPlatformSettingsRepository = new InMemoryPlatformSettingsRepository();
 
-    repository.rows.set("telemetry.flushIntervalMs", { key: "telemetry.flushIntervalMs", value: 1, version: 1, updatedAt: UPDATED_AT });
+    repository.rows.set("telemetry.flushIntervalMs", { key: "telemetry.flushIntervalMs", value: 1, version: 4, updatedAt: UPDATED_AT });
     repository.rows.set("legacy.key", { key: "legacy.key", value: 1, version: 1, updatedAt: UPDATED_AT });
     const store: PlatformSettingsStore = buildStore(repository);
 
     await store.onModuleInit();
 
     expect(store.get("telemetry.flushIntervalMs")).toBe(33);
+    expect(store.getEntry("telemetry.flushIntervalMs")).toMatchObject({ value: 33, origin: "DEFAULT", version: 4 });
     expect(warnSpy).toHaveBeenCalledTimes(2);
   });
 
-  it("invalidates the cached value and notifies the key subscribers on apply and remove", async () => {
+  it("serves a reset row as the default with its real version", async () => {
+    const repository: InMemoryPlatformSettingsRepository = new InMemoryPlatformSettingsRepository();
+
+    repository.rows.set("telemetry.flushIntervalMs", { key: "telemetry.flushIntervalMs", value: null, version: 3, updatedAt: UPDATED_AT });
+    const store: PlatformSettingsStore = buildStore(repository);
+
+    await store.onModuleInit();
+
+    expect(store.get("telemetry.flushIntervalMs")).toBe(33);
+    expect(store.getEntry("telemetry.flushIntervalMs")).toMatchObject({ value: 33, origin: "DEFAULT", version: 3 });
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("ignores a row applied out of order whose version is not newer than the cached one", async () => {
+    const store: PlatformSettingsStore = buildStore();
+    const listener: jest.Mock = jest.fn();
+
+    await store.onModuleInit();
+    store.subscribe("telemetry.flushIntervalMs", listener);
+    store.applyOverride({ key: "telemetry.flushIntervalMs", value: 60, version: 3, updatedAt: UPDATED_AT });
+
+    store.applyOverride({ key: "telemetry.flushIntervalMs", value: 50, version: 2, updatedAt: UPDATED_AT });
+    store.applyOverride({ key: "telemetry.flushIntervalMs", value: 40, version: 3, updatedAt: UPDATED_AT });
+
+    expect(store.getEntry("telemetry.flushIntervalMs")).toMatchObject({ value: 60, version: 3 });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("invalidates the cached value and notifies the key subscribers on apply and reset", async () => {
     const store: PlatformSettingsStore = buildStore();
     const facade: PlatformSettingsFacade = new PlatformSettingsFacade(store);
     const received: number[] = [];
@@ -102,11 +131,11 @@ describe("PlatformSettingsStore", () => {
     store.applyOverride({ key: "telemetry.flushIntervalMs", value: 50, version: 1, updatedAt: UPDATED_AT });
     const afterApply: number = facade.get("telemetry.flushIntervalMs");
 
-    store.removeOverride("telemetry.flushIntervalMs");
+    store.applyOverride({ key: "telemetry.flushIntervalMs", value: null, version: 2, updatedAt: UPDATED_AT });
     const afterRemove: number = facade.get("telemetry.flushIntervalMs");
 
     unsubscribe();
-    store.applyOverride({ key: "telemetry.flushIntervalMs", value: 70, version: 1, updatedAt: UPDATED_AT });
+    store.applyOverride({ key: "telemetry.flushIntervalMs", value: 70, version: 3, updatedAt: UPDATED_AT });
 
     expect([afterApply, afterRemove]).toEqual([50, 33]);
     expect(received).toEqual([50, 33]);
