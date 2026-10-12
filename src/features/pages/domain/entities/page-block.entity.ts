@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad PageBlock
- * Descripción: Bloque de contenido de una página (texto enriquecido, imagen, archivo, video, ecuación y tipos heredados) con su orden, contenido normalizado y referencia opcional a media
- * Versión: 1.0
+ * Descripción: Bloque de contenido de una página (texto enriquecido, imagen, archivo, video, ecuación y tipos heredados) con su orden, contenido normalizado y referencia opcional a media; expone su estado auditable y el tipo de objetivo de auditoría
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,8 @@
  */
 import { generateId } from "@/common/domain/utils/generate-id";
 import { type PageBlockTypeValue } from "@/features/pages/domain/value-objects/page-block-type";
+
+export const PAGE_BLOCK_AUDIT_TARGET: string = "page_blocks";
 
 export class PageBlock {
   private _id: string;
@@ -112,6 +114,18 @@ export class PageBlock {
 
   public get updatedAt(): Date {
     return this._updatedAt;
+  }
+
+  public toAuditState(): Record<string, unknown> {
+    return {
+      pageId: this._pageId,
+      order: this._order,
+      type: this._type,
+      title: this._title,
+      content: this._content,
+      mediaId: this._mediaId,
+      estimatedTime: this._estimatedTime,
+    };
   }
 
   public static create({

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Agregado StudentEvaluationAttempt
  * Descripción: Intento de un estudiante en una evaluación con sus respuestas por pregunta: inicio con número de intento y plazo del servidor, autoguardado (solo en curso y no heredado), cierre con la calificación automática (puntaje por pregunta, estado GRADED o PENDING_REVIEW, nota, publicación inmediata opcional) y eventos de intento calificado y nota publicada; calificación docente por pregunta (puntaje manual 0–puntos, comentario obligatorio al sobrescribir un puntaje existente, recálculo de puntaje, estado y nota con eventos de calificado, publicado o actualizado) y publicación idempotente de la nota; los intentos heredados (legacySource) son de solo lectura para el estudiante pero el profesor puede calificarlos
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -43,6 +43,7 @@ import {
 } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 
 export const EVALUATION_ANSWER_AUDIT_TARGET: string = "evaluation_answers";
+export const EVALUATION_ATTEMPT_AUDIT_TARGET: string = "evaluation_attempts";
 
 export interface EvaluationAnswerRecord {
   readonly id: string;

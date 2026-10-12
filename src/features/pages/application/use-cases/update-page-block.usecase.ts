@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso UpdatePageBlockUseCase
- * Descripción: Reemplaza el tipo, título, contenido o media de un bloque de página revalidando y saneando el resultado completo y comprobando que la media referenciada exista; depende de IPageBlockRepository, IHtmlSanitizer e ITransactionManager
- * Versión: 1.0
+ * Descripción: Reemplaza el tipo, título, contenido o media de un bloque de página revalidando y saneando el resultado completo, comprobando que la media referenciada exista y auditando CONTENT_UPDATED con los campos cambiados en la misma transacción; depende de IPageBlockRepository, IHtmlSanitizer, IAuditRecorder e ITransactionManager
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,9 +11,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { type ITransactionManager, TRANSACTION_MANAGER_TOKEN } from "@/common/application/persistence/transaction-manager.interface";
+import { AUDIT_RECORDER_TOKEN, type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
+import { AUDIT_ACTIONS } from "@/common/domain/audit/audit-action";
 import { UpdatePageBlockCommand } from "@/features/pages/application/commands/update-page-block.command";
 import { HTML_SANITIZER_TOKEN, type IHtmlSanitizer } from "@/features/pages/application/ports/html-sanitizer.interface";
-import { type PageBlock } from "@/features/pages/domain/entities/page-block.entity";
+import { PAGE_BLOCK_AUDIT_TARGET, type PageBlock } from "@/features/pages/domain/entities/page-block.entity";
 import { InvalidPageBlockError, PageBlockNotFoundError, PageMediaNotFoundError } from "@/features/pages/domain/pages.errors";
 import { type IPageBlockRepository, PAGE_BLOCKS_REPOSITORY_TOKEN } from "@/features/pages/domain/repositories/page-blocks.repository";
 import { type BlockValidationResult, normalizeBlock } from "@/features/pages/domain/services/page-block-content";
@@ -33,6 +35,8 @@ export class UpdatePageBlockUseCase {
     private readonly _htmlSanitizer: IHtmlSanitizer,
     @Inject(TRANSACTION_MANAGER_TOKEN)
     private readonly _transactionManager: ITransactionManager,
+    @Inject(AUDIT_RECORDER_TOKEN)
+    private readonly _auditRecorder: IAuditRecorder,
   ) {}
 
   public async execute(command: UpdatePageBlockCommand): Promise<void> {
@@ -55,6 +59,8 @@ export class UpdatePageBlockUseCase {
         throw new PageMediaNotFoundError();
       }
 
+      const before: Record<string, unknown> = block.toAuditState();
+
       block.replaceContent({
         type,
         title: command.title === undefined ? block.title : this._htmlSanitizer.stripTags(command.title),
@@ -65,6 +71,7 @@ export class UpdatePageBlockUseCase {
       });
 
       await this._pageBlocksRepository.save(block, transaction);
+      await this._auditRecorder.record(command.performedBy, AUDIT_ACTIONS.CONTENT_UPDATED, PAGE_BLOCK_AUDIT_TARGET, block.id, before, block.toAuditState(), transaction);
     });
   }
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso DeleteCurriculumSubtreeUseCase
- * Descripción: Elimina físicamente, en una sola transacción y de hijos a padres, el subárbol de una sección, nivel, módulo, lección o página cuando no tiene datos de estudiantes; si los tiene exige archivarlo. Devuelve false cuando el nodo no existe para que cada feature lance su propio error 404
- * Versión: 1.0
+ * Descripción: Elimina físicamente, en una sola transacción y de hijos a padres, el subárbol de una sección, nivel, módulo, lección o página cuando no tiene datos de estudiantes y audita CONTENT_DELETED sobre el nodo raíz con los identificadores eliminados; si tiene datos de estudiantes exige archivarlo. Devuelve false cuando el nodo no existe para que cada feature lance su propio error 404
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { type ITransactionManager, TRANSACTION_MANAGER_TOKEN } from "@/common/application/persistence/transaction-manager.interface";
+import { AUDIT_RECORDER_TOKEN, type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
+import { AUDIT_ACTIONS } from "@/common/domain/audit/audit-action";
 import { DeleteCurriculumSubtreeCommand } from "@/features/curriculum/application/commands/delete-curriculum-subtree.command";
 import { InspectCurriculumSubtreeUseCase } from "@/features/curriculum/application/use-cases/inspect-curriculum-subtree.usecase";
 import { CurriculumNodeHasStudentDataError } from "@/features/curriculum/domain/curriculum.errors";
@@ -34,6 +36,8 @@ export class DeleteCurriculumSubtreeUseCase {
     private readonly _inspectCurriculumSubtreeUseCase: InspectCurriculumSubtreeUseCase,
     @Inject(TRANSACTION_MANAGER_TOKEN)
     private readonly _transactionManager: ITransactionManager,
+    @Inject(AUDIT_RECORDER_TOKEN)
+    private readonly _auditRecorder: IAuditRecorder,
   ) {}
 
   public async execute(command: DeleteCurriculumSubtreeCommand): Promise<boolean> {
@@ -49,6 +53,15 @@ export class DeleteCurriculumSubtreeUseCase {
       }
 
       await this._subtreeRepository.deleteSubtree(inspection.subtree, transaction);
+      await this._auditRecorder.record(
+        command.performedBy,
+        AUDIT_ACTIONS.CONTENT_DELETED,
+        command.kind,
+        command.id,
+        { kind: command.kind, ...inspection.subtree },
+        {},
+        transaction,
+      );
 
       this._logger.log(
         `Deleted ${command.kind} ${command.id} subtree (${inspection.subtree.levelIds.length} levels, ${inspection.subtree.moduleIds.length} modules, ` +

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la cola, la vista de calificación y la publicación de notas
  * Descripción: Verifica la cola de revisión del profesor (solo PENDING_REVIEW en su alcance, cierre perezoso acotado de intentos vencidos antes de listar), la vista de calificación con respuestas correctas, puntajes y desglose práctico recalculado bajo demanda, la publicación individual idempotente solo de intentos GRADED y la publicación masiva por evaluación con el conteo y un evento por intento tras confirmar
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -121,6 +121,7 @@ describe("PublishEvaluationAttemptGradeUseCase", () => {
       doubles.gradingConfig,
       doubles.transactionManager,
       doubles.eventBus,
+      doubles.auditRecorder,
     ).execute("attempt-1", TEACHER);
   }
 
@@ -137,6 +138,17 @@ describe("PublishEvaluationAttemptGradeUseCase", () => {
     expect(second).toMatchObject({ attemptId: "attempt-1", alreadyPublished: true, publishedAt: first.publishedAt });
     expect(doubles.attemptsRepository.store.get("attempt-1")?.gradePublishedAt).toEqual(first.publishedAt);
     expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(1);
+    expect(doubles.record).toHaveBeenCalledTimes(1);
+    expect(doubles.record).toHaveBeenCalledWith(
+      TEACHER.id,
+      "grade_published",
+      "evaluation_attempts",
+      "attempt-1",
+      { gradePublishedAt: null },
+      { gradePublishedAt: first.publishedAt, grade: 5 },
+      expect.anything(),
+      { metadata: expect.objectContaining({ evaluationId: "evaluation-1", bulk: false }) },
+    );
   });
 
   it("refuses an attempt that is not GRADED", async () => {
@@ -156,6 +168,7 @@ describe("PublishEvaluationGradesUseCase", () => {
       doubles.gradingConfig,
       doubles.transactionManager,
       doubles.eventBus,
+      doubles.auditRecorder,
     ).execute(new PublishEvaluationGradesCommand({ evaluationId, actor: ADMIN }));
   }
 
@@ -175,6 +188,10 @@ describe("PublishEvaluationGradesUseCase", () => {
     expect(publishedEvents(doubles, EvaluationGradePublishedEvent).map((event: EvaluationGradePublishedEvent) => event.attemptId).sort()).toEqual([
       "attempt-1",
       "attempt-2",
+    ]);
+    expect(doubles.record.mock.calls.map((call: unknown[]) => [call[1], call[3]])).toEqual([
+      ["grade_published", "attempt-1"],
+      ["grade_published", "attempt-2"],
     ]);
     expect(await publishAll(doubles)).toBe(0);
   });

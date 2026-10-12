@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Middleware RequestContextMiddleware
- * Descripción: Inicializa el contexto de la petición en RequestContextService para el resto del ciclo
- * Versión: 1.0
+ * Descripción: Inicializa el contexto de la petición en RequestContextService para el resto del ciclo; el rol del actor se lee de request.user cuando se consulta, porque los guards de autenticación lo establecen después de este middleware
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,6 +31,9 @@ export class RequestContextMiddleware implements NestMiddleware {
         referer: req.get("referer"),
         origin: req.get("origin"),
         acceptLanguage: req.get("accept-language"),
+      },
+      get actorRole(): string | undefined {
+        return req.user?.role;
       },
     };
 

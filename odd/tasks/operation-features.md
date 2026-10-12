@@ -37,7 +37,7 @@ Decisions from the audit:
 ## Tasks
 - [x] T1 Event bus: typed event map + catalog, isolated subscriber dispatch, publish after commit.
 - [x] T2 platform-settings: registry, model, cache + subscribe, admin endpoints, settings ports wired.
-- [ ] T3 audit-log: schema extension, redaction/hash, append-only trigger, admin queries + CSV, missing audit points.
+- [x] T3 audit-log: schema extension, redaction/hash, append-only trigger, admin queries + CSV, missing audit points.
 - [ ] T4 notifications: model, bus subscribers, templates, owner endpoints, `notification:new`, ReservationNotifier removed.
 - [ ] T5 system-status: `/health/ready`, `/system/status`, change event, AI probe.
 - [ ] T6 analytics: batch facade functions, group/student/evaluation panels, `/me/summary`, CSV + anonymized export.
@@ -69,3 +69,21 @@ Decisions from the audit:
 - Migration `20261011120000_platform_settings` (CREATE TABLE only), not applied.
 - Checks: prisma validate OK; tsc 0 errors; jest 119 suites / 1014 tests pass; eslint clean; coupling grep empty.
 - Out-of-surface edits accepted: `src/common/presentation/errors-map.ts`, `src/common/infrastructure/docs/setup-docs.ts`.
+
+### T2 — review (independent, native review refused: lens_context_budget_exceeded on 3.4k lines)
+- No blockers. Major: reset deletes the row so `version` restarts at 0 (ABA, stale PATCH accepted).
+  Minor: invalid stored override hides its DB version; config defaults not validated against the
+  registry; cache applies out-of-order versions; rate limiter refills the bucket on rate change;
+  recording Hz read live mixes rates in a chunk; simulation scoring may use current rubric thresholds
+  for past sessions. -> fixed in T2-fix.
+
+### T3 — done
+- Route: delegated writer. AuditLog extended (actor_role, before, after, reason, request_id, ip + 3 indexes),
+  append-only triggers (row UPDATE/DELETE + TRUNCATE) in migration `20261011130000_audit_log_extension` (not applied).
+- `AUDIT_ACTIONS` catalog (existing persisted strings kept stable), shared `redactSecrets`, diff-only
+  before/after, rich/long text stored as `{sha256,length}`, actorRole/requestId/ip from request context.
+- Most mutations were already audited through aggregate `auditLogs`; real gaps closed: grade publishing,
+  curriculum subtree delete, page-block CRUD.
+- `src/features/audit-log/` ADMIN (`audit:read`): `GET /api/audit`, `/api/audit/targets/:type/:id`, `/api/audit/export` (CSV, injection-safe, 50k cap).
+- Checks: prisma validate OK; tsc 0; jest 77 suites / 528 tests + 280 extra pass; eslint clean; coupling grep empty.
+- Manual DB checks in `docs/operation/VERIFICATION.md` (no DB integration-test setup applies migrations).

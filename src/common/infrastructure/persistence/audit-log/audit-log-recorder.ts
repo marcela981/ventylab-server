@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Adaptador AuditLogRecorder
- * Descripción: Implementa IAuditRecorder sobre la tabla audit_logs mediante IAuditLogRepository; el tipo de objetivo se usa como colección y tipo de entidad y el estado anterior y posterior se guardan en metadata
- * Versión: 1.0
+ * Descripción: Implementa IAuditRecorder sobre la tabla audit_logs mediante IAuditLogRepository; el tipo de objetivo se usa como colección y tipo de entidad, el estado anterior y posterior se reduce a los campos que cambiaron y las opciones aportan motivo, descripción, metadatos y datos explícitos del actor y de la petición
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,8 @@
  */
 import { Inject, Injectable } from "@nestjs/common";
 
-import { type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
+import { type AuditRecordOptions, type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
+import { type AuditStateDiff, diffAuditStates } from "@/common/domain/audit/audit-payload";
 import { AuditLog } from "@/common/domain/entities/audit-log.entity";
 import { AUDIT_LOG_REPOSITORY_TOKEN, type IAuditLogRepository } from "@/common/domain/repositories/audit-log.repository";
 
@@ -29,11 +30,21 @@ export class AuditLogRecorder implements IAuditRecorder {
     before: Record<string, unknown>,
     after: Record<string, unknown>,
     transaction?: unknown,
+    options: AuditRecordOptions = {},
   ): Promise<void> {
+    const diff: AuditStateDiff = diffAuditStates(before, after);
+
     const log: AuditLog = AuditLog.create({
       action,
       performedByUserId: actorId,
-      metadata: { before, after },
+      before: diff.before,
+      after: diff.after,
+      reason: options.reason,
+      description: options.description,
+      metadata: options.metadata,
+      actorRole: options.actorRole,
+      requestId: options.requestId,
+      ip: options.ip,
     });
 
     await this._auditLogRepository.save(targetType, targetType, targetId, [log], transaction);

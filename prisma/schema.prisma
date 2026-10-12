@@ -1386,9 +1386,18 @@ model AuditLog {
   performedByUserId String?  @map("performed_by_user_id")
   performedAt       DateTime @map("performed_at") @db.Timestamptz(6)
   metadata          Json?
+  actorRole         String?  @map("actor_role")
+  before            Json?
+  after             Json?
+  reason            String?
+  requestId         String?  @map("request_id")
+  ip                String?
 
   @@index([entityCollection, entityId], map: "audit_logs_entity_collection_entity_id_idx")
   @@index([performedAt], map: "audit_logs_performed_at_idx")
+  @@index([entityType, entityId], map: "audit_logs_entity_type_entity_id_idx")
+  @@index([performedByUserId, performedAt], map: "audit_logs_performed_by_user_id_performed_at_idx")
+  @@index([action, performedAt], map: "audit_logs_action_performed_at_idx")
   @@map("audit_logs")
 }
 

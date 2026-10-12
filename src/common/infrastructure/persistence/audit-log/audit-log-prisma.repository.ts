@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio AuditLogPrismaRepository
- * Descripción: Implementa IAuditLogRepository con Prisma sobre la tabla audit_logs
- * Versión: 1.0
+ * Descripción: Implementa IAuditLogRepository con Prisma sobre la tabla audit_logs (solo inserción): completa rol del actor, identificador de petición e IP desde RequestContextService cuando el registro no los trae, añade el agente HTTP a metadata y protege before, after y metadata ocultando secretos y resumiendo textos largos o enriquecidos con su sha256
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
+import { type AuditPayload, protectAuditPayload } from "@/common/domain/audit/audit-payload";
 import { AuditLog } from "@/common/domain/entities/audit-log.entity";
 import { IAuditLogRepository } from "@/common/domain/repositories/audit-log.repository";
 import {
@@ -19,6 +20,10 @@ import {
 } from "@/common/infrastructure/context/request-context.service";
 import { resolveClient, type PrismaExecutor } from "@/common/infrastructure/persistence/prisma/prisma-client";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
+
+function toJsonColumn(payload: AuditPayload | undefined): Prisma.InputJsonObject | typeof Prisma.DbNull {
+  return payload ? (protectAuditPayload(payload) as Prisma.InputJsonObject) : Prisma.DbNull;
+}
 
 @Injectable()
 export class AuditLogPrismaRepository implements IAuditLogRepository {
@@ -39,7 +44,7 @@ export class AuditLogPrismaRepository implements IAuditLogRepository {
     const context: RequestContext | undefined = this._requestContextService.get();
 
     const rows: Prisma.AuditLogCreateManyInput[] = logs.map((log: AuditLog) => {
-      const metadata: Record<string, unknown> | undefined = context
+      const metadata: AuditPayload | undefined = context
         ? { ...(log.metadata ?? {}), agent: context.agent }
         : log.metadata;
 
@@ -52,7 +57,13 @@ export class AuditLogPrismaRepository implements IAuditLogRepository {
         description: log.description ?? null,
         performedByUserId: log.performedByUserId ?? null,
         performedAt: log.performedAt,
-        metadata: metadata ? (metadata as Prisma.InputJsonObject) : Prisma.DbNull,
+        metadata: toJsonColumn(metadata),
+        actorRole: log.actorRole ?? context?.actorRole ?? null,
+        before: toJsonColumn(log.before),
+        after: toJsonColumn(log.after),
+        reason: log.reason ?? null,
+        requestId: log.requestId ?? context?.traceId ?? null,
+        ip: log.ip ?? context?.agent.ip ?? null,
       };
     });
 

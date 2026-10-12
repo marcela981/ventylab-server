@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo raíz AppModule
- * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features; registra el filtro global y los middlewares de traza y contexto
- * Versión: 1.17
+ * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features, incluida la consulta de la bitácora de auditoría; registra el filtro global y los middlewares de traza y contexto
+ * Versión: 1.18
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -40,6 +40,7 @@ import { AiModule } from "@/features/ai/ai.module";
 import { AiRatingsModule } from "@/features/ai-ratings/ai-ratings.module";
 import { AiTelemetryModule } from "@/features/ai-telemetry/ai-telemetry.module";
 import { AiTutorModule } from "@/features/ai-tutor/ai-tutor.module";
+import { AuditLogModule } from "@/features/audit-log/audit-log.module";
 import { AuthModule } from "@/features/auth/auth.module";
 import { AuthorizationModule } from "@/features/authorization/authorization.module";
 import { ChangeLogModule } from "@/features/changelog/changelog.module";
@@ -140,6 +141,7 @@ import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/venti
     AiRatingsModule,
     AiModule,
     AiTutorModule,
+    AuditLogModule,
   ],
   controllers: [HealthController],
   providers: [

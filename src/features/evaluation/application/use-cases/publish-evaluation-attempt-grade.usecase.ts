@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso PublishEvaluationAttemptGradeUseCase
- * Descripción: Publicación idempotente de la nota de un intento GRADED por un profesor en su alcance (o un administrador): bajo el candado por evaluación y estudiante fija gradePublishedAt y emite EvaluationGradePublishedEvent tras confirmar (grade:published al estudiante); si ya estaba publicada devuelve la fecha original sin escribir
- * Versión: 1.0
+ * Descripción: Publicación idempotente de la nota de un intento GRADED por un profesor en su alcance (o un administrador): bajo el candado por evaluación y estudiante fija gradePublishedAt, audita GRADE_PUBLISHED en la misma transacción y emite EvaluationGradePublishedEvent tras confirmar (grade:published al estudiante); si ya estaba publicada devuelve la fecha original sin escribir
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,11 +12,13 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { EVENT_BUS_TOKEN, type IEventBus } from "@/common/application/events/event-bus.interface";
 import { type ITransactionManager, TRANSACTION_MANAGER_TOKEN } from "@/common/application/persistence/transaction-manager.interface";
+import { AUDIT_RECORDER_TOKEN, type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
+import { AUDIT_ACTIONS } from "@/common/domain/audit/audit-action";
 import { type DomainEvent } from "@/common/domain/events/domain-event";
 import { EVALUATION_GRADING_CONFIG_TOKEN, type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
 import { type PublishEvaluationAttemptGradeResult } from "@/features/evaluation/application/results/evaluation-grading.result";
 import { EvaluationGradingAccess } from "@/features/evaluation/application/services/evaluation-grading-access";
-import { type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
+import { EVALUATION_ATTEMPT_AUDIT_TARGET, type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import { EvaluationAttemptNotFoundError } from "@/features/evaluation/domain/evaluation.errors";
 import {
   type IStudentEvaluationAttemptsRepository,
@@ -47,6 +49,8 @@ export class PublishEvaluationAttemptGradeUseCase {
     private readonly _transactionManager: ITransactionManager,
     @Inject(EVENT_BUS_TOKEN)
     private readonly _eventBus: IEventBus,
+    @Inject(AUDIT_RECORDER_TOKEN)
+    private readonly _auditRecorder: IAuditRecorder,
   ) {}
 
   public async execute(attemptId: string, actor: EvaluationActor): Promise<PublishEvaluationAttemptGradeResult> {
@@ -73,6 +77,16 @@ export class PublishEvaluationAttemptGradeUseCase {
 
       if (published) {
         await this._attemptsRepository.save(attempt, transaction);
+        await this._auditRecorder.record(
+          actor.id,
+          AUDIT_ACTIONS.GRADE_PUBLISHED,
+          EVALUATION_ATTEMPT_AUDIT_TARGET,
+          attempt.id,
+          { gradePublishedAt: null },
+          { gradePublishedAt: now, grade: attempt.grade },
+          transaction,
+          { metadata: { evaluationId: attempt.evaluationId, studentId: attempt.userId, bulk: false } },
+        );
       }
 
       return {

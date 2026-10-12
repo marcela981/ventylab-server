@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad AuditLog
- * Descripción: Representa un registro de auditoría con entidad afectada, acción, cambios y autor de la operación
- * Versión: 1.0
+ * Descripción: Representa un registro de auditoría con entidad afectada, acción, autor y su rol, estado anterior y posterior, motivo, metadatos y, cuando se indican explícitamente, el identificador de petición y la IP de origen
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,79 +10,79 @@
  */
 import { generateId } from "@/common/domain/utils/generate-id";
 
-export class AuditLog<Action extends string = string> {
-  private readonly _id: string;
-  private readonly _action: Action;
-  private readonly _description?: string;
-  private readonly _performedByUserId?: string;
-  private readonly _performedAt: Date;
-  private readonly _metadata?: Record<string, unknown>;
+export interface AuditLogProps<Action extends string = string> {
+  readonly id: string;
+  readonly action: Action;
+  readonly description?: string;
+  readonly performedByUserId?: string;
+  readonly performedAt: Date;
+  readonly metadata?: Record<string, unknown>;
+  readonly before?: Record<string, unknown>;
+  readonly after?: Record<string, unknown>;
+  readonly reason?: string;
+  readonly actorRole?: string;
+  readonly requestId?: string;
+  readonly ip?: string;
+}
 
-  private constructor({
-    id,
-    action,
-    description,
-    performedByUserId,
-    performedAt,
-    metadata,
-  }: {
-    id: string;
-    action: Action;
-    description?: string;
-    metadata?: Record<string, unknown>;
-    performedByUserId?: string;
-    performedAt: Date;
-  }) {
-    this._id = id;
-    this._action = action;
-    this._description = description;
-    this._metadata = metadata;
-    this._performedByUserId = performedByUserId;
-    this._performedAt = performedAt;
+export type CreateAuditLogInput<Action extends string = string> = Omit<AuditLogProps<Action>, "id" | "performedAt">;
+
+export class AuditLog<Action extends string = string> {
+  private readonly _props: AuditLogProps<Action>;
+
+  private constructor(props: AuditLogProps<Action>) {
+    this._props = props;
   }
 
   public get id(): string {
-    return this._id;
+    return this._props.id;
   }
 
   public get action(): Action {
-    return this._action;
+    return this._props.action;
   }
 
   public get description(): string | undefined {
-    return this._description;
+    return this._props.description;
   }
 
   public get performedByUserId(): string | undefined {
-    return this._performedByUserId;
+    return this._props.performedByUserId;
   }
 
   public get performedAt(): Date {
-    return this._performedAt;
+    return this._props.performedAt;
   }
 
   public get metadata(): Record<string, unknown> | undefined {
-    return this._metadata;
+    return this._props.metadata;
   }
 
-  public static create<Action extends string = string>({
-    action,
-    description,
-    performedByUserId,
-    metadata,
-  }: {
-    action: Action;
-    description?: string;
-    performedByUserId?: string;
-    metadata?: Record<string, unknown>;
-  }): AuditLog<Action> {
-    return new AuditLog({
-      id: generateId(),
-      action,
-      description,
-      performedByUserId,
-      performedAt: new Date(),
-      metadata,
-    });
+  public get before(): Record<string, unknown> | undefined {
+    return this._props.before;
+  }
+
+  public get after(): Record<string, unknown> | undefined {
+    return this._props.after;
+  }
+
+  public get reason(): string | undefined {
+    return this._props.reason;
+  }
+
+  public get actorRole(): string | undefined {
+    return this._props.actorRole;
+  }
+
+  public get requestId(): string | undefined {
+    return this._props.requestId;
+  }
+
+  public get ip(): string | undefined {
+    return this._props.ip;
+  }
+
+  public static create<Action extends string = string>(input: CreateAuditLogInput<Action>): AuditLog<Action> {
+    return new AuditLog<Action>({ ...input, id: generateId(), performedAt: new Date() });
   }
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador PagesController
  * Descripción: Expone las rutas HTTP api/pages: lecturas públicas con visibilidad por estado (los lectores sin pages:update se tratan como estudiantes), CRUD de páginas, CRUD de bloques y reordenamiento por lotes con permisos pages:*; responde con APIResponseBuilder
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -364,8 +364,13 @@ export class PagesController {
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Block not found" })
-  public async deletePageBlock(@Param("id") id: string, @Param("blockId") blockId: string, @I18n() i18n: I18nContext): Promise<APIResponse<null>> {
-    await this._deletePageBlockUseCase.execute(id, blockId);
+  public async deletePageBlock(
+    @Param("id") id: string,
+    @Param("blockId") blockId: string,
+    @CurrentUser() currentUser: JwtPayload,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<null>> {
+    await this._deletePageBlockUseCase.execute(id, blockId, currentUser.sub);
 
     return new APIResponseBuilder<null>()
       .setMessage(await i18n.t("pages.block_deleted"))

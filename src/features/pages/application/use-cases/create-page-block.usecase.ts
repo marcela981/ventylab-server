@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso CreatePageBlockUseCase
- * Descripción: Agrega un bloque al final de una página tras validar y sanear su contenido por tipo y comprobar que la media referenciada exista; depende de IPageRepository, IPageBlockRepository, IHtmlSanitizer e ITransactionManager
- * Versión: 1.0
+ * Descripción: Agrega un bloque al final de una página tras validar y sanear su contenido por tipo y comprobar que la media referenciada exista, y audita CONTENT_CREATED en la misma transacción; depende de IPageRepository, IPageBlockRepository, IHtmlSanitizer, IAuditRecorder e ITransactionManager
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,9 +11,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { type ITransactionManager, TRANSACTION_MANAGER_TOKEN } from "@/common/application/persistence/transaction-manager.interface";
+import { AUDIT_RECORDER_TOKEN, type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
+import { AUDIT_ACTIONS } from "@/common/domain/audit/audit-action";
 import { CreatePageBlockCommand } from "@/features/pages/application/commands/create-page-block.command";
 import { HTML_SANITIZER_TOKEN, type IHtmlSanitizer } from "@/features/pages/application/ports/html-sanitizer.interface";
-import { PageBlock } from "@/features/pages/domain/entities/page-block.entity";
+import { PAGE_BLOCK_AUDIT_TARGET, PageBlock } from "@/features/pages/domain/entities/page-block.entity";
 import { type Page } from "@/features/pages/domain/entities/page.entity";
 import { InvalidPageBlockError, PageMediaNotFoundError, PageNotFoundError } from "@/features/pages/domain/pages.errors";
 import { type IPageBlockRepository, PAGE_BLOCKS_REPOSITORY_TOKEN } from "@/features/pages/domain/repositories/page-blocks.repository";
@@ -36,6 +38,8 @@ export class CreatePageBlockUseCase {
     private readonly _htmlSanitizer: IHtmlSanitizer,
     @Inject(TRANSACTION_MANAGER_TOKEN)
     private readonly _transactionManager: ITransactionManager,
+    @Inject(AUDIT_RECORDER_TOKEN)
+    private readonly _auditRecorder: IAuditRecorder,
   ) {}
 
   public async execute(command: CreatePageBlockCommand): Promise<string> {
@@ -70,6 +74,7 @@ export class CreatePageBlockUseCase {
       });
 
       await this._pageBlocksRepository.save(block, transaction);
+      await this._auditRecorder.record(command.performedBy, AUDIT_ACTIONS.CONTENT_CREATED, PAGE_BLOCK_AUDIT_TARGET, block.id, {}, block.toAuditState(), transaction);
 
       return block.id;
     });

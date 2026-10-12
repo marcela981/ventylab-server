@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio RequestContextService
- * Descripción: Guarda el contexto de cada petición (método, ruta, traceId, agente) en AsyncLocalStorage
- * Versión: 1.0
+ * Descripción: Guarda el contexto de cada petición (método, ruta, traceId, agente y rol del usuario autenticado, resuelto en el momento de leerlo) en AsyncLocalStorage
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,6 +25,7 @@ export interface RequestContext {
   readonly path: string;
   readonly traceId: string;
   readonly agent: RequestAgentInfo;
+  readonly actorRole?: string;
 }
 
 @Injectable()

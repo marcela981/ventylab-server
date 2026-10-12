@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso DeletePageBlockUseCase
- * Descripción: Elimina un bloque de una página validando que pertenezca a ella; depende de IPageBlockRepository e ITransactionManager
- * Versión: 1.0
+ * Descripción: Elimina un bloque de una página validando que pertenezca a ella y audita CONTENT_DELETED con su último estado en la misma transacción; depende de IPageBlockRepository, IAuditRecorder e ITransactionManager
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,7 +11,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { type ITransactionManager, TRANSACTION_MANAGER_TOKEN } from "@/common/application/persistence/transaction-manager.interface";
-import { type PageBlock } from "@/features/pages/domain/entities/page-block.entity";
+import { AUDIT_RECORDER_TOKEN, type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
+import { AUDIT_ACTIONS } from "@/common/domain/audit/audit-action";
+import { PAGE_BLOCK_AUDIT_TARGET, type PageBlock } from "@/features/pages/domain/entities/page-block.entity";
 import { PageBlockNotFoundError } from "@/features/pages/domain/pages.errors";
 import { type IPageBlockRepository, PAGE_BLOCKS_REPOSITORY_TOKEN } from "@/features/pages/domain/repositories/page-blocks.repository";
 
@@ -25,9 +27,11 @@ export class DeletePageBlockUseCase {
     private readonly _pageBlocksRepository: IPageBlockRepository,
     @Inject(TRANSACTION_MANAGER_TOKEN)
     private readonly _transactionManager: ITransactionManager,
+    @Inject(AUDIT_RECORDER_TOKEN)
+    private readonly _auditRecorder: IAuditRecorder,
   ) {}
 
-  public async execute(pageId: string, blockId: string): Promise<void> {
+  public async execute(pageId: string, blockId: string, performedBy?: string): Promise<void> {
     await this._transactionManager.run(async (transaction: unknown): Promise<void> => {
       const block: PageBlock | undefined = await this._pageBlocksRepository.getById(blockId, transaction);
 
@@ -36,6 +40,7 @@ export class DeletePageBlockUseCase {
       }
 
       await this._pageBlocksRepository.delete(block.id, transaction);
+      await this._auditRecorder.record(performedBy, AUDIT_ACTIONS.CONTENT_DELETED, PAGE_BLOCK_AUDIT_TARGET, block.id, block.toAuditState(), {}, transaction);
     });
   }
 }
