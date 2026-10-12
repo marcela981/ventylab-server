@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de EvaluationFacade
- * Descripción: Verifica con repositorios simulados las notas publicadas de un usuario y de un grupo con su aprobación según la nota mínima configurada, las estadísticas de una evaluación (conteos por estado, publicadas, promedio, mínimo, máximo y tasa de aprobación) el conteo de intentos pendientes de revisión en el alcance de un profesor y las lecturas para analítica (mediana e histograma, notas de varios usuarios en una sola llamada al repositorio, índice de dificultad por pregunta y asignaciones abiertas de un estudiante)
- * Versión: 1.2
+ * Descripción: Verifica con repositorios simulados las notas publicadas de un usuario y de un grupo con su aprobación según la nota mínima configurada, las estadísticas de una evaluación (conteos por estado, publicadas, promedio, mínimo, máximo y tasa de aprobación) el conteo de intentos pendientes de revisión en el alcance de un profesor y las lecturas para analítica (mediana e histograma, notas de varios usuarios en una sola llamada al repositorio, índice de dificultad por pregunta, reenvío del alcance de intentos de un profesor y asignaciones abiertas de un estudiante)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,7 @@ import { type EvaluationAssignmentAccess } from "@/features/evaluation/applicati
 import { EvaluationFacade } from "@/features/evaluation/application/services/evaluation.facade";
 import { type GetStudentEvaluationAssignmentsUseCase } from "@/features/evaluation/application/use-cases/get-student-evaluation-assignments.usecase";
 import { type PublishedGradeView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
-import { type IEvaluationAnalyticsRepository } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
+import { type EvaluationAttemptScope, type IEvaluationAnalyticsRepository } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
 import { type IEvaluationGradingRepository } from "@/features/evaluation/domain/repositories/evaluation-grading.repository";
 import { type EvaluationQuestionStats } from "@/features/evaluation/domain/services/evaluation-analytics";
 
@@ -125,7 +125,7 @@ describe("EvaluationFacade", () => {
 
     const stats: EvaluationGradeStats = await facade.getEvaluationStats("evaluation-1");
 
-    expect(repository.getEvaluationStats).toHaveBeenCalledWith("evaluation-1", 3);
+    expect(repository.getEvaluationStats).toHaveBeenCalledWith("evaluation-1", 3, undefined);
     expect(stats).toEqual({
       evaluationId: "evaluation-1",
       attemptsByStatus: { IN_PROGRESS: 1, SUBMITTED: 0, PENDING_REVIEW: 2, GRADED: 4 },
@@ -188,7 +188,7 @@ describe("EvaluationFacade", () => {
     const grades: EvaluationUserGrade[] = await facade.getGradesForUsers(["student-1", "student-2"], ["evaluation-1"]);
 
     expect(analytics.getPublishedGradesOfUsers).toHaveBeenCalledTimes(1);
-    expect(analytics.getPublishedGradesOfUsers).toHaveBeenCalledWith(["student-1", "student-2"], ["evaluation-1"]);
+    expect(analytics.getPublishedGradesOfUsers).toHaveBeenCalledWith(["student-1", "student-2"], ["evaluation-1"], undefined);
     expect(grades.map((grade: EvaluationUserGrade) => [grade.userId, grade.passed])).toEqual([
       ["student-1", true],
       ["student-2", false],
@@ -203,6 +203,18 @@ describe("EvaluationFacade", () => {
     expect(questions).toEqual([
       { questionId: "question-1", order: 1, type: "SINGLE_CHOICE", points: 2, answeredCount: 2, correctCount: 1, correctRate: 0.5, difficultyIndex: 0.5 },
     ]);
+  });
+
+  it("forwards the teacher attempt scope to every statistics read", async () => {
+    const { facade, repository, analytics } = build();
+    const scope: EvaluationAttemptScope = { teacherId: "teacher-1", groupIds: ["group-a"] };
+
+    await facade.getEvaluationStats("evaluation-1", scope);
+    await facade.getEvaluationQuestionStats("evaluation-1", scope);
+
+    expect(repository.getEvaluationStats).toHaveBeenCalledWith("evaluation-1", 3, scope);
+    expect(analytics.getGradedGrades).toHaveBeenCalledWith("evaluation-1", scope);
+    expect(analytics.getQuestionScoreSource).toHaveBeenCalledWith("evaluation-1", scope);
   });
 
   it("keeps only the active and upcoming assignments of a student", async () => {

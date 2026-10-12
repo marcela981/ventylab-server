@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de lectura de la calificación docente de evaluaciones
- * Descripción: Implementa IEvaluationGradingRepository con Prisma sobre student_evaluation_attempts: alcance del profesor (asignación en un grupo STUDENT creado o supervisado, o intento heredado sin asignación de una evaluación que creó), filtro por grupo (asignación del grupo, o intento sin asignación de un miembro del grupo), cola PENDING_REVIEW paginada con evaluación y estudiante (sin intentos heredados, que se califican por las rutas heredadas), intentos en curso vencidos por el plazo del intento o el fin de la asignación, intentos GRADED sin publicar, notas publicadas y agregados por evaluación; exporta la selección, el filtro y el mapeo de notas publicadas que reutiliza el repositorio de analítica
- * Versión: 1.2
+ * Descripción: Implementa IEvaluationGradingRepository con Prisma sobre student_evaluation_attempts: alcance del profesor (asignación en un grupo STUDENT creado o supervisado, o intento heredado sin asignación de una evaluación que creó), filtro por grupo (asignación del grupo, o intento sin asignación de un miembro del grupo), cola PENDING_REVIEW paginada con evaluación y estudiante (sin intentos heredados, que se califican por las rutas heredadas), intentos en curso vencidos por el plazo del intento o el fin de la asignación, intentos GRADED sin publicar, notas publicadas y agregados por evaluación (opcionalmente acotados al alcance de intentos de analítica de un profesor); exporta la selección, el filtro, el filtro de alcance de intentos de analítica y el mapeo de notas publicadas que reutiliza el repositorio de analítica
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,6 +18,7 @@ import {
   type GradingQueueItemView,
   type PublishedGradeView,
 } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
+import { type EvaluationAttemptScope } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
 import { type EvaluationAssignmentScope } from "@/features/evaluation/domain/repositories/evaluation-assignments.repository";
 import {
   type GetGradingQueueQuery,
@@ -127,6 +128,15 @@ function scopeWhere(scope: EvaluationAssignmentScope): Prisma.StudentEvaluationA
           },
         },
       },
+      { assignmentId: null, evaluation: { createdById: scope.teacherId } },
+    ],
+  };
+}
+
+export function attemptScopeWhere(scope: EvaluationAttemptScope): Prisma.StudentEvaluationAttemptWhereInput {
+  return {
+    OR: [
+      { assignment: { groupId: { in: [...scope.groupIds] } } },
       { assignmentId: null, evaluation: { createdById: scope.teacherId } },
     ],
   };
@@ -261,11 +271,12 @@ export class EvaluationGradingPrismaRepository implements IEvaluationGradingRepo
     return rows.flatMap((row: PublishedRow) => toPublishedView(row));
   }
 
-  public async getEvaluationStats(evaluationId: string, passingGrade: number): Promise<EvaluationGradeAggregateView> {
-    const graded: Prisma.StudentEvaluationAttemptWhereInput = { evaluationId, status: GRADED_STATUS, grade: { not: null } };
+  public async getEvaluationStats(evaluationId: string, passingGrade: number, scope?: EvaluationAttemptScope): Promise<EvaluationGradeAggregateView> {
+    const all: Prisma.StudentEvaluationAttemptWhereInput = { AND: [{ evaluationId }, ...(scope ? [attemptScopeWhere(scope)] : [])] };
+    const graded: Prisma.StudentEvaluationAttemptWhereInput = { AND: [all, { status: GRADED_STATUS, grade: { not: null } }] };
 
     const [byStatus, gradeAggregate, publishedCount, passedCount] = await Promise.all([
-      this._prisma.studentEvaluationAttempt.groupBy({ by: ["status"], where: { evaluationId }, _count: { _all: true } }),
+      this._prisma.studentEvaluationAttempt.groupBy({ by: ["status"], where: all, _count: { _all: true } }),
       this._prisma.studentEvaluationAttempt.aggregate({
         where: graded,
         _count: { _all: true },
@@ -273,8 +284,8 @@ export class EvaluationGradingPrismaRepository implements IEvaluationGradingRepo
         _min: { grade: true },
         _max: { grade: true },
       }),
-      this._prisma.studentEvaluationAttempt.count({ where: { evaluationId, ...PUBLISHED_WHERE } }),
-      this._prisma.studentEvaluationAttempt.count({ where: { ...graded, grade: { gte: passingGrade } } }),
+      this._prisma.studentEvaluationAttempt.count({ where: { AND: [all, PUBLISHED_WHERE] } }),
+      this._prisma.studentEvaluationAttempt.count({ where: { AND: [graded, { grade: { gte: passingGrade } }] } }),
     ]);
 
     const attemptsByStatus: Record<EvaluationAttemptStatusValue, number> = Object.fromEntries(

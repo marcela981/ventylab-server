@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GetGroupDashboardUseCase
- * Descripción: Verifica con fachadas falsas que el panel de un grupo de 30 estudiantes llama exactamente una vez a cada función por lotes (sin N+1) con los 30 identificadores y una vez a los miembros, que reutiliza la caché del mismo solicitante, que combina una fila por estudiante (nota vigente = último intento publicado, porcentaje de útiles) y que aplica el alcance (403 fuera de alcance, 404 grupo inexistente)
- * Versión: 1.0
+ * Descripción: Verifica con fachadas falsas que el panel de un grupo de 30 estudiantes llama exactamente una vez a cada función por lotes (sin N+1) con los 30 identificadores y una vez a los miembros, que reutiliza la caché del mismo solicitante, que combina una fila por estudiante (nota vigente = último intento publicado, porcentaje de útiles), que las notas de un profesor se leen con el alcance de intentos de sus grupos (el administrador sin alcance) y que aplica el alcance con una sola lectura de grupos gestionables (403 fuera de alcance, 404 grupo inexistente)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -59,7 +59,18 @@ describe("GetGroupDashboardUseCase", () => {
 
     expect(second).toBe(first);
     expect(harness.facades.progress.getProgressForUsers).toHaveBeenCalledTimes(1);
-    expect(harness.facades.groups.canManageGroup).toHaveBeenCalledTimes(2);
+    expect(harness.facades.groups.getManageableStudentGroupIds).toHaveBeenCalledTimes(2);
+    expect(harness.facades.groups.getGroupSummary).toHaveBeenCalledTimes(2);
+  });
+
+  it("limits a teacher's grades to the attempt scope of the managed groups and leaves the admin unscoped", async () => {
+    const harness: AnalyticsHarness = buildAnalyticsHarness(buildStudents(2));
+
+    await harness.dashboard.execute(TEACHER, GROUP_ID);
+    await harness.dashboard.execute(ADMIN, GROUP_ID);
+
+    expect(harness.facades.evaluation.getGradesForUsers.mock.calls[0][2]).toEqual({ teacherId: TEACHER.id, groupIds: [GROUP_ID] });
+    expect(harness.facades.evaluation.getGradesForUsers.mock.calls[1][2]).toBeUndefined();
   });
 
   it("builds one row per student with the counted grade, simulation and AI usage", async () => {

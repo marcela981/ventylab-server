@@ -158,3 +158,11 @@ Decisions from the audit:
   groups' grades). Minor: timeline/dashboard not limited to STUDENT targets and in-scope evaluations; research
   export keeps raw evaluation ids; vacuous student-code assertion; per-source timeline truncation not reported;
   sequential scope checks; legacy unassigned evaluations; redundant group read. -> fixed in T6-fix.
+
+### T6-fix — done
+- Non-admin evaluation stats, grades and attempts limited to the teacher attempt scope (manageable student
+  groups, plus unassigned attempts of evaluations they created); ADMIN keeps whole-evaluation stats; cache keys
+  include the scope. Timeline targets must be STUDENT-role members of a manageable student group (batched).
+- Research export pseudonymizes evaluation ids (domain-separated HMAC); spec seeds identifiers and checks every column.
+- Timeline reports per-source truncation; redundant group read removed (teacher dashboard 14 Prisma operations).
+- Checks: tsc 0; jest 63 suites / 410 tests pass; eslint clean; coupling grep empty.

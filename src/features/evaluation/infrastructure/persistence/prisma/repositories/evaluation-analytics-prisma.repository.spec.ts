@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma EvaluationAnalyticsPrismaRepository
- * Descripción: Verifica con un cliente Prisma simulado que las notas publicadas de varios usuarios salen de una sola consulta con IN (y ninguna sin usuarios), que los puntajes por pregunta usan el manual sobre el automático solo de intentos GRADED y que la referencia de una evaluación deduplica sus grupos asignados
- * Versión: 1.0
+ * Descripción: Verifica con un cliente Prisma simulado que las notas publicadas de varios usuarios salen de una sola consulta con IN (y ninguna sin usuarios), que los puntajes por pregunta usan el manual sobre el automático solo de intentos GRADED que con alcance de profesor las notas, puntajes e intentos se limitan a las asignaciones de sus grupos o a intentos sin asignación de evaluaciones que creó y que la referencia de una evaluación trae su creador y deduplica sus grupos asignados
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,11 @@
  */
 import { type PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { type PublishedGradeView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
-import { type EvaluationQuestionScoreSource, type EvaluationReferenceView } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
+import {
+  type EvaluationAttemptScope,
+  type EvaluationQuestionScoreSource,
+  type EvaluationReferenceView,
+} from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
 import { EvaluationAnalyticsPrismaRepository } from "@/features/evaluation/infrastructure/persistence/prisma/repositories/evaluation-analytics-prisma.repository";
 
 interface PrismaMock {
@@ -79,7 +83,7 @@ describe("EvaluationAnalyticsPrismaRepository", () => {
     const source: EvaluationQuestionScoreSource = await repository.getQuestionScoreSource("evaluation-1");
 
     expect(prisma.evaluationAnswer.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { attempt: { evaluationId: "evaluation-1", status: "GRADED", grade: { not: null } } } }),
+      expect.objectContaining({ where: { attempt: { AND: [{ evaluationId: "evaluation-1", status: "GRADED", grade: { not: null } }] } } }),
     );
     expect(source).toEqual({
       questions: [{ id: "question-1", order: 1, type: "OPEN_TEXT", points: 2 }],
@@ -92,10 +96,36 @@ describe("EvaluationAnalyticsPrismaRepository", () => {
   });
 
   it("returns the evaluation reference with its distinct assigned groups", async () => {
-    prisma.evaluation.findUnique.mockResolvedValue({ id: "evaluation-1", title: "Exam", type: "EXAM", assignments: [{ groupId: "g-1" }, { groupId: "g-1" }, { groupId: "g-2" }] });
+    prisma.evaluation.findUnique.mockResolvedValue({
+      id: "evaluation-1",
+      title: "Exam",
+      type: "EXAM",
+      createdById: "teacher-1",
+      assignments: [{ groupId: "g-1" }, { groupId: "g-1" }, { groupId: "g-2" }],
+    });
 
     const reference: EvaluationReferenceView | undefined = await repository.getEvaluationReference("evaluation-1");
 
-    expect(reference).toEqual({ id: "evaluation-1", title: "Exam", type: "EXAM", assignedGroupIds: ["g-1", "g-2"] });
+    expect(reference).toEqual({ id: "evaluation-1", title: "Exam", type: "EXAM", createdById: "teacher-1", assignedGroupIds: ["g-1", "g-2"] });
+  });
+
+  it("limits every attempt read to the teacher scope when one is given", async () => {
+    const scope: EvaluationAttemptScope = { teacherId: "teacher-1", groupIds: ["group-a"] };
+    const scopeWhere: unknown = { OR: [{ assignment: { groupId: { in: ["group-a"] } } }, { assignmentId: null, evaluation: { createdById: "teacher-1" } }] };
+
+    await repository.getGradedGrades("evaluation-1", scope);
+    await repository.getQuestionScoreSource("evaluation-1", scope);
+    await repository.getPublishedGradesOfUsers(["student-1"], undefined, scope);
+    await repository.getAttemptActivityOfUser("student-1", new Date("2026-10-01"), new Date("2026-10-02"), 10, scope);
+
+    const findManyWheres: unknown[] = prisma.studentEvaluationAttempt.findMany.mock.calls.map((call: [{ where: { AND: unknown[] } }]) => call[0].where.AND);
+
+    for (const conditions of findManyWheres) {
+      expect(conditions).toContainEqual(scopeWhere);
+    }
+
+    expect(findManyWheres).toHaveLength(3);
+    expect(prisma.studentEvaluationAttempt.count.mock.calls[0][0].where.AND).toContainEqual(scopeWhere);
+    expect(prisma.evaluationAnswer.findMany.mock.calls[0][0].where.attempt.AND).toContainEqual(scopeWhere);
   });
 });

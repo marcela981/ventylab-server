@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Constructor de analítica por estudiante
- * Descripción: Funciones puras que combinan en memoria los resultados por lotes de las fachadas (progreso, notas publicadas, sesiones de simulación, uso y valoraciones de IA y horas de ventilador) indexándolos por usuario, sin ninguna lectura adicional: resumen de progreso por sección, nivel y módulo, nota vigente por evaluación (último intento publicado) con su promedio, filas del panel de un grupo y filas largas del conjunto de datos de investigación con identificadores seudonimizados
- * Versión: 1.0
+ * Descripción: Funciones puras que combinan en memoria los resultados por lotes de las fachadas (progreso, notas publicadas, sesiones de simulación, uso y valoraciones de IA y horas de ventilador) indexándolos por usuario, sin ninguna lectura adicional: resumen de progreso por sección, nivel y módulo, nota vigente por evaluación (último intento publicado) con su promedio, filas del panel de un grupo y filas largas del conjunto de datos de investigación con identificadores seudonimizados (usuario y grupo, y las evaluaciones con separación de dominio "evaluation:")
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -47,6 +47,8 @@ export interface ResearchParticipant {
   readonly userId: string;
   readonly groupId: string;
 }
+
+export const RESEARCH_EVALUATION_DOMAIN: string = "evaluation:";
 
 const EMPTY_PROGRESS: LessonWeightedProgress = { completedLessons: 0, totalLessons: 0, percentage: 0, completed: false };
 
@@ -186,7 +188,13 @@ export function buildResearchRows(
       { ...base, domain: "progress", item: "overall", metric: "percentage", value: summary.overall.percentage },
       ...summary.sections.map((section: ProgressItemSummary): ResearchDatasetRow => ({ ...base, domain: "progress", item: section.id, metric: "percentage", value: section.percentage })),
       ...toGradesSummary(grades.get(participant.userId) ?? []).evaluations.map(
-        (grade: StudentEvaluationGrade): ResearchDatasetRow => ({ ...base, domain: "grades", item: grade.evaluationId, metric: "grade", value: grade.grade }),
+        (grade: StudentEvaluationGrade): ResearchDatasetRow => ({
+          ...base,
+          domain: "grades",
+          item: pseudonymize(`${RESEARCH_EVALUATION_DOMAIN}${grade.evaluationId}`),
+          metric: "grade",
+          value: grade.grade,
+        }),
       ),
       { ...base, domain: "simulation", item: "all", metric: "session_count", value: stats.sessionCount },
     ];

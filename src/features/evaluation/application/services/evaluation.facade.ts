@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: EvaluationFacade
- * Descripción: API pública de la feature de evaluaciones para otras features: notas publicadas de un usuario (incluidas las heredadas) y de un grupo con su aprobación según EVALUATION_PASSING_GRADE, estadísticas de una evaluación (intentos por estado, publicados, promedio, mediana, mínimo, máximo, histograma en intervalos de 0.5 y tasa de aprobación sobre los intentos calificados), conteo de intentos pendientes de revisión en el alcance de un profesor y lecturas para analítica: notas publicadas de varios usuarios en una consulta, índice de dificultad por pregunta, referencia de una evaluación con sus grupos asignados, intentos de un usuario en un rango y asignaciones activas y próximas de un estudiante
- * Versión: 1.1
+ * Descripción: API pública de la feature de evaluaciones para otras features: notas publicadas de un usuario (incluidas las heredadas) y de un grupo con su aprobación según EVALUATION_PASSING_GRADE, estadísticas de una evaluación (intentos por estado, publicados, promedio, mediana, mínimo, máximo, histograma en intervalos de 0.5 y tasa de aprobación sobre los intentos calificados), conteo de intentos pendientes de revisión en el alcance de un profesor y lecturas para analítica: notas publicadas de varios usuarios en una consulta, índice de dificultad por pregunta, referencia de una evaluación con sus grupos asignados, intentos de un usuario en un rango y asignaciones activas y próximas de un estudiante; las lecturas de analítica sobre intentos aceptan el alcance de intentos de un profesor
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import { type EvaluationGradeAggregateView, type PublishedGradeView } from "@/fe
 import {
   EVALUATION_ANALYTICS_REPOSITORY_TOKEN,
   type EvaluationAttemptActivityView,
+  type EvaluationAttemptScope,
   type EvaluationQuestionScoreSource,
   type EvaluationReferenceView,
   type IEvaluationAnalyticsRepository,
@@ -67,11 +68,11 @@ export class EvaluationFacade {
     return views.map((view: PublishedGradeView) => this._toUserGrade(view));
   }
 
-  public async getEvaluationStats(evaluationId: string): Promise<EvaluationGradeStats> {
+  public async getEvaluationStats(evaluationId: string, scope?: EvaluationAttemptScope): Promise<EvaluationGradeStats> {
     const passingGrade: number = this._gradingConfig.passingGrade;
     const [view, grades]: [EvaluationGradeAggregateView, number[]] = await Promise.all([
-      this._gradingRepository.getEvaluationStats(evaluationId, passingGrade),
-      this._analyticsRepository.getGradedGrades(evaluationId),
+      this._gradingRepository.getEvaluationStats(evaluationId, passingGrade, scope),
+      this._analyticsRepository.getGradedGrades(evaluationId, scope),
     ]);
     const totalAttempts: number = Object.values(view.attemptsByStatus).reduce((total: number, count: number) => total + count, 0);
     const hasGrades: boolean = view.gradedCount > 0;
@@ -98,14 +99,14 @@ export class EvaluationFacade {
     return await this._gradingRepository.countPendingReview(scope);
   }
 
-  public async getGradesForUsers(userIds: readonly string[], evaluationIds?: readonly string[]): Promise<EvaluationUserGrade[]> {
-    const views: PublishedGradeView[] = await this._analyticsRepository.getPublishedGradesOfUsers(userIds, evaluationIds);
+  public async getGradesForUsers(userIds: readonly string[], evaluationIds?: readonly string[], scope?: EvaluationAttemptScope): Promise<EvaluationUserGrade[]> {
+    const views: PublishedGradeView[] = await this._analyticsRepository.getPublishedGradesOfUsers(userIds, evaluationIds, scope);
 
     return views.map((view: PublishedGradeView) => this._toUserGrade(view));
   }
 
-  public async getEvaluationQuestionStats(evaluationId: string): Promise<EvaluationQuestionStats[]> {
-    const source: EvaluationQuestionScoreSource = await this._analyticsRepository.getQuestionScoreSource(evaluationId);
+  public async getEvaluationQuestionStats(evaluationId: string, scope?: EvaluationAttemptScope): Promise<EvaluationQuestionStats[]> {
+    const source: EvaluationQuestionScoreSource = await this._analyticsRepository.getQuestionScoreSource(evaluationId, scope);
 
     return computeQuestionStats(source);
   }
@@ -114,8 +115,13 @@ export class EvaluationFacade {
     return await this._analyticsRepository.getEvaluationReference(evaluationId);
   }
 
-  public async getAttemptActivityOfUser(userId: string, range: EvaluationActivityRange, limit: number): Promise<EvaluationAttemptActivityView[]> {
-    return await this._analyticsRepository.getAttemptActivityOfUser(userId, range.from, range.to, limit);
+  public async getAttemptActivityOfUser(
+    userId: string,
+    range: EvaluationActivityRange,
+    limit: number,
+    scope?: EvaluationAttemptScope,
+  ): Promise<EvaluationAttemptActivityView[]> {
+    return await this._analyticsRepository.getAttemptActivityOfUser(userId, range.from, range.to, limit, scope);
   }
 
   public async getOpenAssignmentsOfStudent(userId: string): Promise<EvaluationAssignmentResult[]> {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso ExportResearchDatasetUseCase
- * Descripción: Conjunto de datos anonimizado para el análisis de la tesis (capítulo 4): toma los estudiantes de los grupos STUDENT (todos o uno), lee sus datos con una llamada por lotes a cada fachada y produce filas largas (participante, grupo, dominio, ítem, métrica, valor) de progreso, notas, simulación, valoraciones y telemetría de IA, con los identificadores de usuario y grupo reemplazados por HMAC-SHA256 con la sal de exportación y sin nombres, correos ni identificadores originales; sin sal configurada no exporta nada
- * Versión: 1.0
+ * Descripción: Conjunto de datos anonimizado para el análisis de la tesis (capítulo 4): toma los estudiantes de los grupos STUDENT (todos o uno), lee sus datos con una llamada por lotes a cada fachada y produce filas largas (participante, grupo, dominio, ítem, métrica, valor) de progreso, notas, simulación, valoraciones y telemetría de IA, con los identificadores de usuario, grupo y evaluación reemplazados por HMAC-SHA256 con la sal de exportación (las evaluaciones con separación de dominio) y sin nombres, correos ni identificadores originales; sin sal configurada no exporta nada
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje

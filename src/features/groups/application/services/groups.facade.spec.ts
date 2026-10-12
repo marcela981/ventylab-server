@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GroupsFacade
- * Descripción: Verifica las lecturas públicas de la feature de grupos con repositorios simulados: grupo STUDENT del usuario, miembros, liderazgo, pertenencia, grupos supervisados por un profesor, alcance de gestión y resumen de un grupo; si un profesor gestiona algún grupo de un estudiante y que las membresías de estudiantes se leen del repositorio de analítica
- * Versión: 1.2
+ * Descripción: Verifica las lecturas públicas de la feature de grupos con repositorios simulados: grupo STUDENT del usuario, miembros, liderazgo, pertenencia, grupos supervisados por un profesor, alcance de gestión y resumen de un grupo; los grupos STUDENT gestionables por actor con una sola lectura del repositorio de analítica, si un actor gestiona algún grupo STUDENT de un estudiante sin bucle por grupo y que las membresías de estudiantes se leen del repositorio de analítica
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,16 +11,28 @@
 import { GroupsFacade, type GroupMemberSummary, type GroupSummary } from "@/features/groups/application/services/groups.facade";
 import { buildDoubles, buildGroup, buildMember, type GroupsDoubles } from "@/features/groups/application/testing/groups-test-doubles-spec";
 import { type StudentGroupSummaryView } from "@/features/groups/domain/read-models/group.read-model";
-import { type IGroupAnalyticsRepository, type StudentMembershipView } from "@/features/groups/domain/repositories/group-analytics.repository";
+import {
+  type IGroupAnalyticsRepository,
+  type StudentGroupIdsFilter,
+  type StudentMembershipView,
+} from "@/features/groups/domain/repositories/group-analytics.repository";
 
 const MEMBERSHIPS: StudentMembershipView[] = [{ userId: "student-1", groupId: "group-1" }];
 
-const ANALYTICS_REPOSITORY: IGroupAnalyticsRepository = {
-  getStudentMemberships: (): Promise<StudentMembershipView[]> => Promise.resolve(MEMBERSHIPS),
-};
+function buildAnalyticsRepository(): jest.Mocked<IGroupAnalyticsRepository> {
+  return {
+    getStudentMemberships: jest.fn().mockResolvedValue(MEMBERSHIPS),
+    getStudentGroupIds: jest
+      .fn()
+      .mockImplementation((filter: StudentGroupIdsFilter) => Promise.resolve(filter.managedBy === "teacher-1" || filter.managedBy === undefined ? ["group-1"] : [])),
+    isStudentMemberOfAny: jest
+      .fn()
+      .mockImplementation((userId: string, groupIds?: ReadonlyArray<string>) => Promise.resolve(userId === "student-1" && (groupIds === undefined || groupIds.includes("group-1")))),
+  };
+}
 
-function buildFacade(doubles: GroupsDoubles): GroupsFacade {
-  return new GroupsFacade(doubles.groupsRepository, doubles.membersRepository, doubles.access, ANALYTICS_REPOSITORY);
+function buildFacade(doubles: GroupsDoubles, analytics: IGroupAnalyticsRepository = buildAnalyticsRepository()): GroupsFacade {
+  return new GroupsFacade(doubles.groupsRepository, doubles.membersRepository, doubles.access, analytics);
 }
 
 function defaultDoubles(): GroupsDoubles {
@@ -104,16 +116,36 @@ describe("GroupsFacade", () => {
     expect(results).toEqual([true, true, false, false, false]);
   });
 
-  it("tells whether a teacher manages any group of a student", async () => {
-    const facade: GroupsFacade = buildFacade(defaultDoubles());
+  it("tells whether an actor manages any student group of a student with batched reads", async () => {
+    const analytics: jest.Mocked<IGroupAnalyticsRepository> = buildAnalyticsRepository();
+    const facade: GroupsFacade = buildFacade(defaultDoubles(), analytics);
 
     const results: boolean[] = [
       await facade.canManageAnyGroupOfUser({ id: "teacher-1", role: "TEACHER" }, "student-1"),
       await facade.canManageAnyGroupOfUser({ id: "teacher-2", role: "TEACHER" }, "student-1"),
       await facade.canManageAnyGroupOfUser({ id: "teacher-1", role: "TEACHER" }, "outsider"),
+      await facade.canManageAnyGroupOfUser({ id: "admin-1", role: "ADMIN" }, "student-1"),
     ];
 
-    expect(results).toEqual([true, false, false]);
+    expect(results).toEqual([true, false, false, true]);
+    expect(analytics.getStudentGroupIds).toHaveBeenCalledTimes(3);
+    expect(analytics.getStudentGroupIds).toHaveBeenCalledWith({ managedBy: "teacher-1", groupIds: undefined });
+    expect(analytics.isStudentMemberOfAny).toHaveBeenCalledWith("student-1", ["group-1"]);
+    expect(analytics.isStudentMemberOfAny).toHaveBeenLastCalledWith("student-1");
+  });
+
+  it("returns the student groups an actor manages, narrowed to candidates, and none for students", async () => {
+    const analytics: jest.Mocked<IGroupAnalyticsRepository> = buildAnalyticsRepository();
+    const facade: GroupsFacade = buildFacade(defaultDoubles(), analytics);
+
+    const results: string[][] = [
+      await facade.getManageableStudentGroupIds({ id: "teacher-1", role: "TEACHER" }, ["group-1", "group-2"]),
+      await facade.getManageableStudentGroupIds({ id: "student-1", role: "STUDENT" }),
+    ];
+
+    expect(results).toEqual([["group-1"], []]);
+    expect(analytics.getStudentGroupIds).toHaveBeenCalledTimes(1);
+    expect(analytics.getStudentGroupIds).toHaveBeenCalledWith({ managedBy: "teacher-1", groupIds: ["group-1", "group-2"] });
   });
 
   it("reads the student memberships from the analytics repository", async () => {

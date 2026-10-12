@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Puerto de repositorio EVALUATION_ANALYTICS_REPOSITORY_TOKEN
- * Descripción: Define la interfaz IEvaluationAnalyticsRepository de lecturas por lotes para analítica (notas publicadas de varios usuarios, notas de los intentos calificados de una evaluación, preguntas con los puntajes obtenidos en esos intentos, referencia de una evaluación con sus grupos asignados e intentos de un usuario en un rango), sus modelos de lectura y su token de inyección
- * Versión: 1.0
+ * Descripción: Define la interfaz IEvaluationAnalyticsRepository de lecturas por lotes para analítica (notas publicadas de varios usuarios, notas de los intentos calificados de una evaluación, preguntas con los puntajes obtenidos en esos intentos, referencia de una evaluación con su creador y sus grupos asignados e intentos de un usuario en un rango), el alcance opcional de intentos de un profesor (intentos de asignaciones de sus grupos STUDENT gestionados o intentos sin asignación de evaluaciones que creó, la misma regla que la calificación), sus modelos de lectura y su token de inyección
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,7 +19,13 @@ export interface EvaluationReferenceView {
   readonly id: string;
   readonly title: string;
   readonly type: EvaluationTypeValue;
+  readonly createdById?: string;
   readonly assignedGroupIds: string[];
+}
+
+export interface EvaluationAttemptScope {
+  readonly teacherId: string;
+  readonly groupIds: ReadonlyArray<string>;
 }
 
 export interface EvaluationQuestionItemView {
@@ -51,9 +57,9 @@ export interface EvaluationAttemptActivityView {
 }
 
 export interface IEvaluationAnalyticsRepository {
-  getPublishedGradesOfUsers(userIds: readonly string[], evaluationIds?: readonly string[]): Promise<PublishedGradeView[]>;
-  getGradedGrades(evaluationId: string): Promise<number[]>;
-  getQuestionScoreSource(evaluationId: string): Promise<EvaluationQuestionScoreSource>;
+  getPublishedGradesOfUsers(userIds: readonly string[], evaluationIds?: readonly string[], scope?: EvaluationAttemptScope): Promise<PublishedGradeView[]>;
+  getGradedGrades(evaluationId: string, scope?: EvaluationAttemptScope): Promise<number[]>;
+  getQuestionScoreSource(evaluationId: string, scope?: EvaluationAttemptScope): Promise<EvaluationQuestionScoreSource>;
   getEvaluationReference(evaluationId: string): Promise<EvaluationReferenceView | undefined>;
-  getAttemptActivityOfUser(userId: string, from: Date, to: Date, limit: number): Promise<EvaluationAttemptActivityView[]>;
+  getAttemptActivityOfUser(userId: string, from: Date, to: Date, limit: number, scope?: EvaluationAttemptScope): Promise<EvaluationAttemptActivityView[]>;
 }

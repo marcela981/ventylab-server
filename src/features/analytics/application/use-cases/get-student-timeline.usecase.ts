@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetStudentTimelineUseCase
- * Descripción: Arma la línea de tiempo de actividad de un estudiante en un rango (por defecto los últimos 30 días, máximo 366): verifica el alcance del solicitante, pide en paralelo una lectura por fuente a cada fachada (lecciones completadas, intentos de evaluación, sesiones de simulación y reservas, hasta 200 por fuente) y las fusiona y ordena en memoria, con caché de 60 s por estudiante, rango y solicitante
- * Versión: 1.0
+ * Descripción: Arma la línea de tiempo de actividad de un estudiante en un rango (por defecto los últimos 30 días, máximo 366): verifica el alcance del solicitante (para un profesor, un usuario STUDENT miembro de uno de sus grupos STUDENT), pide en paralelo una lectura por fuente a cada fachada (lecciones completadas, intentos de evaluación limitados para un profesor a las asignaciones de sus grupos o sin asignación de evaluaciones que creó, sesiones de simulación y reservas, hasta 200 por fuente leyendo una más para detectar el recorte) y las fusiona y ordena en memoria, marcando truncated si alguna fuente o el total se recortó, con caché de 60 s por estudiante, rango, solicitante y grupos en alcance
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,7 +16,7 @@ import { type AnalyticsActor, AnalyticsScopeService } from "@/features/analytics
 import { type MergedTimeline, mergeTimeline, type TimelineEntry } from "@/features/analytics/domain/services/activity-timeline";
 import { type AnalyticsRange, resolveAnalyticsRange } from "@/features/analytics/domain/services/analytics-range";
 import { EvaluationFacade } from "@/features/evaluation/application/services/evaluation.facade";
-import { type EvaluationAttemptActivityView } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
+import { type EvaluationAttemptActivityView, type EvaluationAttemptScope } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
 import { LearningProgressFacade } from "@/features/progress/application/services/learning-progress.facade";
 import { type LessonCompletionActivity } from "@/features/progress/domain/repositories/progress-analytics.repository";
 import { ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
@@ -29,6 +29,10 @@ export const TIMELINE_LIMIT_PER_SOURCE: number = 200;
 export const TIMELINE_MAX_ENTRIES: number = 500;
 
 const MINUTE_MS: number = 60_000;
+
+function capped<T>(items: T[]): { items: T[]; capped: boolean } {
+  return { items: items.slice(0, TIMELINE_LIMIT_PER_SOURCE), capped: items.length > TIMELINE_LIMIT_PER_SOURCE };
+}
 
 function isInRange(date: Date, range: AnalyticsRange): boolean {
   return date.getTime() >= range.from.getTime() && date.getTime() < range.to.getTime();
@@ -89,7 +93,7 @@ function reservationEntries(items: ReservationActivityView[]): TimelineEntry[] {
 }
 
 /**
- * @throws {AnalyticsScopeForbiddenError} If the requester neither administers the platform nor manages a group of the student
+ * @throws {AnalyticsScopeForbiddenError} If the requester neither administers the platform nor manages a student group the target student belongs to
  * @throws {InvalidAnalyticsRangeError} If the range does not start before it ends or spans more than 366 days
  */
 @Injectable()
@@ -108,26 +112,28 @@ export class GetStudentTimelineUseCase {
     const now: Date = new Date(Math.ceil(Date.now() / MINUTE_MS) * MINUTE_MS);
     const range: AnalyticsRange = resolveAnalyticsRange(from, to, now);
 
-    await this._scope.assertStudentInScope(actor, userId);
+    const attemptScope: EvaluationAttemptScope | undefined = await this._scope.assertStudentInScope(actor, userId);
+    const key: string = `timeline:${userId}:${range.from.toISOString()}:${range.to.toISOString()}:${this._scope.scopeKey(actor, attemptScope)}`;
 
-    const key: string = `timeline:${userId}:${range.from.toISOString()}:${range.to.toISOString()}:${this._scope.scopeKey(actor)}`;
-
-    return await this._cache.getOrLoad(key, () => this._build(userId, range));
+    return await this._cache.getOrLoad(key, () => this._build(userId, range, attemptScope));
   }
 
-  private async _build(userId: string, range: AnalyticsRange): Promise<StudentTimeline> {
+  private async _build(userId: string, range: AnalyticsRange, attemptScope?: EvaluationAttemptScope): Promise<StudentTimeline> {
+    // One extra row per source tells whether the source itself was capped
+    const fetchLimit: number = TIMELINE_LIMIT_PER_SOURCE + 1;
     const [lessons, attempts, sessions, reservations] = await Promise.all([
-      this._progressFacade.getLessonCompletionsOfUser(userId, range, TIMELINE_LIMIT_PER_SOURCE),
-      this._evaluationFacade.getAttemptActivityOfUser(userId, range, TIMELINE_LIMIT_PER_SOURCE),
-      this._simulationFacade.getSessionActivityOfUser(userId, range, TIMELINE_LIMIT_PER_SOURCE),
-      this._reservationsFacade.getReservationActivityOfUser(userId, range, TIMELINE_LIMIT_PER_SOURCE),
+      this._progressFacade.getLessonCompletionsOfUser(userId, range, fetchLimit).then(capped),
+      this._evaluationFacade.getAttemptActivityOfUser(userId, range, fetchLimit, attemptScope).then(capped),
+      this._simulationFacade.getSessionActivityOfUser(userId, range, fetchLimit).then(capped),
+      this._reservationsFacade.getReservationActivityOfUser(userId, range, fetchLimit).then(capped),
     ]);
 
     const merged: MergedTimeline = mergeTimeline(
-      [lessonEntries(lessons), evaluationEntries(attempts, range), simulationEntries(sessions), reservationEntries(reservations)],
+      [lessonEntries(lessons.items), evaluationEntries(attempts.items, range), simulationEntries(sessions.items), reservationEntries(reservations.items)],
       TIMELINE_MAX_ENTRIES,
     );
+    const sourceCapped: boolean = lessons.capped || attempts.capped || sessions.capped || reservations.capped;
 
-    return { userId, from: range.from, to: range.to, entries: merged.entries, truncated: merged.truncated };
+    return { userId, from: range.from, to: range.to, entries: merged.entries, truncated: merged.truncated || sourceCapped };
   }
 }

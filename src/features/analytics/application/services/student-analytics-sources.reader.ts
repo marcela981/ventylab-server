@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Lector StudentAnalyticsSourcesReader
- * Descripción: Lee en paralelo, con exactamente una llamada por lotes a cada fachada (progreso, notas publicadas, estadísticas de simulación, uso de IA, valoraciones de IA y horas de ventilador), los datos de analítica de un conjunto de usuarios; el número de consultas no depende del número de usuarios (sin N+1)
- * Versión: 1.0
+ * Descripción: Lee en paralelo, con exactamente una llamada por lotes a cada fachada (progreso, notas publicadas, estadísticas de simulación, uso de IA, valoraciones de IA y horas de ventilador), los datos de analítica de un conjunto de usuarios; el número de consultas no depende del número de usuarios (sin N+1); con el alcance de intentos de un profesor, las notas se limitan a ese alcance
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,7 @@ import { AiRatingsFacade } from "@/features/ai-ratings/application/services/ai-r
 import { AiTelemetryFacade } from "@/features/ai-telemetry/application/ai-telemetry.facade";
 import { type StudentAnalyticsSources } from "@/features/analytics/application/services/student-analytics.builder";
 import { EvaluationFacade } from "@/features/evaluation/application/services/evaluation.facade";
+import { type EvaluationAttemptScope } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
 import { LearningProgressFacade } from "@/features/progress/application/services/learning-progress.facade";
 import { ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
 import { SimulationFacade } from "@/features/simulation/application/services/simulation.facade";
@@ -29,10 +30,10 @@ export class StudentAnalyticsSourcesReader {
     private readonly _reservationsFacade: ReservationsFacade,
   ) {}
 
-  public async read(userIds: readonly string[], now: Date): Promise<StudentAnalyticsSources> {
+  public async read(userIds: readonly string[], now: Date, attemptScope?: EvaluationAttemptScope): Promise<StudentAnalyticsSources> {
     const [progress, grades, simulation, aiUsage, aiRatings, ventilator] = await Promise.all([
       this._progressFacade.getProgressForUsers(userIds),
-      this._evaluationFacade.getGradesForUsers(userIds),
+      this._evaluationFacade.getGradesForUsers(userIds, undefined, attemptScope),
       this._simulationFacade.getSessionStatsForUsers(userIds),
       this._aiTelemetryFacade.getUsageForUsers(userIds),
       this._aiRatingsFacade.getHelpfulnessForUsers(userIds),

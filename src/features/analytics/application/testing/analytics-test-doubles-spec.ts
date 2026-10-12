@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de analítica
- * Descripción: Fachadas falsas (grupos, progreso, evaluaciones, simulación, telemetría y valoraciones de IA, reservas, notas y tutor) con métodos jest.fn que responden datos deterministas para N estudiantes, y el arnés que construye el servicio de alcance, la caché, el lector por lotes y los casos de uso de analítica sobre ellas
- * Versión: 1.0
+ * Descripción: Fachadas falsas (grupos con dos grupos STUDENT gestionados por profesores distintos, progreso, evaluaciones, simulación, telemetría y valoraciones de IA, reservas, notas y tutor) con métodos jest.fn que responden datos deterministas para N estudiantes, y el arnés que construye el servicio de alcance, la caché, el lector por lotes y los casos de uso de analítica sobre ellas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,6 +35,17 @@ export const TEACHER: AnalyticsActor = { id: "teacher-1", role: "TEACHER" };
 export const OTHER_TEACHER: AnalyticsActor = { id: "teacher-2", role: "TEACHER" };
 
 export const GROUP_ID: string = "group-1";
+export const OTHER_GROUP_ID: string = "group-2";
+export const SHARED_EVALUATION_ID: string = "evaluation-shared";
+export const LEGACY_EVALUATION_ID: string = "evaluation-legacy";
+
+const MANAGED_GROUPS: Record<string, string[]> = { [TEACHER.id]: [GROUP_ID], [OTHER_TEACHER.id]: [OTHER_GROUP_ID] };
+
+const EVALUATION_REFERENCES: Record<string, { assignedGroupIds: string[]; createdById?: string }> = {
+  "evaluation-1": { assignedGroupIds: [GROUP_ID] },
+  [SHARED_EVALUATION_ID]: { assignedGroupIds: [GROUP_ID, OTHER_GROUP_ID] },
+  [LEGACY_EVALUATION_ID]: { assignedGroupIds: [], createdById: TEACHER.id },
+};
 export const SALT: string = "a-test-salt-of-32-characters-xyz";
 export const PUBLISHED_AT: Date = new Date("2026-10-01T10:00:00.000Z");
 
@@ -67,7 +78,7 @@ function progressOf(userIds: readonly string[]): UserLearningProgress[] {
 }
 
 export interface FakeFacades {
-  groups: { [K in "getGroupSummary" | "canManageGroup" | "canManageAnyGroupOfUser" | "getGroupMembers" | "getStudentMemberships"]: jest.Mock };
+  groups: { [K in "getGroupSummary" | "getManageableStudentGroupIds" | "isStudentMemberOfAny" | "getGroupMembers" | "getStudentMemberships"]: jest.Mock };
   progress: { getProgressForUsers: jest.Mock; getLessonCompletionsOfUser: jest.Mock; getSummary: jest.Mock };
   evaluation: {
     [K in
@@ -94,8 +105,16 @@ export function buildFakeFacades(students: GroupMemberSummary[]): FakeFacades {
       getGroupSummary: jest
         .fn()
         .mockImplementation((groupId: string) => Promise.resolve(groupId === GROUP_ID ? { id: GROUP_ID, name: "Group A", type: "STUDENT", isActive: true } : undefined)),
-      canManageGroup: jest.fn().mockImplementation((actor: AnalyticsActor, groupId: string) => Promise.resolve(actor.id === TEACHER.id && groupId === GROUP_ID)),
-      canManageAnyGroupOfUser: jest.fn().mockImplementation((actor: AnalyticsActor) => Promise.resolve(actor.id === TEACHER.id)),
+      getManageableStudentGroupIds: jest
+        .fn()
+        .mockImplementation((actor: AnalyticsActor, candidates?: string[]) =>
+          Promise.resolve((MANAGED_GROUPS[actor.id] ?? []).filter((groupId: string) => candidates === undefined || candidates.includes(groupId))),
+        ),
+      isStudentMemberOfAny: jest
+        .fn()
+        .mockImplementation((userId: string, groupIds: string[]) =>
+          Promise.resolve(groupIds.includes(GROUP_ID) && students.some((student: GroupMemberSummary) => student.userId === userId)),
+        ),
       getGroupMembers: jest.fn().mockResolvedValue([...students, { userId: TEACHER.id, email: "teacher@example.edu", userRole: "TEACHER", memberRole: "MEMBER" }]),
       getStudentMemberships: jest.fn().mockResolvedValue(students.map((student: GroupMemberSummary) => ({ userId: student.userId, groupId: GROUP_ID }))),
     },
@@ -137,7 +156,7 @@ export function buildFakeFacades(students: GroupMemberSummary[]): FakeFacades {
       ),
       getEvaluationReference: jest
         .fn()
-        .mockImplementation((id: string) => Promise.resolve(id === "evaluation-1" ? { id, title: "Exam", type: "EXAM", assignedGroupIds: [GROUP_ID] } : undefined)),
+        .mockImplementation((id: string) => Promise.resolve(EVALUATION_REFERENCES[id] ? { id, title: "Exam", type: "EXAM", ...EVALUATION_REFERENCES[id] } : undefined)),
       getEvaluationStats: jest.fn().mockResolvedValue({
         evaluationId: "evaluation-1",
         attemptsByStatus: { IN_PROGRESS: 0, SUBMITTED: 0, PENDING_REVIEW: 0, GRADED: 2 },

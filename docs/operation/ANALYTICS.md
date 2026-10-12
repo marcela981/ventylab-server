@@ -8,20 +8,25 @@ Teaching panels, the student's own summary and the anonymized research export. T
 | --- | --- | --- |
 | `GET /api/analytics/groups/:groupId/dashboard` | `analytics:read` (TEACHER, ADMIN) | One row per student member: progress by section, level and module; counted grade per evaluation and average; simulation sessions (count, average score, average time to stabilize); AI usage per use case with the percentage of useful ratings; ventilator hours. |
 | `GET /api/analytics/groups/:groupId/export.csv` | `analytics:read` | Grades and progress of the same dashboard as RFC 4180 CSV (`toCsv`, formula-injection guard). |
-| `GET /api/analytics/students/:userId/timeline?from=&to=` | `analytics:read` | Lesson completions, evaluation attempts (start and submission), simulation sessions and reservations, newest first. Default range: last 30 days; at most 366 days (422 otherwise); 200 entries per source, 500 in total (`truncated`). |
-| `GET /api/analytics/evaluations/:evaluationId/stats` | `analytics:read` | Average, median, min, max, histogram in 0.5 buckets on the 0–5 scale and pass rate (passing grade from `evaluation.passingGrade`) over graded attempts, plus per-question correct rate and difficulty index. |
+| `GET /api/analytics/students/:userId/timeline?from=&to=` | `analytics:read` | Lesson completions, evaluation attempts (start and submission), simulation sessions and reservations, newest first. Default range: last 30 days; at most 366 days (422 otherwise); 200 entries per source, 500 in total. Each source is read with one extra row, and `truncated` is true when any source or the merged total was capped. |
+| `GET /api/analytics/evaluations/:evaluationId/stats` | `analytics:read` | Average, median, min, max, histogram in 0.5 buckets on the 0–5 scale and pass rate (passing grade from `evaluation.passingGrade`) over graded attempts, plus per-question correct rate and difficulty index. For a teacher only the attempts in the teacher's attempt scope count (see Scope); ADMIN gets the whole evaluation. |
 | `GET /api/analytics/research/export.csv?groupId=` | `analytics:research-export` (ADMIN) | Anonymized long-format dataset for the thesis analysis. |
 | `GET /api/me/summary` | Any authenticated user, self only (the ID comes from the JWT) | Progress per section, published grades, active and upcoming evaluations, latest notes, AI tutor conversations and simulation sessions, upcoming reservations, unread notifications. |
 
 ## Scope
 
-- ADMIN sees every group, student and evaluation.
-- A teacher sees a group only when `GroupsFacade.canManageGroup` allows it (STUDENT group created by the teacher, or supervised through one of the teacher's TEACHER groups); a student only when the teacher manages one of the student's groups; an evaluation only when it is assigned to one of those groups.
+- ADMIN sees every group, student and evaluation, with whole-evaluation statistics and whole grade history.
+- A teacher's manageable groups are the STUDENT groups the teacher created or supervises through an active TEACHER group the teacher belongs to, read with one query (`GroupsFacade.getManageableStudentGroupIds`, optionally narrowed to candidate groups).
+- Group panels: the group must be one of the manageable groups.
+- Student timeline: the target must be a user with role STUDENT who is a member of one of the manageable groups (`GroupsFacade.isStudentMemberOfAny`, one query).
+- Evaluation statistics: the evaluation must be assigned to one of the manageable groups (one query intersecting the assigned groups), or, when it has no assignments (legacy), the teacher must be its creator.
+- Attempt scope: for a teacher, every attempt read (evaluation statistics and per-question analysis, dashboard and group CSV grades, timeline attempts) is limited to attempts whose assignment belongs to one of the manageable groups, or attempts without an assignment of evaluations the teacher created. This is the same rule as grading, so a teacher of group A never aggregates or sees group B attempts of a shared evaluation.
+- Lesson progress, simulation sessions, AI usage and ratings, and ventilator reservations are per user and not tied to a group or evaluation, so panels show the student's whole history for them.
 - Out of scope answers 403 (`analytics.out_of_scope`); a missing group or evaluation answers 404. The scope check runs on every request, also when the panel is cached.
 
 ## Cache
 
-`AnalyticsCache` keeps each panel in memory for 60 s. The key carries the panel, its resource (group, evaluation or student and range) and the requester scope (`admin` or `user:<id>`), so one requester never receives another's cached entry. Concurrent requests share one load; failed loads are not cached; at most 500 entries. The timeline's default end is rounded up to the minute so repeated default requests share an entry.
+`AnalyticsCache` keeps each panel in memory for 60 s. The key carries the panel, its resource (group, evaluation or student and range) and the requester scope (`admin`, or `user:<id>:<sorted manageable group ids>` for a teacher), so one requester never receives another's cached entry and a change in the teacher's groups starts a new entry. Concurrent requests share one load; failed loads are not cached; at most 500 entries. The timeline's default end is rounded up to the minute so repeated default requests share an entry.
 
 ## Query budget (30-student dashboard, cold cache)
 
@@ -29,17 +34,19 @@ One batched facade call per feature, each with a fixed number of Prisma operatio
 
 | Step | Prisma operations |
 | --- | --- |
-| Scope (teacher: group summary + `canManageGroup` with supervision lookup; admin: group summary) | 3 (admin 1) |
+| Scope (group summary; teacher: plus manageable group ids, which also give the attempt scope) | 2 (admin 1) |
 | Group members | 1 |
 | Progress (`getProgressForUsers`): published structure (sections, levels, modules), published lessons with their filtered published-page count, completed page views of all users (`IN`), lesson completion records of all users (`IN`) | 6 |
-| Published grades (`getGradesForUsers`, `IN`) | 1 |
+| Published grades (`getGradesForUsers`, `IN`, teacher attempt scope in the same query) | 1 |
 | Simulation (`getSessionStatsForUsers`, one grouped `$queryRaw` with `IN`) | 1 |
 | AI telemetry (`getUsageForUsers`, one `groupBy` with `IN`) | 1 |
 | AI ratings (`getHelpfulnessForUsers`, one grouped `$queryRaw` with `IN`) | 1 |
 | Ventilator hours (`getVentilatorUsageForUsers`, one `findMany` with `IN`) | 1 |
-| **Total** | **15 (admin 13)** |
+| **Total** | **14 (admin 13)** |
 
 A Prisma operation that selects a relation (members with their user, grades with their evaluation title) may be split by Prisma into more than one SQL statement; the count above is Prisma operations. The feature batches run in parallel. `GetGroupDashboardUseCase` has a spec asserting each batch method is called exactly once for 30 students.
+
+Other panels: evaluation statistics take 10 Prisma operations for a teacher (reference, manageable groups among the assigned ones, 4 aggregates, graded grades, questions, graded count, graded answers; admin 9); the timeline takes 6 for a teacher (manageable groups, membership, one read per source; admin 4).
 
 ## Derived metrics
 
@@ -53,6 +60,6 @@ A Prisma operation that selects a relation (members with their user, grades with
 
 - Requires `ANALYTICS_EXPORT_SALT` (optional environment variable, at least 16 characters). Without it the route answers 503 (`analytics.export_not_configured`) and reads nothing.
 - Participants: users with role STUDENT who are members of STUDENT groups (all, or `groupId`). A student in several groups is exported once, under the first group by identifier.
-- Columns: `participant, group, domain, item, metric, value`. `participant` is `HMAC-SHA256(userId)` and `group` is `HMAC-SHA256(groupId)`, keyed by the salt, as lowercase hex; the same salt gives the same pseudonyms across exports, so changing it unlinks old and new files.
-- Domains: `progress` (overall and per section), `grades` (counted grade per evaluation), `simulation` (session count, average score, average time to stabilize), `ai_telemetry` (calls, tokens and average latency per use case) and `ai_ratings` (ratings, helpful rate and dimension means per use case). Items are content identifiers (sections, evaluations) or use case names.
-- No names, emails or user, group, attempt or session identifiers are written. User accounts have no student-code field.
+- Columns: `participant, group, domain, item, metric, value`. `participant` is `HMAC-SHA256(userId)` and `group` is `HMAC-SHA256(groupId)`, keyed by the salt, as lowercase hex; evaluation items are `HMAC-SHA256("evaluation:" + evaluationId)` (domain separated, because an evaluation can identify the group it was assigned to); the same salt gives the same pseudonyms across exports, so changing it unlinks old and new files.
+- Domains: `progress` (overall and per section), `grades` (counted grade per evaluation), `simulation` (session count, average score, average time to stabilize), `ai_telemetry` (calls, tokens and average latency per use case) and `ai_ratings` (ratings, helpful rate and dimension means per use case). Items are `overall`, section identifiers (published curriculum content shared by every group), pseudonymized evaluations, `all` or AI use case names.
+- No names, emails or user, group, evaluation, attempt or session identifiers are written; the export spec seeds names, emails, student-code-like strings and raw identifiers into the sources and checks the allowed values of every column. User accounts have no student-code field.
