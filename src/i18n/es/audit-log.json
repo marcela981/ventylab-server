@@ -3,7 +3,6 @@
   "target_history_retrieved": "Historial de auditoría del objetivo obtenido correctamente",
   "invalid_range": "El rango de fechas debe empezar antes de terminar",
   "validation": {
-    "action_invalid": "La acción de auditoría no es válida",
     "date_invalid": "La fecha debe ser una fecha ISO 8601 válida",
     "filter_too_long": "El filtro debe tener como máximo 100 caracteres",
     "target_required": "El tipo y el identificador del objetivo son obligatorios"

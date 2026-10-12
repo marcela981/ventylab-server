@@ -83,3 +83,8 @@ WHERE (coalesce("before"::text, '') || coalesce("after"::text, '') || coalesce("
       ~* '"(password|passwordhash|password_hash|accesstoken|refreshtoken|resettoken|secret|apikey)"\s*:\s*"(?!\[REDACTED\])';
 -- expected: 0 for rows written after the migration
 ```
+
+## Known limitations
+
+- **Audit IP and proxies**: the `ip` column comes from Express `req.ip`, which relies on `trust proxy 1` (exactly one reverse-proxy hop). Behind a different number of proxies the stored IP is either the proxy address or a client-supplied `X-Forwarded-For` value; adjust `trust proxy` to the real deployment topology before treating the IP as evidence.
+- **Audit actor role**: `actor_role` is the role carried in the access token (JWT) at issue time, not a fresh database read. A role change takes effect in audit rows only after the actor's token is refreshed, so an entry recorded in that window shows the previous role.

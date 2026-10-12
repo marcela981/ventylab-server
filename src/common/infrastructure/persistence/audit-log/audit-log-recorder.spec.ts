@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AuditLogRecorder y AuditLogPrismaRepository
- * Descripción: Verifica con una base de datos falsa que modela confirmación y reversión que el registrador escriba solo los campos cambiados dentro de la transacción del llamador, complete rol, petición e IP desde el contexto, nunca persista contraseñas, hashes ni tokens y que la reversión descarte el cambio y su auditoría
- * Versión: 1.0
+ * Descripción: Verifica con una base de datos falsa que modela confirmación y reversión que el registrador escriba solo los campos cambiados dentro de la transacción del llamador, complete rol, petición e IP desde el contexto, nunca persista contraseñas, hashes ni tokens, guarde el referer sin query string, omita filas sin cambios ni motivo y que la reversión descarte el cambio y su auditoría
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -65,7 +65,7 @@ function buildRecorder(context: RequestContextService = new RequestContextServic
 }
 
 function requestContext(): RequestContext {
-  return { method: "PATCH", path: "/api/users/u-2/role", traceId: "trace-1", agent: { ip: "203.0.113.10", userAgent: "jest" }, actorRole: "ADMIN" };
+  return { method: "PATCH", path: "/api/users/u-2/role", traceId: "trace-1", agent: { ip: "203.0.113.10", userAgent: "jest", referer: "https://app.ventylab.test/admin/users?token=abc&page=2#row-7" }, actorRole: "ADMIN" };
 }
 
 describe("AuditLogRecorder", () => {
@@ -106,6 +106,49 @@ describe("AuditLogRecorder", () => {
     });
 
     expect(database.auditRows[0]).toMatchObject({ actorRole: "ADMIN", requestId: "trace-1", ip: "203.0.113.10" });
+  });
+
+  it("stores the referer without its query string or fragment", async () => {
+    const database: FakeDatabase = new FakeDatabase();
+    const context: RequestContextService = new RequestContextService();
+    const recorder: AuditLogRecorder = buildRecorder(context);
+
+    await new Promise<void>((resolve: () => void, reject: (error: unknown) => void) => {
+      context.run(requestContext(), () => {
+        database
+          .run((transaction: unknown) => recorder.record("admin-1", AUDIT_ACTIONS.USER_STATUS_CHANGED, "users", "u-2", { status: "ACTIVE" }, { status: "INACTIVE" }, transaction))
+          .then(resolve, reject);
+      });
+    });
+
+    const metadata: { agent: { referer: string } } = database.auditRows[0].metadata as unknown as { agent: { referer: string } };
+
+    expect(metadata.agent.referer).toBe("https://app.ventylab.test/admin/users");
+    expect(JSON.stringify(database.auditRows[0])).not.toContain("token=abc");
+  });
+
+  it("skips the write when nothing changed and no reason is given", async () => {
+    const database: FakeDatabase = new FakeDatabase();
+    const recorder: AuditLogRecorder = buildRecorder();
+
+    await database.run(async (transaction: unknown) => {
+      await recorder.record("admin-1", AUDIT_ACTIONS.USER_ROLE_CHANGED, "users", "u-2", { role: "STUDENT" }, { role: "STUDENT" }, transaction);
+      await recorder.record("admin-1", AUDIT_ACTIONS.USER_ROLE_CHANGED, "users", "u-2", {}, {}, transaction, { reason: "   " });
+    });
+
+    expect(database.auditRows).toEqual([]);
+  });
+
+  it("keeps an unchanged entry when a reason is given", async () => {
+    const database: FakeDatabase = new FakeDatabase();
+    const recorder: AuditLogRecorder = buildRecorder();
+
+    await database.run(async (transaction: unknown) => {
+      await recorder.record("admin-1", AUDIT_ACTIONS.USER_ROLE_CHANGED, "users", "u-2", { role: "STUDENT" }, { role: "STUDENT" }, transaction, { reason: "Confirmed role" });
+    });
+
+    expect(database.auditRows).toHaveLength(1);
+    expect(database.auditRows[0]).toMatchObject({ before: {}, after: {}, reason: "Confirmed role" });
   });
 
   it("never persists password, hash or token values", async () => {

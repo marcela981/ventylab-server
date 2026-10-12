@@ -100,3 +100,11 @@ Decisions from the audit:
 - No blockers/majors. Minor fixes queued (T3-fix): broader redaction keys, validate client request id,
   strip referer query string, free-text action filter, skip empty-diff rows. Documented only: audit IP
   depends on `trust proxy 1`; actorRole is the JWT role at token issue time.
+
+### T2-fix — native review: approved (4 lenses), acknowledged; advisory only.
+
+### T3-fix — done
+- Broader key + value redaction (JWT/Bearer values, credential keys, explicit token plurals; usage
+  counters stay visible), client request id validated, referer query stripped, free-text action filter,
+  empty-diff audit rows skipped, known limitations documented.
+- Checks: tsc 0; jest 17 suites / 188 tests pass; eslint clean.

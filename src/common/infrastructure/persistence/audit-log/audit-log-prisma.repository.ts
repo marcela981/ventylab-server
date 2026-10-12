@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio AuditLogPrismaRepository
- * Descripción: Implementa IAuditLogRepository con Prisma sobre la tabla audit_logs (solo inserción): completa rol del actor, identificador de petición e IP desde RequestContextService cuando el registro no los trae, añade el agente HTTP a metadata y protege before, after y metadata ocultando secretos y resumiendo textos largos o enriquecidos con su sha256
- * Versión: 1.1
+ * Descripción: Implementa IAuditLogRepository con Prisma sobre la tabla audit_logs (solo inserción): completa rol del actor, identificador de petición e IP desde RequestContextService cuando el registro no los trae, añade el agente HTTP a metadata (con el referer sin query string ni fragmento) y protege before, after y metadata ocultando secretos y resumiendo textos largos o enriquecidos con su sha256
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,11 +15,16 @@ import { type AuditPayload, protectAuditPayload } from "@/common/domain/audit/au
 import { AuditLog } from "@/common/domain/entities/audit-log.entity";
 import { IAuditLogRepository } from "@/common/domain/repositories/audit-log.repository";
 import {
+  RequestAgentInfo,
   RequestContext,
   RequestContextService,
 } from "@/common/infrastructure/context/request-context.service";
 import { resolveClient, type PrismaExecutor } from "@/common/infrastructure/persistence/prisma/prisma-client";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
+
+function withoutRefererQuery(agent: RequestAgentInfo): RequestAgentInfo {
+  return agent.referer === undefined ? agent : { ...agent, referer: agent.referer.split(/[?#]/)[0] };
+}
 
 function toJsonColumn(payload: AuditPayload | undefined): Prisma.InputJsonObject | typeof Prisma.DbNull {
   return payload ? (protectAuditPayload(payload) as Prisma.InputJsonObject) : Prisma.DbNull;
@@ -45,7 +50,7 @@ export class AuditLogPrismaRepository implements IAuditLogRepository {
 
     const rows: Prisma.AuditLogCreateManyInput[] = logs.map((log: AuditLog) => {
       const metadata: AuditPayload | undefined = context
-        ? { ...(log.metadata ?? {}), agent: context.agent }
+        ? { ...(log.metadata ?? {}), agent: withoutRefererQuery(context.agent) }
         : log.metadata;
 
       return {

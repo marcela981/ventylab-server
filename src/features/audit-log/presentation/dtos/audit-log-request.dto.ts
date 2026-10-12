@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de petición de la bitácora de auditoría
- * Descripción: Valida los filtros de búsqueda y exportación de auditoría (actor, acción del catálogo, tipo e identificador de objetivo, rango ISO 8601), la paginación y los parámetros de ruta del historial de un objetivo
- * Versión: 1.0
+ * Descripción: Valida los filtros de búsqueda y exportación de auditoría (actor, acción como texto libre de hasta 100 caracteres, tipo e identificador de objetivo, rango ISO 8601), la paginación y los parámetros de ruta del historial de un objetivo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,8 +12,6 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsIn, IsInt, IsISO8601, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
-
-import { AUDIT_ACTION_VALUES } from "@/common/domain/audit/audit-action";
 
 const MAX_FILTER_LENGTH: number = 100;
 
@@ -46,9 +44,10 @@ export class AuditLogFiltersQueryDTO {
   @MaxLength(MAX_FILTER_LENGTH, { message: i18nValidationMessage("audit-log.validation.filter_too_long") })
   public actorId?: string;
 
-  @ApiPropertyOptional({ description: "Only entries with this action", enum: AUDIT_ACTION_VALUES, example: "user_role_changed" })
+  @ApiPropertyOptional({ description: "Only entries with this action (exact match; any persisted action string, catalog or legacy)", example: "user_role_changed", maxLength: MAX_FILTER_LENGTH })
   @IsOptional()
-  @IsIn([...AUDIT_ACTION_VALUES], { message: i18nValidationMessage("audit-log.validation.action_invalid") })
+  @IsString({ message: i18nValidationMessage("common.validation.string") })
+  @MaxLength(MAX_FILTER_LENGTH, { message: i18nValidationMessage("audit-log.validation.filter_too_long") })
   public action?: string;
 
   @ApiPropertyOptional({ description: "Only entries whose target entity type or collection matches", example: "user" })

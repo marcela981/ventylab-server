@@ -3,7 +3,6 @@
   "target_history_retrieved": "Target audit history retrieved successfully",
   "invalid_range": "The date range must start before it ends",
   "validation": {
-    "action_invalid": "The audit action is not valid",
     "date_invalid": "The date must be a valid ISO 8601 date",
     "filter_too_long": "The filter must have at most 100 characters",
     "target_required": "The target type and ID are required"
