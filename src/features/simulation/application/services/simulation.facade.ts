@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada SimulationFacade
- * Descripción: API pública de las sesiones de simulación con eventos para otras features: resumen de una sesión, calificación por rúbrica recalculada siempre con la repetición del servidor (nunca con datos del cliente), sesiones paginadas de un usuario y estadísticas de sesiones de los miembros de un grupo obtenidos con GroupsFacade, y la versión del motor de simulación
- * Versión: 1.1
+ * Descripción: API pública de las sesiones de simulación con eventos para otras features: resumen de una sesión, calificación por rúbrica recalculada siempre con la repetición del servidor (nunca con datos del cliente), sesiones paginadas de un usuario y estadísticas de sesiones de los miembros de un grupo obtenidos con GroupsFacade, la versión del motor de simulación y lecturas por lotes para analítica: estadísticas por usuario de varios usuarios en una sola consulta (conteo, puntaje promedio y tiempo promedio de estabilización tomado del resumen persistido) y sesiones de un usuario en un rango
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,6 +28,12 @@ import {
   type SimulationSessionView,
 } from "@/features/simulation/domain/read-models/simulation-session.read-model";
 import {
+  type ISimulationAnalyticsRepository,
+  SIMULATION_ANALYTICS_REPOSITORY_TOKEN,
+  type SimulationSessionActivityView,
+  type SimulationUserSessionStats,
+} from "@/features/simulation/domain/repositories/simulation-analytics.repository";
+import {
   type GetSimulationSessionsQuery,
   type ISimulationSessionsRepository,
   SIMULATION_SESSIONS_REPOSITORY_TOKEN,
@@ -50,6 +56,11 @@ export const SIMULATION_INVALID_RUBRIC_REASON: string = "INVALID_RUBRIC";
 
 export type SimulationSessionsPageQuery = Omit<GetSimulationSessionsQuery, "userId">;
 
+export interface SimulationActivityRange {
+  readonly from: Date;
+  readonly to: Date;
+}
+
 @Injectable()
 export class SimulationFacade {
   public constructor(
@@ -57,6 +68,8 @@ export class SimulationFacade {
     private readonly _sessionsRepository: ISimulationSessionsRepository,
     private readonly _runtime: SimulationSessionRuntime,
     private readonly _groupsFacade: GroupsFacade,
+    @Inject(SIMULATION_ANALYTICS_REPOSITORY_TOKEN)
+    private readonly _analyticsRepository: ISimulationAnalyticsRepository,
   ) {}
 
   public get engineVersion(): string {
@@ -127,6 +140,14 @@ export class SimulationFacade {
     const sessions: Paginated<SimulationSession> = await this._sessionsRepository.getAll({ ...query, userId });
 
     return sessions.map(SimulationFacade.toView);
+  }
+
+  public async getSessionStatsForUsers(userIds: readonly string[]): Promise<SimulationUserSessionStats[]> {
+    return await this._analyticsRepository.getSessionStatsForUsers(userIds);
+  }
+
+  public async getSessionActivityOfUser(userId: string, range: SimulationActivityRange, limit: number): Promise<SimulationSessionActivityView[]> {
+    return await this._analyticsRepository.getSessionActivityOfUser(userId, range.from, range.to, limit);
   }
 
   public async getGroupSessionStats(groupId: string): Promise<SimulationGroupSessionStats> {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo GroupsModule
- * Descripción: Registra la feature de grupos (controlador /api/groups, casos de uso, servicio de acceso, fachada y repositorios Prisma de grupos, miembros y supervisiones); exporta GroupsFacade y, para las features que aún los consumen, los repositorios de grupos y miembros
- * Versión: 1.1
+ * Descripción: Registra la feature de grupos (controlador /api/groups, casos de uso, servicio de acceso, fachada y repositorios Prisma de grupos, miembros, supervisiones y lecturas por lotes para analítica); exporta GroupsFacade y, para las features que aún los consumen, los repositorios de grupos y miembros
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,9 +26,11 @@ import { RemoveGroupMemberUseCase } from "@/features/groups/application/use-case
 import { RemoveGroupSupervisionUseCase } from "@/features/groups/application/use-cases/remove-group-supervision.usecase";
 import { SetSimulatorLeadUseCase } from "@/features/groups/application/use-cases/set-simulator-lead.usecase";
 import { UpdateGroupUseCase } from "@/features/groups/application/use-cases/update-group.usecase";
+import { GROUP_ANALYTICS_REPOSITORY_TOKEN } from "@/features/groups/domain/repositories/group-analytics.repository";
 import { GROUP_MEMBERS_REPOSITORY_TOKEN } from "@/features/groups/domain/repositories/group-members.repository";
 import { GROUP_SUPERVISIONS_REPOSITORY_TOKEN } from "@/features/groups/domain/repositories/group-supervisions.repository";
 import { GROUPS_REPOSITORY_TOKEN } from "@/features/groups/domain/repositories/groups.repository";
+import { GroupAnalyticsPrismaRepository } from "@/features/groups/infrastructure/persistence/prisma/repositories/group-analytics-prisma.repository";
 import { GroupMembersPrismaRepository } from "@/features/groups/infrastructure/persistence/prisma/repositories/group-members-prisma.repository";
 import { GroupSupervisionsPrismaRepository } from "@/features/groups/infrastructure/persistence/prisma/repositories/group-supervisions-prisma.repository";
 import { GroupsPrismaRepository } from "@/features/groups/infrastructure/persistence/prisma/repositories/groups-prisma.repository";
@@ -42,6 +44,10 @@ import { UsersModule } from "@/features/users/users.module";
     {
       provide: GROUPS_REPOSITORY_TOKEN,
       useClass: GroupsPrismaRepository,
+    },
+    {
+      provide: GROUP_ANALYTICS_REPOSITORY_TOKEN,
+      useClass: GroupAnalyticsPrismaRepository,
     },
     {
       provide: GROUP_MEMBERS_REPOSITORY_TOKEN,

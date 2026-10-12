@@ -1,0 +1,15 @@
+{
+  "dashboard_retrieved": "Panel del grupo obtenido correctamente",
+  "timeline_retrieved": "Línea de tiempo del estudiante obtenida correctamente",
+  "evaluation_stats_retrieved": "Estadísticas de la evaluación obtenidas correctamente",
+  "summary_retrieved": "Resumen obtenido correctamente",
+  "out_of_scope": "La analítica solicitada está fuera de tus grupos",
+  "group_not_found": "Grupo no encontrado",
+  "evaluation_not_found": "Evaluación no encontrada",
+  "invalid_range": "El rango de fechas debe empezar antes de terminar y abarcar como máximo 366 días",
+  "export_not_configured": "La exportación anonimizada no está configurada",
+  "validation": {
+    "date_invalid": "La fecha debe ser una fecha ISO 8601 válida",
+    "group_id_too_long": "El identificador del grupo debe tener como máximo 100 caracteres"
+  }
+}

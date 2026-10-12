@@ -40,7 +40,7 @@ Decisions from the audit:
 - [x] T3 audit-log: schema extension, redaction/hash, append-only trigger, admin queries + CSV, missing audit points.
 - [x] T4 notifications: model, bus subscribers, templates, owner endpoints, `notification:new`, ReservationNotifier removed.
 - [x] T5 system-status: `/health/ready`, `/system/status`, change event, AI probe.
-- [ ] T6 analytics: batch facade functions, group/student/evaluation panels, `/me/summary`, CSV + anonymized export.
+- [x] T6 analytics: batch facade functions, group/student/evaluation panels, `/me/summary`, CSV + anonymized export.
 - [ ] T7 Verification evidence (`docs/operation/VERIFICATION.md`) + dependency graph.
 
 ## Progress / evidence
@@ -131,3 +131,18 @@ Decisions from the audit:
 - Deviation: probes are logged as `TOPIC_CHECK` with `refType="health_probe"` because `ai_call_logs.use_case`
   is a Postgres enum (no schema change in this task).
 - Checks: tsc 0; jest 59 suites / 552 tests pass; eslint clean; coupling grep empty.
+
+### T5 — review (native refused: lens_context_budget_exceeded; independent reviewer)
+- No blockers. Major: health probes logged as TOPIC_CHECK cannot be excluded from ai-telemetry stats/export
+  (skews thesis metrics). Minor: event-loop lag includes histogram resolution (~20 ms); no configured AI
+  provider marks the system DEGRADED. -> fixed in T5-fix.
+- Audit recorder change in 4857173 is intended (event-only and metadata-carrying rows are kept).
+
+### T6 — done
+- Route: delegated writer. `src/features/analytics/` (no tables): group dashboard, student timeline,
+  evaluation stats (mean, median, 0.5 histogram, pass rate, per-question difficulty), group CSV, `/api/me/summary`,
+  ADMIN research export (HMAC-SHA256 pseudonyms with `ANALYTICS_EXPORT_SALT`, 503 without it).
+- Batch reads added through separate read-only analytics ports in progress, evaluation, simulation,
+  ai-telemetry, ai-ratings (`AiRatingsFacade`), reservations, groups; `NotesFacade`, `AiTutorFacade`.
+- 30-student dashboard: 14 Prisma operations (teacher), independent of group size; 60 s cache per panel+requester.
+- Checks: tsc 0; jest 124 suites / 819 tests + 24 suites / 200 tests pass; eslint clean; coupling grep empty.

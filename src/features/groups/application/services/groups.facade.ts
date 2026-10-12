@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada pública de grupos
- * Descripción: API de lectura que GroupsModule exporta para otras features: grupo STUDENT activo de un usuario, miembros de un grupo, liderazgo, pertenencia, grupos STUDENT supervisados por los grupos TEACHER de un profesor alcance de gestión y resumen (nombre, tipo, estado) de un grupo; usa los repositorios de grupos y miembros y GroupAccessService
- * Versión: 1.1
+ * Descripción: API de lectura que GroupsModule exporta para otras features: grupo STUDENT activo de un usuario, miembros de un grupo, liderazgo, pertenencia, grupos STUDENT supervisados por los grupos TEACHER de un profesor alcance de gestión y resumen (nombre, tipo, estado) de un grupo, si un actor gestiona algún grupo de un usuario y membresías de estudiantes en grupos STUDENT para analítica; usa los repositorios de grupos, miembros y analítica y GroupAccessService
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,11 @@ import { GroupAccessService } from "@/features/groups/application/services/group
 import { type GroupMember } from "@/features/groups/domain/entities/group-member.entity";
 import { type Group } from "@/features/groups/domain/entities/group.entity";
 import { type GroupMemberView, type StudentGroupSummaryView } from "@/features/groups/domain/read-models/group.read-model";
+import {
+  GROUP_ANALYTICS_REPOSITORY_TOKEN,
+  type IGroupAnalyticsRepository,
+  type StudentMembershipView,
+} from "@/features/groups/domain/repositories/group-analytics.repository";
 import {
   GROUP_MEMBERS_REPOSITORY_TOKEN,
   type IGroupMembersRepository,
@@ -46,6 +51,8 @@ export class GroupsFacade {
     @Inject(GROUP_MEMBERS_REPOSITORY_TOKEN)
     private readonly _groupMembersRepository: IGroupMembersRepository,
     private readonly _groupAccessService: GroupAccessService,
+    @Inject(GROUP_ANALYTICS_REPOSITORY_TOKEN)
+    private readonly _analyticsRepository: IGroupAnalyticsRepository,
   ) {}
 
   public async getStudentGroupOfUser(userId: string): Promise<StudentGroupSummaryView | undefined> {
@@ -86,6 +93,22 @@ export class GroupsFacade {
 
   public async getSupervisedStudentGroupIds(teacherUserId: string): Promise<string[]> {
     return await this._groupsRepository.getSupervisedStudentGroupIds(teacherUserId);
+  }
+
+  public async canManageAnyGroupOfUser(user: GroupActor, userId: string): Promise<boolean> {
+    const groupIds: string[] = await this._groupsRepository.getGroupIdsForUser(userId);
+
+    for (const groupId of groupIds) {
+      if (await this.canManageGroup(user, groupId)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public async getStudentMemberships(groupId?: string): Promise<StudentMembershipView[]> {
+    return await this._analyticsRepository.getStudentMemberships(groupId);
   }
 
   public async canManageGroup(user: GroupActor, groupId: string): Promise<boolean> {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo AiTutorModule
- * Descripción: Registra el tutor de IA: controlador SSE y de conversaciones, casos de uso, servicios de turnos y de contexto, repositorio Prisma de conversaciones, lector de contenido sobre pages/lessons/modules, fuente de conocimiento vacía por defecto y datos personales desde users; usa AiGateway de AiModule
- * Versión: 1.0
+ * Descripción: Registra el tutor de IA: controlador SSE y de conversaciones, casos de uso, servicios de turnos y de contexto, repositorio Prisma de conversaciones, lector de contenido sobre pages/lessons/modules, fuente de conocimiento vacía por defecto y datos personales desde users; usa AiGateway de AiModule y exporta AiTutorFacade
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,7 @@ import { AiModule } from "@/features/ai/ai.module";
 import { KNOWLEDGE_SOURCE_TOKEN } from "@/features/ai-tutor/application/ports/knowledge-source.interface";
 import { TUTOR_CONTENT_READER_TOKEN } from "@/features/ai-tutor/application/ports/tutor-content-reader.interface";
 import { TUTOR_PERSONAL_DATA_TOKEN } from "@/features/ai-tutor/application/ports/tutor-personal-data.interface";
+import { AiTutorFacade } from "@/features/ai-tutor/application/services/ai-tutor.facade";
 import { TutorContextAssembler } from "@/features/ai-tutor/application/services/tutor-context-assembler";
 import { TutorTurnService } from "@/features/ai-tutor/application/services/tutor-turn.service";
 import { DeepenPageUseCase } from "@/features/ai-tutor/application/use-cases/deepen-page.usecase";
@@ -51,6 +52,8 @@ import { UsersModule } from "@/features/users/users.module";
     GetAiConversationUseCase,
     RenameAiConversationUseCase,
     DeleteAiConversationUseCase,
+    AiTutorFacade,
   ],
+  exports: [AiTutorFacade],
 })
 export class AiTutorModule {}

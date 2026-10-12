@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.31
+ * Versión: 1.32
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -50,6 +50,13 @@ import {
   AiConversationPageMismatchError,
   AiConversationRefRequiredError,
 } from "@/features/ai-tutor/domain/ai-tutor.errors";
+import {
+  AnalyticsEvaluationNotFoundError,
+  AnalyticsExportNotConfiguredError,
+  AnalyticsGroupNotFoundError,
+  AnalyticsScopeForbiddenError,
+  InvalidAnalyticsRangeError,
+} from "@/features/analytics/domain/analytics.errors";
 import { InvalidAuditLogRangeError } from "@/features/audit-log/domain/audit-log.errors";
 import {
   EmailDomainNotAllowedError,
@@ -544,4 +551,9 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [SimulationTimeMultiplierNotAllowedError, HttpStatus.UNPROCESSABLE_ENTITY],
   [UnknownAiProviderError, HttpStatus.NOT_FOUND],
   [AiProviderNotRegisteredError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [AnalyticsScopeForbiddenError, HttpStatus.FORBIDDEN],
+  [AnalyticsGroupNotFoundError, HttpStatus.NOT_FOUND],
+  [AnalyticsEvaluationNotFoundError, HttpStatus.NOT_FOUND],
+  [InvalidAnalyticsRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [AnalyticsExportNotConfiguredError, HttpStatus.SERVICE_UNAVAILABLE],
 ]);

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados de la calificación docente de evaluaciones
- * Descripción: Resultados de los casos de uso de calificación (vista completa de un intento con la evaluación, respuestas, puntajes y desglose práctico recalculado; calificación de una pregunta; publicación de una nota) y tipos públicos de EvaluationFacade (nota publicada con aprobación y estadísticas de una evaluación)
- * Versión: 1.0
+ * Descripción: Resultados de los casos de uso de calificación (vista completa de un intento con la evaluación, respuestas, puntajes y desglose práctico recalculado; calificación de una pregunta; publicación de una nota) y tipos públicos de EvaluationFacade (nota publicada con aprobación y estadísticas de una evaluación con mediana e histograma de notas en intervalos de 0.5)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { type ResolvedMediaURL } from "@/common/application/ports/media-url-reso
 import { type PracticalScoreResult } from "@/features/evaluation/application/ports/practical-score-provider.interface";
 import { type Evaluation } from "@/features/evaluation/domain/entities/evaluation.entity";
 import { type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
+import { type GradeHistogramBucket } from "@/features/evaluation/domain/services/evaluation-analytics";
 import { type EvaluationAttemptStatusValue } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 import { type EvaluationTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-type";
 
@@ -84,6 +85,8 @@ export interface EvaluationGradeStats {
   readonly averageGrade?: number;
   readonly minGrade?: number;
   readonly maxGrade?: number;
+  readonly medianGrade?: number;
+  readonly histogram: GradeHistogramBucket[];
   readonly passRate?: number;
   readonly passingGrade: number;
 }

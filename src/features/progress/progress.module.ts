@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo ProgressModule
- * Descripción: Registra la feature de progreso (controladores de /api/progress y de progresión en /api/teaching, casos de uso, repositorios Prisma y manejadores de eventos de logros); registra el progreso por páginas (vistas de página, progreso ponderado por lecciones, LearningProgressFacade) y el controlador de progreso de estudiantes; importa ModulesModule (GetModuleResumeUseCase), CurriculumModule (ComputeCurriculumUnlockUseCase) y UsersModule (GetUserByIdUseCase)
- * Versión: 1.2
+ * Descripción: Registra la feature de progreso (controladores de /api/progress y de progresión en /api/teaching, casos de uso, repositorios Prisma y manejadores de eventos de logros); registra el progreso por páginas (vistas de página, progreso ponderado por lecciones, LearningProgressFacade, con el repositorio de lecturas por lotes para analítica) y el controlador de progreso de estudiantes; importa ModulesModule (GetModuleResumeUseCase), CurriculumModule (ComputeCurriculumUnlockUseCase) y UsersModule (GetUserByIdUseCase)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,11 +35,13 @@ import { UnlockAchievementsUseCase } from "@/features/progress/application/use-c
 import { UpdateStepProgressUseCase } from "@/features/progress/application/use-cases/update-step-progress.usecase";
 import { ACHIEVEMENTS_REPOSITORY_TOKEN } from "@/features/progress/domain/repositories/achievements.repository";
 import { LEARNING_PROGRESS_REPOSITORY_TOKEN } from "@/features/progress/domain/repositories/learning-progress.repository";
+import { PROGRESS_ANALYTICS_REPOSITORY_TOKEN } from "@/features/progress/domain/repositories/progress-analytics.repository";
 import { PROGRESS_QUERIES_REPOSITORY_TOKEN } from "@/features/progress/domain/repositories/progress-queries.repository";
 import { PROGRESS_REPOSITORY_TOKEN } from "@/features/progress/domain/repositories/progress.repository";
 import { ProgressEventsHandlers } from "@/features/progress/infrastructure/events/progress-events.handlers";
 import { AchievementsPrismaRepository } from "@/features/progress/infrastructure/persistence/prisma/repositories/achievements-prisma.repository";
 import { LearningProgressPrismaRepository } from "@/features/progress/infrastructure/persistence/prisma/repositories/learning-progress-prisma.repository";
+import { ProgressAnalyticsPrismaRepository } from "@/features/progress/infrastructure/persistence/prisma/repositories/progress-analytics-prisma.repository";
 import { ProgressPrismaRepository } from "@/features/progress/infrastructure/persistence/prisma/repositories/progress-prisma.repository";
 import { ProgressQueriesPrismaRepository } from "@/features/progress/infrastructure/persistence/prisma/repositories/progress-queries-prisma.repository";
 import { ProgressController } from "@/features/progress/presentation/controllers/progress.controller";
@@ -67,6 +69,10 @@ import { UsersModule } from "@/features/users/users.module";
     {
       provide: LEARNING_PROGRESS_REPOSITORY_TOKEN,
       useClass: LearningProgressPrismaRepository,
+    },
+    {
+      provide: PROGRESS_ANALYTICS_REPOSITORY_TOKEN,
+      useClass: ProgressAnalyticsPrismaRepository,
     },
     GetProgressOverviewUseCase,
     GetModuleProgressSummaryUseCase,

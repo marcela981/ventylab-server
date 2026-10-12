@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AiTelemetryFacade
- * Descripción: Verifica que el registro de llamadas de IA nunca lance (aunque el repositorio falle), que estime el costo con la tabla de precios solo cuando la entrada no lo trae, y que el consumo, el resumen de una llamada las estadísticas y las métricas por proveedor deleguen en el repositorio y el caso de uso
- * Versión: 1.3
+ * Descripción: Verifica que el registro de llamadas de IA nunca lance (aunque el repositorio falle), que estime el costo con la tabla de precios solo cuando la entrada no lo trae, y que el consumo, el resumen de una llamada las estadísticas y las métricas por proveedor deleguen en el repositorio y el caso de uso; y que el uso de varios usuarios se pide al repositorio de analítica en una sola llamada
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,7 @@ import {
   type AiTelemetryStats,
   type AiUsage,
 } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
+import { type AiUserUseCaseUsage, type IAiCallLogAnalyticsRepository } from "@/features/ai-telemetry/domain/repositories/ai-call-log-analytics.repository";
 
 interface RepositoryMock {
   create: jest.Mock;
@@ -53,6 +54,7 @@ describe("AiTelemetryFacade", () => {
   let statsUseCase: { execute: jest.Mock };
   let priceTable: AiPriceTable;
   let facade: AiTelemetryFacade;
+  let analyticsRepository: jest.Mocked<IAiCallLogAnalyticsRepository>;
 
   beforeEach(() => {
     repository = {
@@ -66,11 +68,15 @@ describe("AiTelemetryFacade", () => {
       getProviderStats: jest.fn(),
     };
     statsUseCase = { execute: jest.fn() };
+    analyticsRepository = {
+      getUsageForUsers: jest.fn().mockResolvedValue([{ userId: "user-1", useCase: "FREE_CHAT", calls: 4, inputTokens: 40, outputTokens: 20, averageLatencyMs: 900 }]),
+    };
     priceTable = { "gemini:gemini-2.0-flash": { inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.4 } };
     facade = new AiTelemetryFacade(
       repository,
       { getPriceTable: (): AiPriceTable => priceTable },
       statsUseCase as unknown as GetAiTelemetryStatsUseCase,
+      analyticsRepository,
     );
     jest.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
   });
@@ -192,5 +198,15 @@ describe("AiTelemetryFacade", () => {
 
     expect(result).toBe(stats);
     expect(repository.getProviderStats).toHaveBeenCalledWith(since);
+  });
+
+  it("reads the usage of many users with one analytics repository call", async () => {
+    const since: Date = new Date("2026-10-01T00:00:00Z");
+
+    const usage: AiUserUseCaseUsage[] = await facade.getUsageForUsers(["user-1", "user-2"], since);
+
+    expect(analyticsRepository.getUsageForUsers).toHaveBeenCalledTimes(1);
+    expect(analyticsRepository.getUsageForUsers).toHaveBeenCalledWith(["user-1", "user-2"], since);
+    expect(usage[0]).toMatchObject({ userId: "user-1", useCase: "FREE_CHAT", calls: 4 });
   });
 });

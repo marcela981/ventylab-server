@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma LearningProgressPrismaRepository
- * Descripción: Implementa ILearningProgressRepository sobre PrismaService y resolveClient: estructura publicada por alcance (lecturas acotadas de secciones, niveles y módulos), hechos de completitud con loadLessonCompletionFacts, upsert idempotente de PageProgress por (userId, pageId) y completitud de LessonCompletion
- * Versión: 1.0
+ * Descripción: Implementa ILearningProgressRepository sobre PrismaService y resolveClient: estructura publicada por alcance (lecturas acotadas de secciones, niveles y módulos; la completa con loadPublishedProgressStructure), hechos de completitud con loadLessonCompletionFacts, upsert idempotente de PageProgress por (userId, pageId) y completitud de LessonCompletion
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -29,12 +29,12 @@ import {
   type ProgressStructureLevel,
 } from "@/features/progress/domain/read-models/learning-progress.read-model";
 import { type ILearningProgressRepository } from "@/features/progress/domain/repositories/learning-progress.repository";
-
-interface StructureLevelRow {
-  id: string;
-  sectionId: string | null;
-  modules: { id: string }[];
-}
+import {
+  loadPublishedProgressStructure,
+  PUBLISHED_MODULE_IDS_SELECT,
+  type StructureLevelRow,
+  toStructureLevel,
+} from "@/features/progress/infrastructure/persistence/prisma/published-progress-structure";
 
 interface PageTargetRow {
   id: string;
@@ -51,12 +51,6 @@ interface PageViewRow {
   completedAt: Date | null;
   lastVisitedAt: Date | null;
 }
-
-const PUBLISHED_MODULE_IDS_SELECT: { where: Prisma.ModuleWhereInput; orderBy: { order: "asc" }; select: { id: true } } = {
-  where: publishedModuleWhere(),
-  orderBy: { order: "asc" },
-  select: { id: true },
-};
 
 const PAGE_VIEW_SELECT: { pageId: true; completed: true; completedAt: true; lastVisitedAt: true } = {
   pageId: true,
@@ -202,7 +196,7 @@ export class LearningProgressPrismaRepository implements ILearningProgressReposi
       return undefined;
     }
 
-    const level: ProgressStructureLevel = this._toStructureLevel(row);
+    const level: ProgressStructureLevel = toStructureLevel(row);
 
     return { sections: [], levels: [level], modules: this._modulesOf([level]) };
   }
@@ -220,7 +214,7 @@ export class LearningProgressPrismaRepository implements ILearningProgressReposi
       return undefined;
     }
 
-    const levels: ProgressStructureLevel[] = row.levels.map((level: StructureLevelRow) => this._toStructureLevel(level));
+    const levels: ProgressStructureLevel[] = row.levels.map((level: StructureLevelRow) => toStructureLevel(level));
 
     return {
       sections: [{ id: row.id, levelIds: levels.map((level: ProgressStructureLevel) => level.id) }],
@@ -230,40 +224,7 @@ export class LearningProgressPrismaRepository implements ILearningProgressReposi
   }
 
   private async _getFullStructure(): Promise<ProgressStructure> {
-    const [sections, levels, modules] = await Promise.all([
-      this._prisma.section.findMany({
-        where: { status: PUBLISHED_CONTENT_STATUS },
-        orderBy: { order: "asc" },
-        select: { id: true, levels: { where: publishedLevelWhere(), orderBy: { order: "asc" }, select: { id: true } } },
-      }),
-      this._prisma.level.findMany({
-        where: publishedLevelWhere(),
-        orderBy: { order: "asc" },
-        select: { id: true, sectionId: true, modules: PUBLISHED_MODULE_IDS_SELECT },
-      }),
-      this._prisma.module.findMany({
-        where: publishedModuleWhere(),
-        orderBy: [{ level: { order: "asc" } }, { order: "asc" }],
-        select: { id: true, levelId: true },
-      }),
-    ]);
-
-    return {
-      sections: sections.map((section: { id: string; levels: { id: string }[] }) => ({
-        id: section.id,
-        levelIds: section.levels.map((level: { id: string }) => level.id),
-      })),
-      levels: levels.map((level: StructureLevelRow) => this._toStructureLevel(level)),
-      modules: modules.map((module: { id: string; levelId: string | null }) => ({ id: module.id, levelId: module.levelId ?? undefined })),
-    };
-  }
-
-  private _toStructureLevel(row: StructureLevelRow): ProgressStructureLevel {
-    return {
-      id: row.id,
-      sectionId: row.sectionId ?? undefined,
-      moduleIds: row.modules.map((module: { id: string }) => module.id),
-    };
+    return await loadPublishedProgressStructure(this._prisma);
   }
 
   private _modulesOf(levels: ProgressStructureLevel[]): { id: string; levelId: string }[] {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Propiedades UPPAAL de las reservas del ventilador
  * Descripción: Contrasta la implementación con las consultas de la plantilla VentilatorAccess del modelo ventilab-auth-uppaal.xml (S2 exclusión mutua, BL1 duración acotada, S3 líder de grupo, S7/N1 coherencia de la reserva activa y R3 alcanzabilidad) mediante pruebas ejecutables sobre los casos de uso reales con el repositorio en memoria y su mutex asíncrono; la exclusión mutua usa un generador pseudoaleatorio con semilla sobre oleadas de creaciones y reservas inmediatas concurrentes. Documenta las desviaciones del modelo (30 frente a 120 minutos y reservas individuales de estudiantes). No sustituye a verifyta: es evidencia de prueba, no una verificación de modelos
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import {
   at,
   buildContext,
   buildGroupsFacade,
+  EMPTY_RESERVATION_ANALYTICS,
   NOW,
   type ReservationsTestContext,
   TEST_SETTINGS,
@@ -105,7 +106,7 @@ function overlappingPairs(reservations: readonly Reservation[]): [string, string
 }
 
 function buildFacade(context: ReservationsTestContext): ReservationsFacade {
-  return new ReservationsFacade(context.repository, context.accessService, context.reserveNowUseCase, context.releaseUseCase, buildGroupsFacade());
+  return new ReservationsFacade(context.repository, context.accessService, context.reserveNowUseCase, context.releaseUseCase, buildGroupsFacade(), EMPTY_RESERVATION_ANALYTICS);
 }
 
 async function captureError(promise: Promise<unknown>): Promise<unknown> {

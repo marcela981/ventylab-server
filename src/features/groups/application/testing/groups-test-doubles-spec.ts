@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de grupos
- * Descripción: Constructores de grupos, membresías y cuentas de usuario y repositorios en memoria (grupos, miembros, supervisiones), fachada de usuarios, gestor de transacciones y bus de eventos simulados para las pruebas unitarias de la feature de grupos; queda fuera del build por terminar en spec.ts
- * Versión: 1.1
+ * Descripción: Constructores de grupos, membresías y cuentas de usuario y repositorios en memoria (grupos, miembros, supervisiones), fachada de usuarios, gestor de transacciones y bus de eventos simulados para las pruebas unitarias de la feature de grupos; queda fuera del build por terminar en spec.ts; los grupos de un usuario salen de sus membresías
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -152,6 +152,9 @@ export function buildDoubles(state: GroupsState = {}): GroupsDoubles {
 
       return Promise.resolve(group ? { group, subGroups: [], membersCount: 0, subGroupsCount: 0, members: [] } : undefined);
     }),
+    getGroupIdsForUser: jest.fn().mockImplementation(
+      (userId: string): Promise<string[]> => Promise.resolve(members.filter((member: GroupMember) => member.userId === userId).map((member: GroupMember) => member.groupId)),
+    ),
     getStudentGroupSummaryOfUser: jest.fn().mockResolvedValue(undefined),
     getMembershipSummariesOfUser: jest.fn().mockResolvedValue([]),
     save: saveGroup,

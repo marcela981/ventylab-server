@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de SimulationFacade
- * Descripción: Verifica que la calificación de una sesión se recalcula con la repetición del servidor y devuelve su desglose por criterio (con rúbrica por defecto, de caso o explícita; la por defecto con los umbrales copiados al iniciar la sesión), los motivos de no disponibilidad (sesión inexistente, rúbrica inválida, caso no disponible), el resumen guardado las estadísticas de sesiones de un grupo y la versión del motor
- * Versión: 1.3
+ * Descripción: Verifica que la calificación de una sesión se recalcula con la repetición del servidor y devuelve su desglose por criterio (con rúbrica por defecto, de caso o explícita; la por defecto con los umbrales copiados al iniciar la sesión), los motivos de no disponibilidad (sesión inexistente, rúbrica inválida, caso no disponible), el resumen guardado las estadísticas de sesiones de un grupo y la versión del motor; y que las estadísticas por lotes de varios usuarios se piden al repositorio de analítica en una sola llamada
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,9 +31,24 @@ import { EndSimulationSessionUseCase } from "@/features/simulation/application/u
 import { ENGINE_VERSION } from "@/features/simulation/domain/engine/engine-version";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
 import { type SimulationSessionSummary } from "@/features/simulation/domain/read-models/simulation-session.read-model";
+import { type ISimulationAnalyticsRepository, type SimulationUserSessionStats } from "@/features/simulation/domain/repositories/simulation-analytics.repository";
 import { buildDefaultSimulationRubric, DEFAULT_SIMULATION_RUBRIC, DEFAULT_SIMULATION_RUBRIC_THRESHOLDS, type SimulationRubricThresholds } from "@/features/simulation/domain/scoring";
 
 const STARTED_AT: Date = new Date("2026-10-08T12:00:00Z");
+
+const USER_STATS: SimulationUserSessionStats = {
+  userId: "student-1",
+  sessionCount: 3,
+  scoredCount: 2,
+  averageScore: 72.5,
+  stabilizedCount: 1,
+  averageTimeToStabilizeSeconds: 140,
+};
+
+const ANALYTICS_REPOSITORY: jest.Mocked<ISimulationAnalyticsRepository> = {
+  getSessionStatsForUsers: jest.fn().mockResolvedValue([USER_STATS]),
+  getSessionActivityOfUser: jest.fn().mockResolvedValue([]),
+};
 
 describe("SimulationFacade", () => {
   let context: SimulationTestContext;
@@ -43,7 +58,7 @@ describe("SimulationFacade", () => {
   beforeEach(async () => {
     useFixedClock(STARTED_AT);
     context = createSimulationTestContext();
-    facade = new SimulationFacade(context.repository, context.runtime, context.groups.asFacade());
+    facade = new SimulationFacade(context.repository, context.runtime, context.groups.asFacade(), ANALYTICS_REPOSITORY);
     session = await storeSession(context);
     session.recordActivity(30_000, STARTED_AT);
   });
@@ -98,7 +113,7 @@ describe("SimulationFacade", () => {
     const started: SimulationRubricThresholds = { ...DEFAULT_SIMULATION_RUBRIC_THRESHOLDS, timeInRangePercent: 50 };
     const changed: SimulationRubricThresholds = { ...DEFAULT_SIMULATION_RUBRIC_THRESHOLDS, timeInRangePercent: 95 };
     const snapshotContext: SimulationTestContext = createSimulationTestContext(settings);
-    const snapshotFacade: SimulationFacade = new SimulationFacade(snapshotContext.repository, snapshotContext.runtime, snapshotContext.groups.asFacade());
+    const snapshotFacade: SimulationFacade = new SimulationFacade(snapshotContext.repository, snapshotContext.runtime, snapshotContext.groups.asFacade(), ANALYTICS_REPOSITORY);
     const snapshotted: SimulationSession = await storeSession(snapshotContext);
     const legacy: SimulationSession = await storeSession(snapshotContext);
 
@@ -169,5 +184,15 @@ describe("SimulationFacade", () => {
     const version: string = facade.engineVersion;
 
     expect(version).toBe(ENGINE_VERSION);
+  });
+
+  it("reads the session statistics of many users with one analytics repository call", async () => {
+    ANALYTICS_REPOSITORY.getSessionStatsForUsers.mockClear();
+
+    const stats: SimulationUserSessionStats[] = await facade.getSessionStatsForUsers(["student-1", "student-2"]);
+
+    expect(ANALYTICS_REPOSITORY.getSessionStatsForUsers).toHaveBeenCalledTimes(1);
+    expect(ANALYTICS_REPOSITORY.getSessionStatsForUsers).toHaveBeenCalledWith(["student-1", "student-2"]);
+    expect(stats).toEqual([USER_STATS]);
   });
 });

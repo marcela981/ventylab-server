@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo raíz AppModule
- * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features, incluidas la consulta de la bitácora de auditoría, las notificaciones persistidas y el estado del sistema; registra el filtro global y los middlewares de traza y contexto
- * Versión: 1.20
+ * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features, incluidas la consulta de la bitácora de auditoría, las notificaciones persistidas, el estado del sistema y la analítica (con el puerto de notificaciones sin leer enlazado por la raíz de composición); registra el filtro global y los middlewares de traza y contexto
+ * Versión: 1.21
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -33,6 +33,7 @@ import { HealthController } from "@/common/presentation/controllers/health.contr
 import { HttpExceptionFilter } from "@/common/presentation/filters/http-exception.filter";
 import { RequestContextMiddleware } from "@/common/presentation/middlewares/request-context.middleware";
 import { TraceIdMiddleware } from "@/common/presentation/middlewares/trace-id.middleware";
+import { AnalyticsPortsModule } from "@/composition/analytics-ports.module";
 import { CompositionModule } from "@/composition/composition.module";
 import { ActivitiesModule } from "@/features/activities/activities.module";
 import { AdminModule } from "@/features/admin/admin.module";
@@ -40,6 +41,7 @@ import { AiModule } from "@/features/ai/ai.module";
 import { AiRatingsModule } from "@/features/ai-ratings/ai-ratings.module";
 import { AiTelemetryModule } from "@/features/ai-telemetry/ai-telemetry.module";
 import { AiTutorModule } from "@/features/ai-tutor/ai-tutor.module";
+import { AnalyticsModule } from "@/features/analytics/analytics.module";
 import { AuditLogModule } from "@/features/audit-log/audit-log.module";
 import { AuthModule } from "@/features/auth/auth.module";
 import { AuthorizationModule } from "@/features/authorization/authorization.module";
@@ -146,6 +148,8 @@ import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/venti
     AuditLogModule,
     NotificationsModule,
     SystemStatusModule,
+    AnalyticsPortsModule,
+    AnalyticsModule,
   ],
   controllers: [HealthController],
   providers: [

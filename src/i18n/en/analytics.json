@@ -1,0 +1,15 @@
+{
+  "dashboard_retrieved": "Group dashboard retrieved successfully",
+  "timeline_retrieved": "Student timeline retrieved successfully",
+  "evaluation_stats_retrieved": "Evaluation statistics retrieved successfully",
+  "summary_retrieved": "Summary retrieved successfully",
+  "out_of_scope": "The requested analytics are outside your groups",
+  "group_not_found": "Group not found",
+  "evaluation_not_found": "Evaluation not found",
+  "invalid_range": "The date range must start before it ends and span at most 366 days",
+  "export_not_configured": "The anonymized export is not configured",
+  "validation": {
+    "date_invalid": "The date must be a valid ISO 8601 date",
+    "group_id_too_long": "The group ID must have at most 100 characters"
+  }
+}

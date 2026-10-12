@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GroupsFacade
- * Descripción: Verifica las lecturas públicas de la feature de grupos con repositorios simulados: grupo STUDENT del usuario, miembros, liderazgo, pertenencia, grupos supervisados por un profesor, alcance de gestión y resumen de un grupo
- * Versión: 1.1
+ * Descripción: Verifica las lecturas públicas de la feature de grupos con repositorios simulados: grupo STUDENT del usuario, miembros, liderazgo, pertenencia, grupos supervisados por un profesor, alcance de gestión y resumen de un grupo; si un profesor gestiona algún grupo de un estudiante y que las membresías de estudiantes se leen del repositorio de analítica
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,9 +11,16 @@
 import { GroupsFacade, type GroupMemberSummary, type GroupSummary } from "@/features/groups/application/services/groups.facade";
 import { buildDoubles, buildGroup, buildMember, type GroupsDoubles } from "@/features/groups/application/testing/groups-test-doubles-spec";
 import { type StudentGroupSummaryView } from "@/features/groups/domain/read-models/group.read-model";
+import { type IGroupAnalyticsRepository, type StudentMembershipView } from "@/features/groups/domain/repositories/group-analytics.repository";
+
+const MEMBERSHIPS: StudentMembershipView[] = [{ userId: "student-1", groupId: "group-1" }];
+
+const ANALYTICS_REPOSITORY: IGroupAnalyticsRepository = {
+  getStudentMemberships: (): Promise<StudentMembershipView[]> => Promise.resolve(MEMBERSHIPS),
+};
 
 function buildFacade(doubles: GroupsDoubles): GroupsFacade {
-  return new GroupsFacade(doubles.groupsRepository, doubles.membersRepository, doubles.access);
+  return new GroupsFacade(doubles.groupsRepository, doubles.membersRepository, doubles.access, ANALYTICS_REPOSITORY);
 }
 
 function defaultDoubles(): GroupsDoubles {
@@ -95,5 +102,23 @@ describe("GroupsFacade", () => {
     ];
 
     expect(results).toEqual([true, true, false, false, false]);
+  });
+
+  it("tells whether a teacher manages any group of a student", async () => {
+    const facade: GroupsFacade = buildFacade(defaultDoubles());
+
+    const results: boolean[] = [
+      await facade.canManageAnyGroupOfUser({ id: "teacher-1", role: "TEACHER" }, "student-1"),
+      await facade.canManageAnyGroupOfUser({ id: "teacher-2", role: "TEACHER" }, "student-1"),
+      await facade.canManageAnyGroupOfUser({ id: "teacher-1", role: "TEACHER" }, "outsider"),
+    ];
+
+    expect(results).toEqual([true, false, false]);
+  });
+
+  it("reads the student memberships from the analytics repository", async () => {
+    const facade: GroupsFacade = buildFacade(defaultDoubles());
+
+    expect(await facade.getStudentMemberships()).toEqual(MEMBERSHIPS);
   });
 });

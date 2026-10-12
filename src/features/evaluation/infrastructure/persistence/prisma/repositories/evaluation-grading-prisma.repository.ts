@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de lectura de la calificación docente de evaluaciones
- * Descripción: Implementa IEvaluationGradingRepository con Prisma sobre student_evaluation_attempts: alcance del profesor (asignación en un grupo STUDENT creado o supervisado, o intento heredado sin asignación de una evaluación que creó), filtro por grupo (asignación del grupo, o intento sin asignación de un miembro del grupo), cola PENDING_REVIEW paginada con evaluación y estudiante (sin intentos heredados, que se califican por las rutas heredadas), intentos en curso vencidos por el plazo del intento o el fin de la asignación, intentos GRADED sin publicar, notas publicadas y agregados por evaluación
- * Versión: 1.1
+ * Descripción: Implementa IEvaluationGradingRepository con Prisma sobre student_evaluation_attempts: alcance del profesor (asignación en un grupo STUDENT creado o supervisado, o intento heredado sin asignación de una evaluación que creó), filtro por grupo (asignación del grupo, o intento sin asignación de un miembro del grupo), cola PENDING_REVIEW paginada con evaluación y estudiante (sin intentos heredados, que se califican por las rutas heredadas), intentos en curso vencidos por el plazo del intento o el fin de la asignación, intentos GRADED sin publicar, notas publicadas y agregados por evaluación; exporta la selección, el filtro y el mapeo de notas publicadas que reutiliza el repositorio de analítica
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -79,7 +79,7 @@ interface QueueRow {
   user: { name: string | null; email: string };
 }
 
-const PUBLISHED_SELECT: {
+export const PUBLISHED_SELECT: {
   id: true;
   evaluationId: true;
   userId: true;
@@ -103,7 +103,7 @@ const PUBLISHED_SELECT: {
   evaluation: { select: { title: true, type: true } },
 };
 
-interface PublishedRow {
+export interface PublishedRow {
   id: string;
   evaluationId: string;
   userId: string;
@@ -148,7 +148,7 @@ function filterConditions(filter: GradingAttemptFilter): Prisma.StudentEvaluatio
   return conditions;
 }
 
-function toPublishedView(row: PublishedRow): PublishedGradeView[] {
+export function toPublishedView(row: PublishedRow): PublishedGradeView[] {
   if (row.grade === null || row.gradePublishedAt === null) {
     return [];
   }
@@ -170,7 +170,7 @@ function toPublishedView(row: PublishedRow): PublishedGradeView[] {
   ];
 }
 
-const PUBLISHED_WHERE: Prisma.StudentEvaluationAttemptWhereInput = { gradePublishedAt: { not: null }, grade: { not: null } };
+export const PUBLISHED_WHERE: Prisma.StudentEvaluationAttemptWhereInput = { gradePublishedAt: { not: null }, grade: { not: null } };
 
 @Injectable()
 export class EvaluationGradingPrismaRepository implements IEvaluationGradingRepository {

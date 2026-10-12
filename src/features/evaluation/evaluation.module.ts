@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo EvaluationModule
- * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación (EVALUATION_GRADING_CONFIG_TOKEN, enlazada por la raíz de composición), vinculación de sesiones de simulación con eventos vía SimulationFacade (SimulationModule), casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (gateway de IA vía AiModule con respaldo determinista), puntaje práctico recalculado por repetición de la sesión en el servidor y lector de sesiones del simulador heredadas; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión)
- * Versión: 1.7
+ * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación (EVALUATION_GRADING_CONFIG_TOKEN, enlazada por la raíz de composición), vinculación de sesiones de simulación con eventos vía SimulationFacade (SimulationModule), casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (gateway de IA vía AiModule con respaldo determinista), puntaje práctico recalculado por repetición de la sesión en el servidor y lector de sesiones del simulador heredadas; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión); registra el repositorio de lecturas por lotes para analítica que usa EvaluationFacade
+ * Versión: 1.8
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -62,6 +62,7 @@ import { UpdateEvaluationOptionUseCase } from "@/features/evaluation/application
 import { UpdateEvaluationQuestionUseCase } from "@/features/evaluation/application/use-cases/update-evaluation-question.usecase";
 import { UpdateEvaluationScenarioUseCase } from "@/features/evaluation/application/use-cases/update-evaluation-scenario.usecase";
 import { UpdateEvaluationUseCase } from "@/features/evaluation/application/use-cases/update-evaluation.usecase";
+import { EVALUATION_ANALYTICS_REPOSITORY_TOKEN } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
 import { EVALUATION_ASSIGNMENTS_REPOSITORY_TOKEN } from "@/features/evaluation/domain/repositories/evaluation-assignments.repository";
 import { EVALUATION_GRADING_REPOSITORY_TOKEN } from "@/features/evaluation/domain/repositories/evaluation-grading.repository";
 import { EVALUATIONS_REPOSITORY_TOKEN } from "@/features/evaluation/domain/repositories/evaluations.repository";
@@ -70,6 +71,7 @@ import { STUDENT_EVALUATION_ATTEMPTS_REPOSITORY_TOKEN } from "@/features/evaluat
 import { AIGradeFeedbackGenerator } from "@/features/evaluation/infrastructure/ai/ai-grade-feedback-generator";
 import { EvaluationEventsHandlers } from "@/features/evaluation/infrastructure/events/evaluation-events.handlers";
 import { GradeFeedbackEventsHandlers } from "@/features/evaluation/infrastructure/events/grade-feedback-events.handlers";
+import { EvaluationAnalyticsPrismaRepository } from "@/features/evaluation/infrastructure/persistence/prisma/repositories/evaluation-analytics-prisma.repository";
 import { EvaluationAssignmentsPrismaRepository } from "@/features/evaluation/infrastructure/persistence/prisma/repositories/evaluation-assignments-prisma.repository";
 import { EvaluationGradingPrismaRepository } from "@/features/evaluation/infrastructure/persistence/prisma/repositories/evaluation-grading-prisma.repository";
 import { EvaluationsPrismaRepository } from "@/features/evaluation/infrastructure/persistence/prisma/repositories/evaluations-prisma.repository";
@@ -128,6 +130,10 @@ import { SimulationModule } from "@/features/simulation/simulation.module";
     {
       provide: EVALUATION_GRADING_REPOSITORY_TOKEN,
       useClass: EvaluationGradingPrismaRepository,
+    },
+    {
+      provide: EVALUATION_ANALYTICS_REPOSITORY_TOKEN,
+      useClass: EvaluationAnalyticsPrismaRepository,
     },
     EvaluationEditor,
     GetEvaluationsUseCase,

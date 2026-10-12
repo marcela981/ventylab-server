@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: AiTelemetryFacade
- * Descripción: API pública de la telemetría de IA para otras features: registrar una llamada sin bloquear ni lanzar (solo hash del prompt, costo estimado con la tabla de precios si no viene calculado), consumo de un usuario por caso de uso, estadísticas agregadas, p95 de latencia y tasa de error por proveedor desde un instante, resumen de una llamada y la última llamada SUCCESS o FALLBACK enlazada a una referencia
- * Versión: 1.3
+ * Descripción: API pública de la telemetría de IA para otras features: registrar una llamada sin bloquear ni lanzar (solo hash del prompt, costo estimado con la tabla de precios si no viene calculado), consumo de un usuario por caso de uso, estadísticas agregadas, p95 de latencia y tasa de error por proveedor desde un instante, resumen de una llamada y la última llamada SUCCESS o FALLBACK enlazada a una referencia, y el uso de IA por usuario y caso de uso de varios usuarios en una sola consulta para analítica
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,6 +22,11 @@ import {
   type AiTelemetryUseCaseValue,
   type AiUsage,
 } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
+import {
+  AI_CALL_LOG_ANALYTICS_REPOSITORY_TOKEN,
+  type AiUserUseCaseUsage,
+  type IAiCallLogAnalyticsRepository,
+} from "@/features/ai-telemetry/domain/repositories/ai-call-log-analytics.repository";
 import { AI_CALL_LOGS_REPOSITORY_TOKEN, type IAiCallLogsRepository } from "@/features/ai-telemetry/domain/repositories/ai-call-logs.repository";
 import { estimateAiCallCostUsd } from "@/features/ai-telemetry/domain/services/ai-telemetry-metrics";
 
@@ -37,6 +42,8 @@ export class AiTelemetryFacade {
     @Inject(AI_PRICE_TABLE_TOKEN)
     private readonly _priceTable: IAiPriceTableProvider,
     private readonly _getAiTelemetryStatsUseCase: GetAiTelemetryStatsUseCase,
+    @Inject(AI_CALL_LOG_ANALYTICS_REPOSITORY_TOKEN)
+    private readonly _analyticsRepository: IAiCallLogAnalyticsRepository,
   ) {}
 
   public async record(entry: AiCallLogEntry): Promise<void> {
@@ -53,6 +60,10 @@ export class AiTelemetryFacade {
 
   public async getUsage(userId: string, useCase: AiTelemetryUseCaseValue, since: Date): Promise<AiUsage> {
     return this._aiCallLogsRepository.getUsage(userId, useCase, since);
+  }
+
+  public async getUsageForUsers(userIds: readonly string[], since?: Date): Promise<AiUserUseCaseUsage[]> {
+    return await this._analyticsRepository.getUsageForUsers(userIds, since);
   }
 
   public async getStats(filters: AiTelemetryFilters): Promise<AiTelemetryStats> {

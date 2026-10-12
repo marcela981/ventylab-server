@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de reservas
- * Descripción: Repositorio en memoria con bloqueo del dispositivo como mutex asíncrono real, gestor de transacciones que libera el bloqueo al terminar, fachadas de usuarios y grupos simuladas, reloj fijo, bus de eventos y grabador de auditoría espías, y fábricas de los casos de uso
- * Versión: 1.0
+ * Descripción: Repositorio en memoria con bloqueo del dispositivo como mutex asíncrono real, gestor de transacciones que libera el bloqueo al terminar, fachadas de usuarios y grupos simuladas, reloj fijo, bus de eventos y grabador de auditoría espías, y fábricas de los casos de uso; incluye un repositorio de analítica vacío para construir ReservationsFacade
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,7 @@ import { CreateReservationUseCase } from "@/features/reservations/application/us
 import { ReleaseActiveReservationUseCase } from "@/features/reservations/application/use-cases/release-active-reservation.usecase";
 import { ReserveNowUseCase } from "@/features/reservations/application/use-cases/reserve-now.usecase";
 import { Reservation } from "@/features/reservations/domain/entities/reservation.entity";
+import { type IReservationAnalyticsRepository } from "@/features/reservations/domain/repositories/reservation-analytics.repository";
 import {
   type IReservationsRepository,
   type ReservationRangeQuery,
@@ -210,6 +211,11 @@ export function buildUsersFacade(): UsersFacade {
 
   return facade as unknown as UsersFacade;
 }
+
+export const EMPTY_RESERVATION_ANALYTICS: IReservationAnalyticsRepository = {
+  getUserHeldReservations: (): Promise<[]> => Promise.resolve([]),
+  getReservationActivityOfUser: (): Promise<[]> => Promise.resolve([]),
+};
 
 export function buildGroupsFacade(): GroupsFacade {
   const facade: Pick<

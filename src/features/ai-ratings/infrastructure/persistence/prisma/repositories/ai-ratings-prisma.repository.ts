@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de valoraciones de IA
- * Descripción: Implementa IAiRatingsRepository sobre ai_ratings con PrismaService: lectura por (usuario, tipo de objetivo, objetivo), upsert sobre esa clave única en la transacción activa, agregados con LEFT JOIN a ai_call_logs agrupados por caso de uso, proveedor, modelo y versión de prompt mediante $queryRaw parametrizado y filas de exportación sin identificador de usuario
- * Versión: 1.0
+ * Descripción: Implementa IAiRatingsRepository sobre ai_ratings con PrismaService: lectura por (usuario, tipo de objetivo, objetivo), upsert sobre esa clave única en la transacción activa, agregados con LEFT JOIN a ai_call_logs agrupados por caso de uso, proveedor, modelo y versión de prompt mediante $queryRaw parametrizado y filas de exportación sin identificador de usuario; exporta las columnas SQL de dimensiones y de grupo desconocido que reutiliza el repositorio de analítica
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,9 +31,9 @@ import {
 } from "@/features/ai-ratings/infrastructure/persistence/prisma/mappers/ai-ratings.mapper";
 
 // Built only from compile-time constants (the group label and the column names), never from request input.
-const UNKNOWN_SQL: Prisma.Sql = Prisma.raw(`'${UNKNOWN_AI_RATING_GROUP}'`);
+export const UNKNOWN_SQL: Prisma.Sql = Prisma.raw(`'${UNKNOWN_AI_RATING_GROUP}'`);
 
-const DIMENSION_COLUMNS_SQL: Prisma.Sql = Prisma.join(
+export const DIMENSION_COLUMNS_SQL: Prisma.Sql = Prisma.join(
   AI_RATING_DIMENSIONS.map((dimension: AiRatingDimension) =>
     Prisma.raw(`avg(r.${dimension})::float8 AS ${dimension}_mean, count(r.${dimension}) AS ${dimension}_n`),
   ),

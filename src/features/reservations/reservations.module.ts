@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo de reservas
- * Descripción: Registra la feature de reservas del ventilador (controlador /api/reservations, casos de uso, servicios de acceso y vistas, repositorio Prisma, reloj, manejadores de eventos (incluido el aviso reservation:preempted por WebSocket); los ajustes RESERVATION_SETTINGS_TOKEN los enlaza la raíz de composición) y exporta ReservationsFacade
- * Versión: 1.2
+ * Descripción: Registra la feature de reservas del ventilador (controlador /api/reservations, casos de uso, servicios de acceso y vistas, repositorios Prisma (incluido el de lecturas por lotes para analítica), reloj, manejadores de eventos (incluido el aviso reservation:preempted por WebSocket); los ajustes RESERVATION_SETTINGS_TOKEN los enlaza la raíz de composición) y exporta ReservationsFacade
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,9 +23,11 @@ import { GetReservationsCalendarUseCase } from "@/features/reservations/applicat
 import { PreemptReservationUseCase } from "@/features/reservations/application/use-cases/preempt-reservation.usecase";
 import { ReleaseActiveReservationUseCase } from "@/features/reservations/application/use-cases/release-active-reservation.usecase";
 import { ReserveNowUseCase } from "@/features/reservations/application/use-cases/reserve-now.usecase";
+import { RESERVATION_ANALYTICS_REPOSITORY_TOKEN } from "@/features/reservations/domain/repositories/reservation-analytics.repository";
 import { RESERVATIONS_REPOSITORY_TOKEN } from "@/features/reservations/domain/repositories/reservations.repository";
 import { SystemReservationClock } from "@/features/reservations/infrastructure/clock/system-reservation.clock";
 import { ReservationsEventsHandlers } from "@/features/reservations/infrastructure/events/reservations-events.handlers";
+import { ReservationAnalyticsPrismaRepository } from "@/features/reservations/infrastructure/persistence/prisma/repositories/reservation-analytics-prisma.repository";
 import { ReservationsPrismaRepository } from "@/features/reservations/infrastructure/persistence/prisma/repositories/reservations-prisma.repository";
 import { ReservationsController } from "@/features/reservations/presentation/controllers/reservations.controller";
 import { UsersModule } from "@/features/users/users.module";
@@ -35,6 +37,7 @@ import { UsersModule } from "@/features/users/users.module";
   controllers: [ReservationsController],
   providers: [
     { provide: RESERVATIONS_REPOSITORY_TOKEN, useClass: ReservationsPrismaRepository },
+    { provide: RESERVATION_ANALYTICS_REPOSITORY_TOKEN, useClass: ReservationAnalyticsPrismaRepository },
     { provide: RESERVATION_CLOCK_TOKEN, useClass: SystemReservationClock },
     ReservationAccessService,
     ReservationViewsService,

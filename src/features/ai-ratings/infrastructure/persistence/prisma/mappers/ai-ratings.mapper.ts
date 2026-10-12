@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de persistencia de valoraciones de IA
- * Descripción: Convierte filas de ai_ratings en la entidad AiRating y viceversa (null ↔ undefined), las filas de agregados crudos de $queryRaw (bigint y nulos) en agregados de dominio y las filas de exportación con la llamada enlazada en filas sin identificador de usuario
- * Versión: 1.0
+ * Descripción: Convierte filas de ai_ratings en la entidad AiRating y viceversa (null ↔ undefined), las filas de agregados crudos de $queryRaw (bigint y nulos) en agregados de dominio y las filas de exportación con la llamada enlazada en filas sin identificador de usuario; mapea también los agregados por usuario y caso de uso de analítica
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,7 +17,10 @@ import {
   type AiRatingExportRow,
   type AiRatingGroupAggregate,
 } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
+import { type AiRatingUserUseCaseAggregate } from "@/features/ai-ratings/domain/repositories/ai-ratings-analytics.repository";
 import { AiRatingAnswers } from "@/features/ai-ratings/domain/value-objects/ai-rating-answers";
+
+export type RawAiRatingDimensionColumns = Readonly<Record<`${AiRatingDimension}_mean`, number | null>> & Readonly<Record<`${AiRatingDimension}_n`, bigint | number>>;
 
 export type RawAiRatingGroup = {
   readonly use_case: string;
@@ -26,8 +29,14 @@ export type RawAiRatingGroup = {
   readonly prompt_version: string;
   readonly ratings: bigint | number;
   readonly helpful_count: bigint | number;
-} & Readonly<Record<`${AiRatingDimension}_mean`, number | null>> &
-  Readonly<Record<`${AiRatingDimension}_n`, bigint | number>>;
+} & RawAiRatingDimensionColumns;
+
+export type RawAiRatingUserGroup = {
+  readonly user_id: string;
+  readonly use_case: string;
+  readonly ratings: bigint | number;
+  readonly helpful_count: bigint | number;
+} & RawAiRatingDimensionColumns;
 
 export interface AiRatingExportModel {
   readonly id: string;
@@ -94,13 +103,7 @@ export class AiRatingsMapper {
   }
 
   public static toGroupAggregate(row: RawAiRatingGroup): AiRatingGroupAggregate {
-    const dimensions: Record<AiRatingDimension, AiRatingDimensionStats> = {
-      quality: AiRatingsMapper._toDimensionStats(row, "quality"),
-      understanding: AiRatingsMapper._toDimensionStats(row, "understanding"),
-      expression: AiRatingsMapper._toDimensionStats(row, "expression"),
-      safety: AiRatingsMapper._toDimensionStats(row, "safety"),
-      trust: AiRatingsMapper._toDimensionStats(row, "trust"),
-    };
+    const dimensions: Record<AiRatingDimension, AiRatingDimensionStats> = AiRatingsMapper._toDimensions(row);
 
     return {
       useCase: row.use_case,
@@ -132,7 +135,27 @@ export class AiRatingsMapper {
     };
   }
 
-  private static _toDimensionStats(row: RawAiRatingGroup, dimension: AiRatingDimension): AiRatingDimensionStats {
+  public static toUserUseCaseAggregate(row: RawAiRatingUserGroup): AiRatingUserUseCaseAggregate {
+    return {
+      userId: row.user_id,
+      useCase: row.use_case,
+      ratings: Number(row.ratings),
+      helpfulCount: Number(row.helpful_count),
+      dimensions: AiRatingsMapper._toDimensions(row),
+    };
+  }
+
+  private static _toDimensions(row: RawAiRatingDimensionColumns): Record<AiRatingDimension, AiRatingDimensionStats> {
+    return {
+      quality: AiRatingsMapper._toDimensionStats(row, "quality"),
+      understanding: AiRatingsMapper._toDimensionStats(row, "understanding"),
+      expression: AiRatingsMapper._toDimensionStats(row, "expression"),
+      safety: AiRatingsMapper._toDimensionStats(row, "safety"),
+      trust: AiRatingsMapper._toDimensionStats(row, "trust"),
+    };
+  }
+
+  private static _toDimensionStats(row: RawAiRatingDimensionColumns, dimension: AiRatingDimension): AiRatingDimensionStats {
     const mean: number | null = row[`${dimension}_mean`];
 
     return { mean: mean === null ? undefined : Number(mean), n: Number(row[`${dimension}_n`]) };

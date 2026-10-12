@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Catálogo de permisos
  * Descripción: Define todos los permisos recurso:acción del sistema
- * Versión: 1.19
+ * Versión: 1.20
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -111,7 +111,9 @@ export type PermissionValue =
   | "settings:manage"
   | "audit:read"
   | "system:status"
-  | "system:probe";
+  | "system:probe"
+  | "analytics:read"
+  | "analytics:research-export";
 
 export const PERMISSION_CATALOG: readonly PermissionValue[] = [
   "users:read",
@@ -217,4 +219,6 @@ export const PERMISSION_CATALOG: readonly PermissionValue[] = [
   "audit:read",
   "system:status",
   "system:probe",
+  "analytics:read",
+  "analytics:research-export",
 ] as const;
