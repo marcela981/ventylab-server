@@ -232,7 +232,7 @@ WHERE g."type" <> 'TEACHER'
 -- >>> <SUPERADMIN_EMAIL> below. The guard right after aborts the whole
 -- >>> migration if the placeholder is still there.
 INSERT INTO "app_settings" ("key", "value", "updatedAt")
-VALUES ('superadmin_email', lower('<SUPERADMIN_EMAIL>'), CURRENT_TIMESTAMP)
+VALUES ('superadmin_email', lower('marcela.mazo@correounivalle.edu.co'), CURRENT_TIMESTAMP)
 ON CONFLICT ("key") DO NOTHING;
 
 DO $$
