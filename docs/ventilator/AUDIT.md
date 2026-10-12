@@ -65,7 +65,7 @@ Legend: **IMPLEMENTED** (code and automated test), **PARTIAL** (what is missing 
 | No overlap under concurrency | PARTIAL | In-memory mutex test (20 concurrent → 1) and seeded property test pass; `reservations-concurrency.integration-spec.ts` against PostgreSQL exists but was not run (needs the migration applied). |
 | Cancellation rules | IMPLEMENTED | Creator, holder, holder group leader, supervising teacher or administrator. |
 | Preemption (teacher over students, administrator over teachers, confirmation, conflict details) | IMPLEMENTED | `create-reservation.usecase.spec.ts` "overlaps and preemption". |
-| Preemption notifier | IMPLEMENTED | `ReservationNotifier` port, realtime adapter (`reservation:preempted`). No e-mail channel. |
+| Preemption notifier | IMPLEMENTED | `reservation.preempted` catalog event: the reservations bus handler emits the legacy `reservation:preempted` socket event and the notifications feature persists a `RESERVATION_PREEMPTED` notification (`notification:new`). No e-mail channel. |
 | Audit | IMPLEMENTED | Preemption through `IAuditRecorder` in the same transaction; entity audit entries persisted on save. |
 | Role-based visibility | IMPLEMENTED | `reservations.mapper.spec.ts`. |
 | Endpoints | IMPLEMENTED | Six routes under `/api/reservations`. |

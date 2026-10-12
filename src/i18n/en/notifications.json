@@ -1,0 +1,8 @@
+{
+  "retrieved": "Notifications retrieved successfully",
+  "unread_count_retrieved": "Unread notifications count retrieved successfully",
+  "marked_read": "Notification marked as read",
+  "all_marked_read": "Notifications marked as read",
+  "deleted": "Notification deleted successfully",
+  "not_found": "Notification not found"
+}

@@ -1,0 +1,8 @@
+{
+  "retrieved": "Notificaciones obtenidas correctamente",
+  "unread_count_retrieved": "Conteo de notificaciones no leídas obtenido correctamente",
+  "marked_read": "Notificación marcada como leída",
+  "all_marked_read": "Notificaciones marcadas como leídas",
+  "deleted": "Notificación eliminada correctamente",
+  "not_found": "Notificación no encontrada"
+}

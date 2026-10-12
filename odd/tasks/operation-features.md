@@ -38,7 +38,7 @@ Decisions from the audit:
 - [x] T1 Event bus: typed event map + catalog, isolated subscriber dispatch, publish after commit.
 - [x] T2 platform-settings: registry, model, cache + subscribe, admin endpoints, settings ports wired.
 - [x] T3 audit-log: schema extension, redaction/hash, append-only trigger, admin queries + CSV, missing audit points.
-- [ ] T4 notifications: model, bus subscribers, templates, owner endpoints, `notification:new`, ReservationNotifier removed.
+- [x] T4 notifications: model, bus subscribers, templates, owner endpoints, `notification:new`, ReservationNotifier removed.
 - [ ] T5 system-status: `/health/ready`, `/system/status`, change event, AI probe.
 - [ ] T6 analytics: batch facade functions, group/student/evaluation panels, `/me/summary`, CSV + anonymized export.
 - [ ] T7 Verification evidence (`docs/operation/VERIFICATION.md`) + dependency graph.
@@ -108,3 +108,14 @@ Decisions from the audit:
   counters stay visible), client request id validated, referer query stripped, free-text action filter,
   empty-diff audit rows skipped, known limitations documented.
 - Checks: tsc 0; jest 17 suites / 188 tests pass; eslint clean.
+
+### T3-fix — native assess: medium, under_budget (reviewed with the next slice).
+
+### T4 — done
+- Route: delegated writer. `src/features/notifications/` (model `notifications`, catalog-event subscribers,
+  Spanish templates in one file, one `createMany` per event, `notification:new` after persistence,
+  owner-only endpoints under `/api/notifications`, `NotificationsFacade.countUnread`).
+- `ReservationNotifier` port/adapter removed; legacy `reservation:preempted` now emitted by the reservations
+  bus handler; `evaluation:activated`, `grade:published`, `user:role-changed`, `achievement:unlocked` kept.
+- Migration `20261011140000_notifications` (not applied).
+- Checks: prisma validate OK; tsc 0; jest 68 suites / 467 tests pass; eslint clean; coupling grep (both quote styles) empty.

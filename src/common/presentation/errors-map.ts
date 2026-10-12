@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.29
+ * Versión: 1.30
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -181,6 +181,7 @@ import {
   NotePageNotInLessonError,
   NotesAnalysisInvalidResponseError,
 } from "@/features/notes/domain/notes.errors";
+import { NotificationNotFoundError } from "@/features/notifications/domain/notifications.errors";
 import {
   CannotManageOverridesError,
   ContentOverrideAlreadyExistsError,
@@ -303,6 +304,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [AiRatingCallMismatchError, HttpStatus.UNPROCESSABLE_ENTITY],
   [InvalidAiRatingsRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
   [InvalidAuditLogRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [NotificationNotFoundError, HttpStatus.NOT_FOUND],
   [AiProvidersUnavailableError, HttpStatus.SERVICE_UNAVAILABLE],
   [AiQuotaExceededError, HttpStatus.TOO_MANY_REQUESTS],
   [AiStreamInterruptedError, HttpStatus.BAD_GATEWAY],

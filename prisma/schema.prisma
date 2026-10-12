@@ -107,6 +107,9 @@ model User {
   validatedClinicalCases ClinicalCase[]      @relation("ClinicalCaseValidator")
   createdClinicalCases   ClinicalCase[]      @relation("ClinicalCaseCreator")
 
+  // Notifications feature
+  notifications Notification[]
+
   @@index([role])
   @@index([isActive])
   @@map("users")
@@ -2059,4 +2062,20 @@ model TelemetryChunk {
 
   @@index([reservationId, startTs], map: "telemetry_chunks_reservation_id_start_ts_idx")
   @@map("telemetry_chunks")
+}
+
+model Notification {
+  id        String    @id
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime  @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt], map: "notifications_user_id_read_at_created_at_idx")
+  @@map("notifications")
 }
