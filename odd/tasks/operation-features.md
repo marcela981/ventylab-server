@@ -39,7 +39,7 @@ Decisions from the audit:
 - [x] T2 platform-settings: registry, model, cache + subscribe, admin endpoints, settings ports wired.
 - [x] T3 audit-log: schema extension, redaction/hash, append-only trigger, admin queries + CSV, missing audit points.
 - [x] T4 notifications: model, bus subscribers, templates, owner endpoints, `notification:new`, ReservationNotifier removed.
-- [ ] T5 system-status: `/health/ready`, `/system/status`, change event, AI probe.
+- [x] T5 system-status: `/health/ready`, `/system/status`, change event, AI probe.
 - [ ] T6 analytics: batch facade functions, group/student/evaluation panels, `/me/summary`, CSV + anonymized export.
 - [ ] T7 Verification evidence (`docs/operation/VERIFICATION.md`) + dependency graph.
 
@@ -119,3 +119,15 @@ Decisions from the audit:
   bus handler; `evaluation:activated`, `grade:published`, `user:role-changed`, `achievement:unlocked` kept.
 - Migration `20261011140000_notifications` (not applied).
 - Checks: prisma validate OK; tsc 0; jest 68 suites / 467 tests pass; eslint clean; coupling grep (both quote styles) empty.
+
+### T4 — native review (range acca383..a04ea29, 1 lens): approved, acknowledged. Advisory WARNING:
+  recorder skips empty-diff rows even when metadata is present -> fixed after T5.
+
+### T5 — done
+- Route: delegated writer. `GET /health/ready` (+ `/api/health/ready`, DB ping with timeout, 503 when not ready),
+  `GET /api/system/status` (TEACHER/ADMIN, `system:status`; database, mqttBroker, ventilator, aiProviders,
+  storage, process; cached 5–10 s), `system:status-changed` to `role:ADMIN`/`role:TEACHER` on transitions,
+  `POST /api/system/probe/ai/:provider` (ADMIN, `system:probe`, 3/min). Rules in `docs/operation/SYSTEM-STATUS.md`.
+- Deviation: probes are logged as `TOPIC_CHECK` with `refType="health_probe"` because `ai_call_logs.use_case`
+  is a Postgres enum (no schema change in this task).
+- Checks: tsc 0; jest 59 suites / 552 tests pass; eslint clean; coupling grep empty.

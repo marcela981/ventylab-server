@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de la bitácora de llamadas de IA
- * Descripción: Implementa IAiCallLogsRepository sobre ai_call_logs con PrismaService: inserción con el id del llamador, consumo por usuario y caso de uso, agregados con percentile_cont (totales y por día UTC) mediante $queryRaw parametrizado, filas para exportar, resumen de una llamada y la última llamada enlazada a una referencia (refType/refId) con ciertos estados
- * Versión: 1.1
+ * Descripción: Implementa IAiCallLogsRepository sobre ai_call_logs con PrismaService: inserción con el id del llamador, consumo por usuario y caso de uso, agregados con percentile_cont (totales, por día UTC y por proveedor con p95 de latencia y tasa de error desde un instante) mediante $queryRaw parametrizado, filas para exportar, resumen de una llamada y la última llamada enlazada a una referencia (refType/refId) con ciertos estados
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,11 +17,13 @@ import {
   type AiCallLogRow,
   type AiCallStatusValue,
   type AiCallSummary,
+  type AiProviderTelemetry,
   type AiTelemetryAggregate,
   type AiTelemetryDayAggregate,
   type AiTelemetryFilters,
   type AiTelemetryUseCaseValue,
   type AiUsage,
+  NO_PROVIDER,
   PROVIDER_REACHING_STATUSES,
 } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
 import { type IAiCallLogsRepository } from "@/features/ai-telemetry/domain/repositories/ai-call-logs.repository";
@@ -50,6 +52,13 @@ const AGGREGATE_COLUMNS: Prisma.Sql = Prisma.sql`
   coalesce(sum(output_tokens), 0)::bigint AS output_tokens,
   coalesce(sum(cost_estimate_usd), 0) AS cost_usd
 `;
+
+interface RawAiProviderTelemetry {
+  provider: string;
+  provider_calls: bigint | number;
+  error_calls: bigint | number;
+  latency_p95: number | null;
+}
 
 const SUMMARY_SELECT: Record<keyof AiCallSummaryModel, true> = {
   id: true,
@@ -124,6 +133,31 @@ export class AiCallLogsPrismaRepository implements IAiCallLogsRepository {
     `);
 
     return rows.map((row: RawAiTelemetryDayAggregate): AiTelemetryDayAggregate => ({ ...AiCallLogsMapper.toAggregate(row), day: row.day }));
+  }
+
+  public async getProviderStats(since: Date): Promise<AiProviderTelemetry[]> {
+    const rows: RawAiProviderTelemetry[] = await this._prisma.$queryRaw<RawAiProviderTelemetry[]>(Prisma.sql`
+      SELECT provider,
+        count(*) AS provider_calls,
+        count(*) FILTER (WHERE status = 'ERROR') AS error_calls,
+        percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms) AS latency_p95
+      FROM ai_call_logs
+      WHERE created_at >= ${since} AND ${PROVIDER_REACHING_SQL} AND provider <> ${NO_PROVIDER}
+      GROUP BY provider
+    `);
+
+    return rows.map((row: RawAiProviderTelemetry): AiProviderTelemetry => {
+      const providerCalls: number = Number(row.provider_calls);
+      const errorCalls: number = Number(row.error_calls);
+
+      return {
+        provider: row.provider,
+        providerCalls,
+        errorCalls,
+        errorRate: providerCalls > 0 ? errorCalls / providerCalls : 0,
+        latencyP95Ms: row.latency_p95 === null ? undefined : Math.round(Number(row.latency_p95)),
+      };
+    });
   }
 
   public async getRows(filters: AiTelemetryFilters, limit: number): Promise<AiCallLogRow[]> {

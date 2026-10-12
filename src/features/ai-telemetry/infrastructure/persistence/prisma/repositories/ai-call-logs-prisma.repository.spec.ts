@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma de la bitácora de llamadas de IA
- * Descripción: Verifica con un cliente Prisma simulado la inserción sin texto, el filtro de consumo (solo estados que llegaron a un proveedor), el mapeo de los agregados con percentiles devueltos por $queryRaw (bigint, numeric y nulos) y el resumen de una llamada
- * Versión: 1.1
+ * Descripción: Verifica con un cliente Prisma simulado la inserción sin texto, el filtro de consumo (solo estados que llegaron a un proveedor), el mapeo de los agregados con percentiles devueltos por $queryRaw (bigint, numeric y nulos), las métricas por proveedor con tasa de error y el resumen de una llamada
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,7 @@ import { type PrismaService } from "@/common/infrastructure/persistence/prisma/p
 import {
   type AiCallLogRow,
   type AiCallSummary,
+  type AiProviderTelemetry,
   type AiTelemetryAggregate,
   type AiTelemetryDayAggregate,
   type AiTelemetryFilters,
@@ -233,5 +234,22 @@ describe("AiCallLogsPrismaRepository", () => {
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
     );
+  });
+
+  it("maps per-provider metrics since an instant with the error rate and the p95 latency", async () => {
+    const since: Date = new Date("2026-10-11T11:45:00Z");
+
+    prisma.$queryRaw.mockResolvedValue([
+      { provider: "gemini", provider_calls: BigInt(8), error_calls: BigInt(2), latency_p95: 1234.6 },
+      { provider: "openai", provider_calls: BigInt(0), error_calls: BigInt(0), latency_p95: null },
+    ]);
+
+    const stats: AiProviderTelemetry[] = await repository.getProviderStats(since);
+
+    expect(stats).toEqual([
+      { provider: "gemini", providerCalls: 8, errorCalls: 2, errorRate: 0.25, latencyP95Ms: 1235 },
+      { provider: "openai", providerCalls: 0, errorCalls: 0, errorRate: 0, latencyP95Ms: undefined },
+    ]);
+    expect((prisma.$queryRaw.mock.calls[0][0] as Prisma.Sql).values).toContain(since);
   });
 });

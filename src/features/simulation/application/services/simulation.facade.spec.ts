@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de SimulationFacade
- * Descripción: Verifica que la calificación de una sesión se recalcula con la repetición del servidor y devuelve su desglose por criterio (con rúbrica por defecto, de caso o explícita; la por defecto con los umbrales copiados al iniciar la sesión), los motivos de no disponibilidad (sesión inexistente, rúbrica inválida, caso no disponible), el resumen guardado y las estadísticas de sesiones de un grupo
- * Versión: 1.2
+ * Descripción: Verifica que la calificación de una sesión se recalcula con la repetición del servidor y devuelve su desglose por criterio (con rúbrica por defecto, de caso o explícita; la por defecto con los umbrales copiados al iniciar la sesión), los motivos de no disponibilidad (sesión inexistente, rúbrica inválida, caso no disponible), el resumen guardado las estadísticas de sesiones de un grupo y la versión del motor
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,6 +28,7 @@ import {
 } from "@/features/simulation/application/testing/simulation-sessions-test-doubles-spec";
 import { type SimulationSessionSettings } from "@/features/simulation/application/tokens/simulation-session-settings.token";
 import { EndSimulationSessionUseCase } from "@/features/simulation/application/use-cases/end-simulation-session.usecase";
+import { ENGINE_VERSION } from "@/features/simulation/domain/engine/engine-version";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
 import { type SimulationSessionSummary } from "@/features/simulation/domain/read-models/simulation-session.read-model";
 import { buildDefaultSimulationRubric, DEFAULT_SIMULATION_RUBRIC, DEFAULT_SIMULATION_RUBRIC_THRESHOLDS, type SimulationRubricThresholds } from "@/features/simulation/domain/scoring";
@@ -162,5 +163,11 @@ describe("SimulationFacade", () => {
       abandonedSessions: 1,
       averageScore: session.summary?.score,
     });
+  });
+
+  it("exposes the simulation engine version", () => {
+    const version: string = facade.engineVersion;
+
+    expect(version).toBe(ENGINE_VERSION);
   });
 });

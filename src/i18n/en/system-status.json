@@ -1,0 +1,5 @@
+{
+  "status_retrieved": "System status retrieved successfully",
+  "probe_succeeded": "The AI provider answered the probe",
+  "probe_failed": "The AI provider did not answer the probe"
+}

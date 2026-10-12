@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Adaptador SupabaseFileStorageAdapter
- * Descripción: Implementación de IFileStorageService sobre un bucket privado de Supabase Storage (carga desde el servidor, URLs firmadas de carga y descarga, firma en lote y borrado) usando @supabase/supabase-js con la service role key
- * Versión: 1.0
+ * Descripción: Implementación de IFileStorageService sobre un bucket privado de Supabase Storage (carga desde el servidor, URLs firmadas de carga y descarga, firma en lote, borrado y chequeo de salud listando a lo sumo un objeto del bucket) usando @supabase/supabase-js con la service role key
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,7 @@
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { IFileStorageService } from "@/common/application/ports/file-storage.interface";
+import { type FileStorageHealthValue, IFileStorageService } from "@/common/application/ports/file-storage.interface";
 
 export const DEFAULT_SIGNED_URL_TTL_SECONDS: number = 3600;
 
@@ -92,6 +92,16 @@ export class SupabaseFileStorageAdapter implements IFileStorageService {
 
     if (error) {
       throw new Error(`Supabase Storage could not delete ${key}: ${error.message}`);
+    }
+  }
+
+  public async checkHealth(): Promise<FileStorageHealthValue> {
+    try {
+      const { error } = await this._storage().list("", { limit: 1 });
+
+      return error ? "down" : "up";
+    } catch {
+      return "down";
     }
   }
 

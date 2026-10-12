@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores del gateway de IA
- * Descripción: Errores de dominio del gateway de IA (proveedores no disponibles → 503, cuota excedida → 429 con hora de reinicio en el mensaje traducido y en Retry-After, mapeo HTTP personalizado sin configurar) y el error interno de proveedor con su clasificación
- * Versión: 1.1
+ * Descripción: Errores de dominio del gateway de IA (proveedores no disponibles → 503, cuota excedida → 429 con hora de reinicio en el mensaje traducido y en Retry-After, mapeo HTTP personalizado sin configurar, proveedor desconocido → 404 y proveedor sin configuración → 422 para la sonda manual) y el error interno de proveedor con su clasificación
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,6 +36,26 @@ export class AiQuotaExceededError extends DomainError {
 export class AiStreamInterruptedError extends DomainError {
   public constructor() {
     super("The AI response was interrupted", "ai.stream_interrupted");
+  }
+}
+
+export class UnknownAiProviderError extends DomainError {
+  public constructor(public readonly provider: string) {
+    super(`Unknown AI provider: ${provider}`, "ai.provider_unknown");
+  }
+
+  public get i18nArgs(): Record<string, string> {
+    return { provider: this.provider };
+  }
+}
+
+export class AiProviderNotRegisteredError extends DomainError {
+  public constructor(public readonly provider: string) {
+    super(`The AI provider ${provider} has no configuration`, "ai.provider_not_registered");
+  }
+
+  public get i18nArgs(): Record<string, string> {
+    return { provider: this.provider };
   }
 }
 

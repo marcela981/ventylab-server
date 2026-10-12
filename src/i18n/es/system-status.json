@@ -1,0 +1,5 @@
+{
+  "status_retrieved": "Estado del sistema obtenido correctamente",
+  "probe_succeeded": "El proveedor de IA respondió la prueba",
+  "probe_failed": "El proveedor de IA no respondió la prueba"
+}

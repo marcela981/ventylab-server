@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de la telemetría de IA
- * Descripción: Tipos de la bitácora de llamadas de IA (entrada a registrar sin texto de prompt ni de respuesta, resumen de una llamada, fila exportable, consumo por usuario y estadísticas agregadas por día) y los valores de caso de uso y estado
- * Versión: 1.0
+ * Descripción: Tipos de la bitácora de llamadas de IA (entrada a registrar sin texto de prompt ni de respuesta, resumen de una llamada, fila exportable, consumo por usuario y estadísticas agregadas por día y por proveedor) y los valores de caso de uso y estado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -132,6 +132,14 @@ export interface AiTelemetryStats {
   readonly to: Date;
   readonly totals: AiTelemetryMetrics;
   readonly days: AiTelemetryDayMetrics[];
+}
+
+export interface AiProviderTelemetry {
+  readonly provider: string;
+  readonly providerCalls: number;
+  readonly errorCalls: number;
+  readonly errorRate: number;
+  readonly latencyP95Ms?: number;
 }
 
 export interface AiModelPrice {

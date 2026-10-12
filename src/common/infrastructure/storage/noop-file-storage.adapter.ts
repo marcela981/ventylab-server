@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Adaptador NoopFileStorageAdapter
- * Descripción: Implementación vacía de IFileStorageService que solo registra las operaciones y se reporta como no disponible cuando Supabase Storage no está configurado
- * Versión: 1.1
+ * Descripción: Implementación vacía de IFileStorageService que solo registra las operaciones y se reporta como no disponible y no configurado cuando Supabase Storage no está configurado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,7 @@
  */
 import { Logger } from "@nestjs/common";
 
-import { IFileStorageService } from "@/common/application/ports/file-storage.interface";
+import { type FileStorageHealthValue, IFileStorageService } from "@/common/application/ports/file-storage.interface";
 import { generateId } from "@/common/domain/utils/generate-id";
 
 export class NoopFileStorageAdapter implements IFileStorageService {
@@ -24,6 +24,10 @@ export class NoopFileStorageAdapter implements IFileStorageService {
 
   public isAvailable(): boolean {
     return false;
+  }
+
+  public checkHealth(): Promise<FileStorageHealthValue> {
+    return Promise.resolve("not_configured");
   }
 
   public async generateUploadUrl(key: string, _contentType: string): Promise<{ uploadUrl: string; fileKey: string }> {

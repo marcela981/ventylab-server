@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: AiTelemetryFacade
- * Descripción: API pública de la telemetría de IA para otras features: registrar una llamada sin bloquear ni lanzar (solo hash del prompt, costo estimado con la tabla de precios si no viene calculado), consumo de un usuario por caso de uso, estadísticas agregadas, resumen de una llamada y la última llamada SUCCESS o FALLBACK enlazada a una referencia
- * Versión: 1.2
+ * Descripción: API pública de la telemetría de IA para otras features: registrar una llamada sin bloquear ni lanzar (solo hash del prompt, costo estimado con la tabla de precios si no viene calculado), consumo de un usuario por caso de uso, estadísticas agregadas, p95 de latencia y tasa de error por proveedor desde un instante, resumen de una llamada y la última llamada SUCCESS o FALLBACK enlazada a una referencia
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import {
   type AiCallLogEntry,
   type AiCallStatusValue,
   type AiCallSummary,
+  type AiProviderTelemetry,
   type AiTelemetryFilters,
   type AiTelemetryStats,
   type AiTelemetryUseCaseValue,
@@ -56,6 +57,10 @@ export class AiTelemetryFacade {
 
   public async getStats(filters: AiTelemetryFilters): Promise<AiTelemetryStats> {
     return this._getAiTelemetryStatsUseCase.execute(filters);
+  }
+
+  public async getProviderStats(since: Date): Promise<AiProviderTelemetry[]> {
+    return this._aiCallLogsRepository.getProviderStats(since);
   }
 
   public async getCallById(id: string): Promise<AiCallSummary | undefined> {

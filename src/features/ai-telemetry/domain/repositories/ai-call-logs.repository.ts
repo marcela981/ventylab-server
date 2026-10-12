@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio de la bitácora de llamadas de IA
- * Descripción: Contrato de persistencia de ai_call_logs: registrar una llamada, consumo de un usuario por caso de uso, agregados con percentiles (totales y por día), filas para exportar y resumen de una llamada
- * Versión: 1.1
+ * Descripción: Contrato de persistencia de ai_call_logs: registrar una llamada, consumo de un usuario por caso de uso, agregados con percentiles (totales, por día y por proveedor desde un instante), filas para exportar y resumen de una llamada
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import {
   type AiCallLogRow,
   type AiCallStatusValue,
   type AiCallSummary,
+  type AiProviderTelemetry,
   type AiTelemetryAggregate,
   type AiTelemetryDayAggregate,
   type AiTelemetryFilters,
@@ -28,6 +29,7 @@ export interface IAiCallLogsRepository {
   getAggregate(filters: AiTelemetryFilters): Promise<AiTelemetryAggregate>;
   getDailyAggregates(filters: AiTelemetryFilters): Promise<AiTelemetryDayAggregate[]>;
   getRows(filters: AiTelemetryFilters, limit: number): Promise<AiCallLogRow[]>;
+  getProviderStats(since: Date): Promise<AiProviderTelemetry[]>;
   getById(id: string): Promise<AiCallSummary | undefined>;
   getLatestByRef(refType: string, refId: string, statuses: readonly AiCallStatusValue[]): Promise<AiCallSummary | undefined>;
 }

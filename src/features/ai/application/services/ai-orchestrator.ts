@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Orquestador de proveedores de IA
- * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla registra las llamadas bloqueadas por estar fuera de tema sin intentos y expone los ajustes del tutor
- * Versión: 1.1
+ * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,13 +31,16 @@ import {
   AiCallAbortedError,
   AiProviderError,
   type AiProviderErrorKind,
+  AiProviderNotRegisteredError,
   AiProvidersUnavailableError,
   AiStreamInterruptedError,
 } from "@/features/ai/domain/ai.errors";
 import { type BuiltPrompt } from "@/features/ai/domain/prompts/prompt-template";
+import { type AiProbeResult, type AiProviderHealth } from "@/features/ai/domain/results/ai-provider-health";
 import { type AiCallStatus, type AiResult, type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
 import { classifyAiError } from "@/features/ai/domain/services/ai-error-classification";
-import { type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
+import { AI_PROVIDER_ID_VALUES } from "@/features/ai/domain/value-objects/ai-provider-id";
+import { AI_USE_CASE_VALUES, type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 
 // A timed-out attempt already spent the whole latency budget, so it moves to the next provider instead of retrying.
 const RETRYABLE_KINDS: readonly AiProviderErrorKind[] = ["RATE_LIMIT", "SERVER", "NETWORK"];
@@ -57,6 +60,11 @@ export interface AiCallOptions {
   readonly signal?: AbortSignal;
   readonly refType?: string;
   readonly refId?: string;
+}
+
+export interface AiProbeLimits {
+  readonly timeoutMs: number;
+  readonly maxOutputTokens: number;
 }
 
 export interface AiOrchestrationRequest {
@@ -263,6 +271,55 @@ export class AiOrchestrator {
     return this._settings.getTutorSettings();
   }
 
+  public getProviderHealth(now: number = Date.now()): AiProviderHealth[] {
+    const providerIds: string[] = [...new Set<string>([...AI_PROVIDER_ID_VALUES, ...this._providers.keys()])];
+
+    return providerIds.map((provider: string): AiProviderHealth => ({
+      provider,
+      configured: this._providers.has(provider),
+      ...this._breaker.inspect(provider, now),
+    }));
+  }
+
+  public async probe(request: AiOrchestrationRequest, providerId: string, limits: AiProbeLimits): Promise<AiProbeResult> {
+    const provider: ILlmProvider | undefined = this._providers.get(providerId);
+    const model: string | undefined = provider ? this._probeModel(request.useCase, providerId) : undefined;
+
+    if (!provider || !model) {
+      throw new AiProviderNotRegisteredError(providerId);
+    }
+
+    const tracker: CallTracker = this._startTracker();
+    const scope: AttemptScope = new AttemptScope(limits.timeoutMs, request.options.signal);
+
+    tracker.attempts = 1;
+    tracker.provider = providerId;
+    tracker.model = model;
+
+    try {
+      const completion: LlmCompletion = await scope.race(
+        provider.complete(
+          { model, system: request.prompt.system, messages: request.prompt.messages, maxOutputTokens: limits.maxOutputTokens, temperature: 0, responseFormat: request.prompt.responseFormat },
+          scope.signal,
+        ),
+      );
+
+      this._breaker.recordSuccess(providerId);
+      tracker.model = completion.model || model;
+      this._record(request, tracker, { status: "SUCCESS", inputTokens: completion.inputTokens, outputTokens: completion.outputTokens });
+
+      return { provider: providerId, model: tracker.model, ok: true, latencyMs: Date.now() - tracker.startedAt, aiCallId: tracker.id };
+    } catch (error: unknown) {
+      tracker.errorCode = classifyAiError(error);
+      this._breaker.recordFailure(providerId, this._settings.getBreakerSettings(), tracker.errorCode);
+      this._record(request, tracker, { status: "ERROR" });
+
+      return { provider: providerId, model, ok: false, latencyMs: Date.now() - tracker.startedAt, errorCode: tracker.errorCode, aiCallId: tracker.id };
+    } finally {
+      scope.dispose(true);
+    }
+  }
+
   public recordBlocked(request: AiOrchestrationRequest): string {
     const tracker: CallTracker = this._startTracker();
 
@@ -362,8 +419,8 @@ export class AiOrchestrator {
           return;
         }
 
-        this._breaker.recordFailure(target.provider.id, this._settings.getBreakerSettings());
         tracker.errorCode = classifyAiError(error);
+        this._breaker.recordFailure(target.provider.id, this._settings.getBreakerSettings(), tracker.errorCode);
         this._logger.warn(`AI stream from ${target.provider.id} interrupted (${tracker.errorCode})`);
         this._record(request, tracker, { status: "ERROR" });
 
@@ -432,8 +489,8 @@ export class AiOrchestrator {
   }
 
   private _registerFailure(target: ProviderTarget, tracker: CallTracker, error: unknown): void {
-    this._breaker.recordFailure(target.provider.id, this._settings.getBreakerSettings());
     tracker.errorCode = classifyAiError(error);
+    this._breaker.recordFailure(target.provider.id, this._settings.getBreakerSettings(), tracker.errorCode);
     this._logger.warn(`AI provider ${target.provider.id} failed (${tracker.errorCode}), trying the next provider`);
   }
 
@@ -463,6 +520,24 @@ export class AiOrchestrator {
 
       throw error;
     }
+  }
+
+  private _probeModel(useCase: AiUseCaseValue, providerId: string): string | undefined {
+    const preferred: string | undefined = this._settings.getUseCaseSettings(useCase).models[providerId];
+
+    if (preferred) {
+      return preferred;
+    }
+
+    for (const candidate of AI_USE_CASE_VALUES) {
+      const model: string | undefined = this._settings.getUseCaseSettings(candidate).models[providerId];
+
+      if (model) {
+        return model;
+      }
+    }
+
+    return undefined;
   }
 
   private *_targets(settings: AiUseCaseSettings): Generator<ProviderTarget> {

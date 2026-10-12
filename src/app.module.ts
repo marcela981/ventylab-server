@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo raíz AppModule
- * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features, incluidas la consulta de la bitácora de auditoría y las notificaciones persistidas; registra el filtro global y los middlewares de traza y contexto
- * Versión: 1.19
+ * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features, incluidas la consulta de la bitácora de auditoría, las notificaciones persistidas y el estado del sistema; registra el filtro global y los middlewares de traza y contexto
+ * Versión: 1.20
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -64,6 +64,7 @@ import { ScoresModule } from "@/features/scores/scores.module";
 import { SectionsModule } from "@/features/sections/sections.module";
 import { SimulationModule } from "@/features/simulation/simulation.module";
 import { StepsModule } from "@/features/steps/steps.module";
+import { SystemStatusModule } from "@/features/system-status/system-status.module";
 import { TeacherStudentsModule } from "@/features/teacher-students/teacher-students.module";
 import { UsersModule } from "@/features/users/users.module";
 import { VentilatorCommandsModule } from "@/features/ventilator-commands/ventilator-commands.module";
@@ -144,6 +145,7 @@ import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/venti
     AiTutorModule,
     AuditLogModule,
     NotificationsModule,
+    SystemStatusModule,
   ],
   controllers: [HealthController],
   providers: [

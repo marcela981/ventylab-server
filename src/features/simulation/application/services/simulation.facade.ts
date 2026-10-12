@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada SimulationFacade
- * Descripción: API pública de las sesiones de simulación con eventos para otras features: resumen de una sesión, calificación por rúbrica recalculada siempre con la repetición del servidor (nunca con datos del cliente), sesiones paginadas de un usuario y estadísticas de sesiones de los miembros de un grupo obtenidos con GroupsFacade
- * Versión: 1.0
+ * Descripción: API pública de las sesiones de simulación con eventos para otras features: resumen de una sesión, calificación por rúbrica recalculada siempre con la repetición del servidor (nunca con datos del cliente), sesiones paginadas de un usuario y estadísticas de sesiones de los miembros de un grupo obtenidos con GroupsFacade, y la versión del motor de simulación
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,7 @@ import {
   type SimulationSessionContext,
   SimulationSessionRuntime,
 } from "@/features/simulation/application/services/simulation-session-runtime.service";
+import { ENGINE_VERSION } from "@/features/simulation/domain/engine/engine-version";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
 import {
   type SimulationSessionStatusCount,
@@ -57,6 +58,10 @@ export class SimulationFacade {
     private readonly _runtime: SimulationSessionRuntime,
     private readonly _groupsFacade: GroupsFacade,
   ) {}
+
+  public get engineVersion(): string {
+    return ENGINE_VERSION;
+  }
 
   public static toView(session: SimulationSession): SimulationSessionView {
     return {

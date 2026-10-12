@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Puerto IFileStorageService
- * Descripción: Define el contrato y el token de inyección del servicio de almacenamiento de archivos, incluida la carga desde el servidor y la firma de URLs de descarga en lote
- * Versión: 1.1
+ * Descripción: Define el contrato y el token de inyección del servicio de almacenamiento de archivos, incluida la carga desde el servidor y la firma de URLs de descarga en lote, y un chequeo ligero de salud del proveedor (up, down o not_configured)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,8 @@
  */
 export const FILE_STORAGE_SERVICE_TOKEN: unique symbol = Symbol("FILE_STORAGE_SERVICE_TOKEN");
 
+export type FileStorageHealthValue = "up" | "down" | "not_configured";
+
 export interface IFileStorageService {
   isAvailable(): boolean;
   generateUploadUrl(key: string, contentType: string): Promise<{ uploadUrl: string; fileKey: string }>;
@@ -17,4 +19,5 @@ export interface IFileStorageService {
   generateDownloadUrls(keys: string[], expiresInSeconds?: number): Promise<Map<string, string>>;
   uploadFile(key: string, body: Buffer, contentType: string): Promise<void>;
   deleteFile(key: string): Promise<void>;
+  checkHealth(): Promise<FileStorageHealthValue>;
 }

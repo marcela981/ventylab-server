@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AiTelemetryFacade
- * Descripción: Verifica que el registro de llamadas de IA nunca lance (aunque el repositorio falle), que estime el costo con la tabla de precios solo cuando la entrada no lo trae, y que el consumo, el resumen de una llamada y las estadísticas deleguen en el repositorio y el caso de uso
- * Versión: 1.2
+ * Descripción: Verifica que el registro de llamadas de IA nunca lance (aunque el repositorio falle), que estime el costo con la tabla de precios solo cuando la entrada no lo trae, y que el consumo, el resumen de una llamada las estadísticas y las métricas por proveedor deleguen en el repositorio y el caso de uso
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import { type GetAiTelemetryStatsUseCase } from "@/features/ai-telemetry/applica
 import {
   type AiCallLogEntry,
   type AiCallSummary,
+  type AiProviderTelemetry,
   type AiTelemetryStats,
   type AiUsage,
 } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
@@ -28,6 +29,7 @@ interface RepositoryMock {
   getRows: jest.Mock;
   getById: jest.Mock;
   getLatestByRef: jest.Mock;
+  getProviderStats: jest.Mock;
 }
 
 const ENTRY: AiCallLogEntry = {
@@ -61,6 +63,7 @@ describe("AiTelemetryFacade", () => {
       getRows: jest.fn(),
       getById: jest.fn(),
       getLatestByRef: jest.fn(),
+      getProviderStats: jest.fn(),
     };
     statsUseCase = { execute: jest.fn() };
     priceTable = { "gemini:gemini-2.0-flash": { inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.4 } };
@@ -177,5 +180,17 @@ describe("AiTelemetryFacade", () => {
 
     expect(result).toBe(stats);
     expect(statsUseCase.execute).toHaveBeenCalledWith(filters);
+  });
+
+  it("delegates the per-provider metrics since an instant to the repository", async () => {
+    const since: Date = new Date("2026-10-11T10:00:00Z");
+    const stats: AiProviderTelemetry[] = [{ provider: "gemini", providerCalls: 4, errorCalls: 1, errorRate: 0.25, latencyP95Ms: 900 }];
+
+    repository.getProviderStats.mockResolvedValue(stats);
+
+    const result: AiProviderTelemetry[] = await facade.getProviderStats(since);
+
+    expect(result).toBe(stats);
+    expect(repository.getProviderStats).toHaveBeenCalledWith(since);
   });
 });
