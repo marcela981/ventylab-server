@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma AiCallLogAnalyticsPrismaRepository
- * Descripción: Implementa IAiCallLogAnalyticsRepository con un solo groupBy de Prisma sobre ai_call_logs por usuario y caso de uso con IN (conteo de llamadas, suma de tokens y latencia promedio), opcionalmente desde una fecha, sin bucles por usuario
- * Versión: 1.0
+ * Descripción: Implementa IAiCallLogAnalyticsRepository con un solo groupBy de Prisma sobre ai_call_logs por usuario y caso de uso con IN (conteo de llamadas, suma de tokens y latencia promedio), opcionalmente desde una fecha, sin bucles por usuario y sin las sondas de salud de los proveedores
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { type AiUseCase } from "@prisma/client";
 
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { type AiUserUseCaseUsage, type IAiCallLogAnalyticsRepository } from "@/features/ai-telemetry/domain/repositories/ai-call-log-analytics.repository";
+import { EXCLUDE_HEALTH_PROBES_WHERE } from "@/features/ai-telemetry/infrastructure/persistence/prisma/filters/health-probe-exclusion";
 
 interface UsageGroupRow {
   userId: string | null;
@@ -51,7 +52,7 @@ export class AiCallLogAnalyticsPrismaRepository implements IAiCallLogAnalyticsRe
     return await this._prisma.aiCallLog
       .groupBy({
         by: ["userId", "useCase"],
-        where: { userId: { in: [...new Set<string>(userIds)] }, ...(since ? { createdAt: { gte: since } } : {}) },
+        where: { userId: { in: [...new Set<string>(userIds)] }, ...(since ? { createdAt: { gte: since } } : {}), AND: [EXCLUDE_HEALTH_PROBES_WHERE] },
         _count: { _all: true },
         _sum: { inputTokens: true, outputTokens: true },
         _avg: { latencyMs: true },

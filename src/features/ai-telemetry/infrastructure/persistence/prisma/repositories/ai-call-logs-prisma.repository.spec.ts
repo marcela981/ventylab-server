@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma de la bitácora de llamadas de IA
- * Descripción: Verifica con un cliente Prisma simulado la inserción sin texto, el filtro de consumo (solo estados que llegaron a un proveedor), el mapeo de los agregados con percentiles devueltos por $queryRaw (bigint, numeric y nulos), las métricas por proveedor con tasa de error y el resumen de una llamada
- * Versión: 1.2
+ * Descripción: Verifica con un cliente Prisma simulado la inserción sin texto, el filtro de consumo (solo estados que llegaron a un proveedor), el mapeo de los agregados con percentiles devueltos por $queryRaw (bigint, numeric y nulos), las métricas por proveedor con tasa de error el resumen de una llamada y la exclusión de las sondas de salud en consumo, agregados y exportación (no en las métricas por proveedor)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,7 +19,9 @@ import {
   type AiTelemetryDayAggregate,
   type AiTelemetryFilters,
   type AiUsage,
+  HEALTH_PROBE_REF_TYPE,
 } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
+import { EXCLUDE_HEALTH_PROBES_WHERE } from "@/features/ai-telemetry/infrastructure/persistence/prisma/filters/health-probe-exclusion";
 import { AiCallLogsPrismaRepository } from "@/features/ai-telemetry/infrastructure/persistence/prisma/repositories/ai-call-logs-prisma.repository";
 
 interface PrismaMock {
@@ -85,7 +87,7 @@ describe("AiCallLogsPrismaRepository", () => {
 
     expect(usage).toEqual({ requests: 4, inputTokens: 40, outputTokens: 0 });
     expect(prisma.aiCallLog.aggregate).toHaveBeenCalledWith({
-      where: { userId: "user-1", useCase: "FREE_CHAT", createdAt: { gte: since }, status: { in: ["SUCCESS", "FALLBACK", "ERROR", "ABORTED"] } },
+      where: { userId: "user-1", useCase: "FREE_CHAT", createdAt: { gte: since }, status: { in: ["SUCCESS", "FALLBACK", "ERROR", "ABORTED"] }, AND: [EXCLUDE_HEALTH_PROBES_WHERE] },
       _count: { _all: true },
       _sum: { inputTokens: true, outputTokens: true },
     });
@@ -121,6 +123,24 @@ describe("AiCallLogsPrismaRepository", () => {
     expect(query.sql).toContain("percentile_cont");
     expect(query.sql).not.toContain("DROP TABLE");
     expect(query.values).toEqual(expect.arrayContaining([FILTERS.from, FILTERS.to, "FREE_CHAT", "gemini", "x'; DROP TABLE ai_call_logs; --"]));
+  });
+
+  it("excludes health probes from totals and daily aggregates while keeping rows without a reference", async () => {
+    prisma.$queryRaw.mockResolvedValue([]);
+
+    await repository.getAggregate(FILTERS);
+    await repository.getDailyAggregates(FILTERS);
+
+    for (const call of prisma.$queryRaw.mock.calls) {
+      const query: Prisma.Sql = call[0] as Prisma.Sql;
+
+      expect(query.sql).toContain("ref_type IS DISTINCT FROM");
+      expect(query.values).toContain(HEALTH_PROBE_REF_TYPE);
+    }
+  });
+
+  it("matches rows with a null reference or any reference other than the health probe", () => {
+    expect(EXCLUDE_HEALTH_PROBES_WHERE).toEqual({ OR: [{ refType: null }, { refType: { not: "health_probe" } }] });
   });
 
   it("returns zeroed totals when the query returns no row", async () => {
@@ -177,7 +197,7 @@ describe("AiCallLogsPrismaRepository", () => {
     expect(rows[0]).toEqual(expect.objectContaining({ id: "call-1", model: undefined, ttftMs: undefined, costEstimateUsd: 0.5 }));
     expect(prisma.aiCallLog.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { createdAt: { gte: FILTERS.from, lt: FILTERS.to }, useCase: "FREE_CHAT", provider: "gemini" },
+        where: { createdAt: { gte: FILTERS.from, lt: FILTERS.to }, useCase: "FREE_CHAT", provider: "gemini", AND: [EXCLUDE_HEALTH_PROBES_WHERE] },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         take: 100,
       }),
@@ -251,5 +271,6 @@ describe("AiCallLogsPrismaRepository", () => {
       { provider: "openai", providerCalls: 0, errorCalls: 0, errorRate: 0, latencyP95Ms: undefined },
     ]);
     expect((prisma.$queryRaw.mock.calls[0][0] as Prisma.Sql).values).toContain(since);
+    expect((prisma.$queryRaw.mock.calls[0][0] as Prisma.Sql).sql).not.toContain("ref_type");
   });
 });

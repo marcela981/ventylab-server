@@ -18,9 +18,9 @@ Liveness, readiness and the operational status of the server and its dependencie
 | `database` | `SELECT 1` with timeout; latency in ms | `up`, `down` |
 | `mqttBroker` | Ventilator telemetry status: connected, last message, messages/s | `up`, `down`, `not_configured` (no broker URL) |
 | `ventilator` | Device staleness (online / no data) and whether a reservation is active now | `up` (online), `down` (offline during an active reservation), `idle` (offline with no active reservation, or the reservation lookup failed), `not_configured` |
-| `aiProviders` | Per known provider: configured, circuit breaker (`closed`, `open`, `half_open`), last success and last error (time and error code only, since process start), p95 latency, error rate and calls over the last 15 minutes from AI telemetry. No model is ever called. | `up` (every configured provider available), `degraded` (some configured provider has its breaker open), `down` (no provider available) |
+| `aiProviders` | Per known provider: configured, circuit breaker (`closed`, `open`, `half_open`), last success and last error (time and error code only, since process start), p95 latency, error rate and calls over the last 15 minutes from AI telemetry. No model is ever called. | `up` (every configured provider available), `degraded` (some configured provider has its breaker open), `down` (at least one provider configured, none available), `not_configured` (no provider has credentials) |
 | `storage` | Media storage `checkHealth()` (lists at most one object) | `up`, `down`, `not_configured` (no storage credentials) |
-| `process` | Uptime, RSS, heap used, mean event loop delay since the previous reading (`perf_hooks.monitorEventLoopDelay`), app version (`APP_VERSION` or `package.json`), commit (`APP_COMMIT_SHA` or `GIT_COMMIT`), simulation engine version | always `up` |
+| `process` | Uptime, RSS, heap used, mean event loop lag since the previous reading (`perf_hooks.monitorEventLoopDelay` mean minus its 20 ms sampling resolution, floored at 0), app version (`APP_VERSION` or `package.json`), commit (`APP_COMMIT_SHA` or `GIT_COMMIT`), simulation engine version | always `up` |
 
 ## Global state rules
 
@@ -31,9 +31,9 @@ Implemented in `evaluateSystemState` (`src/features/system-status/domain/system-
 | Database `down` | `DOWN` |
 | MQTT broker `down` | `DEGRADED` |
 | Ventilator `down` (offline during an active reservation) | `DEGRADED` |
-| AI providers `down` (every provider unconfigured or with its breaker open) | `DEGRADED` |
+| AI providers `down` (at least one provider configured, every configured one with its breaker open) | `DEGRADED` |
 | Storage `down` | `DEGRADED` |
-| Anything else (including `idle`, `not_configured` and a partially degraded AI set) | `OK` |
+| Anything else (including `idle`, `not_configured` — also for AI with no provider configured — and a partially degraded AI set) | `OK` |
 
 ## Checks and timeouts
 
@@ -62,7 +62,7 @@ The first evaluation after start only sets the baseline. Clients never poll; eva
 
 ## AI probe
 
-`POST /api/system/probe/ai/:provider` sends a fixed tiny prompt (`HEALTH_PROBE_PROMPT`, version `1.0.0`) with 8 output tokens, temperature 0 and a 10 s timeout, in one attempt without retries. The call updates the provider's circuit breaker and is recorded in `ai_call_logs` like any other call, with `refType = "health_probe"` and `refId = <provider>`. Because `ai_call_logs.use_case` is a database enum, probes are logged under the `TOPIC_CHECK` use case; filter them out by `refType`. No quota applies (no user is attached). Unknown provider: 404; known provider without credentials: 422. A provider failure is returned as `ok: false` with an error code, never as an HTTP error.
+`POST /api/system/probe/ai/:provider` sends a fixed tiny prompt (`HEALTH_PROBE_PROMPT`, version `1.0.0`) with 8 output tokens, temperature 0 and a 10 s timeout, in one attempt without retries. The call updates the provider's circuit breaker and is recorded in `ai_call_logs` like any other call, with `refType = "health_probe"` and `refId = <provider>`. Because `ai_call_logs.use_case` is a database enum, probes are logged under the `TOPIC_CHECK` use case. Every AI telemetry read that feeds learning metrics excludes them with `ref_type IS DISTINCT FROM 'health_probe'` (`HEALTH_PROBE_REF_TYPE` in the AI telemetry read model): per-user usage and quota counting, `/api/ai-telemetry` stats and CSV export, and the per-user usage used by analytics. They are kept only in the per-provider metrics of `aiProviders` (error rate, p95 latency, calls), because a probe is a real round trip to the provider and its outcome is evidence of the provider's health. No quota applies (no user is attached). Unknown provider: 404; known provider without credentials: 422. A provider failure is returned as `ok: false` with an error code, never as an HTTP error.
 
 ## Configuration
 

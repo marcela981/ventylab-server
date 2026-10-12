@@ -146,3 +146,15 @@ Decisions from the audit:
   ai-telemetry, ai-ratings (`AiRatingsFacade`), reservations, groups; `NotesFacade`, `AiTutorFacade`.
 - 30-student dashboard: 14 Prisma operations (teacher), independent of group size; 60 s cache per panel+requester.
 - Checks: tsc 0; jest 124 suites / 819 tests + 24 suites / 200 tests pass; eslint clean; coupling grep empty.
+
+### T5-fix — done
+- Health probes (`ref_type = 'health_probe'`) excluded null-safely from ai-telemetry usage/quota, aggregates,
+  daily aggregates, CSV export and analytics usage; kept only in system-status provider stats.
+- Event-loop lag subtracts the histogram resolution; no configured AI provider -> `not_configured` (global OK).
+- Checks: tsc 0; jest 46 suites / 315 tests pass; eslint clean.
+
+### T6 — review (two independent reviewers)
+- No blockers. Major: evaluation stats aggregate attempts from every assigned group (teacher can infer other
+  groups' grades). Minor: timeline/dashboard not limited to STUDENT targets and in-scope evaluations; research
+  export keeps raw evaluation ids; vacuous student-code assertion; per-source timeline truncation not reported;
+  sequential scope checks; legacy unassigned evaluations; redundant group read. -> fixed in T6-fix.

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de las reglas del estado del sistema
- * Descripción: Verifica las reglas del estado global (base de datos caída → DOWN; broker, ventilador en reserva activa, IA sin proveedores o almacenamiento caídos → DEGRADED; resto → OK), el estado derivado del ventilador y de los proveedores de IA, y la detección de cambios entre evaluaciones
- * Versión: 1.0
+ * Descripción: Verifica las reglas del estado global (base de datos caída → DOWN; broker, ventilador en reserva activa, IA configurada sin proveedores disponibles o almacenamiento caídos → DEGRADED; resto → OK), el estado derivado del ventilador y de los proveedores de IA (sin ninguno configurado → not_configured), y la detección de cambios entre evaluaciones
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -78,7 +78,23 @@ describe("deriveVentilatorState", () => {
 });
 
 describe("deriveAiProvidersState", () => {
-  it("is down when every provider is unconfigured or has its breaker open", () => {
+  it("is not configured, and keeps the global state OK, when no provider has credentials", () => {
+    const providers: AiProviderComponentStatus[] = [
+      provider({ provider: "gemini", configured: false, available: false }),
+      provider({ provider: "openai", configured: false, available: false }),
+    ];
+
+    const state: ComponentStateValue = deriveAiProvidersState(providers);
+
+    expect(state).toBe("not_configured");
+    expect(evaluateSystemState(components({ aiProviders: state }))).toBe("OK");
+  });
+
+  it("is not configured when there are no providers at all", () => {
+    expect(deriveAiProvidersState([])).toBe("not_configured");
+  });
+
+  it("is down when at least one provider is configured and every configured one has its breaker open", () => {
     const providers: AiProviderComponentStatus[] = [
       provider({ provider: "gemini", breaker: "open", available: false }),
       provider({ provider: "openai", configured: false, available: false }),

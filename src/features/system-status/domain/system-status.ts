@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Estado del sistema
  * Descripción: Modelo del estado de cada componente (base de datos, broker MQTT, ventilador, proveedores de IA, almacenamiento y proceso) y reglas puras del estado global OK, DEGRADED o DOWN, del estado derivado del ventilador y de los proveedores de IA, y de la detección de cambios entre dos evaluaciones
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -116,7 +116,11 @@ export function deriveVentilatorState(mqttEnabled: boolean, online: boolean, act
 export function deriveAiProvidersState(providers: readonly AiProviderComponentStatus[]): ComponentStateValue {
   const configured: AiProviderComponentStatus[] = providers.filter((provider: AiProviderComponentStatus) => provider.configured);
 
-  if (!providers.some((provider: AiProviderComponentStatus) => provider.available)) {
+  if (configured.length === 0) {
+    return "not_configured";
+  }
+
+  if (!configured.some((provider: AiProviderComponentStatus) => provider.available)) {
     return "down";
   }
 
@@ -127,8 +131,8 @@ export function deriveAiProvidersState(providers: readonly AiProviderComponentSt
  * Global state rules:
  * - DOWN when the database is down (no request can be served correctly).
  * - DEGRADED when the MQTT broker is down, the ventilator is offline during an active reservation,
- *   no AI provider is available (every one unconfigured or with its breaker open), or the media storage is down.
- * - OK otherwise. "not_configured", "idle" and a partially degraded AI provider set never lower the global state.
+ *   at least one AI provider is configured but none is available (every configured one has its breaker open), or the media storage is down.
+ * - OK otherwise. "not_configured" (including no AI provider configured at all), "idle" and a partially degraded AI provider set never lower the global state.
  */
 export function evaluateSystemState(components: SystemStatusComponents): SystemStateValue {
   if (components.database.state === "down") {

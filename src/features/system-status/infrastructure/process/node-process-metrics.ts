@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Métricas del proceso Node
- * Descripción: Implementa IProcessMetrics con process.uptime, process.memoryUsage y un histograma de perf_hooks.monitorEventLoopDelay; el retardo del bucle de eventos es la media desde la lectura anterior, en milisegundos
- * Versión: 1.0
+ * Descripción: Implementa IProcessMetrics con process.uptime, process.memoryUsage y un histograma de perf_hooks.monitorEventLoopDelay; el retardo del bucle de eventos es la media desde la lectura anterior menos la resolución del histograma, en milisegundos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,15 @@ import { type IProcessMetrics, type ProcessMetricsSnapshot } from "@/features/sy
 const HISTOGRAM_RESOLUTION_MS: number = 20;
 
 const NANOSECONDS_PER_MS: number = 1_000_000;
+
+// The histogram samples with a timer of HISTOGRAM_RESOLUTION_MS, so every sample already includes that interval; only the excess is lag.
+export function toEventLoopLagMs(meanNs: number, resolutionMs: number = HISTOGRAM_RESOLUTION_MS): number {
+  if (!Number.isFinite(meanNs)) {
+    return 0;
+  }
+
+  return Math.round(Math.max(0, meanNs / NANOSECONDS_PER_MS - resolutionMs) * 100) / 100;
+}
 
 @Injectable()
 export class NodeProcessMetrics implements IProcessMetrics, OnModuleInit, OnModuleDestroy {
@@ -40,7 +49,7 @@ export class NodeProcessMetrics implements IProcessMetrics, OnModuleInit, OnModu
       uptimeSeconds: Math.round(process.uptime()),
       rssBytes: memory.rss,
       heapUsedBytes: memory.heapUsed,
-      eventLoopLagMs: Number.isFinite(meanNs) ? Math.round((meanNs / NANOSECONDS_PER_MS) * 100) / 100 : 0,
+      eventLoopLagMs: toEventLoopLagMs(meanNs),
     };
   }
 }

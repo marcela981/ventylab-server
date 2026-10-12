@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de la bitácora de llamadas de IA
- * Descripción: Implementa IAiCallLogsRepository sobre ai_call_logs con PrismaService: inserción con el id del llamador, consumo por usuario y caso de uso, agregados con percentile_cont (totales, por día UTC y por proveedor con p95 de latencia y tasa de error desde un instante) mediante $queryRaw parametrizado, filas para exportar, resumen de una llamada y la última llamada enlazada a una referencia (refType/refId) con ciertos estados
- * Versión: 1.2
+ * Descripción: Implementa IAiCallLogsRepository sobre ai_call_logs con PrismaService: inserción con el id del llamador, consumo por usuario y caso de uso, agregados con percentile_cont (totales, por día UTC y por proveedor con p95 de latencia y tasa de error desde un instante) mediante $queryRaw parametrizado, filas para exportar, resumen de una llamada y la última llamada enlazada a una referencia (refType/refId) con ciertos estados; el consumo, los agregados y la exportación excluyen las sondas de salud de los proveedores, que sí cuentan en las métricas por proveedor
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,6 +27,7 @@ import {
   PROVIDER_REACHING_STATUSES,
 } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
 import { type IAiCallLogsRepository } from "@/features/ai-telemetry/domain/repositories/ai-call-logs.repository";
+import { EXCLUDE_HEALTH_PROBES_SQL, EXCLUDE_HEALTH_PROBES_WHERE } from "@/features/ai-telemetry/infrastructure/persistence/prisma/filters/health-probe-exclusion";
 import {
   type AiCallLogRowModel,
   AiCallLogsMapper,
@@ -101,7 +102,7 @@ export class AiCallLogsPrismaRepository implements IAiCallLogsRepository {
   public async getUsage(userId: string, useCase: AiTelemetryUseCaseValue, since: Date): Promise<AiUsage> {
     const result: { _count: { _all: number }; _sum: { inputTokens: number | null; outputTokens: number | null } } =
       await this._prisma.aiCallLog.aggregate({
-        where: { userId, useCase, createdAt: { gte: since }, status: { in: [...PROVIDER_REACHING_STATUSES] } },
+        where: { userId, useCase, createdAt: { gte: since }, status: { in: [...PROVIDER_REACHING_STATUSES] }, AND: [EXCLUDE_HEALTH_PROBES_WHERE] },
         _count: { _all: true },
         _sum: { inputTokens: true, outputTokens: true },
       });
@@ -135,6 +136,7 @@ export class AiCallLogsPrismaRepository implements IAiCallLogsRepository {
     return rows.map((row: RawAiTelemetryDayAggregate): AiTelemetryDayAggregate => ({ ...AiCallLogsMapper.toAggregate(row), day: row.day }));
   }
 
+  // Health probes stay in: they are real provider round trips, so a manual probe after an outage is part of the provider's recent error rate and latency.
   public async getProviderStats(since: Date): Promise<AiProviderTelemetry[]> {
     const rows: RawAiProviderTelemetry[] = await this._prisma.$queryRaw<RawAiProviderTelemetry[]>(Prisma.sql`
       SELECT provider,
@@ -167,6 +169,7 @@ export class AiCallLogsPrismaRepository implements IAiCallLogsRepository {
         ...(filters.useCase ? { useCase: filters.useCase } : {}),
         ...(filters.provider ? { provider: filters.provider } : {}),
         ...(filters.model ? { model: filters.model } : {}),
+        AND: [EXCLUDE_HEALTH_PROBES_WHERE],
       },
       select: ROW_SELECT,
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -193,7 +196,7 @@ export class AiCallLogsPrismaRepository implements IAiCallLogsRepository {
   }
 
   private _whereSql(filters: AiTelemetryFilters): Prisma.Sql {
-    const conditions: Prisma.Sql[] = [Prisma.sql`created_at >= ${filters.from}`, Prisma.sql`created_at < ${filters.to}`];
+    const conditions: Prisma.Sql[] = [Prisma.sql`created_at >= ${filters.from}`, Prisma.sql`created_at < ${filters.to}`, EXCLUDE_HEALTH_PROBES_SQL];
 
     if (filters.useCase) {
       conditions.push(Prisma.sql`use_case = ${filters.useCase}::"AiUseCase"`);
