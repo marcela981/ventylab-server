@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resolución de la rúbrica de una sesión de simulación
  * Descripción: Elige la rúbrica de calificación de una sesión (la primera candidata aplicable a la repetición del motor, o la rúbrica por defecto; las rúbricas de comparación de parámetros de las preguntas de evaluación se omiten), acepta tanto la forma de rúbrica de calificación como la rúbrica por defecto de un caso clínico (criterios con peso sobre 100; los límites de seguridad con sus penalizaciones se agrupan en un criterio SAFETY_VIOLATIONS y la asistencia de IA con penalización en AI_ASSIST_USAGE) y la valida con el validador de la calificación
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -54,12 +54,12 @@ interface SafetyAccumulator {
   strictestPenaltyPoints: number;
 }
 
-export function resolveSessionRubric(candidates: readonly unknown[]): SimulationRubric {
+export function resolveSessionRubric(candidates: readonly unknown[], fallback: SimulationRubric = DEFAULT_SIMULATION_RUBRIC): SimulationRubric {
   const selected: unknown = candidates.find(
     (candidate: unknown): boolean => candidate !== undefined && candidate !== null && !isParameterComparisonRubric(candidate),
   );
 
-  return selected === undefined ? DEFAULT_SIMULATION_RUBRIC : toSimulationRubric(selected);
+  return selected === undefined ? fallback : toSimulationRubric(selected);
 }
 
 export function toSimulationRubric(raw: unknown): SimulationRubric {

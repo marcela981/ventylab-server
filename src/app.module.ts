@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo raíz AppModule
- * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real) y las features; registra el filtro global y los middlewares de traza y contexto
- * Versión: 1.16
+ * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features; registra el filtro global y los middlewares de traza y contexto
+ * Versión: 1.17
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -33,6 +33,7 @@ import { HealthController } from "@/common/presentation/controllers/health.contr
 import { HttpExceptionFilter } from "@/common/presentation/filters/http-exception.filter";
 import { RequestContextMiddleware } from "@/common/presentation/middlewares/request-context.middleware";
 import { TraceIdMiddleware } from "@/common/presentation/middlewares/trace-id.middleware";
+import { CompositionModule } from "@/composition/composition.module";
 import { ActivitiesModule } from "@/features/activities/activities.module";
 import { AdminModule } from "@/features/admin/admin.module";
 import { AiModule } from "@/features/ai/ai.module";
@@ -106,6 +107,7 @@ import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/venti
     SecurityModule,
     StorageModule,
     RealtimeModule,
+    CompositionModule,
     AuthModule,
     AuthorizationModule,
     UsersModule,

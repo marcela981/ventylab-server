@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Limitador de frecuencia de comandos
- * Descripción: Un cubo de fichas en memoria por usuario con VENTILATOR_COMMAND_RATE_PER_SECOND fichas por segundo; devuelve los milisegundos de espera cuando el usuario agotó su ráfaga y descarta los cubos llenos cuando crecen demasiado
- * Versión: 1.0
+ * Descripción: Un cubo de fichas en memoria por usuario con la frecuencia vigente por segundo (un cambio del ajuste reemplaza el cubo del usuario en su siguiente comando); devuelve los milisegundos de espera cuando el usuario agotó su ráfaga y descarta los cubos llenos cuando crecen demasiado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,9 +27,11 @@ export class CommandRateLimiterService {
   public tryConsume(userId: string, nowMs: number = Date.now()): number {
     let bucket: TokenBucket | undefined = this._buckets.get(userId);
 
-    if (!bucket) {
+    const ratePerSecond: number = this._settings.ratePerSecond;
+
+    if (!bucket || bucket.ratePerSecond !== ratePerSecond) {
       this._pruneFullBuckets(nowMs);
-      bucket = new TokenBucket(this._settings.ratePerSecond, nowMs);
+      bucket = new TokenBucket(ratePerSecond, nowMs);
       this._buckets.set(userId, bucket);
     }
 

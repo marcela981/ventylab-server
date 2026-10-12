@@ -36,7 +36,7 @@ Decisions from the audit:
 
 ## Tasks
 - [x] T1 Event bus: typed event map + catalog, isolated subscriber dispatch, publish after commit.
-- [ ] T2 platform-settings: registry, model, cache + subscribe, admin endpoints, settings ports wired.
+- [x] T2 platform-settings: registry, model, cache + subscribe, admin endpoints, settings ports wired.
 - [ ] T3 audit-log: schema extension, redaction/hash, append-only trigger, admin queries + CSV, missing audit points.
 - [ ] T4 notifications: model, bus subscribers, templates, owner endpoints, `notification:new`, ReservationNotifier removed.
 - [ ] T5 system-status: `/health/ready`, `/system/status`, change event, AI probe.
@@ -57,3 +57,15 @@ Decisions from the audit:
   event-driven skill); `evaluation.activated` fires on assignment creation even with a future `startsAt`.
 - Note: `prisma/migrations/20261006120000_identity_features/migration.sql` shows an uncommitted
   change not made by this task (superadmin email placeholder replaced); it is left out of every commit.
+
+### T2 — done
+- Route: delegated writer; native review on the work-unit commit.
+- `src/features/platform-settings/` (registry with hard limits, `platform_settings` overrides with
+  optimistic `version`, cache + `subscribe`, ADMIN routes `/api/platform-settings` with `settings:manage`,
+  `SETTINGS_CHANGED` audited in the transaction) and `src/composition/` (global `CompositionModule`
+  binding consumer settings ports to facade-backed adapters). TOPIC_CHECK toggle added; AI price table
+  fed from `ai.prices`; telemetry flush interval and command rate apply without restart.
+- Boots with defaults when `platform_settings` does not exist yet (migration not applied).
+- Migration `20261011120000_platform_settings` (CREATE TABLE only), not applied.
+- Checks: prisma validate OK; tsc 0 errors; jest 119 suites / 1014 tests pass; eslint clean; coupling grep empty.
+- Out-of-surface edits accepted: `src/common/presentation/errors-map.ts`, `src/common/infrastructure/docs/setup-docs.ts`.

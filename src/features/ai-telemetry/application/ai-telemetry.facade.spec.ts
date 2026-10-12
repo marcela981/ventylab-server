@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AiTelemetryFacade
  * Descripción: Verifica que el registro de llamadas de IA nunca lance (aunque el repositorio falle), que estime el costo con la tabla de precios solo cuando la entrada no lo trae, y que el consumo, el resumen de una llamada y las estadísticas deleguen en el repositorio y el caso de uso
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -66,7 +66,7 @@ describe("AiTelemetryFacade", () => {
     priceTable = { "gemini:gemini-2.0-flash": { inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.4 } };
     facade = new AiTelemetryFacade(
       repository,
-      priceTable,
+      { getPriceTable: (): AiPriceTable => priceTable },
       statsUseCase as unknown as GetAiTelemetryStatsUseCase,
     );
     jest.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);

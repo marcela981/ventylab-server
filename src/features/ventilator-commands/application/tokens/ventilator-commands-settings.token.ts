@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Ajustes de los comandos del ventilador
- * Descripción: Ajustes resueltos desde la configuración (tópicos de comando y de acuse con el prefijo de pruebas aplicado en NODE_ENV=test, codificación, tiempo máximo de espera, frecuencia por usuario, gracia de presencia del operador, refresco del control, tolerancia de parámetros aplicados y límites de seguridad recortados) y los tokens de los ajustes y del codificador
- * Versión: 1.0
+ * Descripción: Ajustes de los comandos (la frecuencia, el tiempo de acuse y los límites de seguridad son ajustes de la plataforma y cada lectura devuelve el valor vigente; tópicos de comando y de acuse con el prefijo de pruebas aplicado en NODE_ENV=test, codificación, tiempo máximo de espera, frecuencia por usuario, gracia de presencia del operador, refresco del control, tolerancia de parámetros aplicados y límites de seguridad recortados) y los tokens de los ajustes y del codificador
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje

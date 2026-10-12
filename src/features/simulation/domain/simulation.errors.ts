@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de dominio de simulación
- * Descripción: Errores del ventilador físico (reserva ocupada, sin reserva activa), del paciente simulado (datos faltantes, paciente sin configurar, caso clínico inexistente) y de las sesiones con eventos (sesión inexistente, sin acceso o inactiva, examen no válido, caso no simulable, rúbrica inválida, lote, tiempo, id o payload de evento inválidos y ajuste fuera de rango) y asistencia de IA deshabilitada por la política del examen
- * Versión: 1.3
+ * Descripción: Errores del ventilador físico (reserva ocupada, sin reserva activa), del paciente simulado (datos faltantes, paciente sin configurar, caso clínico inexistente) y de las sesiones con eventos (sesión inexistente, sin acceso o inactiva, examen no válido, caso no simulable, rúbrica inválida, lote, tiempo, id o payload de evento inválidos y ajuste fuera de rango) y asistencia de IA deshabilitada por la política del examen; multiplicador de tiempo no permitido por los ajustes
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -133,5 +133,15 @@ export class SimulationParameterOutOfRangeError extends DomainError {
 export class SimulationAssistanceDisabledError extends DomainError {
   public constructor() {
     super("AI assistance is disabled for this exam simulation", "simulation.assistance_disabled");
+  }
+}
+
+export class SimulationTimeMultiplierNotAllowedError extends DomainError {
+  public constructor(public readonly timeMultiplier: number) {
+    super(`Time multiplier ${timeMultiplier} is not allowed`, "simulation.time_multiplier_not_allowed");
+  }
+
+  public get i18nArgs(): Record<string, number> {
+    return { timeMultiplier: this.timeMultiplier };
   }
 }

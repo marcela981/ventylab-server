@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de EvaluationFacade
  * Descripción: Verifica con repositorios simulados las notas publicadas de un usuario y de un grupo con su aprobación según la nota mínima configurada, las estadísticas de una evaluación (conteos por estado, publicadas, promedio, mínimo, máximo y tasa de aprobación) y el conteo de intentos pendientes de revisión en el alcance de un profesor
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -57,7 +57,7 @@ function build(): { facade: EvaluationFacade; repository: jest.Mocked<IEvaluatio
   const scopeFor: jest.Mock = jest.fn().mockResolvedValue({ teacherId: "teacher-1", supervisedGroupIds: ["group-2"] });
   const access: EvaluationAssignmentAccess = { scopeFor } as unknown as EvaluationAssignmentAccess;
 
-  return { facade: new EvaluationFacade(repository, access, { passingGrade: 3 }), repository, scopeFor };
+  return { facade: new EvaluationFacade(repository, access, { passingGrade: 3, submitGraceMs: 30_000 }), repository, scopeFor };
 }
 
 describe("EvaluationFacade", () => {

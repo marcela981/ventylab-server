@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de intentos de evaluación
  * Descripción: Repositorio de intentos en memoria con transacciones simuladas (cambios preparados que se confirman al terminar sin error) y candados por nombre serializados con un mutex que se libera al cerrar la transacción, como pg_advisory_xact_lock; más evaluaciones, asignaciones, alcance de grupos, proveedor de puntaje práctico y propietario de sesiones simulados
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,6 +37,7 @@ import {
   type AttemptCounters,
   type IStudentEvaluationAttemptsRepository,
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
+import { ATTEMPT_SUBMIT_GRACE_MS } from "@/features/evaluation/domain/services/evaluation-attempt-policy";
 import { type EvaluationQuestionTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-question-type";
 import { type GroupsFacade } from "@/features/groups/application/services/groups.facade";
 
@@ -302,6 +303,7 @@ export interface AttemptState {
   sessionOwnerId?: string;
   sessionBinding?: Partial<SimulationSessionBinding>;
   passingGrade?: number;
+  submitGraceMs?: number;
 }
 
 export interface AttemptDoubles {
@@ -332,7 +334,7 @@ export function buildAttemptDoubles(state: AttemptState = {}): AttemptDoubles {
       userId === ownerId ? { sessionId, userId: ownerId, mode: "EXAM", attemptId: "attempt-1", questionId: "q1", ...state.sessionBinding } : undefined,
     );
   });
-  const gradingConfig: EvaluationGradingConfig = { passingGrade: state.passingGrade ?? 3 };
+  const gradingConfig: EvaluationGradingConfig = { passingGrade: state.passingGrade ?? 3, submitGraceMs: state.submitGraceMs ?? ATTEMPT_SUBMIT_GRACE_MS };
 
   const evaluationsRepository: IEvaluationsRepository = {
     getById: jest.fn().mockImplementation((id: string) => Promise.resolve(id === evaluation.id ? evaluation : undefined)),

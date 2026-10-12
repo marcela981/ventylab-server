@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de las sesiones de simulación
  * Descripción: Repositorio en memoria de sesiones y eventos, lector de intentos de examen falso, fachadas de casos clínicos y grupos falsas, generador de semillas fijo, gestor de transacciones inmediato, ajustes por defecto y un caso clínico de pulmón normal listo para el motor, compartidos por las pruebas de los casos de uso de sesiones
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,13 +36,20 @@ import {
   type GetSimulationSessionsQuery,
   type ISimulationSessionsRepository,
 } from "@/features/simulation/domain/repositories/simulation-sessions.repository";
-import { SIMULATION_SESSION_STATUS_VALUES } from "@/features/simulation/domain/value-objects/simulation-session-values";
+import { DEFAULT_SIMULATION_RUBRIC_THRESHOLDS } from "@/features/simulation/domain/scoring/simulation-rubric";
+import { SIMULATION_SESSION_STATUS_VALUES, TIME_MULTIPLIER_VALUES } from "@/features/simulation/domain/value-objects/simulation-session-values";
 
 export const TEST_TRANSACTION: object = { kind: "transaction" };
 
 export const TEST_SEED: number = 4242;
 
-export const TEST_SETTINGS: SimulationSessionSettings = { eventTimeToleranceMs: 5000, abandonAfterMs: 30 * 60_000, maxEventBatchSize: 200 };
+export const TEST_SETTINGS: SimulationSessionSettings = {
+  eventTimeToleranceMs: 5000,
+  abandonAfterMs: 30 * 60_000,
+  maxEventBatchSize: 200,
+  defaultRubricThresholds: DEFAULT_SIMULATION_RUBRIC_THRESHOLDS,
+  allowedTimeMultipliers: TIME_MULTIPLIER_VALUES,
+};
 
 export class InMemorySimulationSessionsRepository implements ISimulationSessionsRepository {
   public readonly sessions: Map<string, SimulationSession> = new Map<string, SimulationSession>();

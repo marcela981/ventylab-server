@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo VentilatorTelemetryModule
- * Descripción: Registra la telemetría del ventilador físico: conexión MQTT única, decodificador configurable, pipeline por lotes hacia Socket.io, acceso a la sala ventilator, vigilancia de actividad, métricas, grabación en telemetry_chunks y destino InfluxDB opcional; exporta VentilatorTelemetryFacade y depende solo de la fachada de reservas
- * Versión: 1.0
+ * Descripción: Registra la telemetría del ventilador físico: conexión MQTT única, decodificador configurable, pipeline por lotes hacia Socket.io, acceso a la sala ventilator, vigilancia de actividad, métricas, grabación en telemetry_chunks y destino InfluxDB opcional (los ajustes VENTILATOR_TELEMETRY_SETTINGS_TOKEN los enlaza la raíz de composición); exporta VentilatorTelemetryFacade y depende solo de la fachada de reservas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -42,11 +42,7 @@ import { type TelemetryDecoder } from "@/features/ventilator-telemetry/domain/de
 import { TELEMETRY_CHUNKS_REPOSITORY_TOKEN } from "@/features/ventilator-telemetry/domain/repositories/telemetry-chunks.repository";
 import { SystemTelemetryClock } from "@/features/ventilator-telemetry/infrastructure/clock/system-telemetry.clock";
 import { GzipJsonTelemetryChunkCodec } from "@/features/ventilator-telemetry/infrastructure/codec/gzip-json-telemetry-chunk.codec";
-import {
-  type InfluxSettings,
-  readInfluxSettings,
-  readVentilatorTelemetrySettings,
-} from "@/features/ventilator-telemetry/infrastructure/config/ventilator-telemetry-config";
+import { type InfluxSettings, readInfluxSettings } from "@/features/ventilator-telemetry/infrastructure/config/ventilator-telemetry-config";
 import { VentilatorTelemetryEventsHandlers } from "@/features/ventilator-telemetry/infrastructure/events/ventilator-telemetry-events.handlers";
 import { DisabledTelemetrySink, InfluxTelemetrySink } from "@/features/ventilator-telemetry/infrastructure/influx/influx-telemetry.sink";
 import { VentilatorTelemetryLifecycleService } from "@/features/ventilator-telemetry/infrastructure/lifecycle/ventilator-telemetry-lifecycle.service";
@@ -70,7 +66,6 @@ function createDecoder(settings: VentilatorTelemetrySettings): TelemetryDecoder 
   imports: [ReservationsModule],
   controllers: [VentilatorTelemetryController],
   providers: [
-    { provide: VENTILATOR_TELEMETRY_SETTINGS_TOKEN, useFactory: readVentilatorTelemetrySettings, inject: [ConfigService] },
     { provide: TELEMETRY_DECODER_TOKEN, useFactory: createDecoder, inject: [VENTILATOR_TELEMETRY_SETTINGS_TOKEN] },
     { provide: TELEMETRY_SINK_TOKEN, useFactory: createTelemetrySink, inject: [ConfigService] },
     { provide: TELEMETRY_CLOCK_TOKEN, useClass: SystemTelemetryClock },

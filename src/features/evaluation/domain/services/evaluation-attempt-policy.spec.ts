@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la política de intentos de evaluación
  * Descripción: Verifica la clave del candado por usuario y evaluación, el cálculo del plazo del intento en el servidor (duración, cierre de la asignación o ambos), el plazo efectivo tras un cierre anticipado, la expiración con 30 s de gracia y el barajado determinista por intento
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -66,6 +66,13 @@ describe("isAttemptExpired (check 10)", () => {
 
   it("expires once the grace is over", () => {
     expect(isAttemptExpired(deadline, new Date(deadline.getTime() + 30_001))).toBe(true);
+  });
+
+  it("uses the configured grace when one is given", () => {
+    expect([isAttemptExpired(deadline, new Date(deadline.getTime() + 60_000), 90_000), isAttemptExpired(deadline, new Date(deadline.getTime() + 1), 0)]).toEqual([
+      false,
+      true,
+    ]);
   });
 
   it("never expires an attempt without deadline", () => {

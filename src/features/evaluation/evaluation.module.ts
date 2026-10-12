@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo EvaluationModule
- * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación desde EVALUATION_PASSING_GRADE, vinculación de sesiones de simulación con eventos vía SimulationFacade (SimulationModule), casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (gateway de IA vía AiModule con respaldo determinista), puntaje práctico recalculado por repetición de la sesión en el servidor y lector de sesiones del simulador heredadas; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión)
- * Versión: 1.6
+ * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación (EVALUATION_GRADING_CONFIG_TOKEN, enlazada por la raíz de composición), vinculación de sesiones de simulación con eventos vía SimulationFacade (SimulationModule), casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (gateway de IA vía AiModule con respaldo determinista), puntaje práctico recalculado por repetición de la sesión en el servidor y lector de sesiones del simulador heredadas; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión)
+ * Versión: 1.7
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,12 +9,9 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Module } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 
-import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
 import { AiModule } from "@/features/ai/ai.module";
 import { AuthModule } from "@/features/auth/auth.module";
-import { EVALUATION_GRADING_CONFIG_TOKEN, type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
 import { GRADE_FEEDBACK_GENERATOR_TOKEN } from "@/features/evaluation/application/ports/grade-feedback-generator.interface";
 import { PRACTICAL_SCORE_PROVIDER_TOKEN } from "@/features/evaluation/application/ports/practical-score-provider.interface";
 import { SIMULATION_SESSION_BINDING_READER_TOKEN } from "@/features/evaluation/application/ports/simulation-session-binding.interface";
@@ -131,13 +128,6 @@ import { SimulationModule } from "@/features/simulation/simulation.module";
     {
       provide: EVALUATION_GRADING_REPOSITORY_TOKEN,
       useClass: EvaluationGradingPrismaRepository,
-    },
-    {
-      provide: EVALUATION_GRADING_CONFIG_TOKEN,
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService<EnvironmentVariables, true>): EvaluationGradingConfig => ({
-        passingGrade: configService.get("EVALUATION_PASSING_GRADE", { infer: true }),
-      }),
     },
     EvaluationEditor,
     GetEvaluationsUseCase,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Cierre y calificación de intentos de evaluación
- * Descripción: Servicio compartido por los casos de uso de intentos: carga un intento solo para su propietario (404 en otro caso), toma el candado exclusivo por evaluación y usuario y el compartido de estructura de la evaluación (pg_advisory_xact_lock_shared sobre la misma clave que el editor), carga la evaluación y el plazo efectivo (plazo del intento ajustado por un cierre anticipado de la asignación), califica con el calificador puro y el puntaje práctico de IPracticalScoreProvider, cierra el intento y lo cierra de forma perezosa en su propia transacción cuando venció (plazo + 30 s), publicando los eventos tras confirmar
- * Versión: 1.1
+ * Descripción: Servicio compartido por los casos de uso de intentos: carga un intento solo para su propietario (404 en otro caso), toma el candado exclusivo por evaluación y usuario y el compartido de estructura de la evaluación (pg_advisory_xact_lock_shared sobre la misma clave que el editor), carga la evaluación y el plazo efectivo (plazo del intento ajustado por un cierre anticipado de la asignación), califica con el calificador puro y el puntaje práctico de IPracticalScoreProvider, cierra el intento y lo cierra de forma perezosa en su propia transacción cuando venció (plazo + gracia de entrega configurable), publicando los eventos tras confirmar
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -67,6 +67,10 @@ export class EvaluationAttemptCloser {
     return this._gradingConfig.passingGrade;
   }
 
+  public expiredDeadlineCutoff(now: Date): Date {
+    return new Date(now.getTime() - this._gradingConfig.submitGraceMs);
+  }
+
   public async getOwned(attemptId: string, userId: string): Promise<StudentEvaluationAttempt> {
     const attempt: StudentEvaluationAttempt | undefined = await this._attemptsRepository.getById(attemptId);
 
@@ -96,7 +100,7 @@ export class EvaluationAttemptCloser {
   }
 
   public isExpired(attempt: StudentEvaluationAttempt, context: EvaluationAttemptContext, now: Date): boolean {
-    return attempt.isInProgress && !attempt.isLegacy && isAttemptExpired(context.deadlineAt, now);
+    return attempt.isInProgress && !attempt.isLegacy && isAttemptExpired(context.deadlineAt, now, this._gradingConfig.submitGraceMs);
   }
 
   public async close(attempt: StudentEvaluationAttempt, evaluation: Evaluation, submittedAt: Date, now: Date): Promise<void> {

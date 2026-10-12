@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: AiTelemetryFacade
  * Descripción: API pública de la telemetría de IA para otras features: registrar una llamada sin bloquear ni lanzar (solo hash del prompt, costo estimado con la tabla de precios si no viene calculado), consumo de un usuario por caso de uso, estadísticas agregadas, resumen de una llamada y la última llamada SUCCESS o FALLBACK enlazada a una referencia
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,13 +10,12 @@
  */
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { AI_PRICE_TABLE_TOKEN } from "@/features/ai-telemetry/application/ports/ai-price-table.interface";
+import { AI_PRICE_TABLE_TOKEN, type IAiPriceTableProvider } from "@/features/ai-telemetry/application/ports/ai-price-table.interface";
 import { GetAiTelemetryStatsUseCase } from "@/features/ai-telemetry/application/use-cases/get-ai-telemetry-stats.usecase";
 import {
   type AiCallLogEntry,
   type AiCallStatusValue,
   type AiCallSummary,
-  type AiPriceTable,
   type AiTelemetryFilters,
   type AiTelemetryStats,
   type AiTelemetryUseCaseValue,
@@ -35,14 +34,14 @@ export class AiTelemetryFacade {
     @Inject(AI_CALL_LOGS_REPOSITORY_TOKEN)
     private readonly _aiCallLogsRepository: IAiCallLogsRepository,
     @Inject(AI_PRICE_TABLE_TOKEN)
-    private readonly _priceTable: AiPriceTable,
+    private readonly _priceTable: IAiPriceTableProvider,
     private readonly _getAiTelemetryStatsUseCase: GetAiTelemetryStatsUseCase,
   ) {}
 
   public async record(entry: AiCallLogEntry): Promise<void> {
     try {
       const costEstimateUsd: number | undefined =
-        entry.costEstimateUsd ?? estimateAiCallCostUsd(this._priceTable, entry.provider, entry.model, entry.inputTokens, entry.outputTokens);
+        entry.costEstimateUsd ?? estimateAiCallCostUsd(this._priceTable.getPriceTable(), entry.provider, entry.model, entry.inputTokens, entry.outputTokens);
 
       await this._aiCallLogsRepository.create({ ...entry, costEstimateUsd });
     } catch (error: unknown) {

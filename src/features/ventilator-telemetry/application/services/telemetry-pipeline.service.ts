@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pipeline de telemetría del ventilador
- * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia y tramas duplicadas (con ventana de reordenamiento VENTILATOR_SEQ_REORDER_WINDOW y vuelta opcional VENTILATOR_SEQ_WRAP_BITS), actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada VENTILATOR_FLUSH_INTERVAL_MS emite un lote volátil ventilator:telemetry y la lectura heredada ventilator:data a la sala ventilator y a docentes y administradores, y registra las latencias
- * Versión: 1.3
+ * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia y tramas duplicadas (con ventana de reordenamiento VENTILATOR_SEQ_REORDER_WINDOW y vuelta opcional VENTILATOR_SEQ_WRAP_BITS), actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada intervalo de envío vigente (ajuste de la plataforma, reprogramado sin reiniciar cuando cambia) emite un lote volátil ventilator:telemetry y la lectura heredada ventilator:data a la sala ventilator y a docentes y administradores, y registra las latencias
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -52,6 +52,7 @@ export class TelemetryPipelineService {
   private _pending: PendingFrame[] = [];
   private _latestSettings: Readonly<Record<string, number>> | undefined;
   private _timer: ReturnType<typeof setInterval> | undefined;
+  private _timerIntervalMs: number | undefined;
   private _lastInvalidLogAt: number | undefined;
   private _suppressedInvalid: number = 0;
 
@@ -88,8 +89,7 @@ export class TelemetryPipelineService {
       return;
     }
 
-    this._timer = setInterval((): void => this.flush(), this._settings.flushIntervalMs);
-    this._timer.unref();
+    this._scheduleFlush();
   }
 
   public stop(): void {
@@ -99,6 +99,24 @@ export class TelemetryPipelineService {
     }
 
     this.flush();
+  }
+
+  private _scheduleFlush(): void {
+    const intervalMs: number = this._settings.flushIntervalMs;
+
+    this._timerIntervalMs = intervalMs;
+    this._timer = setInterval((): void => this._onFlushTick(), intervalMs);
+    this._timer.unref();
+  }
+
+  // The flush interval is a live setting: each tick checks it so a change reschedules the timer without a restart.
+  private _onFlushTick(): void {
+    this.flush();
+
+    if (this._timer !== undefined && this._settings.flushIntervalMs !== this._timerIntervalMs) {
+      clearInterval(this._timer);
+      this._scheduleFlush();
+    }
   }
 
   public onFrame(listener: TelemetryFrameListener): () => void {

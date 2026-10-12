@@ -27,6 +27,7 @@
   "case_required": "caseId es obligatorio para una simulación libre",
   "case_not_ready": "El caso clínico no se puede simular en el motor",
   "rubric_invalid": "La rúbrica de la simulación no es válida",
+  "time_multiplier_not_allowed": "El multiplicador de tiempo {timeMultiplier} no está permitido en la plataforma",
   "event_batch_too_large": "Un lote puede contener como máximo {max} eventos",
   "event_time_not_monotonic": "Los tiempos simulados de los eventos no pueden disminuir",
   "event_time_ahead": "El tiempo simulado del evento supera el tiempo transcurrido de la sesión",

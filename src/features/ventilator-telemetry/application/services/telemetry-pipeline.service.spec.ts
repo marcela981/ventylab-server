@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del pipeline de telemetría
  * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia (con tramas duplicadas contadas aparte), el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas y la forma heredada de ventilator:data, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
- * Versión: 1.4
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -38,7 +38,10 @@ interface PipelineFixture {
 }
 
 function buildPipeline(overrides: Partial<VentilatorTelemetrySettings> = {}): PipelineFixture {
-  const settings: VentilatorTelemetrySettings = buildTelemetrySettings(overrides);
+  return buildPipelineWith(buildTelemetrySettings(overrides));
+}
+
+function buildPipelineWith(settings: VentilatorTelemetrySettings): PipelineFixture {
   const clock: FakeTelemetryClock = new FakeTelemetryClock();
   const publisher: FakeRealtimePublisher = new FakeRealtimePublisher();
   const metrics: TelemetryMetricsService = new TelemetryMetricsService(settings, clock);
@@ -158,6 +161,35 @@ describe("TelemetryPipelineService", () => {
       expect(batches[0].method).toBe("emitToRoomsVolatile");
       expect(batches[0].target).toEqual(["ventilator", "role:TEACHER", "role:ADMIN"]);
       expect((batches[0].payload as { frames: TelemetryFrame[] }).frames.map((frame: TelemetryFrame): number | undefined => frame.seq)).toEqual([1, 2]);
+    });
+
+    it("reschedules the flush timer when the live flush interval setting changes, without a restart", () => {
+      jest.useFakeTimers();
+      let flushIntervalMs: number = 100;
+      const settings: VentilatorTelemetrySettings = {
+        ...buildTelemetrySettings(),
+        get flushIntervalMs(): number {
+          return flushIntervalMs;
+        },
+      };
+      const { pipeline, publisher }: PipelineFixture = buildPipelineWith(settings);
+
+      pipeline.start();
+      flushIntervalMs = 20;
+      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 2, volume: 3, seq: 1 }));
+      jest.advanceTimersByTime(100);
+      const batchesAtOldInterval: number = publisher.emitsOf("ventilator:telemetry").length;
+
+      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 4, flow: 5, volume: 6, seq: 2 }));
+      jest.advanceTimersByTime(19);
+      const batchesBeforeNewInterval: number = publisher.emitsOf("ventilator:telemetry").length;
+
+      jest.advanceTimersByTime(1);
+      const batchesAtNewInterval: number = publisher.emitsOf("ventilator:telemetry").length;
+
+      pipeline.stop();
+
+      expect([batchesAtOldInterval, batchesBeforeNewInterval, batchesAtNewInterval]).toEqual([1, 1, 2]);
     });
 
     it("keeps the legacy ventilator:data shape with the latest frame", () => {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Rúbrica de calificación de simulaciones
- * Descripción: Tipos de la rúbrica (criterios TARGETS_REACHED, TIME_TO_STABILIZE, TIME_IN_RANGE, SAFETY_VIOLATIONS y AI_ASSIST_USAGE, pesos, umbrales, parámetros y política de asistencia), valores por defecto, rúbrica por defecto y validador con errores tipados
- * Versión: 1.0
+ * Descripción: Tipos de la rúbrica (criterios TARGETS_REACHED, TIME_TO_STABILIZE, TIME_IN_RANGE, SAFETY_VIOLATIONS y AI_ASSIST_USAGE, pesos, umbrales, parámetros y política de asistencia), valores por defecto, umbrales y constructor de la rúbrica por defecto y validador con errores tipados
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -80,26 +80,44 @@ export const DEFAULT_PENALTY_PER_VIOLATION_SECOND: number = 0.02;
 export const DEFAULT_AI_FREE_USES: number = 0;
 export const DEFAULT_PENALTY_PER_AI_USE: number = 0.1;
 
-export const DEFAULT_SIMULATION_RUBRIC: SimulationRubric = {
-  criteria: [
-    { type: "TARGETS_REACHED", weight: 0.3, threshold: DEFAULT_TARGETS_REACHED_THRESHOLD },
-    {
-      type: "TIME_TO_STABILIZE",
-      weight: 0.2,
-      threshold: DEFAULT_TIME_TO_STABILIZE_THRESHOLD_S,
-      params: { holdWindowS: DEFAULT_HOLD_WINDOW_S },
-    },
-    { type: "TIME_IN_RANGE", weight: 0.25, threshold: DEFAULT_TIME_IN_RANGE_THRESHOLD_PERCENT },
-    {
-      type: "SAFETY_VIOLATIONS",
-      weight: 0.25,
-      threshold: DEFAULT_SAFETY_TOLERANCE_S,
-      params: { penaltyPerViolationSecond: DEFAULT_PENALTY_PER_VIOLATION_SECOND, limits: DEFAULT_SAFETY_LIMITS },
-    },
-  ],
-  assistancePolicy: DEFAULT_ASSISTANCE_POLICY,
-  lastMinutes: DEFAULT_LAST_MINUTES,
+export interface SimulationRubricThresholds {
+  readonly targetsReached: number;
+  readonly timeToStabilizeSeconds: number;
+  readonly timeInRangePercent: number;
+  readonly safetyToleranceSeconds: number;
+}
+
+export const DEFAULT_SIMULATION_RUBRIC_THRESHOLDS: SimulationRubricThresholds = {
+  targetsReached: DEFAULT_TARGETS_REACHED_THRESHOLD,
+  timeToStabilizeSeconds: DEFAULT_TIME_TO_STABILIZE_THRESHOLD_S,
+  timeInRangePercent: DEFAULT_TIME_IN_RANGE_THRESHOLD_PERCENT,
+  safetyToleranceSeconds: DEFAULT_SAFETY_TOLERANCE_S,
 };
+
+export function buildDefaultSimulationRubric(thresholds: SimulationRubricThresholds): SimulationRubric {
+  return {
+    criteria: [
+      { type: "TARGETS_REACHED", weight: 0.3, threshold: thresholds.targetsReached },
+      {
+        type: "TIME_TO_STABILIZE",
+        weight: 0.2,
+        threshold: thresholds.timeToStabilizeSeconds,
+        params: { holdWindowS: DEFAULT_HOLD_WINDOW_S },
+      },
+      { type: "TIME_IN_RANGE", weight: 0.25, threshold: thresholds.timeInRangePercent },
+      {
+        type: "SAFETY_VIOLATIONS",
+        weight: 0.25,
+        threshold: thresholds.safetyToleranceSeconds,
+        params: { penaltyPerViolationSecond: DEFAULT_PENALTY_PER_VIOLATION_SECOND, limits: DEFAULT_SAFETY_LIMITS },
+      },
+    ],
+    assistancePolicy: DEFAULT_ASSISTANCE_POLICY,
+    lastMinutes: DEFAULT_LAST_MINUTES,
+  };
+}
+
+export const DEFAULT_SIMULATION_RUBRIC: SimulationRubric = buildDefaultSimulationRubric(DEFAULT_SIMULATION_RUBRIC_THRESHOLDS);
 
 const SAFETY_LIMIT_KEYS: readonly (keyof SafetyLimits)[] = [
   "plateauPressureMaxCmH2O",

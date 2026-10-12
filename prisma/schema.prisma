@@ -1336,6 +1336,17 @@ model AppSetting {
   @@map("app_settings")
 }
 
+// Admin overrides of the platform settings registry; a key without a row uses its code/config default.
+model PlatformSetting {
+  key         String   @id
+  value       Json
+  version     Int      @default(1)
+  updatedById String?  @map("updated_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("platform_settings")
+}
+
 // ============================================
 // STUDENT SCORE MODEL
 // ============================================

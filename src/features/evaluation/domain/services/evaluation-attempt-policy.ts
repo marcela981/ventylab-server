@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Política de intentos de evaluación
- * Descripción: Reglas puras de los intentos de estudiante: clave del candado transaccional por evaluación y usuario, plazo calculado en el servidor (min(inicio + duración, fin de la asignación)), plazo efectivo tras un cierre anticipado de la asignación, expiración con 30 s de gracia y barajado determinista de preguntas sembrado por el ID del intento
- * Versión: 1.0
+ * Descripción: Reglas puras de los intentos de estudiante: clave del candado transaccional por evaluación y usuario, plazo calculado en el servidor (min(inicio + duración, fin de la asignación)), plazo efectivo tras un cierre anticipado de la asignación, expiración con gracia configurable (30 s por defecto) y barajado determinista de preguntas sembrado por el ID del intento
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -38,8 +38,8 @@ export function effectiveAttemptDeadline(deadlineAt?: Date, assignmentEndsAt?: D
   return earliest(deadlineAt, assignmentEndsAt);
 }
 
-export function isAttemptExpired(deadlineAt: Date | undefined, now: Date): boolean {
-  return deadlineAt !== undefined && now.getTime() > deadlineAt.getTime() + ATTEMPT_SUBMIT_GRACE_MS;
+export function isAttemptExpired(deadlineAt: Date | undefined, now: Date, graceMs: number = ATTEMPT_SUBMIT_GRACE_MS): boolean {
+  return deadlineAt !== undefined && now.getTime() > deadlineAt.getTime() + graceMs;
 }
 
 function seedFrom(text: string): number {

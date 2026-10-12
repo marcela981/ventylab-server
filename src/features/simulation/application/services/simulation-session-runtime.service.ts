@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de ejecución de sesiones de simulación
- * Descripción: Carga el caso del motor de una sesión con ClinicalCasesFacade, sus eventos y su rúbrica (pregunta de examen, rúbrica del caso o la rúbrica por defecto), repite la simulación en el servidor con la semilla y el multiplicador de la sesión, calcula el resumen calificado y aplica las transiciones diferidas: una sesión de examen pasada la fecha límite del intento se termina con su resumen y una sesión sin actividad por más del umbral configurado pasa a ABANDONED, también en barrido para las sesiones activas de un usuario antes de listarlas
- * Versión: 1.1
+ * Descripción: Carga el caso del motor de una sesión con ClinicalCasesFacade, sus eventos y su rúbrica (pregunta de examen, rúbrica del caso o la rúbrica por defecto con los umbrales configurados), valida el multiplicador de tiempo contra los permitidos, repite la simulación en el servidor con la semilla y el multiplicador de la sesión, calcula el resumen calificado y aplica las transiciones diferidas: una sesión de examen pasada la fecha límite del intento se termina con su resumen y una sesión sin actividad por más del umbral configurado pasa a ABANDONED, también en barrido para las sesiones activas de un usuario antes de listarlas
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,13 +37,14 @@ import {
   type ISimulationSessionsRepository,
   SIMULATION_SESSIONS_REPOSITORY_TOKEN,
 } from "@/features/simulation/domain/repositories/simulation-sessions.repository";
-import { computeSimulationScore, type SimulationRubric, type SimulationScore } from "@/features/simulation/domain/scoring";
+import { buildDefaultSimulationRubric, computeSimulationScore, type SimulationRubric, type SimulationScore } from "@/features/simulation/domain/scoring";
 import { toEngineEvents } from "@/features/simulation/domain/sessions/simulation-session-events";
 import { resolveSessionRubric } from "@/features/simulation/domain/sessions/simulation-session-rubric";
 import {
   SimulationCaseNotFoundError,
   SimulationCaseNotReadyError,
   SimulationSessionNotFoundError,
+  SimulationTimeMultiplierNotAllowedError,
 } from "@/features/simulation/domain/simulation.errors";
 import { ACTIVE_SIMULATION_STATUS, AI_HELP_EVENT_TYPE, END_EVENT_TYPE } from "@/features/simulation/domain/value-objects/simulation-session-values";
 
@@ -73,6 +74,12 @@ export class SimulationSessionRuntime {
     private readonly _clinicalCasesFacade: ClinicalCasesFacade,
   ) {}
 
+  public assertTimeMultiplierAllowed(timeMultiplier: number): void {
+    if (!this._settings.allowedTimeMultipliers.some((allowed: number): boolean => allowed === timeMultiplier)) {
+      throw new SimulationTimeMultiplierNotAllowedError(timeMultiplier);
+    }
+  }
+
   public async loadCase(caseId: string): Promise<SimulationCaseDefinition> {
     const snapshot: ClinicalCaseSnapshot | undefined = await this._clinicalCasesFacade.getCaseById(caseId);
 
@@ -100,7 +107,7 @@ export class SimulationSessionRuntime {
     const question: ExamQuestionInfo | undefined =
       session.isExam && session.questionId !== undefined ? await this._examAttemptReader.getQuestion(session.questionId) : undefined;
 
-    return resolveSessionRubric([override, question?.rubric, caseDefinition.defaultRubric]);
+    return resolveSessionRubric([override, question?.rubric, caseDefinition.defaultRubric], buildDefaultSimulationRubric(this._settings.defaultRubricThresholds));
   }
 
   public replay(context: SimulationSessionContext, untilMs: number): ReplayResult {

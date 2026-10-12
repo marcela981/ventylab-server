@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.27
+ * Versión: 1.28
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -197,6 +197,13 @@ import {
   PageSlugAlreadyExistsError,
 } from "@/features/pages/domain/pages.errors";
 import {
+  AiProviderNotConfiguredError,
+  InvalidPlatformSettingValueError,
+  PlatformSettingHardLimitExceededError,
+  PlatformSettingNotFoundError,
+  PlatformSettingVersionConflictError,
+} from "@/features/platform-settings/domain/platform-settings.errors";
+import {
   LessonAccessDeniedError,
   QuizScoreRequiredError,
 } from "@/features/progress/domain/progress.errors";
@@ -235,6 +242,7 @@ import {
   SimulationExamAccessDeniedError,
   SimulationParameterOutOfRangeError,
   SimulationRubricInvalidError,
+  SimulationTimeMultiplierNotAllowedError,
   SimulationSessionAccessDeniedError,
   SimulationSessionNotActiveError,
   SimulationSessionNotFoundError,
@@ -518,4 +526,10 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [VentilatorDeviceOfflineError, HttpStatus.SERVICE_UNAVAILABLE],
   [VentilatorCommandReservationNotFoundError, HttpStatus.NOT_FOUND],
   [IllegalVentilatorCommandTransitionError, HttpStatus.CONFLICT],
+  [PlatformSettingNotFoundError, HttpStatus.NOT_FOUND],
+  [InvalidPlatformSettingValueError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [PlatformSettingHardLimitExceededError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [AiProviderNotConfiguredError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [PlatformSettingVersionConflictError, HttpStatus.CONFLICT],
+  [SimulationTimeMultiplierNotAllowedError, HttpStatus.UNPROCESSABLE_ENTITY],
 ]);

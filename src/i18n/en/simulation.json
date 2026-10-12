@@ -27,6 +27,7 @@
   "case_required": "caseId is required for a free simulation",
   "case_not_ready": "The clinical case cannot be simulated by the engine",
   "rubric_invalid": "The simulation rubric is invalid",
+  "time_multiplier_not_allowed": "The time multiplier {timeMultiplier} is not allowed on this platform",
   "event_batch_too_large": "A batch can contain at most {max} events",
   "event_time_not_monotonic": "Event simulated times must not decrease",
   "event_time_ahead": "Event simulated time is ahead of the elapsed session time",

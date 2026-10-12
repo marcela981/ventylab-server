@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetGradingQueueUseCase
- * Descripción: Cola de revisión del profesor (o administrador): antes de listar cierra de forma perezosa, con el cierre compartido de intentos y un máximo por solicitud, los intentos en curso vencidos (plazo efectivo más 30 s) de las evaluaciones y grupos filtrados en su alcance; luego devuelve paginados los intentos PENDING_REVIEW de ese alcance, del más antiguo al más reciente
- * Versión: 1.0
+ * Descripción: Cola de revisión del profesor (o administrador): antes de listar cierra de forma perezosa, con el cierre compartido de intentos y un máximo por solicitud, los intentos en curso vencidos (plazo efectivo más la gracia de entrega configurable) de las evaluaciones y grupos filtrados en su alcance; luego devuelve paginados los intentos PENDING_REVIEW de ese alcance, del más antiguo al más reciente
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,7 +25,6 @@ import {
   type IStudentEvaluationAttemptsRepository,
   STUDENT_EVALUATION_ATTEMPTS_REPOSITORY_TOKEN,
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
-import { ATTEMPT_SUBMIT_GRACE_MS } from "@/features/evaluation/domain/services/evaluation-attempt-policy";
 import { type EvaluationActor } from "@/features/evaluation/domain/services/evaluation-management-policy";
 
 export const MAX_LAZY_CLOSES_PER_QUEUE_REQUEST: number = 50;
@@ -55,7 +54,7 @@ export class GetGradingQueueUseCase {
 
     const expiredIds: string[] = await this._gradingRepository.getExpiredInProgressAttemptIds(
       filter,
-      new Date(now.getTime() - ATTEMPT_SUBMIT_GRACE_MS),
+      this._closer.expiredDeadlineCutoff(now),
       MAX_LAZY_CLOSES_PER_QUEUE_REQUEST,
     );
 

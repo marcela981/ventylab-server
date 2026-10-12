@@ -1,0 +1,15 @@
+{
+  "settings_retrieved": "Platform settings retrieved successfully",
+  "setting_updated": "Platform setting updated successfully",
+  "setting_reset": "Platform setting reset to its default",
+  "setting_not_found": "The platform setting {key} does not exist",
+  "invalid_value": "The value of {key} is not valid: {reason}",
+  "hard_limit_exceeded": "The value of {key} exceeds its hard limits: {reason}",
+  "version_conflict": "The setting {key} was changed by someone else; reload it and try again",
+  "ai_provider_not_configured": "These AI providers have no credentials configured and cannot enter a provider chain: {providers}",
+  "validation": {
+    "category_invalid": "The category must be one of ai, evaluation, simulation, reservations, telemetry or commands",
+    "value_required": "The value is required",
+    "version_invalid": "The version must be an integer greater than or equal to 0"
+  }
+}

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Grabación de telemetría
- * Descripción: Grabación opcional de la telemetría de la reserva activa: submuestrea las tramas a VENTILATOR_RECORDING_HZ y cada VENTILATOR_RECORDING_FLUSH_SECONDS codifica y guarda un TelemetryChunk en segundo plano (sin esperar la escritura en el camino caliente); se detiene al terminar o cambiar la reserva activa y al apagar guarda el último bloque y espera las escrituras pendientes con un límite de tiempo
- * Versión: 1.1
+ * Descripción: Grabación opcional de la telemetría de la reserva activa: submuestrea las tramas a la frecuencia de grabación vigente y cada intervalo de bloque vigente al iniciar la grabación codifica y guarda un TelemetryChunk en segundo plano (sin esperar la escritura en el camino caliente); se detiene al terminar o cambiar la reserva activa y al apagar guarda el último bloque y espera las escrituras pendientes con un límite de tiempo
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -40,7 +40,6 @@ const MS_PER_SECOND: number = 1000;
 @Injectable()
 export class TelemetryRecorderService {
   private readonly _logger: Logger = new Logger(TelemetryRecorderService.name);
-  private readonly _intervalMs: number;
   private readonly _pendingWrites: Set<Promise<void>> = new Set<Promise<void>>();
   private _session: RecordingSession | undefined;
   private _timer: ReturnType<typeof setInterval> | undefined;
@@ -54,8 +53,10 @@ export class TelemetryRecorderService {
     private readonly _codec: ITelemetryChunkCodec,
     @Inject(TELEMETRY_CLOCK_TOKEN)
     private readonly _clock: ITelemetryClock,
-  ) {
-    this._intervalMs = MS_PER_SECOND / _settings.recordingHz;
+  ) {}
+
+  private get _intervalMs(): number {
+    return MS_PER_SECOND / this._settings.recordingHz;
   }
 
   public get status(): TelemetryRecordingStatus {

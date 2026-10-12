@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de turnos del tutor
- * Descripción: Ejecuta un turno de conversación con el tutor de IA: redacta correo y nombre del texto saliente, arma el historial y el contexto, verifica el tema del chat libre con TOPIC_CHECK (respaldo por lista de términos) y responde con el rechazo fijo registrando BLOCKED_OFFTOPIC, abre el stream del gateway (cuota verificada antes de persistir), guarda el mensaje del usuario antes de llamar al modelo y la respuesta completa con su aiCallId o la parcial como incompleta si el stream se corta
- * Versión: 1.0
+ * Descripción: Ejecuta un turno de conversación con el tutor de IA: redacta correo y nombre del texto saliente, arma el historial y el contexto, verifica el tema del chat libre con TOPIC_CHECK (respaldo por lista de términos) salvo que la verificación esté desactivada en los ajustes del tutor y responde con el rechazo fijo registrando BLOCKED_OFFTOPIC, abre el stream del gateway (cuota verificada antes de persistir), guarda el mensaje del usuario antes de llamar al modelo y la respuesta completa con su aiCallId o la parcial como incompleta si el stream se corta
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -104,7 +104,7 @@ export class TutorTurnService {
     if (conversation.scope === FREE_CONVERSATION_SCOPE) {
       const input: ConversationPromptInput = { history, question, language: caller.language };
 
-      if (!(await this._isOnTopic(question, caller, turn.signal))) {
+      if (this._isTopicCheckEnabled() && !(await this._isOnTopic(question, caller, turn.signal))) {
         return await this._refuseOffTopic(turn, input);
       }
 
@@ -148,6 +148,10 @@ export class TutorTurnService {
     const recent: AiConversationMessage[] = await this._conversationsRepository.getRecentMessages(turn.conversation.id, window);
 
     return buildHistoryWindow(recent, window, redact);
+  }
+
+  private _isTopicCheckEnabled(): boolean {
+    return this._gateway.getTutorSettings().topicCheckEnabled !== false;
   }
 
   private async _isOnTopic(message: string, caller: TutorCaller, signal?: AbortSignal): Promise<boolean> {

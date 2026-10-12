@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de StartSimulationSessionUseCase
  * Descripción: Verifica el inicio de sesiones libres (caso publicado, semilla del servidor, versión del motor, evento START) y de examen (intento propio en curso y vigente, pregunta SIMULATION de la misma evaluación, caso tomado de la pregunta, vencimiento en la fecha límite y rúbrica válida), con 403 cuando el intento o la pregunta no lo permiten
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import {
   normalLungSnapshot,
   type SimulationTestContext,
   TEST_SEED,
+  TEST_SETTINGS,
   useFixedClock,
 } from "@/features/simulation/application/testing/simulation-sessions-test-doubles-spec";
 import { StartSimulationSessionUseCase } from "@/features/simulation/application/use-cases/start-simulation-session.usecase";
@@ -26,6 +27,7 @@ import {
   SimulationCaseRequiredError,
   SimulationExamAccessDeniedError,
   SimulationRubricInvalidError,
+  SimulationTimeMultiplierNotAllowedError,
 } from "@/features/simulation/domain/simulation.errors";
 
 const NOW: Date = new Date("2026-10-08T12:00:00Z");
@@ -71,6 +73,25 @@ describe("StartSimulationSessionUseCase", () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it("rejects a time multiplier the platform settings do not allow, before creating the session", async () => {
+    const restricted: SimulationTestContext = createSimulationTestContext({ ...TEST_SETTINGS, allowedTimeMultipliers: [1] });
+    const restrictedUseCase: StartSimulationSessionUseCase = new StartSimulationSessionUseCase(
+      restricted.repository,
+      restricted.examReader,
+      new FixedSeedGenerator(),
+      restricted.transactionManager,
+      restricted.clinicalCases.asFacade(),
+      restricted.runtime,
+    );
+
+    const start: Promise<StartSimulationSessionResult> = restrictedUseCase.execute(
+      new StartSimulationSessionCommand({ userId: STUDENT_ID, mode: "FREE", caseId: "case-normal", timeMultiplier: 4 }),
+    );
+
+    await expect(start).rejects.toBeInstanceOf(SimulationTimeMultiplierNotAllowedError);
+    expect(restricted.repository.sessions.size).toBe(0);
   });
 
   it("starts a free session with a server seed, the current engine version and a START event", async () => {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo SimulationModule
- * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, ajustes desde ConfigService, la fachada de telemetría del ventilador (VentilatorTelemetryModule) para estado y alarmas, la fachada de comandos del ventilador (VentilatorCommandsModule) para el camino físico de POST /api/simulation/command, manejadores realtime y ciclo de vida; exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService
- * Versión: 1.5
+ * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, identificador del dispositivo desde ConfigService (los ajustes de sesiones SIMULATION_SESSION_SETTINGS_TOKEN los enlaza la raíz de composición), la fachada de telemetría del ventilador (VentilatorTelemetryModule) para estado y alarmas, la fachada de comandos del ventilador (VentilatorCommandsModule) para el camino físico de POST /api/simulation/command, manejadores realtime y ciclo de vida; exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,10 +26,6 @@ import { SimulationSessionAccessService } from "@/features/simulation/applicatio
 import { SimulationSessionReader } from "@/features/simulation/application/services/simulation-session-reader.service";
 import { SimulationSessionRuntime } from "@/features/simulation/application/services/simulation-session-runtime.service";
 import { SimulationFacade } from "@/features/simulation/application/services/simulation.facade";
-import {
-  SIMULATION_SESSION_SETTINGS_TOKEN,
-  type SimulationSessionSettings,
-} from "@/features/simulation/application/tokens/simulation-session-settings.token";
 import { SIMULATION_SETTINGS_TOKEN, type SimulationSettings } from "@/features/simulation/application/tokens/simulation-settings.token";
 import { AppendSimulationEventsUseCase } from "@/features/simulation/application/use-cases/append-simulation-events.usecase";
 import { ConfigurePatientUseCase } from "@/features/simulation/application/use-cases/configure-patient.usecase";
@@ -68,19 +64,9 @@ import { UsersModule } from "@/features/users/users.module";
 import { VentilatorCommandsModule } from "@/features/ventilator-commands/ventilator-commands.module";
 import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/ventilator-telemetry.module";
 
-const MS_PER_MINUTE: number = 60_000;
-
 function createSimulationSettings(configService: ConfigService<EnvironmentVariables, true>): SimulationSettings {
   return {
     deviceId: configService.get("VENTILATOR_DEVICE_ID", { infer: true }),
-  };
-}
-
-function createSimulationSessionSettings(configService: ConfigService<EnvironmentVariables, true>): SimulationSessionSettings {
-  return {
-    eventTimeToleranceMs: configService.get("SIMULATION_EVENT_TIME_TOLERANCE_MS", { infer: true }),
-    abandonAfterMs: configService.get("SIMULATION_ABANDON_AFTER_MINUTES", { infer: true }) * MS_PER_MINUTE,
-    maxEventBatchSize: configService.get("SIMULATION_MAX_EVENT_BATCH_SIZE", { infer: true }),
   };
 }
 
@@ -91,11 +77,6 @@ function createSimulationSessionSettings(configService: ConfigService<Environmen
     {
       provide: SIMULATION_SETTINGS_TOKEN,
       useFactory: createSimulationSettings,
-      inject: [ConfigService],
-    },
-    {
-      provide: SIMULATION_SESSION_SETTINGS_TOKEN,
-      useFactory: createSimulationSessionSettings,
       inject: [ConfigService],
     },
     {

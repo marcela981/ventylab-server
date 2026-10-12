@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Cubo de fichas
- * Descripción: Limitador de frecuencia puro con capacidad igual a la tasa por segundo y recarga continua; indica cuántos milisegundos esperar cuando no queda una ficha
- * Versión: 1.0
+ * Descripción: Limitador de frecuencia puro con capacidad igual a la tasa por segundo y recarga continua y tasa consultable; indica cuántos milisegundos esperar cuando no queda una ficha
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,10 @@ export class TokenBucket {
   ) {
     this._tokens = _ratePerSecond;
     this._updatedAt = nowMs;
+  }
+
+  public get ratePerSecond(): number {
+    return this._ratePerSecond;
   }
 
   public tryConsume(nowMs: number): number {

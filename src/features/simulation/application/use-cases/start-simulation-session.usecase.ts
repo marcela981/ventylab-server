@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso StartSimulationSessionUseCase
- * Descripción: Inicia una sesión de simulación con eventos. Modo libre: caso publicado y listo para simular según ClinicalCasesFacade, sin depender de reservas. Modo examen: intento propio en curso y vigente y pregunta de tipo SIMULATION de la misma evaluación; el caso sale de la pregunta (se ignora el del cliente) y la rúbrica de la pregunta, del caso o la de por defecto debe ser válida. El servidor genera la semilla, fija ENGINE_VERSION, valida el caso en el motor y registra el evento START
- * Versión: 1.0
+ * Descripción: Inicia una sesión de simulación con eventos con un multiplicador de tiempo permitido por los ajustes. Modo libre: caso publicado y listo para simular según ClinicalCasesFacade, sin depender de reservas. Modo examen: intento propio en curso y vigente y pregunta de tipo SIMULATION de la misma evaluación; el caso sale de la pregunta (se ignora el del cliente) y la rúbrica de la pregunta, del caso o la de por defecto debe ser válida. El servidor genera la semilla, fija ENGINE_VERSION, valida el caso en el motor y registra el evento START
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -49,6 +49,7 @@ interface ResolvedSessionCase {
 }
 
 /**
+ * @throws {SimulationTimeMultiplierNotAllowedError} If the time multiplier is not one of the allowed multipliers
  * @throws {SimulationCaseRequiredError} If a free session has no caseId
  * @throws {ClinicalCaseNotFoundError} If the free session case does not exist
  * @throws {ClinicalCaseUnavailableError} If the free session case is not published
@@ -74,6 +75,8 @@ export class StartSimulationSessionUseCase {
   ) {}
 
   public async execute(command: StartSimulationSessionCommand): Promise<StartSimulationSessionResult> {
+    this._runtime.assertTimeMultiplierAllowed(command.timeMultiplier);
+
     const now: Date = new Date();
     const resolved: ResolvedSessionCase =
       command.mode === EXAM_SIMULATION_MODE ? await this._resolveExamCase(command, now) : await this._resolveFreeCase(command);

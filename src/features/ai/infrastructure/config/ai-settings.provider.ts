@@ -1,19 +1,17 @@
 /*
  * Funcionalidad: Proveedor de configuración del gateway de IA
- * Descripción: Implementa IAiSettingsProvider leyendo solo ConfigService: valores por defecto de cadena de proveedores, modelos, tiempos límite, tokens y temperatura por caso de uso, sobrescrituras JSON (AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES) validadas al arrancar, cortocircuito y ajustes del tutor
- * Versión: 1.0
+ * Descripción: Lectores puros de la configuración del gateway de IA desde ConfigService, usados como valores por defecto de los ajustes de la plataforma y como base de IAiSettingsProvider: valores por defecto de cadena de proveedores, modelos, tiempos límite, tokens y temperatura por caso de uso, sobrescrituras JSON (AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES) validadas al arrancar, cortocircuito, ajustes del tutor y resolución de la cuota por caso de uso antes del comodín
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { type FactoryProvider } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import { type ConfigService } from "@nestjs/config";
 
 import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
 import {
-  AI_SETTINGS_PROVIDER_TOKEN,
   type AiBreakerSettings,
   type AiModelPrice,
   type AiQuotaLimit,
@@ -270,6 +268,16 @@ function parsePrices(json: string | undefined): Record<string, Record<string, Ai
   return result;
 }
 
+export function resolveAiQuota(
+  quotas: Readonly<Record<string, Readonly<Record<string, AiQuotaLimit>>>>,
+  role: string,
+  useCase: AiUseCaseValue,
+): AiQuotaLimit | undefined {
+  const perUseCase: Readonly<Record<string, AiQuotaLimit>> | undefined = quotas[role];
+
+  return perUseCase?.[useCase] ?? perUseCase?.[QUOTA_ANY_USE_CASE];
+}
+
 export function buildAiSettingsSnapshot(source: AiSettingsSource): AiSettingsSnapshot {
   return {
     useCases: parseUseCaseSettings(source.useCaseSettingsJson),
@@ -297,9 +305,7 @@ export class ConfigAiSettingsProvider implements IAiSettingsProvider {
   }
 
   public getQuota(role: string, useCase: AiUseCaseValue): AiQuotaLimit | undefined {
-    const perUseCase: Readonly<Record<string, AiQuotaLimit>> | undefined = this._snapshot.quotas[role];
-
-    return perUseCase?.[useCase] ?? perUseCase?.[QUOTA_ANY_USE_CASE];
+    return resolveAiQuota(this._snapshot.quotas, role, useCase);
   }
 
   public getTutorSettings(): AiTutorSettings {
@@ -322,10 +328,3 @@ export function readAiSettingsSource(configService: ConfigService<EnvironmentVar
     tutorContextTokenBudget: configService.get("AI_TUTOR_CONTEXT_TOKEN_BUDGET", { infer: true }),
   };
 }
-
-export const AI_SETTINGS_PROVIDER: FactoryProvider<IAiSettingsProvider> = {
-  provide: AI_SETTINGS_PROVIDER_TOKEN,
-  inject: [ConfigService],
-  useFactory: (configService: ConfigService<EnvironmentVariables, true>): IAiSettingsProvider =>
-    new ConfigAiSettingsProvider(buildAiSettingsSnapshot(readAiSettingsSource(configService))),
-};
