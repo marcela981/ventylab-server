@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AuditLogRecorder y AuditLogPrismaRepository
  * Descripción: Verifica con una base de datos falsa que modela confirmación y reversión que el registrador escriba solo los campos cambiados dentro de la transacción del llamador, complete rol, petición e IP desde el contexto, nunca persista contraseñas, hashes ni tokens, guarde el referer sin query string, omita filas sin cambios ni motivo y que la reversión descarte el cambio y su auditoría
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -127,16 +127,28 @@ describe("AuditLogRecorder", () => {
     expect(JSON.stringify(database.auditRows[0])).not.toContain("token=abc");
   });
 
-  it("skips the write when nothing changed and no reason is given", async () => {
+  it("skips the write when compared states did not change and no reason or metadata is given", async () => {
     const database: FakeDatabase = new FakeDatabase();
     const recorder: AuditLogRecorder = buildRecorder();
 
     await database.run(async (transaction: unknown) => {
       await recorder.record("admin-1", AUDIT_ACTIONS.USER_ROLE_CHANGED, "users", "u-2", { role: "STUDENT" }, { role: "STUDENT" }, transaction);
-      await recorder.record("admin-1", AUDIT_ACTIONS.USER_ROLE_CHANGED, "users", "u-2", {}, {}, transaction, { reason: "   " });
+      await recorder.record("admin-1", AUDIT_ACTIONS.USER_ROLE_CHANGED, "users", "u-2", { role: "STUDENT" }, { role: "STUDENT" }, transaction, { reason: "   " });
     });
 
     expect(database.auditRows).toEqual([]);
+  });
+
+  it("keeps event-only entries and unchanged entries that carry metadata", async () => {
+    const database: FakeDatabase = new FakeDatabase();
+    const recorder: AuditLogRecorder = buildRecorder();
+
+    await database.run(async (transaction: unknown) => {
+      await recorder.record("admin-1", AUDIT_ACTIONS.GRADE_PUBLISHED, "evaluation_attempts", "a-1", {}, {}, transaction);
+      await recorder.record("admin-1", AUDIT_ACTIONS.GRADE_PUBLISHED, "evaluation_attempts", "a-2", { status: "GRADED" }, { status: "GRADED" }, transaction, { metadata: { bulk: true } });
+    });
+
+    expect(database.auditRows).toHaveLength(2);
   });
 
   it("keeps an unchanged entry when a reason is given", async () => {
