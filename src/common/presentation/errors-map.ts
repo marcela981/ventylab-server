@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.32
+ * Versión: 1.33
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { HttpStatus } from "@nestjs/common";
 
 import { DomainError } from "@/common/domain/errors/domain-error";
+import { FileStorageUnavailableError } from "@/common/domain/errors/file-storage-unavailable.error";
 import { InvalidValueObjectError } from "@/common/domain/errors/invalid-value-object.error";
 import {
   ActivityAccessDeniedError,
@@ -309,6 +310,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   HttpStatus
 >([
   [InvalidValueObjectError, HttpStatus.BAD_REQUEST],
+  [FileStorageUnavailableError, HttpStatus.SERVICE_UNAVAILABLE],
   [InvalidAiTelemetryRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
   [InvalidAiRatingScoreError, HttpStatus.UNPROCESSABLE_ENTITY],
   [AiRatingCommentTooLongError, HttpStatus.UNPROCESSABLE_ENTITY],

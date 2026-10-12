@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo GroupsModule
- * Descripción: Registra la feature de grupos (controlador /api/groups, casos de uso, servicio de acceso, fachada y repositorios Prisma de grupos, miembros, supervisiones y lecturas por lotes para analítica); exporta GroupsFacade y, para las features que aún los consumen, los repositorios de grupos y miembros
- * Versión: 1.2
+ * Descripción: Registra la feature de grupos (controlador /api/groups, casos de uso, servicio de acceso, fachada y repositorios Prisma de grupos, miembros, supervisiones y lecturas por lotes para analítica, y los manejadores que mantienen las salas Socket.io group:{id}); exporta GroupsFacade y, para las features que aún los consumen, los repositorios de grupos y miembros
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,6 +30,7 @@ import { GROUP_ANALYTICS_REPOSITORY_TOKEN } from "@/features/groups/domain/repos
 import { GROUP_MEMBERS_REPOSITORY_TOKEN } from "@/features/groups/domain/repositories/group-members.repository";
 import { GROUP_SUPERVISIONS_REPOSITORY_TOKEN } from "@/features/groups/domain/repositories/group-supervisions.repository";
 import { GROUPS_REPOSITORY_TOKEN } from "@/features/groups/domain/repositories/groups.repository";
+import { GroupRoomsEventsHandlers } from "@/features/groups/infrastructure/events/group-rooms-events.handlers";
 import { GroupAnalyticsPrismaRepository } from "@/features/groups/infrastructure/persistence/prisma/repositories/group-analytics-prisma.repository";
 import { GroupMembersPrismaRepository } from "@/features/groups/infrastructure/persistence/prisma/repositories/group-members-prisma.repository";
 import { GroupSupervisionsPrismaRepository } from "@/features/groups/infrastructure/persistence/prisma/repositories/group-supervisions-prisma.repository";
@@ -72,6 +73,7 @@ import { UsersModule } from "@/features/users/users.module";
     GetGroupSupervisionsUseCase,
     AddGroupSupervisionUseCase,
     RemoveGroupSupervisionUseCase,
+    GroupRoomsEventsHandlers,
   ],
   exports: [GroupsFacade, GROUPS_REPOSITORY_TOKEN, GROUP_MEMBERS_REPOSITORY_TOKEN],
 })

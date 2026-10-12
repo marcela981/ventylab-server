@@ -6,6 +6,7 @@
   "not_found": "The requested record was not found",
   "conflict": "The operation conflicts with an existing record",
   "invalid_value_object": "Invalid value provided",
+  "storage_unavailable": "File storage is not configured",
   "validation": {
     "string": "The value must be a string",
     "enum": "The value must be one of the allowed options",

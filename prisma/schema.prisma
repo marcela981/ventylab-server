@@ -136,13 +136,13 @@ model ChangeLog {
   entityType String // "Level" | "Module" | "Lesson" | "Step"
   entityId   String // ID of the changed entity
   action     String // "create" | "update" | "delete" | "reorder"
-  changedBy  String // User ID who made the change
+  changedBy  String? // User ID who made the change; null once that user is deleted
   changedAt  DateTime @default(now())
   diff       Json? // { "field": { "before": old, "after": new } } - only for updates
   metadata   Json? // Additional context (IP, userAgent, etc.)
 
   // Relation to User (onDelete: SetNull to preserve audit history if user deleted)
-  user User @relation(fields: [changedBy], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [changedBy], references: [id], onDelete: SetNull)
 
   @@index([entityType, entityId])
   @@index([changedBy])
@@ -221,14 +221,14 @@ model ContentOverride {
   overrideData Json // { fieldOverrides?, extraCards?, hiddenCardIds? }
 
   // Audit fields
-  createdBy String // Teacher/Admin who created the override
+  createdBy String? // Teacher/Admin who created the override; null once that user is deleted
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   isActive  Boolean  @default(true)
 
   // Relations
-  student User @relation("StudentOverrides", fields: [studentId], references: [id], onDelete: Cascade)
-  creator User @relation("CreatedOverrides", fields: [createdBy], references: [id], onDelete: SetNull)
+  student User  @relation("StudentOverrides", fields: [studentId], references: [id], onDelete: Cascade)
+  creator User? @relation("CreatedOverrides", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // Each student can have only one active override per entity
   @@unique([studentId, entityType, entityId], name: "override_student_entity_unique")
@@ -1177,11 +1177,11 @@ model Activity {
   isPublished Boolean @default(false)
   isActive    Boolean @default(true)
 
-  createdBy String
+  createdBy String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  creator     User                 @relation("ActivityCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  creator     User?                @relation("ActivityCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   assignments ActivityAssignment[]
   submissions ActivitySubmission[]
 
@@ -1196,7 +1196,7 @@ model ActivityAssignment {
   id          String    @id @default(cuid())
   activityId  String
   groupId     String
-  assignedBy  String
+  assignedBy  String?
   visibleFrom DateTime?
   dueDate     DateTime?
   isActive    Boolean   @default(true)
@@ -1204,7 +1204,7 @@ model ActivityAssignment {
 
   activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  assigner User     @relation("ActivityAssigner", fields: [assignedBy], references: [id], onDelete: SetNull)
+  assigner User?    @relation("ActivityAssigner", fields: [assignedBy], references: [id], onDelete: SetNull)
 
   @@unique([activityId, groupId])
   @@index([activityId])

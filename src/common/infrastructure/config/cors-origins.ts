@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Configuración de CORS
- * Descripción: Construye los orígenes permitidos a partir de CORS_ORIGIN, FRONTEND_URL, PRODUCTION_URL y VERCEL_URL, y define las cabeceras permitidas y expuestas compartidas por HTTP y Socket.io
- * Versión: 1.2
+ * Descripción: Construye los orígenes permitidos a partir de CORS_ORIGIN, FRONTEND_URL, PRODUCTION_URL y VERCEL_URL, acepta las vistas previas *.vercel.app solo si CORS_ALLOW_VERCEL_PREVIEWS está activo, y define las cabeceras permitidas y expuestas compartidas por HTTP y Socket.io
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -67,6 +67,7 @@ export function buildAllowedOrigins(configService: ConfigService<EnvironmentVari
 
 export function buildCorsOrigin(configService: ConfigService<EnvironmentVariables, true>): CorsOrigin {
   const allowedOrigins: string[] = buildAllowedOrigins(configService);
+  const allowVercelPreviews: boolean = configService.get("CORS_ALLOW_VERCEL_PREVIEWS", { infer: true }) === true;
 
   if (allowedOrigins.includes("*")) {
     return "*";
@@ -82,6 +83,6 @@ export function buildCorsOrigin(configService: ConfigService<EnvironmentVariable
 
     const normalizedOrigin: string = normalizeOrigin(origin);
 
-    callback(null, allowedOrigins.includes(normalizedOrigin) || VERCEL_PREVIEW_ORIGIN_PATTERN.test(normalizedOrigin));
+    callback(null, allowedOrigins.includes(normalizedOrigin) || (allowVercelPreviews && VERCEL_PREVIEW_ORIGIN_PATTERN.test(normalizedOrigin)));
   };
 }

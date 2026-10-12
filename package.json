@@ -25,6 +25,9 @@
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
+    "verify": "node scripts/verify/verify.mjs",
+    "verify:drift": "node scripts/verify/drift-check.mjs",
+    "verify:boot": "node scripts/verify/boot-from-scratch.mjs",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "postinstall": "prisma generate",
     "prepare": "husky"
@@ -90,6 +93,7 @@
     "husky": "^9.1.7",
     "jest": "^30.0.0",
     "lint-staged": "^16.2.7",
+    "madge": "^8.0.0",
     "prisma": "^6.19.2",
     "socket.io-client": "^4.8.4",
     "source-map-support": "^0.5.21",

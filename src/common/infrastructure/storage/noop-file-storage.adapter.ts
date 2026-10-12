@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Adaptador NoopFileStorageAdapter
- * Descripción: Implementación vacía de IFileStorageService que solo registra las operaciones y se reporta como no disponible y no configurado cuando Supabase Storage no está configurado
- * Versión: 1.2
+ * Descripción: Implementación de IFileStorageService para cuando Supabase Storage no está configurado: rechaza las escrituras (carga y URL de carga) con FileStorageUnavailableError (503) en lugar de descartarlas, deja lecturas y borrados como operaciones vacías y se reporta como no disponible y no configurado
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,14 +11,14 @@
 import { Logger } from "@nestjs/common";
 
 import { type FileStorageHealthValue, IFileStorageService } from "@/common/application/ports/file-storage.interface";
-import { generateId } from "@/common/domain/utils/generate-id";
+import { FileStorageUnavailableError } from "@/common/domain/errors/file-storage-unavailable.error";
 
 export class NoopFileStorageAdapter implements IFileStorageService {
   private readonly _logger: Logger = new Logger(NoopFileStorageAdapter.name);
 
   public constructor() {
     this._logger.warn(
-      "NoopFileStorageAdapter is active — file operations are stubs. Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and SUPABASE_STORAGE_BUCKET to enable Supabase Storage.",
+      "NoopFileStorageAdapter is active — uploads are rejected with 503. Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and SUPABASE_STORAGE_BUCKET to enable Supabase Storage.",
     );
   }
 
@@ -30,15 +30,10 @@ export class NoopFileStorageAdapter implements IFileStorageService {
     return Promise.resolve("not_configured");
   }
 
-  public async generateUploadUrl(key: string, _contentType: string): Promise<{ uploadUrl: string; fileKey: string }> {
-    const fileKey: string = `noop/${key}-${generateId()}`;
+  public generateUploadUrl(key: string, _contentType: string): Promise<{ uploadUrl: string; fileKey: string }> {
+    this._logger.warn(`[generateUploadUrl] rejected for key: ${key} — file storage is not configured`);
 
-    this._logger.warn(`[generateUploadUrl] stub called for key: ${key}`);
-
-    return Promise.resolve({
-      uploadUrl: `http://placeholder/upload/${fileKey}`,
-      fileKey,
-    });
+    return Promise.reject(new FileStorageUnavailableError());
   }
 
   public async generateDownloadUrl(key: string, _expiresInSeconds?: number): Promise<string> {
@@ -53,10 +48,10 @@ export class NoopFileStorageAdapter implements IFileStorageService {
     return Promise.resolve(new Map<string, string>(keys.map((key: string): [string, string] => [key, `http://placeholder/download/${key}`])));
   }
 
-  public async uploadFile(key: string, _body: Buffer, _contentType: string): Promise<void> {
-    this._logger.warn(`[uploadFile] stub called for key: ${key} — no file was stored`);
+  public uploadFile(key: string, _body: Buffer, _contentType: string): Promise<void> {
+    this._logger.warn(`[uploadFile] rejected for key: ${key} — file storage is not configured`);
 
-    return Promise.resolve();
+    return Promise.reject(new FileStorageUnavailableError());
   }
 
   public async deleteFile(key: string): Promise<void> {

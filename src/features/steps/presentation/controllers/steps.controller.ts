@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador StepsController
  * Descripción: Expone las rutas HTTP [api/steps, api/cards] de la feature de pasos (tarjetas), aplica guardias y permisos y responde con APIResponseBuilder; depende de CreateStepUseCase, DeleteStepUseCase, GetAdjacentStepUseCase, GetStepByIdUseCase, GetStepsUseCase, ReorderStepsUseCase y otros
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import { type JwtPayload } from "@/features/auth/application/ports/token-generat
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
 import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard";
+import { OptionalJwtAuthGuard } from "@/features/auth/presentation/guards/optional-jwt-auth.guard";
 import { PermissionsGuard } from "@/features/auth/presentation/guards/permissions.guard";
 import { CreateStepCommand } from "@/features/steps/application/commands/create-step.command";
 import { DeleteStepCommand } from "@/features/steps/application/commands/delete-step.command";
@@ -50,6 +51,7 @@ export class StepsController {
   ) {}
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get steps", description: "Retrieves a paginated list of steps, optionally filtered by lesson" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Steps retrieved successfully", type: StepListItemDTO, isArray: true })
@@ -122,6 +124,7 @@ export class StepsController {
   }
 
   @Get(":id")
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get step by ID", description: "Retrieves a step with its lesson and module" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Step retrieved successfully", type: StepDetailDTO })
@@ -136,6 +139,7 @@ export class StepsController {
   }
 
   @Get(":id/next")
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get next step", description: "Retrieves the next active step of the same lesson, or null" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Next step retrieved", type: StepDTO })
@@ -150,6 +154,7 @@ export class StepsController {
   }
 
   @Get(":id/previous")
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get previous step", description: "Retrieves the previous active step of the same lesson, or null" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Previous step retrieved", type: StepDTO })

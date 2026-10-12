@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad ChangeLogDiff
- * Descripción: Agregado de dominio de la feature de historial de cambios con sus reglas de negocio, eventos de dominio y registros de auditoría
- * Versión: 1.0
+ * Descripción: Agregado de dominio de la feature de historial de cambios con sus reglas de negocio, eventos de dominio y registros de auditoría; el autor queda vacío cuando su usuario fue eliminado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,7 +24,7 @@ export class ChangeLogEntry {
   private readonly _entityType: string;
   private readonly _entityId: string;
   private readonly _action: string;
-  private readonly _changedBy: string;
+  private readonly _changedBy: string | undefined;
   private readonly _changedAt: Date;
   private readonly _diff?: ChangeLogDiff;
   private readonly _metadata?: Record<string, unknown>;
@@ -45,7 +45,7 @@ export class ChangeLogEntry {
     entityType: string;
     entityId: string;
     action: string;
-    changedBy: string;
+    changedBy: string | undefined;
     changedAt: Date;
     diff?: ChangeLogDiff;
     metadata?: Record<string, unknown>;
@@ -78,7 +78,7 @@ export class ChangeLogEntry {
     return this._action;
   }
 
-  public get changedBy(): string {
+  public get changedBy(): string | undefined {
     return this._changedBy;
   }
 
@@ -140,7 +140,7 @@ export class ChangeLogEntry {
     entityType: string;
     entityId: string;
     action: string;
-    changedBy: string;
+    changedBy: string | undefined;
     changedAt: Date;
     diff?: ChangeLogDiff;
     metadata?: Record<string, unknown>;

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de presentación OverridesMapper
- * Descripción: Convierte los modelos de lectura y entidades de la feature de personalizaciones de contenido por estudiante en DTOs de respuesta
- * Versión: 1.0
+ * Descripción: Convierte los modelos de lectura y entidades de la feature de personalizaciones de contenido por estudiante en DTOs de respuesta; el autor queda vacío cuando su usuario fue eliminado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -40,7 +40,7 @@ export class OverridesMapper {
       entityType: override.entityType,
       entityId: override.entityId,
       overrideData: { ...override.overrideData },
-      createdBy: override.createdBy,
+      createdBy: override.createdBy ?? null,
       createdAt: override.createdAt,
       updatedAt: override.updatedAt,
       isActive: override.isActive,

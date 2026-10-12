@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs content-override.dto
- * Descripción: Define los DTOs OverrideUserDTO, ContentOverrideDTO, ContentOverridesListDTO de la feature de personalizaciones de contenido por estudiante, documentados para Swagger y validados con class-validator cuando son de entrada
- * Versión: 1.0
+ * Descripción: Define los DTOs OverrideUserDTO, ContentOverrideDTO, ContentOverridesListDTO de la feature de personalizaciones de contenido por estudiante, documentados para Swagger y validados con class-validator cuando son de entrada; el autor queda vacío cuando su usuario fue eliminado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -43,8 +43,8 @@ export class ContentOverrideDTO {
   @ApiProperty({ description: "Override data: fieldOverrides, extraCards, hiddenCardIds", example: { hiddenCardIds: ["step-03"] }, type: Object })
   public overrideData: Record<string, unknown>;
 
-  @ApiProperty({ description: "ID of the user who created the override", example: "cm5x2k9a00000abcd1234efgi" })
-  public createdBy: string;
+  @ApiProperty({ description: "ID of the user who created the override; null once that user is deleted", example: "cm5x2k9a00000abcd1234efgi", type: String, nullable: true })
+  public createdBy: string | null;
 
   @ApiProperty({ description: "Creation timestamp", example: "2026-01-10T14:20:00.000Z" })
   public createdAt: Date;

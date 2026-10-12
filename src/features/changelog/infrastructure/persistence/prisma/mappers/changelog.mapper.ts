@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de persistencia ChangeLogAuthorRow
- * Descripción: Convierte entre los modelos de Prisma y las entidades de dominio de la feature de historial de cambios
- * Versión: 1.0
+ * Descripción: Convierte entre los modelos de Prisma y las entidades de dominio de la feature de historial de cambios; el autor queda vacío cuando su usuario fue eliminado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,7 +23,7 @@ export class ChangeLogMapper {
       entityType: row.entityType,
       entityId: row.entityId,
       action: row.action,
-      changedBy: row.changedBy,
+      changedBy: row.changedBy ?? undefined,
       changedAt: row.changedAt,
       diff: (row.diff as ChangeLogDiff | null) ?? undefined,
       metadata: (row.metadata as Record<string, unknown> | null) ?? undefined,

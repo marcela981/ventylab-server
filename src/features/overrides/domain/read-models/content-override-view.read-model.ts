@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de personalizaciones de contenido por estudiante
- * Descripción: Define las interfaces OverrideUserSummary, ContentOverrideView que devuelven las consultas de la feature
- * Versión: 1.0
+ * Descripción: Define las interfaces OverrideUserSummary, ContentOverrideView que devuelven las consultas de la feature; el autor queda vacío cuando su usuario fue eliminado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,7 +22,7 @@ export interface ContentOverrideView {
   readonly entityType: string;
   readonly entityId: string;
   readonly overrideData: OverrideData;
-  readonly createdBy: string;
+  readonly createdBy?: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly isActive: boolean;

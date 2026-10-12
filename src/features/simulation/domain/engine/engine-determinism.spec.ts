@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de determinismo y rendimiento del motor fisiológico
- * Descripción: Verifica que dos repeticiones con el mismo caso, semilla y eventos producen el mismo hash FNV-1a de la línea de tiempo de métricas, que otra semilla con ruido lo cambia y que diez minutos simulados se repiten en menos de 500 ms
- * Versión: 1.0
+ * Descripción: Verifica que dos repeticiones con el mismo caso, semilla y eventos producen el mismo hash FNV-1a de la línea de tiempo de métricas, que otra semilla con ruido lo cambia y que diez minutos simulados se repiten en menos de 500 ms; la prueba de tiempo se omite cuando la cobertura instrumenta el código
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,6 +30,11 @@ const SESSION_EVENTS: EngineEvent[] = [
   { type: "PARAM_CHANGE", simTimeMs: 420000, changes: { mode: "PCV", inspiratoryPressureCmH2O: 14 } },
 ];
 
+// Coverage instrumentation slows the engine several times over, so the time budget only holds on uninstrumented runs.
+const COVERAGE_ENABLED: boolean = (globalThis as { __coverage__?: unknown }).__coverage__ !== undefined;
+
+const itWithoutCoverage: jest.It = COVERAGE_ENABLED ? it.skip : it;
+
 function timelineHash(result: ReplayResult): number {
   return fnv1aHash(JSON.stringify(result.metricsTimeline));
 }
@@ -53,7 +58,7 @@ describe("engine determinism", () => {
     expect(quietB).toBe(quietA);
   });
 
-  it("replays ten simulated minutes at 50 Hz sampling in under 500 ms", () => {
+  itWithoutCoverage("replays ten simulated minutes at 50 Hz sampling in under 500 ms", () => {
     replay(ACTIVE_CASE, 7, SESSION_EVENTS, 60000, { sampleRateHz: 50 });
     const startedAt: bigint = process.hrtime.bigint();
 

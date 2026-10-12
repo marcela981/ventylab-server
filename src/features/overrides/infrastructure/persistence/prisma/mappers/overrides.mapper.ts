@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de persistencia ContentOverrideViewRow
- * Descripción: Convierte entre los modelos de Prisma y las entidades de dominio de la feature de personalizaciones de contenido por estudiante
- * Versión: 1.0
+ * Descripción: Convierte entre los modelos de Prisma y las entidades de dominio de la feature de personalizaciones de contenido por estudiante; el autor queda vacío cuando su usuario fue eliminado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,7 +26,7 @@ export class OverridesMapper {
       entityType: row.entityType,
       entityId: row.entityId,
       overrideData: row.overrideData as OverrideData,
-      createdBy: row.createdBy,
+      createdBy: row.createdBy ?? undefined,
       isActive: row.isActive,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -55,7 +55,7 @@ export class OverridesMapper {
       entityType: row.entityType,
       entityId: row.entityId,
       overrideData: row.overrideData as OverrideData,
-      createdBy: row.createdBy,
+      createdBy: row.createdBy ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       isActive: row.isActive,

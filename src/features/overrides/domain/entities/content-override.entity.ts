@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad CONTENT_OVERRIDE_ENTITY_COLLECTION
- * Descripción: Agregado de dominio de la feature de personalizaciones de contenido por estudiante con sus reglas de negocio, eventos de dominio y registros de auditoría
- * Versión: 1.0
+ * Descripción: Agregado de dominio de la feature de personalizaciones de contenido por estudiante con sus reglas de negocio, eventos de dominio y registros de auditoría; el autor queda vacío cuando su usuario fue eliminado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -33,7 +33,7 @@ export class ContentOverride extends AggregateRoot {
   private _entityType: OverrideEntityTypeValue;
   private _entityId: string;
   private _overrideData: OverrideData;
-  private _createdBy: string;
+  private _createdBy: string | undefined;
   private _isActive: boolean;
   private _createdAt: Date;
   private _updatedAt: Date;
@@ -56,7 +56,7 @@ export class ContentOverride extends AggregateRoot {
     entityType: OverrideEntityTypeValue;
     entityId: string;
     overrideData: OverrideData;
-    createdBy: string;
+    createdBy: string | undefined;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -95,7 +95,7 @@ export class ContentOverride extends AggregateRoot {
     return this._overrideData;
   }
 
-  public get createdBy(): string {
+  public get createdBy(): string | undefined {
     return this._createdBy;
   }
 
@@ -191,7 +191,7 @@ export class ContentOverride extends AggregateRoot {
     entityType: OverrideEntityTypeValue;
     entityId: string;
     overrideData: OverrideData;
-    createdBy: string;
+    createdBy: string | undefined;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;

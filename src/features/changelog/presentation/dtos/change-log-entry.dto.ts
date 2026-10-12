@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs change-log-entry.dto
- * Descripción: Define los DTOs ChangeLogAuthorDTO, ChangeLogEntryDTO de la feature de historial de cambios, documentados para Swagger y validados con class-validator cuando son de entrada
- * Versión: 1.0
+ * Descripción: Define los DTOs ChangeLogAuthorDTO, ChangeLogEntryDTO de la feature de historial de cambios, documentados para Swagger y validados con class-validator cuando son de entrada; el autor queda vacío cuando su usuario fue eliminado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,8 +44,8 @@ export class ChangeLogEntryDTO {
   @ApiProperty({ description: "Action performed", example: "update" })
   public action: string;
 
-  @ApiProperty({ description: "ID of the user who made the change", example: "cm5x2k9a00000abcd1234efgh" })
-  public changedBy: string;
+  @ApiProperty({ description: "ID of the user who made the change; null once that user is deleted", example: "cm5x2k9a00000abcd1234efgh", type: String, nullable: true })
+  public changedBy: string | null;
 
   @ApiProperty({ description: "When the change happened", example: "2026-03-10T14:20:00.000Z" })
   public changedAt: Date;

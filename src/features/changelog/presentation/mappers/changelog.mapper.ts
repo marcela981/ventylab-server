@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de presentación ChangeLogMapper
- * Descripción: Convierte los modelos de lectura y entidades de la feature de historial de cambios en DTOs de respuesta
- * Versión: 1.0
+ * Descripción: Convierte los modelos de lectura y entidades de la feature de historial de cambios en DTOs de respuesta; el autor queda vacío cuando su usuario fue eliminado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,7 +20,7 @@ export class ChangeLogMapper {
       entityType: entry.entityType,
       entityId: entry.entityId,
       action: entry.action,
-      changedBy: entry.changedBy,
+      changedBy: entry.changedBy ?? null,
       changedAt: entry.changedAt,
       diff: entry.diff ?? null,
       metadata: entry.metadata ?? null,
