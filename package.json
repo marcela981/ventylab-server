@@ -23,7 +23,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
     "test": "jest --passWithNoTests",
-    "test:unit": "jest --ci --passWithNoTests",
+    "test:unit": "jest --ci --config test/jest/jest.unit.config.js --coverage --maxWorkers=2 --passWithNoTests && node scripts/verify/print-c1-coverage.mjs",
     "test:perf": "node scripts/verify/run-perf.mjs",
     "test:integration":"jest --ci --config test/jest/jest.integration.config.js --runInBand",
     "test:e2e": "jest --ci --config test/jest/jest.e2e.config.js --runInBand",

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Arranque de la aplicación
- * Descripción: Crea la aplicación NestJS con logger estructurado, helmet, compresión (excepto respuestas text/event-stream), límites de cuerpo, CORS, adaptador de Socket.io, pipes globales de validación y documentación de la API
- * Versión: 1.2
+ * Descripción: Crea la aplicación NestJS con logger estructurado, helmet, compresión (excepto respuestas text/event-stream), límites de cuerpo, CORS, adaptador de Socket.io, pipes globales de validación (con transformación de DTOs para aplicar valores por defecto y conversiones de tipo) y documentación de la API
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -89,7 +89,7 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalPipes(
     new TrimPipe(),
-    new I18nValidationPipe(),
+    new I18nValidationPipe({ transform: true }),
   );
 
   // API docs (Scalar) — access controlled by IP whitelist, not by NODE_ENV.

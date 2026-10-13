@@ -27,7 +27,7 @@ Make the backend verifiable, deployable and documented without adding business f
 - [ ] BUG-6 `contracts/websocket-events.contracts.ts` drifts from emitted events (handled in block D).
 - [ ] BUG-7 `prisma/seed.ts` runs `TRUNCATE ... CASCADE` on progress tables (handled in block G).
 - [x] BUG-8 `engine-determinism.spec.ts` timing assertion flakes under coverage (fixed early in block A: skipped only under coverage instrumentation).
-- [ ] BUG-9 21 list routes answer 500: the global `I18nValidationPipe` does not transform, so `ListQueryDTO` defaults never apply (`skip = NaN`) and `?page=&limit=` arrive as strings (`take: "20"`). Repro: `GET /api/notes` as a student. Proposed fix: `new I18nValidationPipe({ transform: true })` in `main.ts` (+ `test/support/e2e-app.ts`) and full suite run. Found in T3a; see docs/verification/BLOCK-C.md.
+- [x] BUG-9 21 list routes answer 500: the global `I18nValidationPipe` does not transform, so `ListQueryDTO` defaults never apply (`skip = NaN`) and `?page=&limit=` arrive as strings (`take: "20"`). Repro: `GET /api/notes` as a student. Proposed fix: `new I18nValidationPipe({ transform: true })` in `main.ts` (+ `test/support/e2e-app.ts`) and full suite run. Found in T3a; fixed in T3b (`transform: true` in `main.ts` + `test/support/e2e-app.ts`): authorization e2e 391/391 with 0 5xx (matrix now fails on any 5xx outside an empty allowlist), the 3 former `it.failing` IDOR list tests pass; see docs/verification/BLOCK-C.md.
 
 ## Tasks
 
@@ -45,6 +45,7 @@ Make the backend verifiable, deployable and documented without adding business f
 
 | Task | Route | Trigger evidence | Result |
 |---|---|---|---|
+| T3b | delegated (one writer) | writer trigger: 2+ non-trivial files (main.ts pipe, e2e-app, matrix + idor specs, unit jest config + C1 scope + coverage printer, 11 new unit specs, progress test doubles, docs) | BUG-9 fixed; C1 thresholds met per folder (see Progress / evidence) |
 | T3a | delegated (one writer) | writer trigger: 2+ non-trivial files (test/support integration-app/actors/http, 9 integration specs, matrix + 3 e2e specs, docs) | C2 + C3 done; T3 stays open for C1; BUG-9 found (see docs/verification/BLOCK-C.md) |
 | T2 | delegated (one writer) | writer trigger: 2+ non-trivial files (test/support, test/factories, jest configs, AI scenario doubles, gateway spec, package.json) | partial; suites green standalone, `npm run verify` stops at the engine-determinism timing flake in test:unit (see docs/verification/BLOCK-B.md) |
 | T1 | delegated (one writer) | writer trigger: 2+ non-trivial files (scripts/verify, groups handler, storage adapter, CORS, schema + migration) | done; verify OK, verify:boot OK, see docs/verification/BLOCK-A.md |
@@ -61,6 +62,9 @@ Make the backend verifiable, deployable and documented without adding business f
 - T2 findings: MQTT_TEST_TOPIC_PREFIX only prefixes command/ack topics (telemetry/alarm isolated by explicit test topics); `readDbIntegrationSettings` now unused; migration seeds author's email as superadmin (tests override in container baseline); partial stream after delivered content ends in AiStreamInterruptedError without fallback (existing contract).
 
 - 2026-10-12 T3a (C2 + C3, T3 not checked: C1 pending): `tsc` 0; ESLint `test/**/*.ts` 0. Integration, each file alone: protection-triggers 11/11, users 5/5, groups 5/5, evaluation-attempts 3/3, curriculum-delete 3/3, notes 4/4, notifications 3/3, progress 1/1, platform-settings 2/2. E2E, each file alone: authorization-matrix 350/350 (349 registered routes = 349 matrix entries, 0 missing, 0 stale, 1745 requests asserted), idor 37/37 (3 `it.failing` blocked by BUG-9), role-visibility 3/3. No leftover containers. Concurrency proven exactly-one for student group membership, group leader, evaluation attempt start, platform-setting version; progress upserts race-safe. Advisory-lock paths not yet raced: activities, quizzes, evaluation submit/grading (C4).
+
+- 2026-10-12 T3b (BUG-9 + C1; T3 NOT checked: full `npm run verify` not completed): BUG-9 fixed (`I18nValidationPipe({ transform: true })` in `main.ts` + `test/support/e2e-app.ts`). `npx jest --config test/jest/jest.e2e.config.js --runInBand test/e2e/authorization` → 3 suites, 391/391, 0 5xx logged; matrix fails on any 5xx outside `KNOWN_SERVER_ERROR_ROUTES` (empty). C1: `npm run test:unit` → 240 suites, 1808 passed, 1 skipped, per-folder line thresholds of 80 % all met (progress 21.5→98.3 %, reservations 81.5→93.2 % [application 78.8→92.3 %], the others were already 87.5–100 %); whole scope 80.4→93.2 %. `tsc` 0; ESLint (`src/**/*.spec.ts`, `src/**/*-spec.ts`, `test/**/*.ts`, `src/main.ts`) 0. First `npm run verify`: tsc, lint, madge, prisma validate and drift PASS; test:unit FAIL only because the relative threshold keys matched nothing (fixed: absolute keys); the rerun was killed by the OS for low memory during lint. Pending: test:perf, test:integration and the full test:e2e under the BUG-9 fix.
+- Follow-up outside T3b's edit surface: `.claude/skills/error-handling/SKILL.md` still says the global pipe runs with no options, so it should say `transform: true` (CLAUDE.md requires skills to match the code).
 
 ## Next step
 

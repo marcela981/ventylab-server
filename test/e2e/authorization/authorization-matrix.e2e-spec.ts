@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e de la matriz de autorización
- * Descripción: Arranca la aplicación completa, recorre la pila de rutas del router de Express (4 o 5) y falla si alguna ruta registrada no tiene entrada en la matriz o si alguna entrada no corresponde a una ruta; luego envía, por cada entrada y actor (anónimo, estudiante, docente, administrador, superadministrador), una petición con parámetros UUID aleatorios y cuerpo vacío y comprueba el resultado esperado (401, 403, 404 o permitido); las respuestas en streaming se abortan tras recibir las cabeceras
- * Versión: 1.0
+ * Descripción: Arranca la aplicación completa, recorre la pila de rutas del router de Express (4 o 5) y falla si alguna ruta registrada no tiene entrada en la matriz o si alguna entrada no corresponde a una ruta; luego envía, por cada entrada y actor (anónimo, estudiante, docente, administrador, superadministrador), una petición con parámetros UUID aleatorios y cuerpo vacío y comprueba el resultado esperado (401, 403, 404 o permitido); las respuestas en streaming se abortan tras recibir las cabeceras; al final falla si alguna petición respondió 5xx en una ruta fuera de la lista explícita de defectos conocidos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -32,6 +32,9 @@ interface ObservedResponse {
 }
 
 const BODY_METHODS: readonly string[] = ["POST", "PUT", "PATCH"];
+
+// Routes with a known, reported server defect ("METHOD /path", each with its // BUG-n comment); empty means every 5xx fails.
+const KNOWN_SERVER_ERROR_ROUTES: readonly string[] = [];
 
 function collectRegisteredRoutes(e2e: E2eApp): string[] {
   const instance: ExpressRouterHolder = e2e.app.getHttpAdapter().getInstance() as unknown as ExpressRouterHolder;
@@ -93,11 +96,6 @@ describe("authorization matrix (e2e)", () => {
   });
 
   afterAll(async () => {
-    // A 5xx still means the guards let the request through, so it does not fail the matrix; it is reported for triage.
-    if (serverErrors.length > 0) {
-      process.stdout.write(`Authorization matrix: ${serverErrors.length} request(s) answered 5xx:\n${serverErrors.join("\n")}\n`);
-    }
-
     await e2e?.close();
   });
 
@@ -129,5 +127,12 @@ describe("authorization matrix (e2e)", () => {
     const mismatches: ObservedResponse[] = observed.filter((entry: ObservedResponse): boolean => !matches(entry.expected, entry.status));
 
     expect(mismatches).toEqual([]);
+  });
+
+  // A 5xx means the guards let the request through, so it does not fail the route's own test; it fails here unless the route is a listed known defect.
+  it("should not answer 5xx to any request outside the known-defect allowlist", () => {
+    const unexpected: string[] = serverErrors.filter((entry: string): boolean => !KNOWN_SERVER_ERROR_ROUTES.some((route: string): boolean => entry.startsWith(`${route} as `)));
+
+    expect(unexpected).toEqual([]);
   });
 });

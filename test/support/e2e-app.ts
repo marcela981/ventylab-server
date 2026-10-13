@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Arranque de la aplicación para pruebas e2e
- * Descripción: Compila AppModule con @nestjs/testing reemplazando el registro de proveedores de IA por proveedores falsos, aplica la misma configuración HTTP y WebSocket que main.ts (proxy de confianza, cuerpos, CORS, adaptador Socket.io, TrimPipe e I18nValidationPipe), escucha en un puerto libre de 127.0.0.1 y verifica que base de datos, broker y proveedores de IA sean los de prueba antes de devolverla
- * Versión: 1.0
+ * Descripción: Compila AppModule con @nestjs/testing reemplazando el registro de proveedores de IA por proveedores falsos, aplica la misma configuración HTTP y WebSocket que main.ts (proxy de confianza, cuerpos, CORS, adaptador Socket.io, TrimPipe e I18nValidationPipe con transformación), escucha en un puerto libre de 127.0.0.1 y verifica que base de datos, broker y proveedores de IA sean los de prueba antes de devolverla
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -77,7 +77,7 @@ export async function createE2eApp(options: E2eAppOptions = {}): Promise<E2eApp>
     credentials: true,
   });
   app.useWebSocketAdapter(new RealtimeIoAdapter(app, config));
-  app.useGlobalPipes(new TrimPipe(), new I18nValidationPipe());
+  app.useGlobalPipes(new TrimPipe(), new I18nValidationPipe({ transform: true }));
 
   assertTestBindings(app);
 

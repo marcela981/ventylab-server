@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas e2e de acceso a recursos ajenos (IDOR)
  * Descripción: Con la aplicación completa y recursos creados por fábricas o por la API para un dueño, comprueba que otro usuario con el mismo rol que cambia el identificador en la ruta no pueda leer ni modificar notas, conversaciones del tutor de IA, intentos de evaluación, sesiones de simulación, notificaciones, grupos de los que no es miembro ni paneles de analítica de grupos que no gestiona; espera 403 o 404 según el comportamiento documentado de cada ruta, verifica con el dueño que los identificadores son válidos y que los recursos quedan intactos
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -200,8 +200,7 @@ describe("IDOR protection (e2e)", () => {
     expect(response.status).toBe(expected);
   });
 
-  // Blocked by BUG-9: the list routes answer 500 even with explicit page/limit (the query strings reach Prisma as strings), so the scoping cannot be observed over HTTP yet.
-  it.failing("should not list the owner's notes or conversations for another user (blocked by BUG-9)", async () => {
+  it("should not list the owner's notes or conversations for another user", async () => {
     const notes: Response = await callApi(e2e.baseUrl, "GET", "/api/notes?page=1&limit=20", fixture.intruderStudent.token);
     const conversations: Response = await callApi(e2e.baseUrl, "GET", "/api/tutor/conversations?page=1&limit=20", fixture.intruderStudent.token);
 
@@ -211,8 +210,8 @@ describe("IDOR protection (e2e)", () => {
     expect(JSON.stringify(conversations.body)).not.toContain(fixture.conversationId);
   });
 
-  // BUG-9: without page/limit the ListQueryDTO defaults are never applied (the global validation pipe does not transform), so the repository receives skip = NaN and Prisma throws (500).
-  it.failing.each(["/api/notes", "/api/tutor/conversations"])("should list %s without pagination parameters (BUG-9)", async (path: string) => {
+  // Regression guard for BUG-9: the ListQueryDTO defaults (page 1, limit 10) only apply when the global validation pipe transforms.
+  it.each(["/api/notes", "/api/tutor/conversations"])("should list %s without pagination parameters", async (path: string) => {
     const response: Response = await callApi(e2e.baseUrl, "GET", path, fixture.intruderStudent.token);
 
     expect(response.status).toBe(200);
