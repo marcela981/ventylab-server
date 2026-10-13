@@ -1,0 +1,27 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/main.ts",
+    "src/instrument.ts",
+    "src/**/*.spec.ts",
+    "src/**/*-spec.ts",
+    "test/**/*.ts",
+    "test/jest/*.js",
+    "prisma/seed-*.ts",
+    "prisma/migrations/migrate-progress-data.ts",
+    "scripts/*.ts",
+    "scripts/audit-e2e/audit-e2e.ts",
+    "scripts/**/*.{mjs,cjs}",
+    "contracts/*.ts"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "test/**/*.{ts,js}",
+    "prisma/**/*.ts",
+    "scripts/**/*.{ts,mjs,cjs}",
+    "contracts/**/*.ts"
+  ],
+  "ignore": [
+    "__deferred_tests__/**"
+  ]
+}

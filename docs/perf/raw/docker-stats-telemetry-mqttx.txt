@@ -1,0 +1,5 @@
+telemetry-mqttx
+ventylab-local-mosquitto-1	0.07%	8.738MiB / 2.812GiB
+ventylab-local-postgres-1	19.97%	77.02MiB / 2.812GiB
+ventylab-local-node-red-1	0.00%	100.9MiB / 2.812GiB
+ventylab-local-backend-1	2.07%	208.7MiB / 2.812GiB

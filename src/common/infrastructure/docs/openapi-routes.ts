@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Metadatos de rutas para OpenAPI
- * Descripción: Recorre los controladores registrados en el contenedor de Nest y describe cada operación (método, ruta OpenAPI y Express, guards, permisos de @RequirePermissions y @AllowSelfOr, límites de @Throttle, respuesta sin envoltorio o por streaming, tipos producidos y regla de deprecación); también clasifica el acceso requerido (rol mínimo, permisos, esquema de seguridad) a partir de esos metadatos y del mapa rol → permisos que recibe
- * Versión: 1.0
+ * Descripción: Recorre los controladores registrados en el contenedor de Nest y describe cada operación (método, ruta OpenAPI y Express, guards, permisos de @RequirePermissions y @AllowSelfOr, límites de @Throttle y exclusiones de @SkipThrottle, respuesta sin envoltorio o por streaming, tipos producidos y regla de deprecación); también clasifica el acceso requerido (rol mínimo, permisos, esquema de seguridad) a partir de esos metadatos y del mapa rol → permisos que recibe
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,6 +21,8 @@ import { readDeprecationRules, resolveDeprecation, type ResolvedDeprecation } fr
 const PERMISSIONS_METADATA: string = "permissions";
 const SELF_OR_PERMISSIONS_METADATA: string = "selfOrPermissions";
 const THROTTLER_LIMIT_METADATA_PREFIX: string = "THROTTLER:LIMIT";
+const DEFAULT_THROTTLER_SKIP_METADATA: string = "THROTTLER:SKIPdefault";
+const DEFAULT_THROTTLER_LIMIT_METADATA: string = "THROTTLER:LIMITdefault";
 
 export const JWT_SECURITY_SCHEME: string = "JWT-auth";
 export const BRIDGE_SECURITY_SCHEME: string = "NextAuth-bridge";
@@ -50,6 +52,8 @@ export interface RouteDescriptor {
   readonly permissions: readonly string[];
   readonly selfOr?: SelfOrPermissions;
   readonly throttled: boolean;
+  readonly throttleSkipped: boolean;
+  readonly throttleLimit?: number;
   readonly rawResponse: boolean;
   readonly streamsResponse: boolean;
   readonly produces: readonly string[];
@@ -147,6 +151,8 @@ function describeController(controller: Type, scanner: MetadataScanner): RouteDe
           permissions: readOverride<string[]>(PERMISSIONS_METADATA, handler, controller) ?? [],
           selfOr: readOverride<SelfOrPermissions>(SELF_OR_PERMISSIONS_METADATA, handler, controller),
           throttled: hasThrottle(handler) || hasThrottle(controller),
+          throttleSkipped: readOverride<boolean>(DEFAULT_THROTTLER_SKIP_METADATA, handler, controller) === true,
+          throttleLimit: readOverride<number>(DEFAULT_THROTTLER_LIMIT_METADATA, handler, controller),
           rawResponse,
           streamsResponse: streamsResponse(controller, handlerName),
           produces,

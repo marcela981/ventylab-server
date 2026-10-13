@@ -1,0 +1,175 @@
+# Funcionalidad: Orquestación de producción para un VPS
+# Descripción: Backend NestJS (migraciones automáticas al arrancar), broker Mosquitto con contraseñas y ACL, Node-RED y PostgreSQL opcional (perfil postgres) con volúmenes persistentes y healthchecks; publica el backend detrás de Traefik/Dokploy con TLS, WebSockets de Socket.io y SSE sin compresión ni buffering en el proxy
+# Versión: 1.0
+# Autor: Marcela Mazo Castro
+# Proyecto: VentyLab
+# Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+# Institución: Universidad del Valle
+# Contacto: marcela.mazo@correounivalle.edu.co
+#
+# Usage (VPS): docker compose up -d --wait            (database: Supabase through DATABASE_URL/DIRECT_URL)
+#              docker compose --profile postgres up -d --wait   (database: the bundled postgres service)
+# Local full stack: see docs/verification/BLOCK-F.md (docker-compose.local.yml).
+# Interpolation variables come from the project .env (or --env-file); the backend reads BACKEND_ENV_FILE.
+
+name: ventylab
+
+x-mqtt-credentials: &mqtt-credentials
+  MQTT_BACKEND_USERNAME: ${MQTT_BACKEND_USERNAME:-ventylab-backend}
+  MQTT_BACKEND_PASSWORD: ${MQTT_BACKEND_PASSWORD:?set MQTT_BACKEND_PASSWORD}
+  MQTT_NODERED_USERNAME: ${MQTT_NODERED_USERNAME:-ventylab-nodered}
+  MQTT_NODERED_PASSWORD: ${MQTT_NODERED_PASSWORD:?set MQTT_NODERED_PASSWORD}
+  MQTT_DEVICE_USERNAME: ${MQTT_DEVICE_USERNAME:-ventylab-device}
+  MQTT_DEVICE_PASSWORD: ${MQTT_DEVICE_PASSWORD:?set MQTT_DEVICE_PASSWORD}
+  MQTT_HEALTHCHECK_USERNAME: ${MQTT_HEALTHCHECK_USERNAME:-ventylab-healthcheck}
+  MQTT_HEALTHCHECK_PASSWORD: ${MQTT_HEALTHCHECK_PASSWORD:?set MQTT_HEALTHCHECK_PASSWORD}
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-ventylab-server:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ${BACKEND_ENV_FILE:-.env}
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_USERNAME: ${MQTT_BACKEND_USERNAME:-ventylab-backend}
+      MQTT_PASSWORD: ${MQTT_BACKEND_PASSWORD:?set MQTT_BACKEND_PASSWORD}
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+        required: false
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health/ready').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
+    networks:
+      - internal
+      - edge
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK:-dokploy-network}
+      # HTTPS router. Socket.io (/socket.io, HTTP long-polling + WebSocket upgrade) needs no extra configuration in Traefik.
+      traefik.http.routers.ventylab-api.rule: Host(`${API_DOMAIN:?set API_DOMAIN}`)
+      traefik.http.routers.ventylab-api.entrypoints: ${TRAEFIK_HTTPS_ENTRYPOINT:-websecure}
+      traefik.http.routers.ventylab-api.tls: "true"
+      traefik.http.routers.ventylab-api.tls.certresolver: ${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      traefik.http.routers.ventylab-api.service: ventylab-api
+      # No middlewares on purpose: a compress or buffering middleware would hold back the text/event-stream responses
+      # (AI tutor and simulation assist). The app already compresses everything except text/event-stream.
+      traefik.http.services.ventylab-api.loadbalancer.server.port: "4000"
+      # Plain HTTP only redirects to HTTPS.
+      traefik.http.routers.ventylab-api-http.rule: Host(`${API_DOMAIN:?set API_DOMAIN}`)
+      traefik.http.routers.ventylab-api-http.entrypoints: ${TRAEFIK_HTTP_ENTRYPOINT:-web}
+      traefik.http.routers.ventylab-api-http.middlewares: ventylab-https-redirect
+      traefik.http.routers.ventylab-api-http.service: ventylab-api
+      traefik.http.middlewares.ventylab-https-redirect.redirectscheme.scheme: https
+      traefik.http.middlewares.ventylab-https-redirect.redirectscheme.permanent: "true"
+
+  mosquitto-auth:
+    image: eclipse-mosquitto:2.0.20
+    restart: "no"
+    user: root
+    environment:
+      <<: *mqtt-credentials
+    entrypoint: ["/bin/sh", "/generate-passwd.sh"]
+    volumes:
+      - ./deploy/mosquitto/generate-passwd.sh:/generate-passwd.sh:ro
+      - mosquitto_auth:/mosquitto/auth
+    networks:
+      - internal
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0.20
+    restart: unless-stopped
+    depends_on:
+      mosquitto-auth:
+        condition: service_completed_successfully
+    environment:
+      MQTT_HEALTHCHECK_USERNAME: ${MQTT_HEALTHCHECK_USERNAME:-ventylab-healthcheck}
+      MQTT_HEALTHCHECK_PASSWORD: ${MQTT_HEALTHCHECK_PASSWORD:?set MQTT_HEALTHCHECK_PASSWORD}
+    volumes:
+      - ./deploy/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./deploy/mosquitto/acl:/mosquitto/config/acl:ro
+      - mosquitto_auth:/mosquitto/auth:ro
+      - mosquitto_data:/mosquitto/data
+    # Loopback by default; the physical ventilator needs MQTT_BIND_ADDRESS=0.0.0.0 (see docs/verification/BLOCK-F.md).
+    ports:
+      - "${MQTT_BIND_ADDRESS:-127.0.0.1}:${MQTT_PUBLIC_PORT:-1883}:1883"
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -u \"$$MQTT_HEALTHCHECK_USERNAME\" -P \"$$MQTT_HEALTHCHECK_PASSWORD\" -t '$$SYS/broker/version' -C 1 -W 5 > /dev/null"]
+      interval: 15s
+      timeout: 10s
+      start_period: 10s
+      retries: 5
+    networks:
+      - internal
+
+  node-red:
+    image: nodered/node-red:4.0.9
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      NODE_RED_CREDENTIAL_SECRET: ${NODE_RED_CREDENTIAL_SECRET:?set NODE_RED_CREDENTIAL_SECRET}
+      # Flows reference these as ${MQTT_BROKER_HOST}, ${MQTT_NODERED_USERNAME} and ${MQTT_NODERED_PASSWORD} in the broker node.
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_NODERED_USERNAME: ${MQTT_NODERED_USERNAME:-ventylab-nodered}
+      MQTT_NODERED_PASSWORD: ${MQTT_NODERED_PASSWORD:?set MQTT_NODERED_PASSWORD}
+    volumes:
+      - node_red_data:/data
+    # Editor only on loopback (SSH tunnel); never publish it without adminAuth in /data/settings.js.
+    ports:
+      - "127.0.0.1:${NODE_RED_PORT:-1880}:1880"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:1880/', (r) => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    networks:
+      - internal
+
+  postgres:
+    image: postgres:17-alpine
+    profiles: [postgres]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ventylab}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-ventylab}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      start_period: 10s
+      retries: 10
+    networks:
+      - internal
+
+networks:
+  internal:
+  edge:
+    external: true
+    name: ${TRAEFIK_NETWORK:-dokploy-network}
+
+volumes:
+  mosquitto_auth:
+  mosquitto_data:
+  node_red_data:
+  postgres_data:

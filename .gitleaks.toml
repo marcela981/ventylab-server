@@ -1,0 +1,61 @@
+# Funcionalidad: Configuración de gitleaks
+# Descripción: Reglas del escaneo de secretos del historial git (npm run security:secrets): extiende las reglas por defecto de gitleaks con las variables secretas propias de VentyLab y las URL de PostgreSQL con contraseña; las listas de permitidos solo cubren marcadores de posición, código que lee la variable y valores de prueba evidentes, cada uno justificado
+# Versión: 1.0
+# Autor: Marcela Mazo Castro
+# Proyecto: VentyLab
+# Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+# Institución: Universidad del Valle
+# Contacto: marcela.mazo@correounivalle.edu.co
+
+title = "VentyLab secret scan"
+
+[extend]
+useDefault = true
+
+# Any value assigned to a secret environment variable of this backend (.env files, compose files, scripts, docs).
+[[rules]]
+id = "ventylab-env-secret"
+description = "Value assigned to a VentyLab secret environment variable"
+regex = '''(?i)\b(?:JWT_SECRET|JWT_REFRESH_SECRET|NEXTAUTH_SECRET|NEXTAUTH_BRIDGE_SECRET|ADMIN_API_KEY|SUPABASE_SERVICE_ROLE_KEY|ANALYTICS_EXPORT_SALT|INFLUXDB_TOKEN|MQTT_PASSWORD|SMTP_PASS|GEMINI_API_KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|AI_CUSTOM_HTTP_AUTH_VALUE|GOOGLE_CLIENT_SECRET|SENTRY_DSN|POSTGRES_PASSWORD)\s*[=:]\s*["']?([^\s"'#,;)}]{8,})'''
+secretGroup = 1
+keywords = [
+  "jwt_secret", "jwt_refresh_secret", "nextauth_secret", "nextauth_bridge_secret", "admin_api_key",
+  "supabase_service_role_key", "analytics_export_salt", "influxdb_token", "mqtt_password", "smtp_pass",
+  "gemini_api_key", "openai_api_key", "anthropic_api_key", "ai_custom_http_auth_value", "google_client_secret",
+  "sentry_dsn", "postgres_password",
+]
+
+  # 1. Placeholders of .env.example and docs: "your-...", Spanish "tu-...", "change-me", "<...>", "${...}", "xxxx", "****".
+  # 2. Code that reads the variable instead of holding a value: "requireEnv(", "process.env...".
+  # 3. Fixed values of the automated test environment ("test-...") and of the disposable boot check ("verify-...").
+  # 4. Literal fixture words of unit tests ("refresh-secret", "jwt-secret"...).
+  # None of them is valid outside the throw-away process that sets it.
+  [rules.allowlist]
+  description = "Placeholders, code references and automated-test values"
+  regexTarget = "secret"
+  regexes = [
+    '''(?i)^(?:your[-_]|tu[-_]|change[-_]?me|replace[-_]?me|placeholder|example|dummy|<|\$\{|x{4,}|\*{4,}|process\.env)''',
+    '''^[A-Za-z_$][A-Za-z0-9_.$]*\($''',
+    '''^(?:test|verify)-[a-z0-9-]+$''',
+    '''^(?:refresh|access|jwt|bridge|admin)[-_](?:secret|key|token)$''',
+  ]
+
+# A PostgreSQL connection string with an inline password.
+[[rules]]
+id = "ventylab-postgres-url-password"
+description = "PostgreSQL connection URL with an inline password"
+regex = '''postgres(?:ql)?://[^:/\s"'@]+:([^@\s"']+)@[^/\s"']+'''
+secretGroup = 1
+keywords = ["postgres://", "postgresql://"]
+
+  # 1. Throw-away databases on the local machine (offline OpenAPI generator, local compose).
+  # 2. The fixed credentials of the Testcontainers database ("ventylab_test"; its host is resolved at runtime).
+  # 3. Documented placeholders ("password", "postgres", "your-...", "<...>", "${...}").
+  # A password for a disposable local database grants nothing elsewhere.
+  [rules.allowlist]
+  description = "Local disposable databases and placeholders"
+  regexTarget = "match"
+  regexes = [
+    '''@(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:/|$)''',
+    '''(?i)://[^:]+:(?:password|postgres|ventylab_test|your[-_][a-z_-]+|<[^>]+>|\$\{[^}]+\})@''',
+  ]

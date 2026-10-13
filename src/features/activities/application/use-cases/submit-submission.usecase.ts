@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso SubmitSubmissionUseCase
  * Descripción: Envía la entrega propia de un estudiante en borrador; queda LATE si se envía después de la fecha límite de la actividad y SUBMITTED en otro caso
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -49,14 +49,23 @@ export class SubmitSubmissionUseCase {
     }
 
     const events: DomainEvent[] = await this._transactionManager.run(async (transaction: unknown): Promise<DomainEvent[]> => {
+      const found: ActivitySubmission | undefined = await this._submissionsRepository.getById(command.submissionId, transaction);
+
+      if (!found) {
+        throw new ActivitySubmissionNotFoundError();
+      }
+
+      if (!found.isOwnedBy(command.userId)) {
+        throw new ActivitySubmissionNotOwnedError();
+      }
+
+      await this._submissionsRepository.lockStudentAttempt(found.activityId, found.userId, transaction);
+
+      // Re-read under the lock: a concurrent submit may have committed after the first read
       const submission: ActivitySubmission | undefined = await this._submissionsRepository.getById(command.submissionId, transaction);
 
       if (!submission) {
         throw new ActivitySubmissionNotFoundError();
-      }
-
-      if (!submission.isOwnedBy(command.userId)) {
-        throw new ActivitySubmissionNotOwnedError();
       }
 
       const activity: Activity | undefined = await this._activitiesRepository.getById(submission.activityId, transaction);

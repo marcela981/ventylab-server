@@ -950,7 +950,7 @@ export interface paths {
         put?: never;
         /**
          * Student self-registration
-         * @description Registers a new user with the student role
+         * @description Registers a new user with the student role. Limited to 10 requests per minute.
          *
          *     **Required access:** public.
          */
@@ -21193,6 +21193,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -21255,6 +21264,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -21309,6 +21327,15 @@ export interface operations {
             };
             /** @description The caller lacks the required permission or is not allowed to act on this resource */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21385,6 +21412,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -21447,6 +21483,15 @@ export interface operations {
             };
             /** @description Activity not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21527,6 +21572,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -21596,6 +21650,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -21658,6 +21721,15 @@ export interface operations {
             };
             /** @description Activity not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21737,6 +21809,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -21791,6 +21872,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21869,6 +21959,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -21931,6 +22030,15 @@ export interface operations {
             };
             /** @description Assignment not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22009,6 +22117,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -22078,6 +22195,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -22120,6 +22246,15 @@ export interface operations {
             };
             /** @description The caller lacks the required permission or is not allowed to act on this resource */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22189,6 +22324,15 @@ export interface operations {
             };
             /** @description Submission not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22278,6 +22422,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -22351,6 +22504,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -22413,6 +22575,15 @@ export interface operations {
             };
             /** @description Submission not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22498,6 +22669,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -22571,6 +22751,15 @@ export interface operations {
             };
             /** @description Range does not start before it ends or spans more than 366 days */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22660,6 +22849,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -22729,6 +22927,15 @@ export interface operations {
             };
             /** @description Range does not start before it ends or spans more than 366 days */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22814,6 +23021,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -22856,6 +23072,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22936,6 +23161,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -23005,6 +23239,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -23059,6 +23302,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23132,6 +23384,15 @@ export interface operations {
             };
             /** @description User not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23219,6 +23480,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -23275,6 +23545,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23351,6 +23630,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -23413,6 +23701,15 @@ export interface operations {
             };
             /** @description Group not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23487,6 +23784,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -23539,6 +23845,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23638,6 +23953,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -23724,6 +24048,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -23795,6 +24128,15 @@ export interface operations {
             };
             /** @description Range does not start before it ends */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23874,6 +24216,15 @@ export interface operations {
             };
             /** @description The resource does not exist or is not visible to the caller */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24072,6 +24423,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -24114,6 +24474,15 @@ export interface operations {
             };
             /** @description User not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24337,6 +24706,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many registration attempts */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -24377,6 +24755,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -24410,6 +24797,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24467,6 +24863,15 @@ export interface operations {
             };
             /** @description Validation error */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24554,6 +24959,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -24625,6 +25039,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -24669,6 +25092,15 @@ export interface operations {
             };
             /** @description Step not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24758,6 +25190,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -24827,6 +25268,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -24878,6 +25328,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -24922,6 +25381,15 @@ export interface operations {
             };
             /** @description Step not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25006,6 +25474,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -25077,6 +25554,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -25139,6 +25625,15 @@ export interface operations {
             };
             /** @description Clinical case not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25237,6 +25732,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -25315,6 +25819,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -25377,6 +25890,15 @@ export interface operations {
             };
             /** @description Clinical case not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25453,6 +25975,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -25515,6 +26046,15 @@ export interface operations {
             };
             /** @description Clinical case not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25682,6 +26222,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -25748,6 +26297,15 @@ export interface operations {
             };
             /** @description Clinical case not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25834,6 +26392,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -25888,6 +26455,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25951,6 +26527,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26023,6 +26608,15 @@ export interface operations {
             };
             /** @description The resource does not exist or is not visible to the caller */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26107,6 +26701,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -26178,6 +26781,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -26240,6 +26852,15 @@ export interface operations {
             };
             /** @description Clinical case not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26338,6 +26959,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -26416,6 +27046,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -26478,6 +27117,15 @@ export interface operations {
             };
             /** @description Clinical case not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26554,6 +27202,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -26616,6 +27273,15 @@ export interface operations {
             };
             /** @description Clinical case not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26783,6 +27449,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -26849,6 +27524,15 @@ export interface operations {
             };
             /** @description Clinical case not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26938,6 +27622,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -26967,6 +27660,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
                         data: components["schemas"]["CurriculumLevelDTO"];
                     };
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Unexpected server error */
@@ -27014,6 +27716,15 @@ export interface operations {
             };
             /** @description The resource does not exist or is not visible to the caller */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27090,6 +27801,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -27159,6 +27879,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -27188,6 +27917,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
                         data: components["schemas"]["CurriculumOverviewDTO"];
                     };
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Unexpected server error */
@@ -27221,6 +27959,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -27250,6 +27997,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
                         data: components["schemas"]["StudentCurriculumTreeDTO"];
                     };
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Unexpected server error */
@@ -27329,6 +28085,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -27391,6 +28156,15 @@ export interface operations {
             };
             /** @description Attempt not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27490,6 +28264,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -27552,6 +28335,15 @@ export interface operations {
             };
             /** @description Attempt not found, or its grade is not published yet */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27650,6 +28442,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -27712,6 +28513,15 @@ export interface operations {
             };
             /** @description Attempt not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27811,6 +28621,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -27873,6 +28692,15 @@ export interface operations {
             };
             /** @description Attempt not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27958,6 +28786,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -28036,6 +28873,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -28100,6 +28946,15 @@ export interface operations {
             };
             /** @description Evaluation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28182,6 +29037,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -28243,6 +29107,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -28285,6 +29158,15 @@ export interface operations {
             };
             /** @description The caller lacks the required permission or is not allowed to act on this resource */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28354,6 +29236,15 @@ export interface operations {
             };
             /** @description Quiz not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28443,6 +29334,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -28505,6 +29405,15 @@ export interface operations {
             };
             /** @description The resource does not exist or is not visible to the caller */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28593,6 +29502,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -28657,6 +29575,15 @@ export interface operations {
             };
             /** @description Unknown module, level or lesson */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28733,6 +29660,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -28795,6 +29731,15 @@ export interface operations {
             };
             /** @description Evaluation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28884,6 +29829,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -28946,6 +29900,15 @@ export interface operations {
             };
             /** @description Evaluation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29044,6 +30007,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -29116,6 +30088,15 @@ export interface operations {
             };
             /** @description The assignment has attempts */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29215,6 +30196,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -29294,6 +30284,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -29356,6 +30355,15 @@ export interface operations {
             };
             /** @description Evaluation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29454,6 +30462,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -29520,6 +30537,15 @@ export interface operations {
             };
             /** @description Evaluation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29608,6 +30634,15 @@ export interface operations {
             };
             /** @description A READY evaluation would become invalid */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29707,6 +30742,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -29799,6 +30843,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -29866,6 +30919,15 @@ export interface operations {
             };
             /** @description Evaluation or question not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29955,6 +31017,15 @@ export interface operations {
             };
             /** @description A READY evaluation would become invalid */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30055,6 +31126,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -30137,6 +31217,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -30210,6 +31299,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -30273,6 +31371,15 @@ export interface operations {
             };
             /** @description Evaluation or scenario not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30356,6 +31463,15 @@ export interface operations {
             };
             /** @description Unknown media */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30454,6 +31570,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -30527,6 +31652,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -30589,6 +31723,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -30631,6 +31774,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30700,6 +31852,15 @@ export interface operations {
             };
             /** @description Group not found or outside the caller's scope */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30778,6 +31939,15 @@ export interface operations {
             };
             /** @description The group still has subgroups */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30867,6 +32037,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -30949,6 +32128,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -31011,6 +32199,15 @@ export interface operations {
             };
             /** @description Group not found or outside the caller's scope */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31109,6 +32306,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -31179,6 +32385,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -31241,6 +32456,15 @@ export interface operations {
             };
             /** @description Group not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31330,6 +32554,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -31393,6 +32626,15 @@ export interface operations {
             };
             /** @description Group or supervision not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31547,6 +32789,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -31618,6 +32869,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -31662,6 +32922,15 @@ export interface operations {
             };
             /** @description Lesson not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31751,6 +33020,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -31829,6 +33107,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -31891,6 +33178,15 @@ export interface operations {
             };
             /** @description Lesson not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31971,6 +33267,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32022,6 +33327,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32066,6 +33380,15 @@ export interface operations {
             };
             /** @description Lesson not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32127,6 +33450,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32175,6 +33507,15 @@ export interface operations {
             };
             /** @description Validation error */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32262,6 +33603,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32298,6 +33648,15 @@ export interface operations {
             };
             /** @description Validation error */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32367,6 +33726,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32409,6 +33777,15 @@ export interface operations {
             };
             /** @description The caller lacks the required permission or is not allowed to act on this resource */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32460,6 +33837,15 @@ export interface operations {
             };
             /** @description Level not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32549,6 +33935,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32627,6 +34022,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32696,6 +34100,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32750,6 +34163,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32794,6 +34216,15 @@ export interface operations {
             };
             /** @description Level not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32883,6 +34314,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -32965,6 +34405,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -33028,6 +34477,15 @@ export interface operations {
             };
             /** @description Prerequisite relation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -33104,6 +34562,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -33137,6 +34604,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -33214,6 +34690,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -33307,6 +34792,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -33378,6 +34872,15 @@ export interface operations {
             };
             /** @description Media not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -33463,6 +34966,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -33532,6 +35044,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -33591,6 +35112,15 @@ export interface operations {
             };
             /** @description Validation error */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -33678,6 +35208,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -33749,6 +35288,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -33793,6 +35341,15 @@ export interface operations {
             };
             /** @description Module not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -33882,6 +35439,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -33960,6 +35526,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -34004,6 +35579,15 @@ export interface operations {
             };
             /** @description Module not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -34062,6 +35646,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -34106,6 +35699,15 @@ export interface operations {
             };
             /** @description The resource does not exist or is not visible to the caller */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -34195,6 +35797,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -34277,6 +35888,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -34340,6 +35960,15 @@ export interface operations {
             };
             /** @description Prerequisite relation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -34416,6 +36045,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -34485,6 +36123,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -34534,6 +36181,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -34576,6 +36232,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -34672,6 +36337,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -34743,6 +36417,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -34807,6 +36490,15 @@ export interface operations {
             };
             /** @description Lesson not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -35003,6 +36695,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35085,6 +36786,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35154,6 +36864,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35216,6 +36935,15 @@ export interface operations {
             };
             /** @description Note not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -35296,6 +37024,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35352,6 +37089,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35392,6 +37138,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35425,6 +37180,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -35492,6 +37256,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35545,6 +37318,15 @@ export interface operations {
             };
             /** @description Notification not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -35610,6 +37392,15 @@ export interface operations {
             };
             /** @description Forbidden or student not assigned to the teacher */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -35697,6 +37488,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35759,6 +37559,15 @@ export interface operations {
             };
             /** @description Override not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -35839,6 +37648,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35908,6 +37726,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -35953,6 +37780,15 @@ export interface operations {
             };
             /** @description Lesson not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36040,6 +37876,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -36084,6 +37929,15 @@ export interface operations {
             };
             /** @description The resource does not exist or is not visible to the caller */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36142,6 +37996,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -36186,6 +38049,15 @@ export interface operations {
             };
             /** @description Module not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36264,6 +38136,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -36308,6 +38189,15 @@ export interface operations {
             };
             /** @description Page not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36397,6 +38287,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -36468,6 +38367,15 @@ export interface operations {
             };
             /** @description The page has student data; archive it instead */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36548,6 +38456,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -36614,6 +38531,15 @@ export interface operations {
             };
             /** @description Page not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36695,6 +38621,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -36765,6 +38700,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -36819,6 +38763,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36918,6 +38871,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -37001,6 +38963,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -37043,6 +39014,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37115,6 +39095,15 @@ export interface operations {
             };
             /** @description The resource does not exist or is not visible to the caller */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37198,6 +39187,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -37263,6 +39261,15 @@ export interface operations {
             };
             /** @description Module not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37339,6 +39346,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -37381,6 +39397,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37457,6 +39482,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -37526,6 +39560,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -37568,6 +39611,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37644,6 +39696,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -37706,6 +39767,15 @@ export interface operations {
             };
             /** @description Module not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37782,6 +39852,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -37824,6 +39903,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37902,6 +39990,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -37944,6 +40041,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38021,6 +40127,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -38084,6 +40199,15 @@ export interface operations {
             };
             /** @description User or module not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38161,6 +40285,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -38230,6 +40363,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -38291,6 +40433,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -38333,6 +40484,15 @@ export interface operations {
             };
             /** @description The caller lacks the required permission or is not allowed to act on this resource */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38402,6 +40562,15 @@ export interface operations {
             };
             /** @description Quiz not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38491,6 +40660,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -38560,6 +40738,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -38616,6 +40803,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38703,6 +40899,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -38752,6 +40957,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -38794,6 +41008,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38872,6 +41095,15 @@ export interface operations {
             };
             /** @description Reservation no longer scheduled */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38961,6 +41193,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -39032,6 +41273,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -39086,6 +41336,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39162,6 +41421,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -39231,6 +41499,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -39260,6 +41537,15 @@ export interface operations {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
                         data: components["schemas"]["SectionDTO"][];
                     };
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Unexpected server error */
@@ -39333,6 +41619,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -39395,6 +41690,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -39439,6 +41743,15 @@ export interface operations {
             };
             /** @description Section not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39528,6 +41841,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -39606,6 +41928,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -39650,6 +41981,15 @@ export interface operations {
             };
             /** @description Section not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39723,6 +42063,15 @@ export interface operations {
             };
             /** @description Section not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39859,6 +42208,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -39901,6 +42259,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39979,6 +42346,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -40050,6 +42426,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -40092,6 +42477,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -40174,6 +42568,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -40225,6 +42628,15 @@ export interface operations {
             };
             /** @description No active reservation */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -40303,6 +42715,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -40365,6 +42786,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -40419,6 +42849,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -40506,6 +42945,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -40578,6 +43026,15 @@ export interface operations {
             };
             /** @description Cannot read the requested user's sessions */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -40756,6 +43213,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -40847,6 +43313,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -40909,6 +43384,15 @@ export interface operations {
             };
             /** @description Session not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -40985,6 +43469,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -41054,6 +43547,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -41115,6 +43617,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -41165,6 +43676,15 @@ export interface operations {
             };
             /** @description Validation error */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -41252,6 +43772,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -41323,6 +43852,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -41367,6 +43905,15 @@ export interface operations {
             };
             /** @description Step not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -41456,6 +44003,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -41525,6 +44081,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -41576,6 +44141,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -41620,6 +44194,15 @@ export interface operations {
             };
             /** @description Step not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -41689,6 +44272,15 @@ export interface operations {
             };
             /** @description Student not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -41832,6 +44424,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -41874,6 +44475,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -41961,6 +44571,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -42030,6 +44649,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -42092,6 +44720,15 @@ export interface operations {
             };
             /** @description The resource does not exist or is not visible to the caller */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -42171,6 +44808,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -42234,6 +44880,15 @@ export interface operations {
             };
             /** @description Relationship not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -42311,6 +44966,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -42373,6 +45037,15 @@ export interface operations {
             };
             /** @description Lesson not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -42453,6 +45126,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -42522,6 +45204,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -42564,6 +45255,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -42633,6 +45333,15 @@ export interface operations {
             };
             /** @description The resource does not exist or is not visible to the caller */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -42713,6 +45422,15 @@ export interface operations {
             };
             /** @description Duplicate level title */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -42805,6 +45523,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -42886,6 +45613,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -42940,6 +45676,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -43013,6 +45758,15 @@ export interface operations {
             };
             /** @description Missing permission */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -43176,6 +45930,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -43238,6 +46001,15 @@ export interface operations {
             };
             /** @description Conversation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -43311,6 +46083,15 @@ export interface operations {
             };
             /** @description Conversation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -43577,6 +46358,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -43619,6 +46409,15 @@ export interface operations {
             };
             /** @description User not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -43688,6 +46487,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -43750,6 +46558,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -43783,6 +46600,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -43865,6 +46691,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -43927,6 +46762,15 @@ export interface operations {
             };
             /** @description User not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -44007,6 +46851,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -44073,6 +46926,15 @@ export interface operations {
             };
             /** @description User not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -44155,6 +47017,15 @@ export interface operations {
             };
             /** @description Reservation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -44309,6 +47180,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -44360,6 +47240,15 @@ export interface operations {
             };
             /** @description Another operator controls the ventilator */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -44425,6 +47314,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -44476,6 +47374,15 @@ export interface operations {
             };
             /** @description The caller is not the operator */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -44541,6 +47448,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -44583,6 +47499,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -44637,6 +47562,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -44679,6 +47613,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -44744,6 +47687,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
@@ -44795,6 +47747,15 @@ export interface operations {
             };
             /** @description No active reservation */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -44864,6 +47825,15 @@ export interface operations {
             };
             /** @description Reservation not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

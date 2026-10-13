@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador AuthController
- * Descripción: Expone las rutas api/auth de registro, inicio de sesión (local y con Google), refresco, cierre de sesión, perfil y puente de NextAuth, con límites de peticiones estrictos en las rutas que emiten tokens
- * Versión: 1.2
+ * Descripción: Expone las rutas api/auth de registro, inicio de sesión (local y con Google), refresco, cierre de sesión, perfil y puente de NextAuth, con límites de peticiones estrictos en las rutas que emiten tokens y en el registro
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,6 +44,8 @@ import { GetUserByIdUseCase } from "@/features/users/application/use-cases/get-u
 import { User } from "@/features/users/domain/entities/user.entity";
 
 const SIGN_IN_RATE_LIMIT: number = 5;
+// Students of one classroom often register from the same public IP (campus NAT), so registration allows more than sign-in while staying far below the global limit.
+const REGISTER_RATE_LIMIT: number = 10;
 const REFRESH_RATE_LIMIT: number = 20;
 // The NextAuth bridge is called server-to-server, so every user shares the frontend server IP; its limit is per server, not per person.
 const BRIDGE_RATE_LIMIT: number = 60;
@@ -62,11 +64,13 @@ export class AuthController {
   ) {}
 
   @Post("register")
+  @Throttle({ default: { limit: REGISTER_RATE_LIMIT, ttl: AUTH_RATE_WINDOW_MS } })
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Student self-registration", description: "Registers a new user with the student role" })
+  @ApiOperation({ summary: "Student self-registration", description: "Registers a new user with the student role. Limited to 10 requests per minute." })
   @ApiResponseDoc({ status: HttpStatus.CREATED, description: "User registered successfully" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "Email already exists" })
+  @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many registration attempts" })
   public async register(@Body() dto: RegisterDTO, @I18n() i18n: I18nContext): Promise<APIResponse<null>> {
     await this._registerUseCase.execute(
       new RegisterCommand({

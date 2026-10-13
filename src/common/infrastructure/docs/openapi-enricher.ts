@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Completado del documento OpenAPI
- * Descripción: Completa cada operación que genera @nestjs/swagger con los metadatos de su ruta: envoltorio APIResponse en las respuestas 2xx JSON (data con el esquema documentado o null), contenido de las respuestas por streaming y CSV, respuestas de error estándar con el componente ErrorResponse (400, 401, 403, 404, 429 y 500 según cuerpo, parámetros, guards y @Throttle), acceso requerido (x-min-role, x-required-permissions, x-self-or-permissions, seguridad y una línea en la descripción), deprecación con su ruta sucesora y operationId únicos
- * Versión: 1.0
+ * Descripción: Completa cada operación que genera @nestjs/swagger con los metadatos de su ruta: envoltorio APIResponse en las respuestas 2xx JSON (data con el esquema documentado o null), contenido de las respuestas por streaming y CSV, respuestas de error estándar con el componente ErrorResponse (400, 401, 403, 404, 429 y 500 según cuerpo, parámetros, guards y limitación de peticiones (todas las rutas salvo las excluidas con @SkipThrottle)), acceso requerido (x-min-role, x-required-permissions, x-self-or-permissions, seguridad y una línea en la descripción), deprecación con su ruta sucesora y operationId únicos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -43,7 +43,7 @@ const STANDARD_ERRORS: Readonly<Record<string, StandardError>> = {
   404: { description: "The resource does not exist or is not visible to the caller", example: "NotFoundError", code: "common.not_found", message: "Resource not found" },
   409: { description: "The request conflicts with the current state of the resource", example: "ConflictError", code: "common.conflict", message: "Conflict" },
   422: { description: "The request is well-formed but violates a business rule", example: "UnprocessableError", code: "ai-ratings.invalid_score", message: "The rating must be an integer between 1 and 5" },
-  429: { description: "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present", example: "TooManyRequestsError", code: "unknown_error", message: "ThrottlerException: Too Many Requests" },
+  429: { description: "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present", example: "TooManyRequestsError", code: "common.too_many_requests", message: "Too many requests, please try again later" },
   500: { description: "Unexpected server error", example: "InternalServerError", code: "internal_server_error", message: "Internal server error" },
   503: { description: "A required dependency or configuration is not available", example: "ServiceUnavailableError", code: "unknown_error", message: "Service unavailable" },
 };
@@ -198,7 +198,8 @@ function standardErrorStatuses(operation: JsonObject, route: RouteDescriptor, ac
     statuses.push("404");
   }
 
-  if (route.throttled) {
+  // ThrottlerGuard is global, so every route that does not opt out with @SkipThrottle can answer 429.
+  if (route.throttled || !route.throttleSkipped) {
     statuses.push("429");
   }
 

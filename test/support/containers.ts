@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Contenedores de prueba
- * Descripción: Arranca con Testcontainers un PostgreSQL 17 desechable (aplica prisma migrate deploy con un entorno mínimo y URL explícita, apunta app_settings.superadmin_email al superadmin de prueba y guarda en el esquema test_baseline las filas sembradas por las migraciones) y, cuando se pide, un broker eclipse-mosquitto:2 con configuración anónima solo para pruebas; los detiene en el teardown
- * Versión: 1.0
+ * Descripción: Arranca con Testcontainers un PostgreSQL 17 desechable (aplica prisma migrate deploy con un entorno mínimo y URL explícita, apunta app_settings.superadmin_email al superadmin de prueba y guarda en el esquema test_baseline las filas sembradas por las migraciones) y, cuando se pide, un broker eclipse-mosquitto:2 con configuración anónima solo para pruebas; los detiene en el teardown; también arranca brokers adicionales que una prueba de resiliencia puede detener y reemplazar
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -118,16 +118,24 @@ export async function startTestPostgres(): Promise<string> {
   return databaseUrl;
 }
 
-export async function startTestMosquitto(): Promise<string> {
-  const container: StartedTestContainer = await new GenericContainer(MOSQUITTO_IMAGE)
+export async function startMosquittoContainer(): Promise<StartedTestContainer> {
+  return await new GenericContainer(MOSQUITTO_IMAGE)
     .withCopyContentToContainer([{ content: MOSQUITTO_TEST_CONFIG, target: "/mosquitto/config/mosquitto.conf" }])
     .withExposedPorts(MQTT_PORT)
     .withWaitStrategy(Wait.forLogMessage(/mosquitto version .* running/))
     .start();
+}
+
+export function mosquittoUrl(container: StartedTestContainer): string {
+  return `mqtt://${container.getHost()}:${container.getMappedPort(MQTT_PORT)}`;
+}
+
+export async function startTestMosquitto(): Promise<string> {
+  const container: StartedTestContainer = await startMosquittoContainer();
 
   state().mosquitto = container;
 
-  return `mqtt://${container.getHost()}:${container.getMappedPort(MQTT_PORT)}`;
+  return mosquittoUrl(container);
 }
 
 export async function startTestInfrastructure(options: { mqtt: boolean }): Promise<void> {

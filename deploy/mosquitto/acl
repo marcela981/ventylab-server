@@ -1,0 +1,34 @@
+# Funcionalidad: Lista de control de acceso del broker Mosquitto
+# Descripción: Permisos por usuario y tópico MQTT: el backend lee telemetría, alarmas y acuses y publica comandos; Node-RED y el dispositivo publican telemetría, alarmas y acuses y leen comandos; el usuario de healthcheck solo lee la versión del broker
+# Versión: 1.0
+# Autor: Marcela Mazo Castro
+# Proyecto: VentyLab
+# Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+# Institución: Universidad del Valle
+# Contacto: marcela.mazo@correounivalle.edu.co
+#
+# Topics match the backend defaults: MQTT_TELEMETRY_TOPIC=/ventynet/data, MQTT_ALARM_TOPIC=ventilab/device/001/alarm,
+# MQTT_COMMAND_TOPIC=ventilab/device/001/command and the proposed MQTT_COMMAND_ACK_TOPIC=ventilab/device/001/ack.
+# If any of those variables changes, change this file too. Usernames must match the MQTT_*_USERNAME compose variables.
+# Anything not granted here is denied (no anonymous access, no pattern rules).
+
+user ventylab-backend
+topic read /ventynet/data
+topic read ventilab/device/001/alarm
+topic read ventilab/device/001/ack
+topic write ventilab/device/001/command
+
+user ventylab-nodered
+topic write /ventynet/data
+topic write ventilab/device/001/alarm
+topic write ventilab/device/001/ack
+topic read ventilab/device/001/command
+
+user ventylab-device
+topic write /ventynet/data
+topic write ventilab/device/001/alarm
+topic write ventilab/device/001/ack
+topic read ventilab/device/001/command
+
+user ventylab-healthcheck
+topic read $SYS/broker/version

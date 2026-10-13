@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Filtro global HttpExceptionFilter
- * Descripción: Convierte toda excepción en el envoltorio estándar traducido (validación, dominio con argumentos de traducción opcionales, detalles opcionales en data y cabecera Retry-After cuando el error indica cuándo reintentar, HTTP, Prisma P2002/P2025, protección del superadmin del trigger protect_superadmin como 403, inesperada), registra en log, Sentry y error_logs, y nunca expone trazas de pila en la respuesta
- * Versión: 1.4
+ * Descripción: Convierte toda excepción en el envoltorio estándar traducido (validación, dominio con argumentos de traducción opcionales, detalles opcionales en data y cabecera Retry-After cuando el error indica cuándo reintentar, HTTP con códigos traducidos para 413 y 429, errores de cliente de los parsers de cuerpo como 413, Prisma P2002/P2025, protección del superadmin del trigger protect_superadmin como 403, inesperada), registra en log, Sentry y error_logs con la excepción, el cuerpo, la consulta y los parámetros sin secretos ni correos (el tráfico rechazado por tamaño o límite de peticiones solo como advertencia, sin Sentry ni error_logs) y nunca expone trazas de pila en la respuesta
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -29,7 +29,7 @@ import { shouldSkipLogError } from "@/common/presentation/decorators/skip-log-er
 import { shouldSkipSaveErrorLog } from "@/common/presentation/decorators/skip-save-error-log.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { DOMAIN_ERROR_STATUS_MAP } from "@/common/presentation/errors-map";
-import { sanitizeBody } from "@/common/presentation/utils/sanitize-body.util";
+import { describeExceptionForLog, sanitizeBody, sanitizeLogText } from "@/common/presentation/utils/sanitize-body.util";
 
 import type { Request, Response } from "express";
 
@@ -41,6 +41,22 @@ const PRISMA_ERROR_STATUS_MAP: ReadonlyMap<string, { statusCode: HttpStatus; cod
 // Raised by the protect_superadmin() trigger (SQLSTATE P0001); Prisma surfaces it as an unknown request error or as P2010 on raw queries.
 const SUPERADMIN_PROTECTION_DB_MESSAGE: string = "Superadmin account cannot be demoted, deactivated or renamed";
 const SUPERADMIN_PROTECTION_CODE: string = "common.superadmin_protected";
+
+// Statuses whose response code is a translated common key instead of the raw HTTP name.
+const TRANSLATED_HTTP_STATUS_CODES: ReadonlyMap<number, string> = new Map([
+  [HttpStatus.PAYLOAD_TOO_LARGE, "common.payload_too_large"],
+  [HttpStatus.TOO_MANY_REQUESTS, "common.too_many_requests"],
+]);
+
+// Traffic rejected before any handler runs; logging it as an error would let a flood write one error_logs row and one Sentry event per request.
+const REJECTED_TRAFFIC_STATUSES: ReadonlySet<number> = new Set<number>([HttpStatus.PAYLOAD_TOO_LARGE, HttpStatus.TOO_MANY_REQUESTS]);
+
+// http-errors objects raised by the body parsers (entity.too.large, unsupported charset...) are not HttpExceptions.
+interface ClientHttpError {
+  status: number;
+  expose: boolean;
+  message: string;
+}
 
 interface ExceptionResponse {
   statusCode: number;
@@ -73,6 +89,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
       i18nContext,
     );
 
+    if (this._isRejectedTraffic(exception, exceptionResponse.statusCode)) {
+      this._logger.warn(`Request rejected with status ${exceptionResponse.statusCode}`, { traceId: request.traceId, method: request.method, path: request.path });
+      this._send(response, exceptionResponse);
+
+      return;
+    }
+
     const isSentryCaptured: boolean =
       exception instanceof Error && exception.__sentry_captured__ === true;
 
@@ -90,6 +113,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       this._saveErrorLogToDatabase(exception, request, exceptionResponse.statusCode);
     }
 
+    this._send(response, exceptionResponse);
+  }
+
+  private _send(response: Response, exceptionResponse: ExceptionResponse): void {
     if (exceptionResponse.headers) {
       response.set(exceptionResponse.headers);
     }
@@ -99,18 +126,22 @@ export class HttpExceptionFilter implements ExceptionFilter {
       .json(exceptionResponse.apiResponse);
   }
 
+  private _isRejectedTraffic(exception: unknown, statusCode: number): boolean {
+    return !(exception instanceof DomainError) && REJECTED_TRAFFIC_STATUSES.has(statusCode);
+  }
+
   private _logException(exception: unknown, request: Request, statusCode: number): void {
     this._logger.error("Exception occurred", {
       traceId: request.traceId,
-      exception,
+      exception: describeExceptionForLog(exception, exception instanceof I18nValidationException ? exception.errors : undefined),
       userId: request.user?.sub ?? null,
       content: {
         http: {
           method: request.method,
           path: request.path,
-          body: sanitizeBody(request.body),
-          query: Object.keys(request.query ?? {}).length > 0 ? request.query : null,
-          params: Object.keys(request.params ?? {}).length > 0 ? request.params : null,
+          body: sanitizeBody(request.body as Record<string, unknown> | undefined),
+          query: sanitizeBody(request.query),
+          params: sanitizeBody(request.params),
           statusCode: statusCode,
         },
       },
@@ -135,7 +166,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof HttpException) {
-      return this._handleHttpException(exception, request);
+      return this._handleHttpException(exception, request, i18nContext);
+    }
+
+    if (this._isClientHttpError(exception)) {
+      return this._handleHttpException(new HttpException(exception.message, exception.status), request, i18nContext);
     }
 
     if (this._isSuperadminProtectionError(exception)) {
@@ -229,11 +264,24 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return String(Math.max(0, Math.ceil((retryAt.getTime() - Date.now()) / 1000)));
   }
 
+  private _isClientHttpError(exception: unknown): exception is ClientHttpError {
+    const candidate: Partial<ClientHttpError> = exception as Partial<ClientHttpError>;
+
+    return exception instanceof Error && typeof candidate.status === "number" && candidate.status >= 400 && candidate.status < 500 && candidate.expose === true;
+  }
+
   private _handleHttpException(
     exception: HttpException,
     request: Request,
+    i18nContext: I18nContext | undefined,
   ): ExceptionResponse {
     const statusCode: number = exception.getStatus();
+    const translatedCode: string | undefined = TRANSLATED_HTTP_STATUS_CODES.get(statusCode);
+
+    if (translatedCode !== undefined) {
+      return this._buildTranslatedHttpResponse(statusCode, translatedCode, request, i18nContext);
+    }
+
     const exceptionResponse: string | object = exception.getResponse();
 
     const message: string =
@@ -246,6 +294,25 @@ export class HttpExceptionFilter implements ExceptionFilter {
       .setSuccess(false)
       .setMessage(message)
       .setCode(this._getErrorCodeFromStatus(statusCode))
+      .setTraceId(request.traceId)
+      .build();
+
+    return {
+      statusCode,
+      apiResponse,
+    };
+  }
+
+  private _buildTranslatedHttpResponse(
+    statusCode: number,
+    code: string,
+    request: Request,
+    i18nContext: I18nContext | undefined,
+  ): ExceptionResponse {
+    const apiResponse: APIResponse<unknown> = new APIResponseBuilder()
+      .setSuccess(false)
+      .setMessage(i18nContext ? i18nContext.t(code) : code)
+      .setCode(code)
       .setTraceId(request.traceId)
       .build();
 
@@ -331,20 +398,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
   ): void {
     const content: Record<string, unknown> = {
       userId: request.user?.sub ?? null,
-      message: exception instanceof Error ? exception.message : String(exception),
-      stack: exception instanceof Error ? (exception.stack ?? null) : null,
+      message: sanitizeLogText(exception instanceof Error ? exception.message : String(exception)),
+      stack: exception instanceof Error && exception.stack !== undefined ? sanitizeLogText(exception.stack) : null,
       http: {
         method: request.method,
         path: request.path,
-        body: sanitizeBody(request.body),
-        query:
-          Object.keys(request.query ?? {}).length > 0
-            ? (request.query as Record<string, unknown>)
-            : null,
-        params:
-          Object.keys(request.params ?? {}).length > 0
-            ? (request.params as Record<string, unknown>)
-            : null,
+        body: sanitizeBody(request.body as Record<string, unknown> | undefined),
+        query: sanitizeBody(request.query),
+        params: sanitizeBody(request.params),
         statusCode: statusCode,
       },
     };

@@ -1,0 +1,7 @@
+{
+  "image": "emqx/mqttx-cli:v1.12.1",
+  "intervalMs": 17,
+  "nominalRate": 58.82,
+  "seconds": 315,
+  "exitCode": 0
+}

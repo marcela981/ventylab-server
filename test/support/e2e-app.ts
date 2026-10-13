@@ -1,31 +1,33 @@
 /*
  * Funcionalidad: Arranque de la aplicación para pruebas e2e
- * Descripción: Compila AppModule con @nestjs/testing reemplazando el registro de proveedores de IA por proveedores falsos, aplica la misma configuración HTTP y WebSocket que main.ts (proxy de confianza, cuerpos, CORS, adaptador Socket.io, TrimPipe e I18nValidationPipe con transformación), escucha en un puerto libre de 127.0.0.1 y verifica que base de datos, broker y proveedores de IA sean los de prueba antes de devolverla
- * Versión: 1.1
+ * Descripción: Compila AppModule con @nestjs/testing reemplazando el registro de proveedores de IA por proveedores falsos, aplica la misma configuración HTTP y WebSocket que main.ts (proxy de confianza, endurecimiento HTTP compartido con helmet, límites de cuerpo y CORS, adaptador Socket.io, TrimPipe e I18nValidationPipe con transformación), escucha en un puerto libre de 127.0.0.1 y verifica que base de datos, broker y proveedores de IA sean los de prueba antes de devolverla; acepta reemplazos adicionales de proveedores (por ejemplo, el verificador de tokens de Google), un logger propio para capturar la salida y el montaje opcional de la documentación de la API
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type LoggerService } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { type NestExpressApplication } from "@nestjs/platform-express";
-import { Test, type TestingModule } from "@nestjs/testing";
+import { Test, type TestingModule, type TestingModuleBuilder } from "@nestjs/testing";
 import { I18nValidationPipe } from "nestjs-i18n";
 
 import { AppModule } from "@/app.module";
-import { buildCorsOrigin, CORS_ALLOWED_HEADERS, CORS_EXPOSED_HEADERS } from "@/common/infrastructure/config/cors-origins";
-import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
+import { Environment, type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
+import { setupDocs } from "@/common/infrastructure/docs/setup-docs";
+import { applyHttpHardening } from "@/common/infrastructure/http/http-hardening";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { TrimPipe } from "@/common/infrastructure/pipes/trim.pipe";
 import { RealtimeIoAdapter } from "@/common/infrastructure/realtime/realtime-io.adapter";
 import { AI_PROVIDERS_TOKEN, type AiProviderRegistry } from "@/features/ai/application/ports/llm-provider.interface";
 import { isFakeAiProviderRegistry, scenarioLlmProvider, withFakeAiProviders } from "@/features/ai/application/testing/ai-provider-scenarios-test-doubles-spec";
 import { type FakeLlmProvider } from "@/features/ai/application/testing/ai-test-doubles-spec";
+import { ROLE_PERMISSIONS } from "@/features/authorization/domain/role-permissions";
+import { USER_ROLE_VALUES } from "@/features/users/domain/value-objects/user-role";
 
 import { assertLocalTestEnvironment } from "./test-env";
-
-const BODY_SIZE_LIMIT: string = "10mb";
 
 export interface E2eApp {
   readonly app: NestExpressApplication;
@@ -37,6 +39,9 @@ export interface E2eApp {
 
 export interface E2eAppOptions {
   readonly aiProviders?: readonly FakeLlmProvider[];
+  readonly configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
+  readonly logger?: LoggerService;
+  readonly withDocs?: boolean;
 }
 
 function defaultAiProviders(): FakeLlmProvider[] {
@@ -62,22 +67,23 @@ export async function createE2eApp(options: E2eAppOptions = {}): Promise<E2eApp>
   assertLocalTestEnvironment();
 
   const aiProviders: FakeLlmProvider[] = [...(options.aiProviders ?? defaultAiProviders())];
-  const moduleRef: TestingModule = await withFakeAiProviders(Test.createTestingModule({ imports: [AppModule] }), ...aiProviders).compile();
-  const app: NestExpressApplication = moduleRef.createNestApplication<NestExpressApplication>({ rawBody: true, logger: ["error", "warn"] });
+  const builder: TestingModuleBuilder = withFakeAiProviders(Test.createTestingModule({ imports: [AppModule] }), ...aiProviders);
+  const moduleRef: TestingModule = await (options.configure ? options.configure(builder) : builder).compile();
+  const app: NestExpressApplication = moduleRef.createNestApplication<NestExpressApplication>({ rawBody: true, logger: options.logger ?? ["error", "warn"] });
   const config: ConfigService<EnvironmentVariables, true> = app.get(ConfigService<EnvironmentVariables, true>);
 
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
-  app.useBodyParser("json", { limit: BODY_SIZE_LIMIT });
-  app.useBodyParser("urlencoded", { extended: true, limit: BODY_SIZE_LIMIT });
-  app.enableCors({
-    origin: buildCorsOrigin(config),
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: [...CORS_ALLOWED_HEADERS],
-    exposedHeaders: [...CORS_EXPOSED_HEADERS],
-    credentials: true,
-  });
+  applyHttpHardening(app, config);
   app.useWebSocketAdapter(new RealtimeIoAdapter(app, config));
   app.useGlobalPipes(new TrimPipe(), new I18nValidationPipe({ transform: true }));
+
+  if (options.withDocs === true) {
+    setupDocs(app, {
+      isProduction: config.get("NODE_ENV", { infer: true }) === Environment.Production,
+      allowedIps: config.get("SWAGGER_ALLOWED_IPS", { infer: true }),
+      roles: { hierarchy: USER_ROLE_VALUES, permissions: ROLE_PERMISSIONS },
+    });
+  }
 
   assertTestBindings(app);
 

@@ -3,8 +3,9 @@
  * Descripción: Script de prueba que publica telemetría sintética en MQTT a 30 Hz,
  *              simulando el hardware del ventilador con ondas senoidales.
  *              Permite probar el pipeline MQTT→Backend→WebSocket sin hardware real.
- *              No forma parte del build de producción.
- * Versión: 1.0
+ *              No forma parte del build de producción. Exige MQTT_BROKER_URL
+ *              (nunca publica en un broker público por defecto).
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria
@@ -20,7 +21,14 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.development' });
 dotenv.config(); // fallback
 
-const BROKER_URL = process.env.MQTT_BROKER_URL ?? 'mqtt://test.mosquitto.org:1883';
+// Synthetic telemetry must never reach a public broker by accident, where any subscriber could read or spoof it.
+const BROKER_URL = process.env.MQTT_BROKER_URL?.trim();
+
+if (!BROKER_URL) {
+  console.error('[SimVent] MQTT_BROKER_URL is not set. Point it to a broker you control (for example a local Mosquitto at mqtt://localhost:1883) and run again.');
+  process.exit(1);
+}
+
 const TOPIC = process.env.MQTT_TELEMETRY_TOPIC ?? '/ventynet/data';
 const DEVICE_ID = 'ventilab-sim-local';
 const PUBLISH_INTERVAL_MS = 33; // ~30 Hz

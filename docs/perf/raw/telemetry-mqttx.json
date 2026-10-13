@@ -1,0 +1,108 @@
+{
+  "label": "mqttx",
+  "backendUrl": "http://127.0.0.1:4000",
+  "brokerUrl": "mqtt://127.0.0.1:11883",
+  "topic": "/ventynet/data",
+  "marker": "MQTTXBENCH",
+  "clients": 30,
+  "joinRejected": 0,
+  "durationS": 300,
+  "warmupS": 5,
+  "startedAt": "2026-10-13T07:48:38.184Z",
+  "endedAt": "2026-10-13T07:53:38.184Z",
+  "brokerMessagesObserved": 16928,
+  "framesPerClient": {
+    "count": 30,
+    "min": 16926,
+    "mean": 16926.33,
+    "p50": 16926,
+    "p90": 16928,
+    "p95": 16928,
+    "p99": 16928,
+    "max": 16928
+  },
+  "totalFramesReceived": 507790,
+  "latencyMs": {
+    "endToEndFromDeviceTs": {
+      "count": 0,
+      "min": null,
+      "mean": null,
+      "p50": null,
+      "p90": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "brokerRelative": {
+      "count": 0,
+      "min": null,
+      "mean": null,
+      "p50": null,
+      "p90": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "serverTsToClient": {
+      "count": 263525,
+      "min": -7,
+      "mean": 3.25,
+      "p50": 3,
+      "p90": 6,
+      "p95": 8,
+      "p99": 23,
+      "max": 122
+    },
+    "interBatchGap": {
+      "count": 263495,
+      "min": 0,
+      "mean": 33.25,
+      "p50": 33,
+      "p90": 35,
+      "p95": 35,
+      "p99": 42,
+      "max": 140
+    }
+  },
+  "serverMetrics": {
+    "since": "2026-10-13T07:48:32.610Z",
+    "windowSize": 10000,
+    "messagesPerSecond": 57,
+    "batchesPerSecond": 30,
+    "totalMessages": 16929,
+    "invalidMessages": 0,
+    "lostMessages": 0,
+    "reorderedMessages": 0,
+    "duplicateMessages": 0,
+    "bufferDrops": 0,
+    "volatileEmits": 17570,
+    "processingMs": {
+      "count": 10000,
+      "p50": 0.04906800005119294,
+      "p95": 0.09932899998966604,
+      "p99": 0.15304999996442348,
+      "max": 11.677863999968395
+    },
+    "totalMs": {
+      "count": 10000,
+      "p50": 20.2590940000955,
+      "p95": 32.8792769999709,
+      "p99": 34.333175000036135,
+      "max": 43.96312800003216
+    },
+    "flushMs": {
+      "count": 8785,
+      "p50": 3.5371459999587387,
+      "p95": 6.534615999902599,
+      "p99": 12.377457999973558,
+      "max": 50.79215800005477
+    },
+    "deviceLatencyMs": {
+      "count": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    }
+  }
+}

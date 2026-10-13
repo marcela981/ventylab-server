@@ -1,3 +1,13 @@
+/*
+ * Funcionalidad: Semilla del currículo
+ * Descripción: Recarga niveles, módulos, lecciones y prerrequisitos del currículo con TRUNCATE ... CASCADE y reinserción; se niega a ejecutarse con NODE_ENV=production porque el CASCADE también vacía el avance, las páginas, las notas, las evaluaciones con sus intentos y las sesiones de simulación que dependen de las lecciones (BUG-7)
+ * Versión: 1.1
+ * Autor: Marcela Mazo Castro
+ * Proyecto: VentyLab
+ * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+ * Institución: Universidad del Valle
+ * Contacto: marcela.mazo@correounivalle.edu.co
+ */
 /**
  * VentyLab Curriculum Seed Script
  * ================================
@@ -6,8 +16,10 @@
  * Sources: Frontend curriculumData.js + lesson JSON files
  * Targets: Level → Module → Lesson (+ prerequisites)
  *
- * SAFE TO RE-RUN: Uses TRUNCATE CASCADE then re-inserts.
- * NEVER TOUCHES: users, accounts, sessions, quizzes, clinical_cases, etc.
+ * DESTRUCTIVE: Uses TRUNCATE CASCADE then re-inserts. The CASCADE also empties every table that
+ * references levels, modules or lessons (progress, pages, notes, evaluations and their attempts,
+ * simulation sessions, quizzes). Users, groups and clinical cases are kept.
+ * Refuses to run with NODE_ENV=production; use `npm run demo:reset` for a demo database.
  *
  * Run: npx prisma db seed
  */
@@ -726,7 +738,17 @@ async function validate() {
 // 4. MAIN
 // ============================================
 
+function assertNotProduction(): void {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Refusing to run the curriculum seed with NODE_ENV=production: its TRUNCATE ... CASCADE also empties progress, pages, notes, evaluations and simulation sessions. Use "npm run demo:reset" on a demo database instead.',
+    );
+  }
+}
+
 async function main() {
+  assertNotProduction();
+
   console.log('🌱 VentyLab Curriculum Seed');
   console.log('============================');
   console.log(`Levels: ${LEVELS.length}`);

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de entregas de actividades
  * Descripción: Implementa IActivitySubmissionsRepository sobre student_evaluation_attempts con legacySource 'activity_submission' (contenido, retroalimentación, calificador, fecha de calificación, estado original y grupo en legacyPayload); crear toma pg_advisory_xact_lock(hashtext('evaluations:attempt:<evaluationId>:<userId>')), verifica en la transacción que no exista otra entrega del estudiante y numera el intento, y una carrera (P2002) responde con el 409 heredado; reiniciar borra la entrega como antes salvo si está calificada, en cuyo caso conserva la fila con legacySource 'activity_submission_reset' para no perder la nota; las vistas incluyen actividad, estudiante y calificador con los mismos campos que la implementación anterior
- * Versión: 2.0
+ * Versión: 2.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -138,6 +138,10 @@ export class ActivitySubmissionsPrismaRepository implements IActivitySubmissions
     const graders: Map<string, PersonRow> = await this._loadGraders(rows);
 
     return rows.map((row: SubmissionViewRow) => this._toView(row, graders));
+  }
+
+  public async lockStudentAttempt(activityId: string, userId: string, transaction: unknown): Promise<void> {
+    await resolveClient(this._prisma, transaction).$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${attemptLockKey(activityId, userId)}))`;
   }
 
   public async save(submission: ActivitySubmission, transaction?: unknown): Promise<void> {

@@ -1,0 +1,32 @@
+# Funcionalidad: Sobrescritura local de la orquestación de producción
+# Descripción: Permite levantar en una máquina local el mismo stack de docker-compose.yml (backend, Mosquitto, Node-RED) contra el PostgreSQL del perfil postgres, sin Traefik ni red externa y con el backend publicado solo en loopback
+# Versión: 1.0
+# Autor: Marcela Mazo Castro
+# Proyecto: VentyLab
+# Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+# Institución: Universidad del Valle
+# Contacto: marcela.mazo@correounivalle.edu.co
+#
+# docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file deploy/local/compose.env --profile postgres up -d --build --wait
+# docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file deploy/local/compose.env --profile postgres down -v
+
+name: ventylab-local
+
+services:
+  backend:
+    image: ventylab-server:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+    ports:
+      - "127.0.0.1:${LOCAL_BACKEND_PORT:-4000}:4000"
+
+  postgres:
+    ports:
+      - "127.0.0.1:${LOCAL_POSTGRES_PORT:-55432}:5432"
+
+networks:
+  edge:
+    external: false
+    name: ventylab-local-edge

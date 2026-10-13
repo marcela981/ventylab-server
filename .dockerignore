@@ -1,0 +1,51 @@
+# Funcionalidad: Exclusiones del contexto de construcción de Docker
+# Descripción: Evita enviar a la construcción de la imagen secretos (.env*), dependencias locales, artefactos compilados, pruebas, documentación y herramientas que la imagen no necesita
+# Versión: 1.0
+# Autor: Marcela Mazo Castro
+# Proyecto: VentyLab
+# Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+# Institución: Universidad del Valle
+# Contacto: marcela.mazo@correounivalle.edu.co
+
+# Secrets and local configuration
+.env
+.env.*
+**/.env
+**/.env.*
+deploy/**/*.env
+!deploy/env.example.proposed
+
+# Dependencies and build output
+node_modules
+**/node_modules
+dist
+coverage
+.tmp
+*.tsbuildinfo
+
+# Tooling, tests and documentation
+.git
+.github
+.husky
+.vscode
+.cursor
+.claude
+.vercel
+odd
+docs
+test
+__deferred_tests__
+audit-output
+contracts
+openapi
+packages
+scripts
+backups
+*.md
+*.log
+
+# Compose and deploy files are not part of the image (the entrypoint is copied explicitly)
+docker-compose*.yml
+compose*.yml
+deploy/mosquitto
+deploy/local

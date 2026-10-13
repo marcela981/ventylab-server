@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Arranque de la aplicación
- * Descripción: Crea la aplicación NestJS con logger estructurado, helmet, compresión (excepto respuestas text/event-stream), límites de cuerpo, CORS, adaptador de Socket.io, pipes globales de validación (con transformación de DTOs para aplicar valores por defecto y conversiones de tipo) y documentación de la API (abierta fuera de producción; en producción solo para un token de ADMIN, con SWAGGER_ALLOWED_IPS como restricción adicional)
- * Versión: 1.4
+ * Descripción: Crea la aplicación NestJS con logger estructurado, endurecimiento HTTP compartido (x-powered-by desactivado, helmet con CSP, límites de cuerpo y CORS restringido a los orígenes configurados), compresión (excepto respuestas text/event-stream), redacción de secretos y correos en los eventos de Sentry, adaptador de Socket.io, pipes globales de validación (con transformación de DTOs para aplicar valores por defecto y conversiones de tipo) y documentación de la API (abierta fuera de producción; en producción solo para un token de ADMIN, con SWAGGER_ALLOWED_IPS como restricción adicional)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,20 +17,18 @@ import { NestFactory } from "@nestjs/core";
 import { type NestExpressApplication } from "@nestjs/platform-express";
 import compression from "compression";
 import { type Request, type Response } from "express";
-import helmet from "helmet";
 import { I18nValidationPipe } from "nestjs-i18n";
 
 import { AppModule } from "@/app.module";
-import { buildCorsOrigin, CORS_ALLOWED_HEADERS, CORS_EXPOSED_HEADERS } from "@/common/infrastructure/config/cors-origins";
 import { Environment, type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
 import { setupDocs } from "@/common/infrastructure/docs/setup-docs";
+import { applyHttpHardening } from "@/common/infrastructure/http/http-hardening";
 import { AppLogger } from "@/common/infrastructure/logging/app-logger.service";
+import { registerSentryRedaction } from "@/common/infrastructure/logging/sentry-redaction";
 import { TrimPipe } from "@/common/infrastructure/pipes/trim.pipe";
 import { RealtimeIoAdapter } from "@/common/infrastructure/realtime/realtime-io.adapter";
 import { ROLE_PERMISSIONS } from "@/features/authorization/domain/role-permissions";
 import { USER_ROLE_VALUES } from "@/features/users/domain/value-objects/user-role";
-
-const BODY_SIZE_LIMIT: string = "10mb";
 
 const EVENT_STREAM_CONTENT_TYPE: string = "text/event-stream";
 
@@ -46,6 +44,8 @@ function shouldCompress(req: Request, res: Response): boolean {
 }
 
 async function bootstrap(): Promise<void> {
+  registerSentryRedaction();
+
   // rawBody: true exposes req.rawBody (Buffer), needed to validate HMAC signatures
   // on webhook endpoints.
   const app: NestExpressApplication = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -64,28 +64,9 @@ async function bootstrap(): Promise<void> {
   const configService: ConfigService<EnvironmentVariables, true> = app.get(ConfigService<EnvironmentVariables, true>);
   const isProduction: boolean = configService.get("NODE_ENV", { infer: true }) === Environment.Production;
 
-  // The frontend consumes this API from another origin; helmet's default CORP/COOP policies
-  // would make the browser block legitimate CORS responses, so CORS alone governs cross-site access.
-  app.use(helmet({
-    contentSecurityPolicy: isProduction ? undefined : false,
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    crossOriginOpenerPolicy: false,
-  }));
+  applyHttpHardening(app, configService);
 
   app.use(compression({ filter: shouldCompress }));
-
-  app.useBodyParser("json", { limit: BODY_SIZE_LIMIT });
-  app.useBodyParser("urlencoded", { extended: true, limit: BODY_SIZE_LIMIT });
-
-  app.enableCors({
-    origin: buildCorsOrigin(configService),
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: [...CORS_ALLOWED_HEADERS],
-    // Content-Disposition lets the browser read download filenames; the trace headers let clients report a request id.
-    exposedHeaders: [...CORS_EXPOSED_HEADERS],
-    credentials: true,
-  });
 
   app.useWebSocketAdapter(new RealtimeIoAdapter(app, configService));
 

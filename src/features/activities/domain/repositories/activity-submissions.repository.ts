@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio de entregas de actividades
  * Descripción: Contrato y token del repositorio del agregado ActivitySubmission y de sus vistas de lectura (por id, por actividad y usuario, del estudiante y de una actividad)
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,7 @@ export interface IActivitySubmissionsRepository {
   getViewByActivityAndUser(activityId: string, userId: string): Promise<ActivitySubmissionView | undefined>;
   getViewsByUser(userId: string): Promise<ActivitySubmissionView[]>;
   getViewsByActivity(activityId: string, groupId?: string): Promise<ActivitySubmissionView[]>;
+  lockStudentAttempt(activityId: string, userId: string, transaction: unknown): Promise<void>;
   save(submission: ActivitySubmission, transaction?: unknown): Promise<void>;
   delete(submission: ActivitySubmission, transaction?: unknown): Promise<void>;
 }

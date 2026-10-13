@@ -1,0 +1,5 @@
+http
+ventylab-local-mosquitto-1	0.05%	7.984MiB / 2.812GiB
+ventylab-local-postgres-1	0.17%	94.17MiB / 2.812GiB
+ventylab-local-node-red-1	9.68%	102.3MiB / 2.812GiB
+ventylab-local-backend-1	1.36%	296.4MiB / 2.812GiB

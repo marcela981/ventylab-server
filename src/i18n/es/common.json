@@ -33,5 +33,7 @@
       "must_be_array_of_strings": "ids debe ser una lista de cadenas separadas por comas"
     }
   },
-  "superadmin_protected": "La cuenta del superadministrador no se puede degradar, desactivar ni renombrar"
+  "superadmin_protected": "La cuenta del superadministrador no se puede degradar, desactivar ni renombrar",
+  "payload_too_large": "El cuerpo de la petición es demasiado grande",
+  "too_many_requests": "Demasiadas peticiones, inténtalo de nuevo más tarde"
 }

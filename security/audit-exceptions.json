@@ -1,0 +1,53 @@
+{
+  "description": "Critical/high npm audit advisories of production dependencies accepted until reviewBy. Each entry needs a reachability reason; see docs/security/npm-audit.md. Checked by npm run security:audit.",
+  "exceptions": [
+    {
+      "id": "GHSA-ggr8-5vv4-36mx",
+      "package": "deepmerge-ts",
+      "severity": "high",
+      "via": "prisma -> @prisma/config",
+      "reason": "Stack exhaustion merging recursive object graphs. Only the Prisma CLI config loader (prisma generate / migrate deploy) uses it, on the repository's own config; the API request path and @prisma/client never load @prisma/config. Every prisma 6.13+ release (up to 8.1) ships it; the only offered fix is a downgrade to 6.12.",
+      "reviewBy": "2027-01-15"
+    },
+    {
+      "id": "GHSA-38f7-945m-qr2g",
+      "package": "effect",
+      "severity": "high",
+      "via": "prisma -> @prisma/config",
+      "reason": "AsyncLocalStorage context loss inside Effect fibers under concurrent RPC load. Effect only runs inside the Prisma CLI config loader, a single-shot process at build or deploy time; the API never runs Effect fibers or RPC. No non-breaking prisma release fixes it.",
+      "reviewBy": "2027-01-15"
+    },
+    {
+      "id": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "severity": "high",
+      "via": "nestjs-i18n -> chokidar@3",
+      "reason": "Stack exhaustion expanding deeply nested brace patterns. chokidar receives only the fixed translation directory configured in app.module.ts, never user input. All braces versions are affected and the only offered fix is a nestjs-i18n major downgrade (5.x).",
+      "reviewBy": "2027-01-15"
+    },
+    {
+      "id": "GHSA-p6gq-j5cr-w38f",
+      "package": "nodemailer",
+      "severity": "high",
+      "via": "direct dependency",
+      "reason": "The message-level raw option bypasses file and URL access limits. EmailModule registers a Nodemailer service, but no feature injects EMAIL_SERVICE_TOKEN, so the app never builds a message, let alone one from user input with raw content. Fixed only in nodemailer 9+/10.1 (semver major).",
+      "reviewBy": "2027-01-15"
+    },
+    {
+      "id": "GHSA-2x7j-588g-ccc2",
+      "package": "nodemailer",
+      "severity": "high",
+      "via": "direct dependency",
+      "reason": "Quadratic time in addressparser with a crafted address list. No code path sends email (EMAIL_SERVICE_TOKEN has no consumer), so no request reaches addressparser. Fixed only in a semver-major nodemailer.",
+      "reviewBy": "2027-01-15"
+    },
+    {
+      "id": "GHSA-v53p-9fqp-m79j",
+      "package": "nodemailer",
+      "severity": "high",
+      "via": "direct dependency",
+      "reason": "Quadratic backtracking in the addressparser free-text fallback. Same reachability as GHSA-2x7j-588g-ccc2: no email is ever sent. Fixed only in nodemailer 10.1 (semver major).",
+      "reviewBy": "2027-01-15"
+    }
+  ]
+}

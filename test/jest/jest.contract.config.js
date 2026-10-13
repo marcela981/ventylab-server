@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Configuración de Jest para las pruebas de contrato de la API
- * Descripción: Reutiliza la configuración unitaria de package.json con raíz en el repositorio y ejecuta test/openapi/**\/*.spec.ts, que leen openapi/openapi.json, openapi/asyncapi.yaml y el código fuente sin arrancar la aplicación ni contenedores
- * Versión: 1.0
+ * Descripción: Reutiliza la configuración unitaria de package.json con raíz en el repositorio y ejecuta test/openapi/**\/*.spec.ts, que leen openapi/openapi.json, openapi/asyncapi.yaml y el código fuente sin arrancar la aplicación ni contenedores, y test/uppaal/**\/*.spec.ts, que verifican las propiedades del modelo UPPAAL sobre el código de producción
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,7 +16,7 @@ const unit = require(resolve(REPO_ROOT, "package.json")).jest;
 module.exports = {
   displayName: "contract",
   rootDir: REPO_ROOT,
-  roots: ["<rootDir>/test/openapi"],
+  roots: ["<rootDir>/test/openapi", "<rootDir>/test/uppaal"],
   moduleFileExtensions: unit.moduleFileExtensions,
   modulePaths: ["<rootDir>/src"],
   moduleNameMapper: { "^@/(.*)$": "<rootDir>/src/$1" },
