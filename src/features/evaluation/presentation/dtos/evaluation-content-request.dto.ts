@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: DTOs de solicitud del contenido de evaluaciones
- * Descripción: Validación y documentación de altas y ediciones de escenarios, preguntas y opciones (contenido Tiptap, medios, puntos, rúbrica, caso clínico) y de los reordenamientos por lotes de preguntas, escenarios y opciones
- * Versión: 1.0
+ * Descripción: Validación y documentación de altas y ediciones de escenarios, preguntas y opciones (contenido Tiptap, medios, puntos, rúbrica, caso clínico) y de los reordenamientos por lotes de preguntas, escenarios y opciones; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (ReorderItemsDTO como EvaluationReorderItemsDTO)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional, ApiSchema } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
@@ -221,6 +221,7 @@ export class QuestionReorderItemDTO extends ReorderItemDTO {
   public scenarioId?: string | null;
 }
 
+@ApiSchema({ name: "EvaluationReorderItemsDTO" })
 export class ReorderItemsDTO {
   @ApiProperty({ description: "Items with their new order", type: [ReorderItemDTO] })
   @IsArray({ message: i18nValidationMessage("evaluation.validation.items_required") })

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador StepsController
- * Descripción: Expone las rutas HTTP [api/steps, api/cards] de la feature de pasos (tarjetas), aplica guardias y permisos y responde con APIResponseBuilder; depende de CreateStepUseCase, DeleteStepUseCase, GetAdjacentStepUseCase, GetStepByIdUseCase, GetStepsUseCase, ReorderStepsUseCase y otros
- * Versión: 1.1
+ * Descripción: Expone las rutas HTTP [api/steps, api/cards] de la feature de pasos (tarjetas), aplica guardias y permisos y responde con APIResponseBuilder; depende de CreateStepUseCase, DeleteStepUseCase, GetAdjacentStepUseCase, GetStepByIdUseCase, GetStepsUseCase, ReorderStepsUseCase y otros. El alias /api/cards está deprecado (cabeceras Deprecation y Link hacia /api/steps). Las respuestas cuyo data puede ser null se documentan con ApiNullableResponse
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,8 @@ import { I18n, I18nContext } from "nestjs-i18n";
 
 import { type Paginated } from "@/common/domain/utils/paginated";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { ApiNullableResponse } from "@/common/presentation/decorators/api-nullable-response.decorator";
+import { DeprecatedAlias } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
@@ -38,6 +40,7 @@ import { StepDetailDTO, StepDTO, StepListItemDTO } from "@/features/steps/presen
 import { StepsMapper } from "@/features/steps/presentation/mappers/steps.mapper";
 
 @ApiTags("Steps")
+@DeprecatedAlias({ alias: "api/cards", successor: "api/steps" })
 @Controller(["api/steps", "api/cards"])
 export class StepsController {
   public constructor(
@@ -142,7 +145,7 @@ export class StepsController {
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get next step", description: "Retrieves the next active step of the same lesson, or null" })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Next step retrieved", type: StepDTO })
+  @ApiNullableResponse({ status: HttpStatus.OK, description: "Next step retrieved", type: StepDTO })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Step not found" })
   public async getNextStep(@Param("id") id: string, @I18n() i18n: I18nContext): Promise<APIResponse<StepDTO | null>> {
     const step: StepSummary | undefined = await this._getAdjacentStepUseCase.execute(id, "next");
@@ -157,7 +160,7 @@ export class StepsController {
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get previous step", description: "Retrieves the previous active step of the same lesson, or null" })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Previous step retrieved", type: StepDTO })
+  @ApiNullableResponse({ status: HttpStatus.OK, description: "Previous step retrieved", type: StepDTO })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Step not found" })
   public async getPreviousStep(@Param("id") id: string, @I18n() i18n: I18nContext): Promise<APIResponse<StepDTO | null>> {
     const step: StepSummary | undefined = await this._getAdjacentStepUseCase.execute(id, "previous");

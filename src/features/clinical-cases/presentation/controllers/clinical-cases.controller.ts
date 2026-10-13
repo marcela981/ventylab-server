@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de casos clínicos
- * Descripción: Endpoints autenticados de /api/clinical-cases (alias /api/cases): listado y detalle (solo publicados sin clinical-cases:manage), evaluación con retroalimentación de IA (límite de 10 solicitudes por minuto; la configuración experta solo se revela con clinical-cases:view_expert), historial de intentos y gestión docente (definición, creación, reemplazo, estado, duplicado, validación por experto y eliminación); respuestas sin caché
- * Versión: 1.3
+ * Descripción: Endpoints autenticados de /api/clinical-cases (alias /api/cases): listado y detalle (solo publicados sin clinical-cases:manage), evaluación con retroalimentación de IA (límite de 10 solicitudes por minuto; la configuración experta solo se revela con clinical-cases:view_expert), historial de intentos y gestión docente (definición, creación, reemplazo, estado, duplicado, validación por experto y eliminación); respuestas sin caché. El alias /api/cases está deprecado (cabeceras Deprecation y Link hacia /api/clinical-cases).
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import { I18n, I18nContext } from "nestjs-i18n";
 
 import { Paginated } from "@/common/domain/utils/paginated";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { DeprecatedAlias } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
@@ -64,6 +65,7 @@ const MANAGE_PERMISSION: string = "clinical-cases:manage";
 
 @ApiTags("Clinical cases")
 @ApiBearerAuth("JWT-auth")
+@DeprecatedAlias({ alias: "api/cases", successor: "api/clinical-cases" })
 @Controller(["api/clinical-cases", "api/cases"])
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ClinicalCasesController {

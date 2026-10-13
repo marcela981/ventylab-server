@@ -1,16 +1,18 @@
 /*
  * Funcionalidad: DTO de respuesta de un ajuste de la plataforma
- * Descripción: Serializa un ajuste para el administrador: clave, categoría, descripción, valor efectivo, valor por defecto, origen, límites duros, versión y última modificación
- * Versión: 1.0
+ * Descripción: Serializa un ajuste para el administrador: clave, categoría, descripción, valor efectivo, valor por defecto, origen, límites duros, versión y última modificación; el valor y el valor por defecto se documentan como número, booleano, texto, arreglo u objeto según el ajuste
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, type SchemaObject } from "@nestjs/swagger";
 
 import { PLATFORM_SETTING_CATEGORY_VALUES, PLATFORM_SETTING_ORIGIN_VALUES } from "@/features/platform-settings/domain/registry/platform-setting-values";
+
+const SETTING_VALUE_SCHEMAS: SchemaObject[] = [{ type: "number" }, { type: "boolean" }, { type: "string" }, { type: "array", items: {} }, { type: "object" }];
 
 export class PlatformSettingDTO {
   @ApiProperty({ description: "Setting key", example: "telemetry.flushIntervalMs" })
@@ -22,10 +24,10 @@ export class PlatformSettingDTO {
   @ApiProperty({ description: "What the setting controls", example: "Interval at which buffered telemetry frames are sent to clients" })
   public description: string;
 
-  @ApiProperty({ description: "Effective value (the override, or the default when there is none)", example: 33 })
+  @ApiProperty({ description: "Effective value (the override, or the default when there is none)", example: 33, oneOf: SETTING_VALUE_SCHEMAS })
   public value: unknown;
 
-  @ApiProperty({ description: "Default value, from the server configuration or code", example: 33 })
+  @ApiProperty({ description: "Default value, from the server configuration or code", example: 33, oneOf: SETTING_VALUE_SCHEMAS })
   public defaultValue: unknown;
 
   @ApiProperty({ description: "Where the effective value comes from", enum: PLATFORM_SETTING_ORIGIN_VALUES, example: "DEFAULT" })

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Orquestador de verificación (npm run verify)
- * Descripción: Ejecuta en orden el chequeo de tipos, ESLint en modo solo lectura, la detección de dependencias circulares con madge, prisma validate (las advertencias también fallan), el chequeo de deriva de migraciones con disparadores sobre PostgreSQL desechable y las suites de pruebas; se detiene en el primer fallo, imprime un resumen y termina con código distinto de cero
- * Versión: 1.1
+ * Descripción: Ejecuta en orden el chequeo de tipos, ESLint en modo solo lectura, la detección de dependencias circulares con madge, prisma validate (las advertencias también fallan), el chequeo de deriva de migraciones con disparadores sobre PostgreSQL desechable, el chequeo de deriva del contrato OpenAPI (openapi:check) y las suites de pruebas (primero las de contrato); se detiene en el primer fallo, imprime un resumen y termina con código distinto de cero
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,8 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+
+import { checkOpenAPIDocument } from "../openapi/generate.mjs";
 
 import { checkMigrationDrift } from "./drift-check.mjs";
 import { minimalEnv, REPO_ROOT, run, runNode, tail } from "./lib/process.mjs";
@@ -23,7 +25,7 @@ const OFFLINE_DATABASE_ENV = minimalEnv({
 });
 
 // Test suites run in this order; a later block adds its npm script here and it runs once it exists in package.json.
-const TEST_SCRIPTS = ["test:unit", "test:perf", "test:integration", "test:e2e"];
+const TEST_SCRIPTS = ["test:contract", "test:unit", "test:perf", "test:integration", "test:e2e"];
 
 function commandStep(name, binary, args, { env, accept } = {}) {
   return {
@@ -75,6 +77,16 @@ function buildSteps() {
     {
       name: "migration drift + triggers (docker postgres:17-alpine)",
       execute: () => checkMigrationDrift({ log: VERBOSE ? console.log : () => undefined }),
+    },
+    {
+      name: "OpenAPI contract drift (openapi:check)",
+      execute: async () => {
+        const { upToDate, missing } = await checkOpenAPIDocument();
+
+        return upToDate
+          ? { ok: true, detail: "openapi/openapi.json is up to date" }
+          : { ok: false, detail: `openapi/openapi.json ${missing ? "does not exist" : "is out of date"}: run npm run openapi:generate and commit the result` };
+      },
     },
     ...testSteps(),
   ];

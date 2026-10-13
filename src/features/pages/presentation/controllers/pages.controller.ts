@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador PagesController
- * Descripción: Expone las rutas HTTP api/pages: lecturas públicas con visibilidad por estado (los lectores sin pages:update se tratan como estudiantes), CRUD de páginas, CRUD de bloques y reordenamiento por lotes con permisos pages:*; responde con APIResponseBuilder
- * Versión: 1.2
+ * Descripción: Expone las rutas HTTP api/pages: lecturas públicas con visibilidad por estado (los lectores sin pages:update se tratan como estudiantes), CRUD de páginas, CRUD de bloques y reordenamiento por lotes con permisos pages:*; responde con APIResponseBuilder. La búsqueda por ID JSON heredado está deprecada en favor de /api/pages/by-lesson/:lessonId.
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { DeprecatedRoute } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
@@ -141,6 +142,7 @@ export class PagesController {
   }
 
   @Get("by-legacy-json/:legacyJsonId")
+  @DeprecatedRoute({ successor: "/api/pages/by-lesson/:lessonId", successorParams: { lessonId: "legacyJsonId" } })
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get page by legacy JSON ID", description: "Finds the page migrated from a legacy JSON lesson; students only find published pages" })

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de reservas
- * Descripción: Endpoints /api/reservations: calendario por rango, mis reservas, reserva actual con permiso de control, creación con desplazamiento confirmado, cancelación y desplazamiento explícito; las respuestas se proyectan por rol en el servidor
- * Versión: 1.0
+ * Descripción: Endpoints /api/reservations: calendario por rango, mis reservas, reserva actual con permiso de control, creación con desplazamiento confirmado, cancelación y desplazamiento explícito; las respuestas se proyectan por rol en el servidor; el calendario se documenta como lista de reservas completas o resumidas (las ajenas que ve un estudiante)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiExtraModels, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiExtraModels, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags, getSchemaPath } from "@nestjs/swagger";
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
@@ -60,7 +60,11 @@ export class ReservationsController {
     summary: "Reservations calendar",
     description: "Reservations overlapping [from, to) (at most 31 days). Students get other people's reservations as { id, startsAt, endsAt, status, label } only",
   })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Reservations retrieved successfully", type: ReservationDetailDTO, isArray: true })
+  @ApiResponseDoc({
+    status: HttpStatus.OK,
+    description: "Reservations retrieved successfully (full detail, or the summary for other people's reservations served to a student)",
+    schema: { type: "array", items: { anyOf: [{ $ref: getSchemaPath(ReservationDetailDTO) }, { $ref: getSchemaPath(ReservationSummaryDTO) }] } },
+  })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Invalid range" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })

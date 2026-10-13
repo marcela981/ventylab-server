@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: DTOs de respuesta de analítica
- * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (fila por estudiante con progreso, notas, simulación, uso de IA y horas de ventilador), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación con dificultad por pregunta y del resumen del propio estudiante; fechas en ISO 8601 y valores ausentes como null
- * Versión: 1.0
+ * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (fila por estudiante con progreso, notas, simulación, uso de IA y horas de ventilador), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación con dificultad por pregunta y del resumen del propio estudiante; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiSchema } from "@nestjs/swagger";
 
 import { TIMELINE_ENTRY_KIND_VALUES } from "@/features/analytics/domain/services/activity-timeline";
 
@@ -33,6 +33,7 @@ export class ProgressItemDTO {
   public completed: boolean;
 }
 
+@ApiSchema({ name: "AnalyticsStudentProgressDTO" })
 export class StudentProgressDTO {
   @ApiProperty({ description: "Progress over the whole published curriculum", type: ProgressItemDTO })
   public overall: ProgressItemDTO;
@@ -303,6 +304,7 @@ export class MyGradeDTO {
   public publishedAt: string;
 }
 
+@ApiSchema({ name: "AnalyticsEvaluationDTO" })
 export class MyEvaluationDTO {
   @ApiProperty({ description: "Assignment identifier", example: ID_EXAMPLE })
   public assignmentId: string;

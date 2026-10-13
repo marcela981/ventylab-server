@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de entregas de actividades
- * Descripción: Endpoints autenticados de /api/activity-submissions: entregas propias, inicio, borrador y envío por estudiantes, detalle (propio o docente), calificación y reinicio por docentes
- * Versión: 1.0
+ * Descripción: Endpoints autenticados de /api/activity-submissions: entregas propias, inicio, borrador y envío por estudiantes, detalle (propio o docente), calificación y reinicio por docentes; las respuestas cuyo data puede ser null se documentan con ApiNullableResponse
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { ApiNullableResponse } from "@/common/presentation/decorators/api-nullable-response.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { GradeSubmissionCommand } from "@/features/activities/application/commands/grade-submission.command";
 import { ResetSubmissionCommand } from "@/features/activities/application/commands/reset-submission.command";
@@ -77,7 +78,7 @@ export class ActivitySubmissionsController {
   @RequirePermissions("activity-submissions:read_own")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get my submission for an activity", description: "Submission of the authenticated user for an activity, or null" })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Submission retrieved successfully", type: ActivitySubmissionDTO })
+  @ApiNullableResponse({ status: HttpStatus.OK, description: "Submission retrieved successfully", type: ActivitySubmissionDTO })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   public async getMySubmissionForActivity(
     @Param("activityId") activityId: string,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas e2e de acceso a recursos ajenos (IDOR)
- * Descripción: Con la aplicación completa y recursos creados por fábricas o por la API para un dueño, comprueba que otro usuario con el mismo rol que cambia el identificador en la ruta no pueda leer ni modificar notas, conversaciones del tutor de IA, intentos de evaluación, sesiones de simulación, notificaciones, grupos de los que no es miembro ni paneles de analítica de grupos que no gestiona; espera 403 o 404 según el comportamiento documentado de cada ruta, verifica con el dueño que los identificadores son válidos y que los recursos quedan intactos
- * Versión: 1.1
+ * Descripción: Con la aplicación completa y recursos creados por fábricas o por la API para un dueño, comprueba que otro usuario con el mismo rol que cambia el identificador en la ruta no pueda leer ni modificar notas, conversaciones del tutor de IA, intentos de evaluación, sesiones de simulación, notificaciones, grupos de los que no es miembro ni paneles de analítica de grupos que no gestiona; espera 403 o 404 según el comportamiento documentado de cada ruta, verifica con el dueño que los identificadores son válidos y que los recursos quedan intactos; las lecturas del dueño, los listados y las respuestas de preparación se validan además contra el esquema de openapi/openapi.json
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,6 +28,7 @@ import { mintAccessToken } from "../../support/auth";
 import { resetDatabase } from "../../support/database";
 import { createE2eApp, type E2eApp } from "../../support/e2e-app";
 import { callApi, type HttpMethod } from "../../support/http";
+import { expectMatchesSpec } from "../../support/openapi-validator";
 
 const NOTE_CONTENT: object = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Nota privada del dueño" }] }] };
 
@@ -162,6 +163,9 @@ describe("IDOR protection (e2e)", () => {
       throw new Error(`IDOR fixture setup failed: session ${session.status} ${JSON.stringify(session.body)}; attempt ${attempt.status} ${JSON.stringify(attempt.body)}`);
     }
 
+    expectMatchesSpec(session, "POST", "/api/simulation/sessions");
+    expectMatchesSpec(attempt, "POST", "/api/my-evaluations/:assignmentId/attempts");
+
     return {
       ownerStudent,
       intruderStudent,
@@ -192,6 +196,7 @@ describe("IDOR protection (e2e)", () => {
     const response: Response = await callApi(e2e.baseUrl, "GET", path(fixture), fixture[actor].token);
 
     expect(response.status).toBe(200);
+    expectMatchesSpec(response, "GET", path(fixture));
   });
 
   it.each(IDOR_CASES)("should refuse the %s by another user", async (_label: string, actor: IdorCase[1], method: HttpMethod, path: IdorCase[3], body: object | undefined, expected: number) => {
@@ -206,6 +211,8 @@ describe("IDOR protection (e2e)", () => {
 
     expect(notes.status).toBe(200);
     expect(conversations.status).toBe(200);
+    expectMatchesSpec(notes, "GET", "/api/notes");
+    expectMatchesSpec(conversations, "GET", "/api/tutor/conversations");
     expect(JSON.stringify(notes.body)).not.toContain(fixture.noteId);
     expect(JSON.stringify(conversations.body)).not.toContain(fixture.conversationId);
   });
@@ -215,6 +222,7 @@ describe("IDOR protection (e2e)", () => {
     const response: Response = await callApi(e2e.baseUrl, "GET", path, fixture.intruderStudent.token);
 
     expect(response.status).toBe(200);
+    expectMatchesSpec(response, "GET", path);
   });
 
   it("should leave every owner resource intact after the intrusion attempts", async () => {

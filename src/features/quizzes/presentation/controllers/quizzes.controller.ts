@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de quizzes
- * Descripción: Endpoints autenticados de /api/quizzes (alias /api/evaluation/quizzes): listado, detalle (respuestas ocultas hasta el intento), intentos del usuario y registro calificado del intento único
- * Versión: 1.1
+ * Descripción: Endpoints autenticados de /api/quizzes (alias /api/evaluation/quizzes): listado, detalle (respuestas ocultas hasta el intento), intentos del usuario y registro calificado del intento único. El alias /api/evaluation/quizzes está deprecado (cabeceras Deprecation y Link hacia /api/quizzes). Las respuestas cuyo data puede ser null se documentan con ApiNullableResponse
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,8 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { ApiNullableResponse } from "@/common/presentation/decorators/api-nullable-response.decorator";
+import { DeprecatedAlias } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
@@ -33,6 +35,7 @@ import { QuizzesMapper } from "@/features/quizzes/presentation/mappers/quizzes.m
 
 @ApiTags("Quizzes")
 @ApiBearerAuth("JWT-auth")
+@DeprecatedAlias({ alias: "api/evaluation/quizzes", successor: "api/quizzes" })
 @Controller(["api/quizzes", "api/evaluation/quizzes"])
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class QuizzesController {
@@ -109,7 +112,7 @@ export class QuizzesController {
   @RequirePermissions("quizzes:read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get my attempt of a quiz", description: "Retrieves the latest attempt of the authenticated user in a quiz, or null" })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Attempt retrieved successfully", type: QuizAttemptSummaryDTO })
+  @ApiNullableResponse({ status: HttpStatus.OK, description: "Attempt retrieved successfully", type: QuizAttemptSummaryDTO })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   public async getMyQuizAttempt(
     @Param("quizId") quizId: string,

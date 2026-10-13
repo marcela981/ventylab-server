@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador LessonsController
- * Descripción: Expone las rutas HTTP api/lessons de la feature de lecciones, aplica guardias y permisos y responde con APIResponseBuilder; depende de CompleteLessonUseCase, CreateLessonUseCase, DeleteLessonUseCase, GetAdjacentLessonUseCase, GetLessonByIdUseCase, GetLessonStepsUseCase y otros
- * Versión: 1.1
+ * Descripción: Expone las rutas HTTP api/lessons de la feature de lecciones, aplica guardias y permisos y responde con APIResponseBuilder; depende de CompleteLessonUseCase, CreateLessonUseCase, DeleteLessonUseCase, GetAdjacentLessonUseCase, GetLessonByIdUseCase, GetLessonStepsUseCase y otros; las respuestas cuyo data puede ser null se documentan con ApiNullableResponse
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { ApiNullableResponse } from "@/common/presentation/decorators/api-nullable-response.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
@@ -141,7 +142,7 @@ export class LessonsController {
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get next lesson", description: "Retrieves the next lesson of the same module, or null" })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Next lesson retrieved", type: LessonNeighborDTO })
+  @ApiNullableResponse({ status: HttpStatus.OK, description: "Next lesson retrieved", type: LessonNeighborDTO })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Lesson not found" })
   public async getNextLesson(
     @Param("id") id: string,
@@ -164,7 +165,7 @@ export class LessonsController {
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get previous lesson", description: "Retrieves the previous lesson of the same module, or null" })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Previous lesson retrieved", type: LessonNeighborDTO })
+  @ApiNullableResponse({ status: HttpStatus.OK, description: "Previous lesson retrieved", type: LessonNeighborDTO })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Lesson not found" })
   public async getPreviousLesson(
     @Param("id") id: string,

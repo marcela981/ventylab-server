@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de valoraciones de IA
- * Descripción: Endpoints /api/ai-ratings para el destinatario de una salida de IA: PUT crea o edita su valoración (una por objetivo) y GET mine devuelve la propia para precargar el formulario; requieren el permiso ai-ratings:create_own
- * Versión: 1.0
+ * Descripción: Endpoints /api/ai-ratings para el destinatario de una salida de IA: PUT crea o edita su valoración (una por objetivo) y GET mine devuelve la propia para precargar el formulario; requieren el permiso ai-ratings:create_own; las respuestas cuyo data puede ser null se documentan con ApiNullableResponse
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { ApiNullableResponse } from "@/common/presentation/decorators/api-nullable-response.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { GetMyAiRatingUseCase } from "@/features/ai-ratings/application/use-cases/get-my-ai-rating.usecase";
 import { UpsertAiRatingUseCase } from "@/features/ai-ratings/application/use-cases/upsert-ai-rating.usecase";
@@ -65,7 +66,7 @@ export class AiRatingsController {
   @RequirePermissions("ai-ratings:create_own")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get my rating of an AI output", description: "The caller's rating of the target, or null data when not rated yet" })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Rating retrieved successfully", type: AiRatingDTO })
+  @ApiNullableResponse({ status: HttpStatus.OK, description: "Rating retrieved successfully", type: AiRatingDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })

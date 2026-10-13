@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: DTOs de petición del panel de administración
- * Descripción: Validación y documentación Swagger de los filtros del listado de estudiantes y profesores y del cuerpo para cambiar el rol de un usuario
- * Versión: 1.1
+ * Descripción: Validación y documentación Swagger de los filtros del listado de estudiantes y profesores y del cuerpo para cambiar el rol de un usuario; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (ChangeUserRoleDTO como AdminChangeUserRoleDTO)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional, ApiSchema } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
@@ -65,6 +65,7 @@ export class GetAdminTeachersQueryDTO {
   public search?: string;
 }
 
+@ApiSchema({ name: "AdminChangeUserRoleDTO" })
 export class ChangeUserRoleDTO {
   @ApiProperty({ description: "New role", enum: USER_ROLE_VALUES, example: "TEACHER" })
   @IsIn([...USER_ROLE_VALUES], { message: i18nValidationMessage("admin.validation.role_invalid") })

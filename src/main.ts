@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Arranque de la aplicación
- * Descripción: Crea la aplicación NestJS con logger estructurado, helmet, compresión (excepto respuestas text/event-stream), límites de cuerpo, CORS, adaptador de Socket.io, pipes globales de validación (con transformación de DTOs para aplicar valores por defecto y conversiones de tipo) y documentación de la API
- * Versión: 1.3
+ * Descripción: Crea la aplicación NestJS con logger estructurado, helmet, compresión (excepto respuestas text/event-stream), límites de cuerpo, CORS, adaptador de Socket.io, pipes globales de validación (con transformación de DTOs para aplicar valores por defecto y conversiones de tipo) y documentación de la API (abierta fuera de producción; en producción solo para un token de ADMIN, con SWAGGER_ALLOWED_IPS como restricción adicional)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,6 +27,8 @@ import { setupDocs } from "@/common/infrastructure/docs/setup-docs";
 import { AppLogger } from "@/common/infrastructure/logging/app-logger.service";
 import { TrimPipe } from "@/common/infrastructure/pipes/trim.pipe";
 import { RealtimeIoAdapter } from "@/common/infrastructure/realtime/realtime-io.adapter";
+import { ROLE_PERMISSIONS } from "@/features/authorization/domain/role-permissions";
+import { USER_ROLE_VALUES } from "@/features/users/domain/value-objects/user-role";
 
 const BODY_SIZE_LIMIT: string = "10mb";
 
@@ -92,16 +94,11 @@ async function bootstrap(): Promise<void> {
     new I18nValidationPipe({ transform: true }),
   );
 
-  // API docs (Scalar) — access controlled by IP whitelist, not by NODE_ENV.
-  // Set SWAGGER_ALLOWED_IPS=* for open access (local dev), or list specific IPs for restricted access.
-  // Leave unset to disable docs entirely.
-  const rawSwaggerAllowedIps: string | undefined = configService.get("SWAGGER_ALLOWED_IPS");
-
-  if (rawSwaggerAllowedIps !== undefined) {
-    const allowedIps: string[] = rawSwaggerAllowedIps.split(",").map((ip: string) => ip.trim());
-
-    setupDocs(app, allowedIps);
-  }
+  setupDocs(app, {
+    isProduction,
+    allowedIps: configService.get("SWAGGER_ALLOWED_IPS", { infer: true }),
+    roles: { hierarchy: USER_ROLE_VALUES, permissions: ROLE_PERMISSIONS },
+  });
 
   await app.listen(configService.get("PORT", { infer: true }), "0.0.0.0");
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de progreso
- * Descripción: Expone las rutas autenticadas de /api/progress (resumen general, vistas de página, progreso por páginas de módulo, nivel, sección y resumen, progreso heredado de módulo y lección, pasos, reanudación, detalle, hitos, logros y habilidades) y delega en los casos de uso de progreso y en GetModuleResumeUseCase
- * Versión: 1.2
+ * Descripción: Expone las rutas autenticadas de /api/progress (resumen general, vistas de página, progreso por páginas de módulo, nivel, sección y resumen, progreso heredado de módulo y lección, pasos, reanudación, detalle, hitos, logros y habilidades) y delega en los casos de uso de progreso y en GetModuleResumeUseCase. Las rutas por ID de lección heredado (GET y PUT lesson/:lessonId) están deprecadas en favor de lesson/:lessonId/details y de las vistas de página.
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { DeprecatedRoute } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
@@ -131,6 +132,7 @@ export class ProgressController {
   }
 
   @Get("lesson/:lessonId")
+  @DeprecatedRoute({ successor: "/api/progress/lesson/:lessonId/details" })
   @RequirePermissions("progress:read_own")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get lesson progress", description: "Returns the lesson progress; legacy lesson IDs are resolved through pages, and unknown IDs return an initial state" })
@@ -152,6 +154,7 @@ export class ProgressController {
   }
 
   @Put("lesson/:lessonId")
+  @DeprecatedRoute({ successor: "/api/progress/pages/:pageId/view", successorMethod: "POST" })
   @RequirePermissions("progress:update_own")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

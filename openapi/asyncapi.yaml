@@ -1,0 +1,700 @@
+# Funcionalidad: Contrato de eventos en tiempo real (AsyncAPI 3.0)
+# Descripción: Documenta los eventos Socket.io que emite el servidor (sala, destinatarios y carga), los mensajes que acepta del cliente (authenticate y los ventilator:* reenviados) y los flujos de eventos SSE del tutor de IA y de la asistencia de simulación; test/openapi/asyncapi-events.spec.ts falla si un evento emitido en src/ no aparece aquí
+# Versión: 1.0
+# Autor: Marcela Mazo Castro
+# Proyecto: VentyLab
+# Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+# Institución: Universidad del Valle
+# Contacto: marcela.mazo@correounivalle.edu.co
+asyncapi: 3.0.0
+info:
+  title: VentyLab realtime API
+  version: "1.0"
+  description: |
+    Realtime contract of the VentyLab backend. HTTP operations live in openapi.json.
+
+    **Socket.io** (v4, default path `/socket.io`): a client authenticates by sending its access token in the
+    handshake (`auth.token`, or an `Authorization: Bearer` header) or later with the `authenticate` message.
+    On success the socket joins `user:{userId}` and `role:{role}` and receives `authenticated`; an invalid
+    token receives `auth_error` and is disconnected. Group rooms (`group:{groupId}`) are joined for the
+    groups the user belongs to, and the `ventilator` room for the holder of the active ventilator
+    reservation (after `ventilator:join`). Client messages whose name starts with `ventilator:` are forwarded
+    in-process to the features that handle them; any other client message is ignored.
+
+    **Server-sent events**: the AI tutor and simulation assistance routes answer `text/event-stream`.
+    Errors detected before the stream opens keep the JSON error envelope and HTTP status documented in
+    openapi.json; once open, the stream sends `delta` events, then one `done` event, or a final `error`
+    event, with a `: keep-alive` comment every 15 seconds.
+defaultContentType: application/json
+servers:
+  socketio:
+    host: localhost:3000
+    protocol: ws
+    pathname: /socket.io
+    description: Socket.io v4 endpoint (engine.io transport over WebSocket or HTTP long-polling)
+  sse:
+    host: localhost:3000
+    protocol: http
+    description: HTTP server; SSE routes are POST requests with a bearer token that answer text/event-stream
+channels:
+  connection:
+    address: null
+    description: The authenticated socket itself (events emitted to one socket, and messages the client sends)
+    servers:
+      - $ref: "#/servers/socketio"
+    messages:
+      authenticate:
+        $ref: "#/components/messages/Authenticate"
+      authenticated:
+        $ref: "#/components/messages/Authenticated"
+      authError:
+        $ref: "#/components/messages/AuthError"
+      ventilatorJoin:
+        $ref: "#/components/messages/VentilatorJoin"
+      ventilatorHeartbeat:
+        $ref: "#/components/messages/VentilatorHeartbeat"
+  userRoom:
+    address: "user:{userId}"
+    description: Every socket of one user
+    servers:
+      - $ref: "#/servers/socketio"
+    parameters:
+      userId:
+        description: User identifier
+    messages:
+      notificationNew:
+        $ref: "#/components/messages/NotificationNew"
+      gradePublished:
+        $ref: "#/components/messages/GradePublished"
+      achievementUnlocked:
+        $ref: "#/components/messages/AchievementUnlocked"
+      reservationPreempted:
+        $ref: "#/components/messages/ReservationPreempted"
+      userRoleChanged:
+        $ref: "#/components/messages/UserRoleChanged"
+      patientVentilatorData:
+        $ref: "#/components/messages/VentilatorData"
+      ventilatorAvailability:
+        $ref: "#/components/messages/VentilatorAvailability"
+      ventilatorJoinRejected:
+        $ref: "#/components/messages/VentilatorJoinRejected"
+      ventilatorCommandStatus:
+        $ref: "#/components/messages/VentilatorCommandStatus"
+      ventilatorControlChanged:
+        $ref: "#/components/messages/VentilatorControlChanged"
+  groupRoom:
+    address: "group:{groupId}"
+    description: Members of a group (joined on authentication and kept in sync with membership changes)
+    servers:
+      - $ref: "#/servers/socketio"
+    parameters:
+      groupId:
+        description: Group identifier
+    messages:
+      evaluationActivated:
+        $ref: "#/components/messages/EvaluationActivated"
+      reservationPreempted:
+        $ref: "#/components/messages/ReservationPreempted"
+  roleRoom:
+    address: "role:{role}"
+    description: Every socket of a role (STUDENT, TEACHER or ADMIN)
+    servers:
+      - $ref: "#/servers/socketio"
+    parameters:
+      role:
+        description: User role
+        enum: [STUDENT, TEACHER, ADMIN]
+    messages:
+      systemStatusChanged:
+        $ref: "#/components/messages/SystemStatusChanged"
+      ventilatorTelemetry:
+        $ref: "#/components/messages/VentilatorTelemetry"
+      ventilatorData:
+        $ref: "#/components/messages/VentilatorData"
+      ventilatorCommandStatus:
+        $ref: "#/components/messages/VentilatorCommandStatus"
+      ventilatorControlChanged:
+        $ref: "#/components/messages/VentilatorControlChanged"
+  ventilatorRoom:
+    address: ventilator
+    description: Holders of the active ventilator reservation (a student, or the members of the holder group) that sent ventilator:join
+    servers:
+      - $ref: "#/servers/socketio"
+    messages:
+      ventilatorTelemetry:
+        $ref: "#/components/messages/VentilatorTelemetry"
+      ventilatorData:
+        $ref: "#/components/messages/VentilatorData"
+      ventilatorCommandStatus:
+        $ref: "#/components/messages/VentilatorCommandStatus"
+      ventilatorControlChanged:
+        $ref: "#/components/messages/VentilatorControlChanged"
+  broadcast:
+    address: "*"
+    description: Every connected socket, authenticated or not
+    servers:
+      - $ref: "#/servers/socketio"
+    messages:
+      ventilatorReserved:
+        $ref: "#/components/messages/VentilatorReserved"
+      ventilatorReleased:
+        $ref: "#/components/messages/VentilatorReleased"
+      ventilatorAlarm:
+        $ref: "#/components/messages/VentilatorAlarm"
+      ventilatorAvailability:
+        $ref: "#/components/messages/VentilatorAvailability"
+      ventilatorConnected:
+        $ref: "#/components/messages/VentilatorConnected"
+      ventilatorDisconnected:
+        $ref: "#/components/messages/VentilatorDisconnected"
+  tutorPageDeepenStream:
+    address: "/api/tutor/pages/{pageId}/deepen"
+    description: "POST, ai-tutor:use. Streams the tutor's answer about a page"
+    servers:
+      - $ref: "#/servers/sse"
+    parameters:
+      pageId:
+        description: Page identifier
+    messages:
+      delta:
+        $ref: "#/components/messages/SseDelta"
+      done:
+        $ref: "#/components/messages/TutorDone"
+      error:
+        $ref: "#/components/messages/SseError"
+  tutorConversationCreateStream:
+    address: /api/tutor/conversations
+    description: "POST, ai-tutor:use. Creates a conversation and streams the first answer"
+    servers:
+      - $ref: "#/servers/sse"
+    messages:
+      delta:
+        $ref: "#/components/messages/SseDelta"
+      done:
+        $ref: "#/components/messages/TutorDone"
+      error:
+        $ref: "#/components/messages/SseError"
+  tutorConversationMessageStream:
+    address: "/api/tutor/conversations/{conversationId}/messages"
+    description: "POST, ai-tutor:use. Sends a message and streams the answer"
+    servers:
+      - $ref: "#/servers/sse"
+    parameters:
+      conversationId:
+        description: Conversation identifier
+    messages:
+      delta:
+        $ref: "#/components/messages/SseDelta"
+      done:
+        $ref: "#/components/messages/TutorDone"
+      error:
+        $ref: "#/components/messages/SseError"
+  simulationAssistStream:
+    address: "/api/simulation/sessions/{id}/assist"
+    description: "POST, simulation:control. Streams AI assistance for a simulation session"
+    servers:
+      - $ref: "#/servers/sse"
+    parameters:
+      id:
+        description: Simulation session identifier
+    messages:
+      delta:
+        $ref: "#/components/messages/SseDelta"
+      done:
+        $ref: "#/components/messages/AssistDone"
+      error:
+        $ref: "#/components/messages/SseError"
+operations:
+  receiveAuthenticate:
+    action: receive
+    channel:
+      $ref: "#/channels/connection"
+    messages:
+      - $ref: "#/channels/connection/messages/authenticate"
+  receiveVentilatorClientMessages:
+    action: receive
+    channel:
+      $ref: "#/channels/connection"
+    description: Forwarded to the ventilator features as the in-process event realtime.client-message
+    messages:
+      - $ref: "#/channels/connection/messages/ventilatorJoin"
+      - $ref: "#/channels/connection/messages/ventilatorHeartbeat"
+  sendConnectionEvents:
+    action: send
+    channel:
+      $ref: "#/channels/connection"
+    messages:
+      - $ref: "#/channels/connection/messages/authenticated"
+      - $ref: "#/channels/connection/messages/authError"
+  sendUserEvents:
+    action: send
+    channel:
+      $ref: "#/channels/userRoom"
+    messages:
+      - $ref: "#/channels/userRoom/messages/notificationNew"
+      - $ref: "#/channels/userRoom/messages/gradePublished"
+      - $ref: "#/channels/userRoom/messages/achievementUnlocked"
+      - $ref: "#/channels/userRoom/messages/reservationPreempted"
+      - $ref: "#/channels/userRoom/messages/userRoleChanged"
+      - $ref: "#/channels/userRoom/messages/patientVentilatorData"
+      - $ref: "#/channels/userRoom/messages/ventilatorAvailability"
+      - $ref: "#/channels/userRoom/messages/ventilatorJoinRejected"
+      - $ref: "#/channels/userRoom/messages/ventilatorCommandStatus"
+      - $ref: "#/channels/userRoom/messages/ventilatorControlChanged"
+  sendGroupEvents:
+    action: send
+    channel:
+      $ref: "#/channels/groupRoom"
+    messages:
+      - $ref: "#/channels/groupRoom/messages/evaluationActivated"
+      - $ref: "#/channels/groupRoom/messages/reservationPreempted"
+  sendRoleEvents:
+    action: send
+    channel:
+      $ref: "#/channels/roleRoom"
+    messages:
+      - $ref: "#/channels/roleRoom/messages/systemStatusChanged"
+      - $ref: "#/channels/roleRoom/messages/ventilatorTelemetry"
+      - $ref: "#/channels/roleRoom/messages/ventilatorData"
+      - $ref: "#/channels/roleRoom/messages/ventilatorCommandStatus"
+      - $ref: "#/channels/roleRoom/messages/ventilatorControlChanged"
+  sendVentilatorRoomEvents:
+    action: send
+    channel:
+      $ref: "#/channels/ventilatorRoom"
+    messages:
+      - $ref: "#/channels/ventilatorRoom/messages/ventilatorTelemetry"
+      - $ref: "#/channels/ventilatorRoom/messages/ventilatorData"
+      - $ref: "#/channels/ventilatorRoom/messages/ventilatorCommandStatus"
+      - $ref: "#/channels/ventilatorRoom/messages/ventilatorControlChanged"
+  sendBroadcastEvents:
+    action: send
+    channel:
+      $ref: "#/channels/broadcast"
+    messages:
+      - $ref: "#/channels/broadcast/messages/ventilatorReserved"
+      - $ref: "#/channels/broadcast/messages/ventilatorReleased"
+      - $ref: "#/channels/broadcast/messages/ventilatorAlarm"
+      - $ref: "#/channels/broadcast/messages/ventilatorAvailability"
+      - $ref: "#/channels/broadcast/messages/ventilatorConnected"
+      - $ref: "#/channels/broadcast/messages/ventilatorDisconnected"
+  streamTutorPageDeepen:
+    action: send
+    channel:
+      $ref: "#/channels/tutorPageDeepenStream"
+  streamTutorConversationCreate:
+    action: send
+    channel:
+      $ref: "#/channels/tutorConversationCreateStream"
+  streamTutorConversationMessage:
+    action: send
+    channel:
+      $ref: "#/channels/tutorConversationMessageStream"
+  streamSimulationAssist:
+    action: send
+    channel:
+      $ref: "#/channels/simulationAssistStream"
+components:
+  messages:
+    Authenticate:
+      name: "authenticate"
+      summary: Client sends its access token to authenticate an open socket
+      payload:
+        oneOf:
+          - type: string
+            description: Access token
+          - type: object
+            properties:
+              token:
+                type: string
+                description: Access token
+    Authenticated:
+      name: "authenticated"
+      summary: The socket is authenticated and joined user:{userId} and role:{role}
+      payload:
+        type: object
+        required: [userId]
+        properties:
+          userId:
+            type: string
+    AuthError:
+      name: "auth_error"
+      summary: Invalid or missing token; the socket is disconnected right after
+      payload:
+        type: object
+        required: [message]
+        properties:
+          message:
+            type: string
+    VentilatorJoin:
+      name: "ventilator:join"
+      summary: Holder of the active reservation asks to join the ventilator room; teachers and admins already receive telemetry through their role room
+      payload:
+        description: Ignored
+    VentilatorHeartbeat:
+      name: "ventilator:heartbeat"
+      summary: Presence signal of the operator in control of the ventilator
+      payload:
+        description: Ignored
+    NotificationNew:
+      name: "notification:new"
+      summary: A persisted notification for the user (same shape as GET /api/notifications items)
+      payload:
+        $ref: "./openapi.json#/components/schemas/NotificationDTO"
+    GradePublished:
+      name: "grade:published"
+      summary: A grade of the user was published or updated after publication
+      payload:
+        type: object
+        required: [attemptId, evaluationId, score, maxScore, grade, passed, publishedAt]
+        properties:
+          attemptId:
+            type: string
+          evaluationId:
+            type: string
+          score:
+            type: number
+          maxScore:
+            type: number
+          grade:
+            type: number
+            description: Grade on the 0.0-5.0 scale
+          passed:
+            type: boolean
+          publishedAt:
+            type: string
+            format: date-time
+    AchievementUnlocked:
+      name: "achievement:unlocked"
+      summary: The user unlocked an achievement
+      payload:
+        $ref: "./openapi.json#/components/schemas/AchievementDTO"
+    ReservationPreempted:
+      name: "reservation:preempted"
+      summary: A reservation of the user (or of their group) was preempted by a teacher or admin
+      payload:
+        type: object
+        required: [reservationId, holderType, groupId, startsAt, endsAt, reason, wasActive]
+        properties:
+          reservationId:
+            type: string
+          holderType:
+            type: string
+            enum: [USER, GROUP]
+          groupId:
+            type: [string, "null"]
+          startsAt:
+            type: string
+            format: date-time
+          endsAt:
+            type: string
+            format: date-time
+          reason:
+            type: [string, "null"]
+          wasActive:
+            type: boolean
+    UserRoleChanged:
+      name: "user:role-changed"
+      summary: The user's role changed; the client must refresh its tokens to receive the new permissions
+      payload:
+        type: object
+        required: [userId, previousRole, newRole]
+        properties:
+          userId:
+            type: string
+          previousRole:
+            type: string
+          newRole:
+            type: string
+    EvaluationActivated:
+      name: "evaluation:activated"
+      summary: An evaluation was assigned and opened for the group
+      payload:
+        type: object
+        required: [evaluationId, assignmentId, title, type, startsAt, endsAt]
+        properties:
+          evaluationId:
+            type: string
+          assignmentId:
+            type: string
+          title:
+            type: string
+          type:
+            type: string
+          startsAt:
+            type: string
+            format: date-time
+          endsAt:
+            type: string
+            format: date-time
+    SystemStatusChanged:
+      name: "system:status-changed"
+      summary: The global system state or a component state changed (sent once per transition to role:ADMIN and role:TEACHER)
+      payload:
+        type: object
+        required: [state, previousState, changedComponents, checkedAt]
+        properties:
+          state:
+            type: string
+            enum: [OK, DEGRADED, DOWN]
+          previousState:
+            type: string
+            enum: [OK, DEGRADED, DOWN]
+          changedComponents:
+            type: array
+            items:
+              type: object
+              required: [component, state, previousState]
+              properties:
+                component:
+                  type: string
+                state:
+                  type: string
+                previousState:
+                  type: string
+          checkedAt:
+            type: string
+            format: date-time
+    VentilatorTelemetry:
+      name: "ventilator:telemetry"
+      summary: Batch of telemetry frames of the physical ventilator (volatile emit to the ventilator room and role:TEACHER / role:ADMIN)
+      payload:
+        type: object
+        required: [frames, serverTs]
+        properties:
+          frames:
+            type: array
+            items:
+              $ref: "#/components/schemas/TelemetryFrame"
+          serverTs:
+            type: number
+            description: Server time in epoch milliseconds
+    VentilatorData:
+      name: "ventilator:data"
+      summary: Latest single reading (legacy shape). The physical ventilator sends it with each telemetry batch to the ventilator room and privileged roles; the patient simulation sends it to the user room of the session owner
+      payload:
+        $ref: "#/components/schemas/VentilatorReading"
+    VentilatorAlarm:
+      name: "ventilator:alarm"
+      summary: An alarm of the physical ventilator became active
+      payload:
+        $ref: "./openapi.json#/components/schemas/VentilatorAlarmDTO"
+    VentilatorAvailability:
+      name: "ventilator:availability"
+      summary: Whether the ventilator is reserved now (broadcast on changes, and sent to a user on authentication and join)
+      payload:
+        type: object
+        required: [occupied]
+        properties:
+          occupied:
+            type: boolean
+          startsAt:
+            type: string
+            format: date-time
+          endsAt:
+            type: string
+            format: date-time
+    VentilatorJoinRejected:
+      name: "ventilator:join-rejected"
+      summary: The ventilator:join request was refused
+      payload:
+        type: object
+        required: [reason]
+        properties:
+          reason:
+            type: string
+            enum: [no_active_reservation, not_reservation_holder]
+    VentilatorConnected:
+      name: "ventilator:connected"
+      summary: The physical ventilator started sending telemetry again
+      payload:
+        $ref: "#/components/schemas/VentilatorConnection"
+    VentilatorDisconnected:
+      name: "ventilator:disconnected"
+      summary: The physical ventilator stopped sending telemetry or the broker connection was lost
+      payload:
+        $ref: "#/components/schemas/VentilatorConnection"
+    VentilatorReserved:
+      name: "ventilator:reserved"
+      summary: The simulation ventilator was reserved (legacy simulation flow)
+      payload:
+        type: object
+        required: [userId, userName, reservationId, groupId, leaderId, endTime]
+        properties:
+          userId:
+            type: string
+          userName:
+            type: [string, "null"]
+          reservationId:
+            type: string
+          groupId:
+            type: [string, "null"]
+          leaderId:
+            type: "null"
+          endTime:
+            type: number
+            description: Epoch milliseconds
+    VentilatorReleased:
+      name: "ventilator:released"
+      summary: The simulation ventilator reservation was released (legacy simulation flow)
+      payload:
+        type: object
+        required: [userId]
+        properties:
+          userId:
+            type: string
+    VentilatorCommandStatus:
+      name: "ventilator:command-status"
+      summary: Lifecycle update of a command sent to the physical ventilator
+      payload:
+        type: object
+        required: [commandId, reservationId, userId, status]
+        properties:
+          commandId:
+            type: string
+          reservationId:
+            type: string
+          userId:
+            type: string
+          status:
+            type: string
+            enum: [PENDING, SENT, ACKED, APPLIED, REJECTED, TIMEOUT]
+          sentAt:
+            type: string
+            format: date-time
+          resolvedAt:
+            type: string
+            format: date-time
+          latencyMs:
+            type: number
+          reason:
+            type: string
+    VentilatorControlChanged:
+      name: "ventilator:control-changed"
+      summary: The exclusive operator control of the ventilator changed hands
+      payload:
+        type: object
+        required: [reservationId, operatorUserId, reason]
+        properties:
+          reservationId:
+            type: string
+          operatorUserId:
+            type: [string, "null"]
+          reason:
+            type: string
+            enum: [taken, takeover, released, presence_timeout, reservation_ended, reservation_preempted]
+    SseDelta:
+      name: "delta"
+      summary: "Next text fragment (SSE: event: delta)"
+      contentType: text/event-stream
+      payload:
+        type: object
+        required: [text]
+        properties:
+          text:
+            type: string
+    TutorDone:
+      name: "done"
+      summary: "Last event of a tutor answer (SSE: event: done)"
+      contentType: text/event-stream
+      payload:
+        type: object
+        required: [aiCallId, messageId, conversationId]
+        properties:
+          aiCallId:
+            type: string
+          messageId:
+            type: string
+          conversationId:
+            type: string
+    AssistDone:
+      name: "done"
+      summary: "Last event of a simulation assistance answer (SSE: event: done)"
+      contentType: text/event-stream
+      payload:
+        type: object
+        required: [aiHelpEventId, aiCallId, source]
+        properties:
+          aiHelpEventId:
+            type: string
+          aiCallId:
+            type: string
+          source:
+            type: string
+            enum: [LLM, DETERMINISTIC]
+            description: Whether the answer came from the language model or the deterministic fallback
+    SseError:
+      name: "error"
+      summary: "The stream failed after it opened (SSE: event: error); the connection closes after it"
+      contentType: text/event-stream
+      payload:
+        type: object
+        required: [code, message]
+        properties:
+          code:
+            type: string
+          message:
+            type: string
+            description: Translated message
+  schemas:
+    TelemetryFrame:
+      type: object
+      required: [serverTs, pressure, flow, volume, deviceId]
+      properties:
+        seq:
+          type: number
+        deviceTs:
+          type: number
+        serverTs:
+          type: number
+        pressure:
+          type: number
+        flow:
+          type: number
+        volume:
+          type: number
+        mode:
+          type: string
+        settings:
+          type: object
+          additionalProperties:
+            type: number
+        alarms:
+          type: array
+          items:
+            type: string
+        pco2:
+          type: number
+        spo2:
+          type: number
+        deviceId:
+          type: string
+    VentilatorReading:
+      type: object
+      required: [pressure, flow, volume, timestamp, deviceId]
+      properties:
+        pressure:
+          type: number
+        flow:
+          type: number
+        volume:
+          type: number
+        pco2:
+          type: number
+        spo2:
+          type: number
+        timestamp:
+          type: number
+          description: Device time when known, otherwise server time (epoch milliseconds)
+        deviceId:
+          type: string
+    VentilatorConnection:
+      type: object
+      required: [at]
+      properties:
+        at:
+          type: number
+          description: Epoch milliseconds
+        reason:
+          type: string
+          enum: [device_stale, broker_disconnected]

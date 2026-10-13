@@ -1,112 +1,47 @@
 /*
  * Funcionalidad: Documentación de la API
- * Descripción: Configura Swagger y Scalar con las secciones pública, de evaluaciones, de IA y administrativa, protegidas por lista de IP permitidas
- * Versión: 1.17
+ * Descripción: Monta Scalar en /api/docs y el documento OpenAPI 3.1 en /api/docs-json (el mismo que genera npm run openapi:generate), protegidos por la regla de acceso de docs-access: abiertos fuera de producción, solo para un token de ADMIN en producción y, si SWAGGER_ALLOWED_IPS tiene IPs, solo desde esas IPs
+ * Versión: 1.18
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-/* eslint-disable @typescript-eslint/typedef */
-
 import { type INestApplication } from "@nestjs/common";
-import { DocumentBuilder, OpenAPIObject, type SwaggerDocumentOptions, SwaggerModule } from "@nestjs/swagger";
+import { type OpenAPIObject } from "@nestjs/swagger";
 import { apiReference } from "@scalar/express-api-reference";
-import { type NextFunction, type Request, type Response } from "express";
+import { type Express, type Request, type Response } from "express";
 
-const PUBLIC_TAGS: string[] = [
-  "Health",
-  "Authentication",
-  "Users",
-  "Sections",
-  "Levels",
-  "Modules",
-  "Lessons",
-  "Steps",
-  "Pages",
-  "Curriculum",
-  "Progress",
-  "Teaching progression",
-  "Quizzes",
-  "Clinical cases",
-  "Activities",
-  "Activity submissions",
-  "Scores",
-  "Media",
-  "Notes",
-  "Simulation",
-  "Reservations",
-  "Ventilator telemetry",
-  "Ventilator commands",
-  "Patient simulation",
-  "Student summary",
-];
+import { ACCESS_TOKEN_VERIFIER_TOKEN, type IAccessTokenVerifier } from "@/common/application/ports/access-token-verifier.interface";
+import { createDocsAccessMiddleware, type DocsAccessOptions } from "@/common/infrastructure/docs/docs-access";
+import { buildOpenAPIDocument } from "@/common/infrastructure/docs/openapi-document";
+import { type RoleModel } from "@/common/infrastructure/docs/openapi-routes";
 
-const EVALUATION_TAGS: string[] = ["Evaluations", "Evaluation assignments", "Student evaluations", "Evaluation grading", "Grade feedback"];
+export const DOCS_UI_PATH: string = "/api/docs";
+export const DOCS_JSON_PATH: string = "/api/docs-json";
 
-const AI_TAGS: string[] = ["AI telemetry", "AI ratings", "AI tutor"];
+export interface SetupDocsOptions extends DocsAccessOptions {
+  readonly roles: RoleModel;
+}
 
-const ADMIN_TAGS: string[] = [
-  "Authorization",
-  "Changelog",
-  "Content overrides",
-  "Curriculum editor",
-  "Activity assignments",
-  "Groups",
-  "Teacher students",
-  "Admin",
-  "Platform settings",
-  "System status",
-  "Analytics",
-];
+export function setupDocs(app: INestApplication, options: SetupDocsOptions): void {
+  const httpAdapter: Express = app.getHttpAdapter().getInstance() as Express;
+  const verifier: IAccessTokenVerifier = app.get<IAccessTokenVerifier>(ACCESS_TOKEN_VERIFIER_TOKEN);
+  const guard: ReturnType<typeof createDocsAccessMiddleware> = createDocsAccessMiddleware(options, verifier);
+  const document: OpenAPIObject = buildOpenAPIDocument(app, { roles: options.roles });
+  const serialized: string = JSON.stringify(document);
 
-export function setupDocs(app: INestApplication, allowedIps: string[]): void {
-  const isOpenToAll: boolean = allowedIps.length === 1 && allowedIps[0] === "*";
+  httpAdapter.use(DOCS_UI_PATH, guard);
+  httpAdapter.use(DOCS_JSON_PATH, guard);
 
-  const ipGuard = (req: Request, res: Response, next: NextFunction): void => {
-    if (isOpenToAll || allowedIps.includes(req.ip ?? "")) {
-      next();
-    } else {
-      res.status(404).end();
-    }
-  };
-
-  const httpAdapter = app.getHttpAdapter().getInstance();
-
-  httpAdapter.use("/api/docs", ipGuard);
-  httpAdapter.use("/api/docs-json", ipGuard);
-
-  const config: Omit<OpenAPIObject, "paths"> = new DocumentBuilder()
-    .setTitle("VentyLab API")
-    .setDescription("VentyLab backend API built with Clean Architecture and DDD principles")
-    .setVersion("1.0")
-    .addBearerAuth(
-      { type: "http", scheme: "bearer", bearerFormat: "JWT", name: "Authorization", description: "User JWT token", in: "header" },
-      "JWT-auth",
-    )
-    .build();
-
-  const options: SwaggerDocumentOptions = {
-    operationIdFactory: (_controllerKey: string, methodKey: string) => methodKey,
-  };
-
-  const document: OpenAPIObject = SwaggerModule.createDocument(app, config, options);
-
-  (document as OpenAPIObject & Record<string, unknown>)["x-tagGroups"] = [
-    { name: "Public", tags: PUBLIC_TAGS },
-    { name: "Evaluations", tags: EVALUATION_TAGS },
-    { name: "AI", tags: AI_TAGS },
-    { name: "Administration", tags: ADMIN_TAGS },
-  ];
-
-  httpAdapter.get("/api/docs-json", (_req: Request, res: Response): void => {
+  httpAdapter.get(DOCS_JSON_PATH, (_req: Request, res: Response): void => {
     res.setHeader("Content-Type", "application/json");
-    res.send(JSON.stringify(document));
+    res.send(serialized);
   });
 
-  httpAdapter.use("/api/docs", apiReference({
-    url: "/api/docs-json",
+  httpAdapter.use(DOCS_UI_PATH, apiReference({
+    url: DOCS_JSON_PATH,
     pageTitle: "VentyLab API",
   }));
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e de la matriz de autorización
- * Descripción: Arranca la aplicación completa, recorre la pila de rutas del router de Express (4 o 5) y falla si alguna ruta registrada no tiene entrada en la matriz o si alguna entrada no corresponde a una ruta; luego envía, por cada entrada y actor (anónimo, estudiante, docente, administrador, superadministrador), una petición con parámetros UUID aleatorios y cuerpo vacío y comprueba el resultado esperado (401, 403, 404 o permitido); las respuestas en streaming se abortan tras recibir las cabeceras; al final falla si alguna petición respondió 5xx en una ruta fuera de la lista explícita de defectos conocidos
- * Versión: 1.1
+ * Descripción: Arranca la aplicación completa, recorre la pila de rutas del router de Express (4 o 5) y falla si alguna ruta registrada no tiene entrada en la matriz o si alguna entrada no corresponde a una ruta; luego envía, por cada entrada y actor (anónimo, estudiante, docente, administrador, superadministrador), una petición con parámetros UUID aleatorios y cuerpo vacío y comprueba el resultado esperado (401, 403, 404 o permitido); las respuestas en streaming se abortan tras recibir las cabeceras; al final falla si alguna petición respondió 5xx en una ruta fuera de la lista explícita de defectos conocidos o si alguna respuesta 2xx JSON no cumple el esquema documentado en openapi/openapi.json
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { randomUUID } from "node:crypto";
 import { type ActorSet, authHeaders, createActors } from "../../support/actors";
 import { resetDatabase } from "../../support/database";
 import { createE2eApp, type E2eApp } from "../../support/e2e-app";
+import { contractViolations } from "../../support/openapi-validator";
 
 import { type Actor, ACTORS, AUTHORIZATION_MATRIX, type ActorOutcomes, type Outcome } from "./authorization-matrix";
 
@@ -29,6 +30,12 @@ interface ObservedResponse {
   readonly actor: Actor;
   readonly expected: Outcome;
   readonly status: number;
+}
+
+interface SentResponse {
+  readonly status: number;
+  readonly contentType: string;
+  readonly body?: unknown;
 }
 
 const BODY_METHODS: readonly string[] = ["POST", "PUT", "PATCH"];
@@ -67,7 +74,7 @@ function matches(expected: Outcome, status: number): boolean {
   return expected === "allow" ? status !== 401 && status !== 403 : status === expected;
 }
 
-async function send(baseUrl: string, method: string, path: string, headers: Record<string, string>): Promise<number> {
+async function send(baseUrl: string, method: string, path: string, headers: Record<string, string>): Promise<SentResponse> {
   const controller: AbortController = new AbortController();
   const hasBody: boolean = BODY_METHODS.includes(method);
 
@@ -78,16 +85,22 @@ async function send(baseUrl: string, method: string, path: string, headers: Reco
     signal: controller.signal,
   });
 
+  const contentType: string = response.headers.get("content-type") ?? "";
+  const isSuccessfulJson: boolean = response.status >= 200 && response.status < 300 && contentType.includes("application/json");
+  const body: unknown = isSuccessfulJson ? await response.json() : undefined;
+
   // Stream responses (SSE, CSV) never end on their own: only the status line and headers matter here.
   controller.abort();
 
-  return response.status;
+  return { status: response.status, contentType, body };
 }
 
 describe("authorization matrix (e2e)", () => {
   let e2e: E2eApp;
   let actors: ActorSet;
   const serverErrors: string[] = [];
+  const contractErrors: string[] = [];
+  let validatedResponses: number = 0;
 
   beforeAll(async () => {
     e2e = await createE2eApp();
@@ -115,12 +128,18 @@ describe("authorization matrix (e2e)", () => {
     const observed: ObservedResponse[] = [];
 
     for (const actor of ACTORS) {
-      const status: number = await send(e2e.baseUrl, method, path, authHeaders(actors, actor));
+      const sent: SentResponse = await send(e2e.baseUrl, method, path, authHeaders(actors, actor));
+      const status: number = sent.status;
 
       observed.push({ actor, expected: outcomes[actor], status });
 
       if (status >= 500) {
         serverErrors.push(`${key} as ${actor}: ${status}`);
+      }
+
+      if (sent.body !== undefined) {
+        validatedResponses += 1;
+        contractErrors.push(...contractViolations({ status, body: sent.body, contentType: sent.contentType }, method, path).map((violation: string): string => `${violation} [as ${actor}]`));
       }
     }
 
@@ -134,5 +153,10 @@ describe("authorization matrix (e2e)", () => {
     const unexpected: string[] = serverErrors.filter((entry: string): boolean => !KNOWN_SERVER_ERROR_ROUTES.some((route: string): boolean => entry.startsWith(`${route} as `)));
 
     expect(unexpected).toEqual([]);
+  });
+
+  it("should answer every 2xx JSON response with a body that matches openapi/openapi.json", () => {
+    expect(validatedResponses).toBeGreaterThan(0);
+    expect(contractErrors).toEqual([]);
   });
 });

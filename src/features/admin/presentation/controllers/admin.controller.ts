@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador del panel de administración
- * Descripción: Endpoints /api/admin para el panel docente y administrativo: listado y detalle de estudiantes, listado de profesores, cambio de rol (delegado en ChangeUserRoleUseCase de usuarios) y estadísticas de la plataforma
- * Versión: 1.1
+ * Descripción: Endpoints /api/admin para el panel docente y administrativo: listado y detalle de estudiantes, listado de profesores, cambio de rol (delegado en ChangeUserRoleUseCase de usuarios) y estadísticas de la plataforma. El cambio de rol en /api/admin está deprecado en favor de PATCH /api/users/:id/role.
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,7 @@ import { I18n, I18nContext } from "nestjs-i18n";
 
 import { type Paginated } from "@/common/domain/utils/paginated";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { DeprecatedRoute } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { GetAdminStudentProgressUseCase } from "@/features/admin/application/use-cases/get-admin-student-progress.usecase";
 import { GetAdminStudentsUseCase } from "@/features/admin/application/use-cases/get-admin-students.usecase";
@@ -119,6 +120,7 @@ export class AdminController {
   }
 
   @Patch("users/:id/role")
+  @DeprecatedRoute({ successor: "/api/users/:id/role" })
   @RequirePermissions("users:update_role")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

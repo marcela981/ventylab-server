@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: DTOs de respuesta del estado del sistema
- * Descripción: Serialización del estado global y de cada componente (base de datos, broker MQTT, ventilador, proveedores de IA, almacenamiento y proceso) y del resultado de la sonda manual de un proveedor de IA, sin mensajes de error ni datos de configuración
- * Versión: 1.0
+ * Descripción: Serialización del estado global y de cada componente (base de datos, broker MQTT, ventilador, proveedores de IA, almacenamiento y proceso) y del resultado de la sonda manual de un proveedor de IA, sin mensajes de error ni datos de configuración; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (VentilatorStatusDTO como SystemVentilatorStatusDTO)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiSchema } from "@nestjs/swagger";
 
 const COMPONENT_STATES: string[] = ["up", "degraded", "down", "idle", "not_configured"];
 
@@ -40,6 +40,7 @@ export class MqttBrokerStatusDTO {
   public messagesPerSecond: number;
 }
 
+@ApiSchema({ name: "SystemVentilatorStatusDTO" })
 export class VentilatorStatusDTO {
   @ApiProperty({ description: "Component state; idle means offline with no active reservation", enum: COMPONENT_STATES, example: "idle" })
   public state: string;
