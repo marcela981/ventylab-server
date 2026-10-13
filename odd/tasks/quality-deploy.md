@@ -27,6 +27,7 @@ Make the backend verifiable, deployable and documented without adding business f
 - [ ] BUG-6 `contracts/websocket-events.contracts.ts` drifts from emitted events (handled in block D).
 - [ ] BUG-7 `prisma/seed.ts` runs `TRUNCATE ... CASCADE` on progress tables (handled in block G).
 - [x] BUG-8 `engine-determinism.spec.ts` timing assertion flakes under coverage (fixed early in block A: skipped only under coverage instrumentation).
+- [ ] BUG-9 21 list routes answer 500: the global `I18nValidationPipe` does not transform, so `ListQueryDTO` defaults never apply (`skip = NaN`) and `?page=&limit=` arrive as strings (`take: "20"`). Repro: `GET /api/notes` as a student. Proposed fix: `new I18nValidationPipe({ transform: true })` in `main.ts` (+ `test/support/e2e-app.ts`) and full suite run. Found in T3a; see docs/verification/BLOCK-C.md.
 
 ## Tasks
 
@@ -44,6 +45,8 @@ Make the backend verifiable, deployable and documented without adding business f
 
 | Task | Route | Trigger evidence | Result |
 |---|---|---|---|
+| T3a | delegated (one writer) | writer trigger: 2+ non-trivial files (test/support integration-app/actors/http, 9 integration specs, matrix + 3 e2e specs, docs) | C2 + C3 done; T3 stays open for C1; BUG-9 found (see docs/verification/BLOCK-C.md) |
+| T2 | delegated (one writer) | writer trigger: 2+ non-trivial files (test/support, test/factories, jest configs, AI scenario doubles, gateway spec, package.json) | partial; suites green standalone, `npm run verify` stops at the engine-determinism timing flake in test:unit (see docs/verification/BLOCK-B.md) |
 | T1 | delegated (one writer) | writer trigger: 2+ non-trivial files (scripts/verify, groups handler, storage adapter, CORS, schema + migration) | done; verify OK, verify:boot OK, see docs/verification/BLOCK-A.md |
 
 ## Progress / evidence
@@ -54,6 +57,11 @@ Make the backend verifiable, deployable and documented without adding business f
 - Correction: BUG-3 had 4 relations, not 3 (`change_logs.changedBy`, `content_overrides.createdBy`, `activities.createdBy`, `activity_assignments.assignedBy`).
 - Known limitation BUG-1: memberships removed by a user role change (users feature, no groups event) leave sockets in the old group room until reconnection.
 
+- 2026-10-12 T2 (partial, not checked): `tsc` 0 errors (tsconfig include adds `test/**/*`); ESLint `src` + `test` 0; `npm run test:unit` 230 suites / 1718 tests passed; `npm run test:integration` 2 suites / 9 tests passed (infra smoke + ungated reservations concurrency); `npm run test:e2e` 1 suite / 4 tests passed (health/ready 200, fake AI only, socket authenticate); no leftover containers. `npm run verify` failed 3/3 at test:unit: `engine-determinism.spec.ts` 500 ms budget measured 514-662 ms under the full parallel run (109 ms alone) — BUG-8 flake also outside coverage; outside T2 edit surface. Devdeps: testcontainers, @testcontainers/postgresql 12.2.0.
+- T2 findings: MQTT_TEST_TOPIC_PREFIX only prefixes command/ack topics (telemetry/alarm isolated by explicit test topics); `readDbIntegrationSettings` now unused; migration seeds author's email as superadmin (tests override in container baseline); partial stream after delivered content ends in AiStreamInterruptedError without fallback (existing contract).
+
+- 2026-10-12 T3a (C2 + C3, T3 not checked: C1 pending): `tsc` 0; ESLint `test/**/*.ts` 0. Integration, each file alone: protection-triggers 11/11, users 5/5, groups 5/5, evaluation-attempts 3/3, curriculum-delete 3/3, notes 4/4, notifications 3/3, progress 1/1, platform-settings 2/2. E2E, each file alone: authorization-matrix 350/350 (349 registered routes = 349 matrix entries, 0 missing, 0 stale, 1745 requests asserted), idor 37/37 (3 `it.failing` blocked by BUG-9), role-visibility 3/3. No leftover containers. Concurrency proven exactly-one for student group membership, group leader, evaluation attempt start, platform-setting version; progress upserts race-safe. Advisory-lock paths not yet raced: activities, quizzes, evaluation submit/grading (C4).
+
 ## Next step
 
-Author reviews and commits block A (`git add -f prisma/migrations/20261012100000_fix_setnull_required_relations/migration.sql`, `.sql` is gitignored); add `CORS_ALLOW_VERCEL_PREVIEWS=false` to `.env.example`. Then T2 Block B.
+Author reviews and commits block A (`git add -f prisma/migrations/20261012100000_fix_setnull_required_relations/migration.sql`, `.sql` is gitignored); add `CORS_ALLOW_VERCEL_PREVIEWS=false` to `.env.example`. Then decide the BUG-8 follow-up (engine-determinism budget flakes under the full parallel unit run, blocking verify before test:integration/test:e2e), close T2 with a green `npm run verify`, and commit block B (incl. package-lock.json).

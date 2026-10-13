@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba del gateway de IA
- * Descripción: Proveedor LLM falso con comportamientos programados (texto, error, bloqueo hasta abortar, stream), configuración estática del gateway y registrador de llamadas en memoria para las pruebas unitarias
- * Versión: 1.0
+ * Descripción: Proveedor LLM falso con comportamientos programados (texto, error, bloqueo hasta abortar, stream, stream parcial que falla tras entregar fragmentos), configuración estática del gateway y registrador de llamadas en memoria para las pruebas unitarias
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,6 +25,7 @@ export type FakeProviderBehavior =
   | { kind: "text"; text: string; inputTokens?: number; outputTokens?: number; delayMs?: number }
   | { kind: "error"; error: Error }
   | { kind: "hang" }
+  | { kind: "partial"; chunks: string[]; error: Error }
   | { kind: "stream"; chunks: string[]; chunkDelayMs?: number; failAfter?: Error; inputTokens?: number; outputTokens?: number };
 
 function abortReason(signal: AbortSignal): Error {
@@ -67,7 +68,7 @@ export class FakeLlmProvider implements ILlmProvider {
   public async complete(request: LlmRequest, signal: AbortSignal): Promise<LlmCompletion> {
     const behavior: FakeProviderBehavior = this._next(request);
 
-    if (behavior.kind === "error") {
+    if (behavior.kind === "error" || behavior.kind === "partial") {
       throw behavior.error;
     }
 
@@ -106,6 +107,14 @@ export class FakeLlmProvider implements ILlmProvider {
       yield { type: "final", completion: { text: behavior.text, model: request.model, inputTokens: behavior.inputTokens, outputTokens: behavior.outputTokens } };
 
       return;
+    }
+
+    if (behavior.kind === "partial") {
+      for (const chunk of behavior.chunks) {
+        yield { type: "delta", text: chunk };
+      }
+
+      throw behavior.error;
     }
 
     for (const chunk of behavior.chunks) {

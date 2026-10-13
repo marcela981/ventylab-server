@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba de integración de concurrencia de reservas
- * Descripción: Opcional (RUN_DB_INTEGRATION=1 y DATABASE_URL con la migración aplicada): lanza 20 creaciones concurrentes de la misma franja contra PostgreSQL con el bloqueo pg_advisory_xact_lock real y comprueba que solo una se cree; borra lo creado al terminar
- * Versión: 1.0
+ * Descripción: Suite de integración (npm run test:integration, PostgreSQL de Testcontainers con las migraciones aplicadas): lanza 20 creaciones concurrentes de la misma franja con el bloqueo pg_advisory_xact_lock real y comprueba que solo una se cree; restablece la base de datos antes y crea el estudiante con la fábrica de pruebas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,7 +12,7 @@ import { type ConfigService } from "@nestjs/config";
 
 import { type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
 import { type IAuditLogRepository } from "@/common/domain/repositories/audit-log.repository";
-import { type DbIntegrationSettings, type EnvironmentVariables, readDbIntegrationSettings } from "@/common/infrastructure/config/env.validation";
+import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
 import { PrismaTransactionManager } from "@/common/infrastructure/persistence/prisma/prisma-transaction.manager";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { CreateReservationCommand } from "@/features/reservations/application/commands/create-reservation.command";
@@ -27,6 +27,9 @@ import { ReservationsPrismaRepository } from "@/features/reservations/infrastruc
 import { type UsersFacade } from "@/features/users/application/services/users.facade";
 import { type UserAccount } from "@/features/users/domain/read-models/user-account.read-model";
 
+import { createStudent } from "../../../../../../test/factories";
+import { resetDatabase } from "../../../../../../test/support/database";
+
 const SETTINGS: ReservationSettings = {
   maxDurationMinutes: 120,
   slotMinutes: 15,
@@ -39,25 +42,21 @@ const SETTINGS: ReservationSettings = {
 const MS_PER_DAY: number = 86_400_000;
 const SLOT_MS: number = 15 * 60_000;
 
-const integration: DbIntegrationSettings = readDbIntegrationSettings();
-const describeIfEnabled: jest.Describe = integration.enabled ? describe : describe.skip;
-
-describeIfEnabled("reservations concurrency against PostgreSQL", () => {
-  const config: ConfigService<EnvironmentVariables, true> = { get: (): string | undefined => integration.databaseUrl } as unknown as ConfigService<EnvironmentVariables, true>;
+describe("reservations concurrency against PostgreSQL", () => {
+  const config: ConfigService<EnvironmentVariables, true> = { get: (): string | undefined => process.env.DATABASE_URL } as unknown as ConfigService<EnvironmentVariables, true>;
   const db: PrismaService = new PrismaService(config);
   const createdIds: string[] = [];
 
+  beforeAll(async () => {
+    await resetDatabase(db);
+  });
+
   afterAll(async () => {
-    await db.reservation.deleteMany({ where: { id: { in: createdIds } } });
     await db.$disconnect();
   });
 
   it("creates exactly one of 20 concurrent reservations for the same slot", async () => {
-    const user: { id: string } | null = await db.user.findFirst({ select: { id: true } });
-
-    if (!user) {
-      throw new Error("The integration database needs at least one user");
-    }
+    const user: { id: string } = await createStudent(db);
 
     const auditLogRepository: IAuditLogRepository = { save: (): Promise<void> => Promise.resolve() };
     const auditRecorder: IAuditRecorder = { record: (): Promise<void> => Promise.resolve() };

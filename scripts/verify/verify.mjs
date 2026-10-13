@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Orquestador de verificación (npm run verify)
  * Descripción: Ejecuta en orden el chequeo de tipos, ESLint en modo solo lectura, la detección de dependencias circulares con madge, prisma validate (las advertencias también fallan), el chequeo de deriva de migraciones con disparadores sobre PostgreSQL desechable y las suites de pruebas; se detiene en el primer fallo, imprime un resumen y termina con código distinto de cero
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,7 +23,7 @@ const OFFLINE_DATABASE_ENV = minimalEnv({
 });
 
 // Test suites run in this order; a later block adds its npm script here and it runs once it exists in package.json.
-const TEST_SCRIPTS = ["test:unit", "test:integration", "test:e2e"];
+const TEST_SCRIPTS = ["test:unit", "test:perf", "test:integration", "test:e2e"];
 
 function commandStep(name, binary, args, { env, accept } = {}) {
   return {
