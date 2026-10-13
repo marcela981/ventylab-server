@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e de redacción de secretos y datos personales en los registros
  * Descripción: Con un logger de captura instalado en la aplicación e2e recorre inicio de sesión (correcto, con credenciales erróneas y con validación fallida), renovación de token (manipulada y con validación fallida), cambio de contraseña (contraseña actual errónea y nueva contraseña débil), el puente de NextAuth (secreto erróneo, correo que no coincide y cuerpo inválido) y una llamada de IA del tutor cuyo primer proveedor falla con un mensaje que contiene claves; comprueba que ni la salida del logger, ni las filas de error_logs, ni las filas de ai_call_logs, ni el prompt enviado al proveedor contienen contraseñas, tokens, secretos, claves de API, correos o nombres del usuario
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,7 +26,7 @@ const STUDENT_EMAIL: string = "valentina.restrepo@ventylab.test";
 const NEW_PASSWORD: string = "Rotated-Secret-Pass-987";
 const BRIDGE_SECRET: string = "test-nextauth-bridge-secret";
 const JWT_SECRETS: readonly string[] = ["test-jwt-secret-only-for-automated-tests", "test-jwt-refresh-secret-only-for-automated-tests"];
-const FAKE_PROVIDER_KEY: string = "AIzaSyFAKE-security-test-key-0000000000";
+const FAKE_PROVIDER_KEY: string = "fake-provider-key-security-test-0000000000";
 const FAKE_PROVIDER_BEARER: string = "sk-fake-security-test-bearer-0000000000";
 const ERROR_LOG_SETTLE_MS: number = 500;
 
