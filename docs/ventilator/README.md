@@ -100,7 +100,7 @@ All routes need a JWT. Responses use the standard `APIResponse` envelope.
 | `POST /api/reservations/:id/preempt` | `reservations:manage` | Preempt a reservation and create the replacement. |
 | `GET /api/ventilator/telemetry/metrics` | `ventilator:metrics` | Counters and latency percentiles. |
 | `GET /api/ventilator/telemetry/metrics.csv` | `ventilator:metrics` | One row per retained latency sample. |
-| `POST /api/ventilator/telemetry/metrics/reset` | `ventilator:metrics` | Reset the metrics window. |
+| `POST /api/ventilator/telemetry/metrics/reset` | `ventilator:metrics_reset` | Reset the metrics window. |
 | `POST /api/ventilator/telemetry/recordings/start` and `.../stop` | `simulation:read` + holder, teacher or administrator | Start or stop recording the active reservation. |
 | `GET /api/ventilator/telemetry/recordings/:reservationId` | `simulation:read` + holder, teacher or administrator | Recorded frames ordered by time. |
 | `GET /api/ventilator/control` | `ventilator:control` | Operator state for the caller. |
@@ -113,7 +113,7 @@ All routes need a JWT. Responses use the standard `APIResponse` envelope.
 | `POST /api/simulation/reserve`, `DELETE /api/simulation/reserve` | `simulation:control` | Legacy adapters over `ReservationsFacade.reserveNow` and `releaseActive`. |
 | `POST /api/simulation/command` | `simulation:control` | Legacy adapter; the physical path calls `VentilatorCommandsFacade.send`. |
 
-`ventilator:metrics` belongs to administrators only. `reservations:manage` belongs to teachers and administrators. The other permissions above are held by every role; the real authorization is the reservation and operator logic.
+`ventilator:metrics` (read-only metrics) belongs to teachers and administrators; `ventilator:metrics_reset` belongs to administrators only. `reservations:manage` belongs to teachers and administrators. The other permissions above are held by every role; the real authorization is the reservation and operator logic.
 
 ## Environment variables
 

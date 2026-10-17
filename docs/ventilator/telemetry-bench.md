@@ -17,7 +17,7 @@ This bench measures the MQTT → Socket.io telemetry pipeline of `src/features/v
 
 - [MQTTX CLI](https://mqttx.app/cli) (`mqttx`).
 - A broker you control. Never bench against the production telemetry topic: the server would relay the synthetic frames to connected students.
-- An admin account (the metrics endpoints require the `ventilator:metrics` permission, ADMIN only).
+- An admin account: reading the metrics requires `ventilator:metrics` (TEACHER and ADMIN), and resetting them requires `ventilator:metrics_reset` (ADMIN only).
 
 ## Steps
 
