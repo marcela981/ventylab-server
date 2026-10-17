@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Valores por defecto de los ajustes de la plataforma
- * Descripción: Resuelve el valor por defecto de cada ajuste del registro con los lectores puros de configuración de cada feature (variables de entorno vigentes: AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES, EVALUATION_PASSING_GRADE, SIMULATION_*, RESERVATION_*, VENTILATOR_*) o con las constantes del código (gracia de entrega, umbrales de la rúbrica, multiplicadores de tiempo, verificación de tema activa); al arrancar valida cada valor contra su definición del registro y, si no cumple, registra un error y usa el valor válido más cercano o el valor por defecto del código, sin detener el arranque
- * Versión: 1.1
+ * Descripción: Resuelve el valor por defecto de cada ajuste del registro con los lectores puros de configuración de cada feature (variables de entorno vigentes: AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES, EVALUATION_PASSING_GRADE, SIMULATION_*, RESERVATION_*, VENTILATOR_*) o con las constantes del código (gracia de entrega, umbrales de riesgo de analítica, umbrales de la rúbrica, multiplicadores de tiempo, verificación de tema activa); al arrancar valida cada valor contra su definición del registro y, si no cumple, registra un error y usa el valor válido más cercano o el valor por defecto del código, sin detener el arranque
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,7 @@ import { type ConfigService } from "@nestjs/config";
 import { EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
 import { AI_USE_CASE_VALUES, type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 import { type AiSettingsSnapshot, buildAiSettingsSnapshot, readAiSettingsSource } from "@/features/ai/infrastructure/config/ai-settings.provider";
+import { DEFAULT_STUDENT_RISK_THRESHOLDS } from "@/features/analytics/domain/services/student-risk";
 import { ATTEMPT_SUBMIT_GRACE_MS } from "@/features/evaluation/domain/services/evaluation-attempt-policy";
 import { type PlatformSettingDefaults } from "@/features/platform-settings/application/ports/platform-setting-defaults.interface";
 import { type AiUseCaseSettingKey, type AiUseCaseSettingValue, type PlatformSettingKey } from "@/features/platform-settings/domain/registry/platform-setting-values";
@@ -82,6 +83,9 @@ function readConfiguredDefaults(configService: Config): PlatformSettingDefaults 
     "ai.tutor.topicCheck.enabled": true,
     "evaluation.passingGrade": configService.get("EVALUATION_PASSING_GRADE", { infer: true }),
     "evaluation.submitGraceSeconds": ATTEMPT_SUBMIT_GRACE_MS / MS_PER_SECOND,
+    "analytics.risk.maxFailedEvaluations": DEFAULT_STUDENT_RISK_THRESHOLDS.maxFailedEvaluations,
+    "analytics.risk.minProgressPct": DEFAULT_STUDENT_RISK_THRESHOLDS.minProgressPct,
+    "analytics.risk.inactivityDays": DEFAULT_STUDENT_RISK_THRESHOLDS.inactivityDays,
     "simulation.rubric.defaultThresholds": simulation.defaultRubricThresholds,
     "simulation.allowedTimeMultipliers": simulation.allowedTimeMultipliers,
     "simulation.abandonAfterMinutes": simulation.abandonAfterMs / MS_PER_MINUTE,

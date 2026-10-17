@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Puerto de repositorio EVALUATION_ANALYTICS_REPOSITORY_TOKEN
- * Descripción: Define la interfaz IEvaluationAnalyticsRepository de lecturas por lotes para analítica (notas publicadas de varios usuarios, notas de los intentos calificados de una evaluación, preguntas con los puntajes obtenidos en esos intentos, referencia de una evaluación con su creador y sus grupos asignados e intentos de un usuario en un rango), el alcance opcional de intentos de un profesor (intentos de asignaciones de sus grupos STUDENT gestionados o intentos sin asignación de evaluaciones que creó, la misma regla que la calificación), sus modelos de lectura y su token de inyección
- * Versión: 1.1
+ * Descripción: Define la interfaz IEvaluationAnalyticsRepository de lecturas por lotes para analítica (notas publicadas de varios usuarios, notas de los intentos calificados de una evaluación, preguntas con los puntajes obtenidos en esos intentos, referencia de una evaluación con su creador y sus grupos asignados e intentos de un usuario en un rango), el alcance opcional de intentos de un profesor (intentos de asignaciones de sus grupos STUDENT gestionados o intentos sin asignación de evaluaciones que creó, la misma regla que la calificación, o solo los intentos de asignaciones de ciertos grupos), sus modelos de lectura y su token de inyección
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,6 +26,7 @@ export interface EvaluationReferenceView {
 export interface EvaluationAttemptScope {
   readonly teacherId: string;
   readonly groupIds: ReadonlyArray<string>;
+  readonly assignedOnly?: boolean;
 }
 
 export interface EvaluationQuestionItemView {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Tipos de valores de la configuración de la plataforma
- * Descripción: Categorías, claves y tipo del valor de cada ajuste editable (IA, evaluación, simulación, reservas, telemetría y comandos del ventilador), origen del valor efectivo y la forma de una fila guardada (sobrescritura o marca de restablecimiento que conserva la versión)
- * Versión: 1.1
+ * Descripción: Categorías, claves y tipo del valor de cada ajuste editable (IA, evaluación, analítica, simulación, reservas, telemetría y comandos del ventilador), origen del valor efectivo y la forma de una fila guardada (sobrescritura o marca de restablecimiento que conserva la versión)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,11 +10,12 @@
  */
 import { type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 
-export type PlatformSettingCategoryValue = "ai" | "evaluation" | "simulation" | "reservations" | "telemetry" | "commands";
+export type PlatformSettingCategoryValue = "ai" | "evaluation" | "analytics" | "simulation" | "reservations" | "telemetry" | "commands";
 
 export const PLATFORM_SETTING_CATEGORY_VALUES: readonly PlatformSettingCategoryValue[] = [
   "ai",
   "evaluation",
+  "analytics",
   "simulation",
   "reservations",
   "telemetry",
@@ -66,6 +67,9 @@ export type PlatformSettingValues = AiUseCaseSettingValues & {
   readonly "ai.tutor.topicCheck.enabled": boolean;
   readonly "evaluation.passingGrade": number;
   readonly "evaluation.submitGraceSeconds": number;
+  readonly "analytics.risk.maxFailedEvaluations": number;
+  readonly "analytics.risk.minProgressPct": number;
+  readonly "analytics.risk.inactivityDays": number;
   readonly "simulation.rubric.defaultThresholds": SimulationRubricThresholdsValue;
   readonly "simulation.allowedTimeMultipliers": readonly number[];
   readonly "simulation.abandonAfterMinutes": number;

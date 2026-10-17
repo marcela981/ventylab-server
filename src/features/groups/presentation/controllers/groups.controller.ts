@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de grupos
- * Descripción: Endpoints /api/groups: listar (con alcance por rol), grupos propios (/mine), crear con tipo, consultar, actualizar, eliminar o desactivar grupos, gestionar miembros, asignar el líder del grupo STUDENT y gestionar supervisiones TEACHER→STUDENT (solo ADMIN); el alcance de gestión se aplica en los casos de uso
- * Versión: 1.2
+ * Descripción: Endpoints /api/groups: listar (con alcance por rol y, si se acota al solicitante, su relación MANAGED o SUPERVISED con cada grupo), grupos propios (/mine), crear con tipo, consultar, actualizar, eliminar o desactivar grupos, gestionar miembros, asignar el líder del grupo STUDENT y gestionar supervisiones TEACHER→STUDENT (solo ADMIN); el alcance de gestión se aplica en los casos de uso
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -87,7 +87,7 @@ export class GroupsController {
   @ApiOperation({
     summary: "Get groups",
     description:
-      "Lists groups ordered by depth and name. Admins see every group; teachers see the student groups they created or supervise and the teacher groups they belong to; myGroups=true applies that teacher scope to admins too",
+      "Lists groups ordered by depth and name. Admins see every group; teachers see the student groups they created or supervise and the teacher groups they belong to; myGroups=true applies that teacher scope to admins too. When the list is scoped to the requester (teachers, or myGroups=true), each student group carries relation MANAGED (created by the requester) or SUPERVISED (supervised by a teacher group of the requester)",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Groups retrieved successfully", type: GroupDTO, isArray: true })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })

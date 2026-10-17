@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de lectura de la calificación docente de evaluaciones
- * Descripción: Implementa IEvaluationGradingRepository con Prisma sobre student_evaluation_attempts: alcance del profesor (asignación en un grupo STUDENT creado o supervisado, o intento heredado sin asignación de una evaluación que creó), filtro por grupo (asignación del grupo, o intento sin asignación de un miembro del grupo), cola PENDING_REVIEW paginada con evaluación y estudiante (sin intentos heredados, que se califican por las rutas heredadas), intentos en curso vencidos por el plazo del intento o el fin de la asignación, intentos GRADED sin publicar, notas publicadas y agregados por evaluación (opcionalmente acotados al alcance de intentos de analítica de un profesor); exporta la selección, el filtro, el filtro de alcance de intentos de analítica y el mapeo de notas publicadas que reutiliza el repositorio de analítica
- * Versión: 1.4
+ * Descripción: Implementa IEvaluationGradingRepository con Prisma sobre student_evaluation_attempts: alcance del profesor (asignación en un grupo STUDENT creado o supervisado, o intento heredado sin asignación de una evaluación que creó), filtro por grupo (asignación del grupo, o intento sin asignación de un miembro del grupo) y por estudiante, cola PENDING_REVIEW paginada con evaluación y estudiante y su conteo (sin intentos heredados, que se califican por las rutas heredadas), intentos en curso vencidos por el plazo del intento o el fin de la asignación, intentos GRADED sin publicar, notas publicadas (las de un usuario, opcionalmente en el alcance de un profesor) y agregados por evaluación (opcionalmente acotados al alcance de intentos de analítica de un profesor o a las asignaciones de un grupo); exporta la selección, el filtro, el filtro de alcance de intentos de analítica y el mapeo de notas publicadas que reutiliza el repositorio de analítica
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -134,6 +134,10 @@ function scopeWhere(scope: EvaluationAssignmentScope): Prisma.StudentEvaluationA
 }
 
 export function attemptScopeWhere(scope: EvaluationAttemptScope): Prisma.StudentEvaluationAttemptWhereInput {
+  if (scope.assignedOnly) {
+    return { assignment: { groupId: { in: [...scope.groupIds] } } };
+  }
+
   return {
     OR: [
       { assignment: { groupId: { in: [...scope.groupIds] } } },
@@ -153,6 +157,7 @@ function filterConditions(filter: GradingAttemptFilter): Prisma.StudentEvaluatio
 
   if (filter.evaluationId) conditions.push({ evaluationId: filter.evaluationId });
   if (filter.groupId) conditions.push(groupWhere(filter.groupId));
+  if (filter.studentId) conditions.push({ userId: filter.studentId });
   if (filter.scope) conditions.push(scopeWhere(filter.scope));
 
   return conditions;
@@ -223,6 +228,10 @@ export class EvaluationGradingPrismaRepository implements IEvaluationGradingRepo
     });
   }
 
+  public async countQueue(filter: GradingAttemptFilter): Promise<number> {
+    return await this._prisma.studentEvaluationAttempt.count({ where: { AND: [NEW_FLOW_PENDING_REVIEW_WHERE, ...filterConditions(filter)] } });
+  }
+
   public async getExpiredInProgressAttemptIds(filter: GradingAttemptFilter, cutoff: Date, limit: number): Promise<string[]> {
     const rows: Array<{ id: string }> = await this._prisma.studentEvaluationAttempt.findMany({
       where: {
@@ -253,9 +262,9 @@ export class EvaluationGradingPrismaRepository implements IEvaluationGradingRepo
     });
   }
 
-  public async getPublishedGradesOfUser(userId: string): Promise<PublishedGradeView[]> {
+  public async getPublishedGradesOfUser(userId: string, scope?: EvaluationAssignmentScope): Promise<PublishedGradeView[]> {
     const rows: PublishedRow[] = await this._prisma.studentEvaluationAttempt.findMany({
-      where: { AND: [{ userId }, PUBLISHED_WHERE] },
+      where: { AND: [{ userId }, PUBLISHED_WHERE, ...(scope ? [scopeWhere(scope)] : [])] },
       select: PUBLISHED_SELECT,
       orderBy: [{ gradePublishedAt: "desc" }, { id: "asc" }],
     });

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de calificación de evaluaciones
- * Descripción: Rutas /api/evaluation-grading del profesor o administrador con el permiso evaluations:grade: cola paginada de intentos PENDING_REVIEW en su alcance (cierra antes los intentos vencidos), vista de calificación de un intento, calificación manual de una pregunta (comentario obligatorio al sobrescribir, auditado), publicación idempotente de una nota y publicación masiva de una evaluación o grupo
- * Versión: 1.0
+ * Descripción: Rutas /api/evaluation-grading del profesor o administrador con el permiso evaluations:grade: cola paginada de intentos PENDING_REVIEW en su alcance filtrable por evaluación, grupo o estudiante (cierra antes los intentos vencidos) y su conteo, notas publicadas de un estudiante de sus grupos, vista de calificación de un intento, calificación manual de una pregunta (comentario obligatorio al sobrescribir, auditado), publicación idempotente de una nota y publicación masiva de una evaluación o grupo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,17 +22,21 @@ import { PermissionsGuard } from "@/features/auth/presentation/guards/permission
 import { GradeEvaluationAnswerCommand } from "@/features/evaluation/application/commands/grade-evaluation-answer.command";
 import { PublishEvaluationGradesCommand } from "@/features/evaluation/application/commands/publish-evaluation-grades.command";
 import {
+  type EvaluationUserGrade,
   type GradeEvaluationAnswerResult,
   type GradingAttemptDetailResult,
   type PublishEvaluationAttemptGradeResult,
 } from "@/features/evaluation/application/results/evaluation-grading.result";
 import { GetAttemptForGradingUseCase } from "@/features/evaluation/application/use-cases/get-attempt-for-grading.usecase";
+import { GetGradingQueueCountUseCase } from "@/features/evaluation/application/use-cases/get-grading-queue-count.usecase";
 import { GetGradingQueueUseCase } from "@/features/evaluation/application/use-cases/get-grading-queue.usecase";
+import { GetStudentGradesUseCase } from "@/features/evaluation/application/use-cases/get-student-grades.usecase";
 import { GradeEvaluationAnswerUseCase } from "@/features/evaluation/application/use-cases/grade-evaluation-answer.usecase";
 import { PublishEvaluationAttemptGradeUseCase } from "@/features/evaluation/application/use-cases/publish-evaluation-attempt-grade.usecase";
 import { PublishEvaluationGradesUseCase } from "@/features/evaluation/application/use-cases/publish-evaluation-grades.usecase";
 import { type GradingQueueItemView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
 import {
+  GetGradingQueueCountQueryDTO,
   GetGradingQueueQueryDTO,
   GradeEvaluationAnswerDTO,
   PublishEvaluationGradesDTO,
@@ -40,7 +44,9 @@ import {
 import {
   GradeEvaluationAnswerResponseDTO,
   GradingAttemptDTO,
+  GradingQueueCountDTO,
   GradingQueueItemDTO,
+  MyEvaluationGradeDTO,
   PublishAttemptGradeResponseDTO,
   PublishGradesResponseDTO,
 } from "@/features/evaluation/presentation/dtos/evaluation-grading.dto";
@@ -58,6 +64,8 @@ export class EvaluationGradingController {
     private readonly _gradeEvaluationAnswerUseCase: GradeEvaluationAnswerUseCase,
     private readonly _publishEvaluationAttemptGradeUseCase: PublishEvaluationAttemptGradeUseCase,
     private readonly _publishEvaluationGradesUseCase: PublishEvaluationGradesUseCase,
+    private readonly _getGradingQueueCountUseCase: GetGradingQueueCountUseCase,
+    private readonly _getStudentGradesUseCase: GetStudentGradesUseCase,
   ) {}
 
   @Get("queue")
@@ -66,7 +74,7 @@ export class EvaluationGradingController {
   @ApiOperation({
     summary: "Get grading queue",
     description:
-      "PENDING_REVIEW attempts of students in the STUDENT groups the caller created or supervises (legacy attempts without assignment: evaluations the caller created; admins: all), oldest first; expired attempts in progress of the filtered evaluations/groups are closed first (at most 50 per request)",
+      "PENDING_REVIEW attempts of students in the STUDENT groups the caller created or supervises (legacy attempts without assignment: evaluations the caller created; admins: all), optionally filtered by evaluation, group and student, oldest first; expired attempts in progress of the filtered evaluations/groups/student are closed first (at most 50 per request)",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Grading queue retrieved successfully", type: GradingQueueItemDTO, isArray: true })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
@@ -78,7 +86,7 @@ export class EvaluationGradingController {
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<GradingQueueItemDTO[]>> {
     const result: Paginated<GradingQueueItemView> = await this._getGradingQueueUseCase.execute(
-      { evaluationId: query.evaluationId, groupId: query.groupId, page: Number(query.page), limit: Number(query.limit) },
+      { evaluationId: query.evaluationId, groupId: query.groupId, studentId: query.studentId, page: Number(query.page), limit: Number(query.limit) },
       toEvaluationActor(currentUser),
     );
 
@@ -86,6 +94,58 @@ export class EvaluationGradingController {
       .setData(result.data.map((item: GradingQueueItemView) => EvaluationGradingMapper.toQueueItemDTO(item)))
       .setMessage(await i18n.t("evaluation.grading_queue_retrieved"))
       .setPagination(result.pagination)
+      .build();
+  }
+
+  @Get("queue/count")
+  @RequirePermissions("evaluations:grade")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Count the grading queue",
+    description:
+      "Number of PENDING_REVIEW attempts with the same scope and filters (evaluation, group, student) as the grading queue; expired attempts in progress matching the filters are closed first (at most 50 per request)",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Pending count retrieved successfully", type: GradingQueueCountDTO })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  public async getQueueCount(
+    @Query() query: GetGradingQueueCountQueryDTO,
+    @CurrentUser() currentUser: CurrentCaller,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<GradingQueueCountDTO>> {
+    const pending: number = await this._getGradingQueueCountUseCase.execute(
+      { evaluationId: query.evaluationId, groupId: query.groupId, studentId: query.studentId },
+      toEvaluationActor(currentUser),
+    );
+
+    return new APIResponseBuilder<GradingQueueCountDTO>()
+      .setData(new GradingQueueCountDTO(pending))
+      .setMessage(await i18n.t("evaluation.grading_queue_count_retrieved"))
+      .build();
+  }
+
+  @Get("students/:userId/grades")
+  @RequirePermissions("evaluations:grade")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Get a student's grades",
+    description:
+      "Published grades of a student with attempt, evaluation, module, grade on the 0.0–5.0 scale, pass flag and publication date. Admins see every grade; a teacher must create or supervise a STUDENT group of the student (403 otherwise) and only sees the grades of their grading scope (assignments of those groups, legacy attempts of evaluations they created)",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Grades retrieved successfully", type: MyEvaluationGradeDTO, isArray: true })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden or student outside the caller's groups" })
+  public async getStudentGrades(
+    @Param("userId") userId: string,
+    @CurrentUser() currentUser: CurrentCaller,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<MyEvaluationGradeDTO[]>> {
+    const grades: EvaluationUserGrade[] = await this._getStudentGradesUseCase.execute(userId, toEvaluationActor(currentUser));
+
+    return new APIResponseBuilder<MyEvaluationGradeDTO[]>()
+      .setData(grades.map((grade: EvaluationUserGrade) => EvaluationGradingMapper.toMyGradeDTO(grade)))
+      .setMessage(await i18n.t("evaluation.student_grades_retrieved"))
       .build();
   }
 

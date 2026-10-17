@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GetEvaluationAnalyticsUseCase y GetMySummaryUseCase
- * Descripción: Verifica que las estadísticas de una evaluación solo se entregan al administrador, a un profesor que gestiona un grupo asignado o al creador de una evaluación sin asignaciones (403 si no, 404 si no existe), que un profesor solo agrega intentos de sus grupos (el de un grupo A no ve los del grupo B) mientras el administrador ve la evaluación completa, que combinan notas y dificultad por pregunta con caché por solicitante y alcance, y que el resumen propio compone las fachadas para el usuario autenticado con el conteo de notificaciones sin leer del puerto y las evaluaciones separadas en activas y próximas
- * Versión: 1.1
+ * Descripción: Verifica que las estadísticas de una evaluación solo se entregan al administrador, a un profesor que gestiona un grupo asignado o al creador de una evaluación sin asignaciones (403 si no, 404 si no existe), que un profesor solo agrega intentos de sus grupos (el de un grupo A no ve los del grupo B) mientras el administrador ve la evaluación completa, que con un grupo solo cuentan los intentos de sus asignaciones para quien lo gestiona o administra (403 si no lo gestiona, 404 si no existe), que combinan notas y dificultad por pregunta con caché por solicitante y alcance, y que el resumen propio compone las fachadas para el usuario autenticado con el conteo de notificaciones sin leer del puerto y las evaluaciones separadas en activas y próximas
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,7 +22,7 @@ import {
   TEACHER,
 } from "@/features/analytics/application/testing/analytics-test-doubles-spec";
 import { MY_SUMMARY_LATEST_LIMIT } from "@/features/analytics/application/use-cases/get-my-summary.usecase";
-import { AnalyticsEvaluationNotFoundError, AnalyticsScopeForbiddenError } from "@/features/analytics/domain/analytics.errors";
+import { AnalyticsEvaluationNotFoundError, AnalyticsGroupNotFoundError, AnalyticsScopeForbiddenError } from "@/features/analytics/domain/analytics.errors";
 
 describe("GetEvaluationAnalyticsUseCase", () => {
   it("combines grade statistics and question analysis for a teacher of an assigned group", async () => {
@@ -67,6 +67,31 @@ describe("GetEvaluationAnalyticsUseCase", () => {
     await expect(harness.evaluation.execute(OTHER_TEACHER, LEGACY_EVALUATION_ID)).rejects.toBeInstanceOf(AnalyticsScopeForbiddenError);
     expect(harness.facades.evaluation.getEvaluationStats).toHaveBeenCalledWith(LEGACY_EVALUATION_ID, { teacherId: TEACHER.id, groupIds: [] });
     expect(harness.facades.groups.getManageableStudentGroupIds).not.toHaveBeenCalled();
+  });
+
+  it("limits the statistics to the assignments of a requested group for its teacher and for an admin", async () => {
+    const harness: AnalyticsHarness = buildAnalyticsHarness(buildStudents(1));
+
+    const teacherView: EvaluationAnalytics = await harness.evaluation.execute(TEACHER, SHARED_EVALUATION_ID, GROUP_ID);
+    await harness.evaluation.execute(ADMIN, SHARED_EVALUATION_ID);
+    await harness.evaluation.execute(ADMIN, SHARED_EVALUATION_ID, GROUP_ID);
+
+    const statsScopes: unknown[] = harness.facades.evaluation.getEvaluationStats.mock.calls.map((call: unknown[]) => call[1]);
+
+    expect(teacherView.groupId).toBe(GROUP_ID);
+    expect(statsScopes).toEqual([
+      { teacherId: TEACHER.id, groupIds: [GROUP_ID], assignedOnly: true },
+      undefined,
+      { teacherId: ADMIN.id, groupIds: [GROUP_ID], assignedOnly: true },
+    ]);
+  });
+
+  it("rejects a requested group the teacher does not manage and a missing group", async () => {
+    const harness: AnalyticsHarness = buildAnalyticsHarness(buildStudents(1));
+
+    await expect(harness.evaluation.execute(OTHER_TEACHER, SHARED_EVALUATION_ID, GROUP_ID)).rejects.toBeInstanceOf(AnalyticsScopeForbiddenError);
+    await expect(harness.evaluation.execute(ADMIN, SHARED_EVALUATION_ID, "missing-group")).rejects.toBeInstanceOf(AnalyticsGroupNotFoundError);
+    expect(harness.facades.evaluation.getEvaluationStats).not.toHaveBeenCalled();
   });
 });
 

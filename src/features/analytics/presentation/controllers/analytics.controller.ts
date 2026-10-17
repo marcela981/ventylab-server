@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador AnalyticsController
- * Descripción: Expone la analítica docente bajo /api/analytics con analytics:read (TEACHER y ADMIN; un profesor solo ve sus grupos creados o supervisados, sus estudiantes y las evaluaciones asignadas a ellos): panel de un grupo, su exportación CSV de notas y progreso, línea de tiempo de un estudiante y estadísticas de una evaluación; y con analytics:research-export (solo ADMIN) la exportación CSV anonimizada para investigación
- * Versión: 1.0
+ * Descripción: Expone la analítica docente bajo /api/analytics con analytics:read (TEACHER y ADMIN; un profesor solo ve sus grupos creados o supervisados, sus estudiantes y las evaluaciones asignadas a ellos): panel de un grupo, su exportación CSV de notas y progreso, línea de tiempo de un estudiante y estadísticas de una evaluación (opcionalmente de un grupo gestionable); y con analytics:research-export (solo ADMIN) la exportación CSV anonimizada para investigación
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,7 +26,7 @@ import { ExportResearchDatasetUseCase } from "@/features/analytics/application/u
 import { GetEvaluationAnalyticsUseCase } from "@/features/analytics/application/use-cases/get-evaluation-analytics.usecase";
 import { GetGroupDashboardUseCase } from "@/features/analytics/application/use-cases/get-group-dashboard.usecase";
 import { GetStudentTimelineUseCase } from "@/features/analytics/application/use-cases/get-student-timeline.usecase";
-import { ResearchExportQueryDTO, StudentTimelineQueryDTO } from "@/features/analytics/presentation/dtos/analytics-request.dto";
+import { EvaluationStatsQueryDTO, ResearchExportQueryDTO, StudentTimelineQueryDTO } from "@/features/analytics/presentation/dtos/analytics-request.dto";
 import { EvaluationAnalyticsDTO, GroupDashboardDTO, StudentTimelineDTO } from "@/features/analytics/presentation/dtos/analytics-response.dto";
 import { AnalyticsMapper } from "@/features/analytics/presentation/mappers/analytics.mapper";
 import { toGroupDashboardCsv, toResearchCsv } from "@/features/analytics/presentation/utils/analytics-csv";
@@ -66,7 +66,7 @@ export class AnalyticsController {
   @ApiOperation({
     summary: "Get a group dashboard",
     description:
-      "One row per student: progress by section, level and module, counted grade per evaluation and average, simulation sessions (count, average score, average time to stabilize), AI usage per use case with the percentage of useful ratings and ventilator hours. Teachers only see groups they created or supervise; cached 60 s",
+      "One row per student: progress by section, level and module, counted grade per evaluation and average, simulation sessions (count, average score, average time to stabilize), AI usage per use case with the percentage of useful ratings, ventilator hours and risk (atRisk, riskReasons, failedEvaluationIds) under the current risk thresholds; plus the current passing grade, the thresholds and the per-module progress aggregate of the group. Teachers only see groups they created or supervise; cached 60 s",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Group dashboard retrieved successfully", type: GroupDashboardDTO })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
@@ -141,18 +141,20 @@ export class AnalyticsController {
   @ApiOperation({
     summary: "Get evaluation statistics",
     description:
-      "Average, median, histogram in 0.5 buckets on the 0–5 scale and pass rate over graded attempts, plus the difficulty index and correct rate of each question. Teachers only see evaluations assigned to a group they manage; cached 60 s",
+      "Average, median, histogram in 0.5 buckets on the 0–5 scale and pass rate over graded attempts, plus the difficulty index and correct rate of each question. Teachers only see evaluations assigned to a group they manage; groupId limits the statistics to the attempts of that group's assignments (teachers must manage or supervise the group, otherwise 403; unknown group 404); cached 60 s",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Evaluation statistics retrieved successfully", type: EvaluationAnalyticsDTO })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden or evaluation outside the requester scope" })
-  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Evaluation not found" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden, evaluation or group outside the requester scope" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Evaluation or group not found" })
   public async getEvaluationAnalytics(
     @Param("evaluationId") evaluationId: string,
+    @Query() query: EvaluationStatsQueryDTO,
     @CurrentUser() currentUser: JwtPayload,
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<EvaluationAnalyticsDTO>> {
-    const analytics: EvaluationAnalytics = await this._getEvaluationAnalyticsUseCase.execute(toActor(currentUser), evaluationId);
+    const analytics: EvaluationAnalytics = await this._getEvaluationAnalyticsUseCase.execute(toActor(currentUser), evaluationId, query.groupId);
 
     return new APIResponseBuilder<EvaluationAnalyticsDTO>()
       .setData(AnalyticsMapper.toEvaluationDTO(analytics))

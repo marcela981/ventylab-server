@@ -1,15 +1,16 @@
 /*
  * Funcionalidad: DTOs de respuesta de grupos
- * Descripción: Formas de respuesta documentadas en Swagger para grupos (con su tipo), subgrupos, personas relacionadas, miembros (con su rol LEADER o MEMBER) y el ID del grupo creado
- * Versión: 1.1
+ * Descripción: Formas de respuesta documentadas en Swagger para grupos (con su tipo y, en el listado propio, la relación del solicitante), subgrupos, personas relacionadas, miembros (con su rol LEADER o MEMBER) y el ID del grupo creado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
+import { GROUP_RELATION_VALUES } from "@/features/groups/domain/services/group-management-policy";
 import { GROUP_MEMBER_ROLE_VALUES } from "@/features/groups/domain/value-objects/group-member-role";
 import { GROUP_MEMBERSHIP_ROLE_VALUES } from "@/features/groups/domain/value-objects/group-membership-role";
 import { GROUP_TYPE_VALUES } from "@/features/groups/domain/value-objects/group-type";
@@ -208,6 +209,7 @@ export interface GroupDTOFields {
   subGroups: SubgroupDTO[];
   membersCount: number;
   subGroupsCount: number;
+  relation: string | null;
 }
 
 export class GroupDTO {
@@ -274,6 +276,16 @@ export class GroupDTO {
   @ApiProperty({ description: "Number of subgroups (active or not)", example: 2 })
   public subGroupsCount: number;
 
+  @ApiPropertyOptional({
+    description:
+      "Relation of the requester with this STUDENT group when the list is scoped to the requester (teachers, or myGroups=true): MANAGED if they created it, SUPERVISED if a teacher group they belong to supervises it; null otherwise",
+    enum: GROUP_RELATION_VALUES,
+    example: "MANAGED",
+    nullable: true,
+    type: String,
+  })
+  public relation: string | null;
+
   public constructor(fields: GroupDTOFields) {
     this.id = fields.id;
     this.name = fields.name;
@@ -296,6 +308,7 @@ export class GroupDTO {
     this.subGroups = fields.subGroups;
     this.membersCount = fields.membersCount;
     this.subGroupsCount = fields.subGroupsCount;
+    this.relation = fields.relation;
   }
 }
 

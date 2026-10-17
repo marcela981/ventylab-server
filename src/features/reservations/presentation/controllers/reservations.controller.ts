@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de reservas
- * Descripción: Endpoints /api/reservations: calendario por rango, mis reservas, reserva actual con permiso de control, creación con desplazamiento confirmado, cancelación y desplazamiento explícito; las respuestas se proyectan por rol en el servidor; el calendario se documenta como lista de reservas completas o resumidas (las ajenas que ve un estudiante)
- * Versión: 1.1
+ * Descripción: Endpoints /api/reservations: calendario por rango (opcionalmente de un grupo titular), mis reservas, reserva actual con permiso de control, creación con desplazamiento confirmado, cancelación y desplazamiento explícito; las respuestas se proyectan por rol en el servidor; el calendario se documenta como lista de reservas completas o resumidas (las ajenas que ve un estudiante)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -58,7 +58,8 @@ export class ReservationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Reservations calendar",
-    description: "Reservations overlapping [from, to) (at most 31 days). Students get other people's reservations as { id, startsAt, endsAt, status, label } only",
+    description:
+      "Reservations overlapping [from, to) (at most 31 days), optionally only those held by groupId (admins: any group; teachers: groups they manage or supervise; students: their own group; otherwise 403). Students get other people's reservations as { id, startsAt, endsAt, status, label } only",
   })
   @ApiResponseDoc({
     status: HttpStatus.OK,
@@ -67,7 +68,7 @@ export class ReservationsController {
   })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Invalid range" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden or group outside the requester scope" })
   public async getReservationsCalendar(
     @Query() query: GetReservationsCalendarQueryDTO,
     @CurrentUser() currentUser: JwtPayload,
@@ -78,6 +79,7 @@ export class ReservationsController {
       to: new Date(query.to),
       actorId: currentUser.sub,
       actorRole: currentUser.role,
+      groupId: query.groupId,
     });
 
     return new APIResponseBuilder<ReservationDTO[]>()

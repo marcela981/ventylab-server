@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de reservas
- * Descripción: Repositorio en memoria con bloqueo del dispositivo como mutex asíncrono real, gestor de transacciones que libera el bloqueo al terminar, fachadas de usuarios y grupos simuladas, reloj fijo, bus de eventos y grabador de auditoría espías, y fábricas de los casos de uso; incluye un repositorio de analítica vacío para construir ReservationsFacade
- * Versión: 1.1
+ * Descripción: Repositorio en memoria con bloqueo del dispositivo como mutex asíncrono real, gestor de transacciones que libera el bloqueo al terminar, fachadas de usuarios y grupos simuladas (incluida la gestión de un grupo por el docente que lo supervisa), reloj fijo, bus de eventos y grabador de auditoría espías, y fábricas de los casos de uso; incluye un repositorio de analítica vacío para construir ReservationsFacade
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -220,7 +220,7 @@ export const EMPTY_RESERVATION_ANALYTICS: IReservationAnalyticsRepository = {
 export function buildGroupsFacade(): GroupsFacade {
   const facade: Pick<
     GroupsFacade,
-    "getGroupSummary" | "isGroupLeader" | "isMemberOf" | "getSupervisedStudentGroupIds" | "getStudentGroupOfUser" | "getGroupMembers"
+    "getGroupSummary" | "isGroupLeader" | "isMemberOf" | "getSupervisedStudentGroupIds" | "getStudentGroupOfUser" | "getGroupMembers" | "canManageGroup"
   > = {
     getGroupSummary: (groupId: string): Promise<GroupSummary | undefined> =>
       Promise.resolve(GROUPS.find((group: GroupSummary): boolean => group.id === groupId)),
@@ -229,6 +229,7 @@ export function buildGroupsFacade(): GroupsFacade {
     isMemberOf: (userId: string, groupId: string): Promise<boolean> =>
       Promise.resolve(MEMBERS.some((member: TestMember): boolean => member.userId === userId && member.groupId === groupId)),
     getSupervisedStudentGroupIds: (teacherUserId: string): Promise<string[]> => Promise.resolve(SUPERVISED[teacherUserId] ?? []),
+    canManageGroup: (user: { id: string }, groupId: string): Promise<boolean> => Promise.resolve((SUPERVISED[user.id] ?? []).includes(groupId)),
     getStudentGroupOfUser: (userId: string): Promise<StudentGroupSummaryView | undefined> => {
       const membership: TestMember | undefined = MEMBERS.find((member: TestMember): boolean => member.userId === userId);
 

@@ -14,6 +14,7 @@
   "invalid_holder": "A user reservation needs a user and a group reservation needs a group",
   "holder_not_found": "The user or group of the reservation does not exist",
   "reserve_forbidden": "You cannot reserve the ventilator for this user or group",
+  "group_filter_forbidden": "You cannot list the reservations of this group",
   "cancel_forbidden": "You cannot cancel this reservation",
   "not_scheduled": "The reservation is no longer scheduled",
   "invalid_range": "The range must be valid and span at most {maxDays} days",

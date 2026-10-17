@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registro de ajustes de la plataforma
- * Descripción: Define en código cada ajuste editable por un administrador (categoría, descripción, validación de tipo y forma y límites duros que ni un administrador puede superar): cadena de proveedores y modelos, tiempo límite, tokens y temperatura por caso de uso de IA, cuotas, precios y verificación de tema del tutor; nota aprobatoria y gracia de entrega de evaluaciones; umbrales de la rúbrica por defecto, multiplicadores de tiempo y abandono de simulaciones; reglas de reservas; intervalos de telemetría; frecuencia, tiempo de acuse y límites de seguridad de los comandos (dentro de VENTILATOR_PARAMETER_LIMITS). Cada ajuste valida (parse) y además ajusta un valor al válido más cercano (sanitize), con lo que se resuelven al arrancar los valores por defecto de la configuración (resolvePlatformSettingDefault)
- * Versión: 1.1
+ * Descripción: Define en código cada ajuste editable por un administrador (categoría, descripción, validación de tipo y forma y límites duros que ni un administrador puede superar): cadena de proveedores y modelos, tiempo límite, tokens y temperatura por caso de uso de IA, cuotas, precios y verificación de tema del tutor; nota aprobatoria y gracia de entrega de evaluaciones; umbrales de riesgo del panel docente (evaluaciones reprobadas toleradas, progreso mínimo y días de inactividad, 0 desactiva las dos últimas); umbrales de la rúbrica por defecto, multiplicadores de tiempo y abandono de simulaciones; reglas de reservas; intervalos de telemetría; frecuencia, tiempo de acuse y límites de seguridad de los comandos (dentro de VENTILATOR_PARAMETER_LIMITS). Cada ajuste valida (parse) y además ajusta un valor al válido más cercano (sanitize), con lo que se resuelven al arrancar los valores por defecto de la configuración (resolvePlatformSettingDefault)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -260,6 +260,24 @@ export const PLATFORM_SETTINGS_REGISTRY: PlatformSettingsRegistry = {
     "evaluation",
     "Seconds after an attempt deadline during which a submission is still accepted",
     { min: 0, max: 600, integer: true },
+  ),
+  "analytics.risk.maxFailedEvaluations": numberSetting(
+    "analytics.risk.maxFailedEvaluations",
+    "analytics",
+    "Failed evaluations (latest published attempt) a student may have before the teacher dashboard flags them at risk; 0 flags any failed evaluation",
+    { min: 0, max: 100, integer: true },
+  ),
+  "analytics.risk.minProgressPct": numberSetting(
+    "analytics.risk.minProgressPct",
+    "analytics",
+    "Overall progress percentage below which the teacher dashboard flags a student at risk; 0 disables the rule",
+    { min: 0, max: 100, integer: false },
+  ),
+  "analytics.risk.inactivityDays": numberSetting(
+    "analytics.risk.inactivityDays",
+    "analytics",
+    "Days without activity after which the teacher dashboard flags a student at risk; 0 disables the rule",
+    { min: 0, max: 365, integer: true },
   ),
   "simulation.rubric.defaultThresholds": setting(
     "simulation.rubric.defaultThresholds",

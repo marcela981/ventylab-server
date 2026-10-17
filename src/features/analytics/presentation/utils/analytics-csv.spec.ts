@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del CSV de analítica
  * Descripción: Verifica las columnas dinámicas del CSV de un grupo (progreso por sección y nota por evaluación con encabezados saneados), las celdas vacías cuando falta un dato y la protección contra inyección de fórmulas en nombres
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,6 +21,9 @@ function row(overrides: Partial<StudentDashboardRow>): StudentDashboardRow {
     simulation: { sessionCount: 0, averageScore: null, averageTimeToStabilizeSeconds: null },
     aiUsage: [],
     ventilatorHours: 0,
+    atRisk: false,
+    riskReasons: [],
+    failedEvaluationIds: [],
     ...overrides,
   };
 }
@@ -31,6 +34,9 @@ describe("toGroupDashboardCsv", () => {
       groupId: "group-1",
       groupName: "Group A",
       generatedAt: new Date("2026-10-11T12:00:00.000Z"),
+      passingGrade: 3,
+      riskThresholds: { maxFailedEvaluations: 0, minProgressPct: 0, inactivityDays: 0 },
+      moduleSummary: [],
       students: [
         row({
           name: "=HYPERLINK(\"x\")",

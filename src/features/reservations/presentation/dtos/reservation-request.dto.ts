@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de petición de reservas
- * Descripción: Validación y documentación Swagger de la consulta del calendario (desde, hasta), la creación de una reserva (titular, ventana, propósito y confirmación de desplazamiento) y el desplazamiento explícito (motivo y nueva reserva)
- * Versión: 1.0
+ * Descripción: Validación y documentación Swagger de la consulta del calendario (desde, hasta y grupo titular opcional), la creación de una reserva (titular, ventana, propósito y confirmación de desplazamiento) y el desplazamiento explícito (motivo y nueva reserva)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,6 +24,14 @@ export class GetReservationsCalendarQueryDTO {
   @ApiProperty({ description: "End of the range (ISO 8601, at most 31 days after from)", example: "2026-10-19T00:00:00.000Z" })
   @IsISO8601({}, { message: i18nValidationMessage("reservations.validation.date_invalid") })
   public to: string;
+
+  @ApiPropertyOptional({
+    description: "Only reservations held by this group; admins may pass any group, teachers a group they manage or supervise, students their own group",
+    example: "cm5group01",
+  })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("common.validation.string") })
+  public groupId?: string;
 }
 
 export class CreateReservationDTO {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de grupos
- * Descripción: Vistas de solo lectura de grupos (líder, creador, grupo padre, subgrupos activos y conteos), de miembros con sus datos de usuario, del grupo propio del estudiante, de las membresías de un usuario y de las supervisiones, y filtros del listado de grupos (incluido el alcance del profesor)
- * Versión: 1.1
+ * Descripción: Vistas de solo lectura de grupos (líder, creador, grupo padre, subgrupos activos y conteos), de miembros con sus datos de usuario, del grupo propio del estudiante, de las membresías de un usuario y de las supervisiones, y filtros del listado de grupos (incluido el alcance del profesor); en el listado propio, la relación del solicitante con cada grupo STUDENT (creado o supervisado)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { type GroupMember } from "@/features/groups/domain/entities/group-member.entity";
 import { type Group } from "@/features/groups/domain/entities/group.entity";
+import { type GroupRelationValue } from "@/features/groups/domain/services/group-management-policy";
 import { type GroupMembershipRoleValue } from "@/features/groups/domain/value-objects/group-membership-role";
 import { type GroupTypeValue } from "@/features/groups/domain/value-objects/group-type";
 
@@ -55,6 +56,7 @@ export interface GroupView {
   readonly subGroups: SubgroupView[];
   readonly membersCount: number;
   readonly subGroupsCount: number;
+  readonly relation?: GroupRelationValue;
 }
 
 export interface GroupDetailView extends GroupView {

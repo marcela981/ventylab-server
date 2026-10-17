@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de la calificación docente de evaluaciones
- * Descripción: Repositorio de calificación en memoria sobre el repositorio de intentos en memoria (cola PENDING_REVIEW, intentos vencidos en curso, intentos publicables y alcance del profesor por conjunto de intentos permitidos), registrador de auditoría simulado, acceso de calificación y actores profesor y administrador
- * Versión: 1.0
+ * Descripción: Repositorio de calificación en memoria sobre el repositorio de intentos en memoria (cola PENDING_REVIEW y su conteo, filtros por evaluación y estudiante, intentos vencidos en curso, intentos publicables y alcance del profesor por conjunto de intentos permitidos), cierre perezoso de la cola, registrador de auditoría simulado, acceso de calificación y actores profesor y administrador
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { type IAuditRecorder } from "@/common/application/ports/audit-recorder.i
 import { Paginated } from "@/common/domain/utils/paginated";
 import { type EvaluationAssignmentAccess } from "@/features/evaluation/application/services/evaluation-assignment-access";
 import { EvaluationGradingAccess } from "@/features/evaluation/application/services/evaluation-grading-access";
+import { GradingQueueLazyCloser } from "@/features/evaluation/application/services/grading-queue-lazy-closer";
 import {
   type AttemptDoubles,
   type AttemptState,
@@ -69,6 +70,12 @@ export class InMemoryGradingRepository implements IEvaluationGradingRepository {
     return new Paginated<GradingQueueItemView>({ items, total: items.length, page: query.page, limit: query.limit });
   }
 
+  public async countQueue(filter: GradingAttemptFilter): Promise<number> {
+    await Promise.resolve();
+
+    return this._matching(filter).filter((item: StudentEvaluationAttemptProps) => item.status === "PENDING_REVIEW").length;
+  }
+
   public async getExpiredInProgressAttemptIds(filter: GradingAttemptFilter, cutoff: Date, limit: number): Promise<string[]> {
     await Promise.resolve();
 
@@ -101,6 +108,7 @@ export class InMemoryGradingRepository implements IEvaluationGradingRepository {
     return this._attempts
       .attempts()
       .filter((item: StudentEvaluationAttemptProps) => filter.evaluationId === undefined || item.evaluationId === filter.evaluationId)
+      .filter((item: StudentEvaluationAttemptProps) => filter.studentId === undefined || item.userId === filter.studentId)
       .filter((item: StudentEvaluationAttemptProps) => scope === undefined || this.scopedAttemptIds.has(item.id));
   }
 }
@@ -108,6 +116,7 @@ export class InMemoryGradingRepository implements IEvaluationGradingRepository {
 export interface GradingDoubles extends AttemptDoubles {
   gradingRepository: InMemoryGradingRepository;
   gradingAccess: EvaluationGradingAccess;
+  lazyCloser: GradingQueueLazyCloser;
   auditRecorder: IAuditRecorder;
   record: jest.Mock;
   supervisedGroupIds: jest.Mock;
@@ -129,6 +138,7 @@ export function buildGradingDoubles(state: AttemptState & { scopedAttemptIds?: s
     ...doubles,
     gradingRepository,
     gradingAccess: new EvaluationGradingAccess(assignmentAccess, gradingRepository),
+    lazyCloser: new GradingQueueLazyCloser(gradingRepository, doubles.attemptsRepository, doubles.closer),
     auditRecorder: { record },
     record,
     supervisedGroupIds,

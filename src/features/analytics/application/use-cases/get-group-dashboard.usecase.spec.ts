@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GetGroupDashboardUseCase
- * Descripción: Verifica con fachadas falsas que el panel de un grupo de 30 estudiantes llama exactamente una vez a cada función por lotes (sin N+1) con los 30 identificadores y una vez a los miembros, que reutiliza la caché del mismo solicitante, que combina una fila por estudiante (nota vigente = último intento publicado, porcentaje de útiles), que las notas de un profesor se leen con el alcance de intentos de sus grupos (el administrador sin alcance) y que aplica el alcance con una sola lectura de grupos gestionables (403 fuera de alcance, 404 grupo inexistente)
- * Versión: 1.1
+ * Descripción: Verifica con fachadas falsas que el panel de un grupo de 30 estudiantes llama exactamente una vez a cada función por lotes (sin N+1) con los 30 identificadores y una vez a los miembros, que reutiliza la caché del mismo solicitante, que combina una fila por estudiante (nota vigente = último intento publicado, porcentaje de útiles), que las notas de un profesor se leen con el alcance de intentos de sus grupos (el administrador sin alcance) que aplica el alcance con una sola lectura de grupos gestionables (403 fuera de alcance, 404 grupo inexistente), que el panel trae la nota aprobatoria, los umbrales y el resumen por módulo, y que el riesgo de cada fila sigue los umbrales vigentes (que también separan la caché)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import {
   buildStudents,
   GROUP_ID,
   OTHER_TEACHER,
+  PUBLISHED_AT,
   TEACHER,
 } from "@/features/analytics/application/testing/analytics-test-doubles-spec";
 import { AnalyticsGroupNotFoundError, AnalyticsScopeForbiddenError } from "@/features/analytics/domain/analytics.errors";
@@ -91,6 +92,43 @@ describe("GetGroupDashboardUseCase", () => {
     expect(row.progress.sections).toEqual([{ id: "section-1", percentage: 50, completedLessons: 2, totalLessons: 4, completed: false }]);
     expect(row.progress.levels).toHaveLength(1);
     expect(row.progress.modules).toHaveLength(1);
+  });
+
+  it("adds the passing grade, the thresholds and the per-module aggregate computed from the loaded rows", async () => {
+    const harness: AnalyticsHarness = buildAnalyticsHarness(buildStudents(3));
+
+    const dashboard: GroupDashboard = await harness.dashboard.execute(ADMIN, GROUP_ID);
+
+    expect(dashboard.passingGrade).toBe(3);
+    expect(dashboard.riskThresholds).toEqual({ maxFailedEvaluations: 0, minProgressPct: 0, inactivityDays: 0 });
+    expect(dashboard.moduleSummary).toEqual([{ moduleId: "module-1", moduleTitle: undefined, averageProgressPct: 50, completedCount: 0, studentCount: 3 }]);
+    expect(harness.facades.progress.getProgressForUsers).toHaveBeenCalledTimes(1);
+  });
+
+  it("flags only failed latest attempts with the default thresholds", async () => {
+    const harness: AnalyticsHarness = buildAnalyticsHarness(buildStudents(1));
+
+    harness.facades.evaluation.getGradesForUsers.mockResolvedValueOnce([
+      { attemptId: "a1", evaluationId: "evaluation-1", evaluationTitle: "Exam", evaluationType: "EXAM", userId: "student-01", attemptNumber: 1, grade: 4, passed: true, publishedAt: PUBLISHED_AT, legacy: false },
+      { attemptId: "a2", evaluationId: "evaluation-2", evaluationTitle: "Quiz", evaluationType: "QUIZ", userId: "student-01", attemptNumber: 1, grade: 1, passed: false, publishedAt: PUBLISHED_AT, legacy: false },
+    ]);
+
+    const dashboard: GroupDashboard = await harness.dashboard.execute(ADMIN, GROUP_ID);
+
+    expect(dashboard.students[0]).toMatchObject({ atRisk: true, riskReasons: ["FAILED_EVALUATIONS"], failedEvaluationIds: ["evaluation-2"] });
+  });
+
+  it("applies the current thresholds on each request and keys the cache by them", async () => {
+    const harness: AnalyticsHarness = buildAnalyticsHarness(buildStudents(1));
+
+    const before: GroupDashboard = await harness.dashboard.execute(ADMIN, GROUP_ID);
+    harness.settings.riskThresholds = { maxFailedEvaluations: 0, minProgressPct: 60, inactivityDays: 0 };
+    const after: GroupDashboard = await harness.dashboard.execute(ADMIN, GROUP_ID);
+
+    expect(before.students[0].atRisk).toBe(false);
+    expect(after.students[0]).toMatchObject({ atRisk: true, riskReasons: ["LOW_PROGRESS"] });
+    expect(after.riskThresholds.minProgressPct).toBe(60);
+    expect(harness.facades.progress.getProgressForUsers).toHaveBeenCalledTimes(2);
   });
 
   it("rejects a teacher outside the group scope without loading any data", async () => {

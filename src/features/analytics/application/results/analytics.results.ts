@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados de analítica
- * Descripción: Tipos de salida de los casos de uso de analítica: panel de un grupo con una fila por estudiante (progreso por sección, nivel y módulo, notas por evaluación y promedio, sesiones de simulación, uso de IA por caso de uso con porcentaje de útiles y horas de ventilador), línea de tiempo de un estudiante, estadísticas de una evaluación con dificultad por pregunta, resumen del propio estudiante y filas anonimizadas del conjunto de datos de investigación
- * Versión: 1.1
+ * Descripción: Tipos de salida de los casos de uso de analítica: panel de un grupo con una fila por estudiante (progreso por sección, nivel y módulo, notas por evaluación y promedio, sesiones de simulación, uso de IA por caso de uso con porcentaje de útiles y horas de ventilador), línea de tiempo de un estudiante, estadísticas de una evaluación con dificultad por pregunta, resumen del propio estudiante y filas anonimizadas del conjunto de datos de investigación; el panel incluye la nota aprobatoria y los umbrales de riesgo vigentes, el riesgo de cada fila (motivos y evaluaciones reprobadas) y el progreso agregado por módulo, y las estadísticas pueden acotarse a un grupo
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { type AiConversationSummary } from "@/features/ai-tutor/application/services/ai-tutor.facade";
 import { type TimelineEntry } from "@/features/analytics/domain/services/activity-timeline";
+import { type StudentRiskReasonValue, type StudentRiskThresholds } from "@/features/analytics/domain/services/student-risk";
 import { type LessonWeightedProgress } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
 import { type EvaluationAssignmentResult } from "@/features/evaluation/application/results/evaluation-assignment.result";
 import { type EvaluationGradeStats, type EvaluationUserGrade } from "@/features/evaluation/application/results/evaluation-grading.result";
@@ -73,12 +74,26 @@ export interface StudentDashboardRow {
   readonly simulation: StudentSimulationSummary;
   readonly aiUsage: StudentAiUseCaseUsage[];
   readonly ventilatorHours: number;
+  readonly atRisk: boolean;
+  readonly riskReasons: StudentRiskReasonValue[];
+  readonly failedEvaluationIds: string[];
+}
+
+export interface GroupModuleSummary {
+  readonly moduleId: string;
+  readonly moduleTitle?: string;
+  readonly averageProgressPct: number;
+  readonly completedCount: number;
+  readonly studentCount: number;
 }
 
 export interface GroupDashboard {
   readonly groupId: string;
   readonly groupName: string;
   readonly generatedAt: Date;
+  readonly passingGrade: number;
+  readonly riskThresholds: StudentRiskThresholds;
+  readonly moduleSummary: GroupModuleSummary[];
   readonly students: StudentDashboardRow[];
 }
 
@@ -92,6 +107,7 @@ export interface StudentTimeline {
 
 export interface EvaluationAnalytics {
   readonly evaluationId: string;
+  readonly groupId?: string;
   readonly title: string;
   readonly type: EvaluationTypeValue;
   readonly stats: EvaluationGradeStats;

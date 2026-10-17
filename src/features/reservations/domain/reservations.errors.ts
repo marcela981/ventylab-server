@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de reservas
- * Descripción: Errores de dominio de la feature de reservas del ventilador (ventana, franja, antelación, límites, permisos, conflicto con detalles de las reservas en conflicto y transición de estado inválida) con su clave i18n
- * Versión: 1.0
+ * Descripción: Errores de dominio de la feature de reservas del ventilador (ventana, franja, antelación, límites, permisos de reserva y de filtro del calendario por grupo, conflicto con detalles de las reservas en conflicto y transición de estado inválida) con su clave i18n
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -99,6 +99,12 @@ export class ReservationHolderNotFoundError extends DomainError {
 export class ReservationForbiddenError extends DomainError {
   public constructor() {
     super("You cannot reserve the ventilator for this user or group", "reservations.reserve_forbidden");
+  }
+}
+
+export class ReservationGroupFilterForbiddenError extends DomainError {
+  public constructor() {
+    super("You cannot list the reservations of this group", "reservations.group_filter_forbidden");
   }
 }
 

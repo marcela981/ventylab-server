@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de las lecturas de reservas
- * Descripción: Verifica la reserva vigente (sin reserva activa no hay control; controla el titular, un miembro del grupo titular o un docente o administrador, no otro estudiante), las reservas propias (como titular, creador o por el grupo del usuario, solo las que no terminaron) y el calendario (rango vacío, invertido, inválido o mayor a 31 días rechazado; incluye las reservas que tocan el rango y el observador con su grupo)
- * Versión: 1.0
+ * Descripción: Verifica la reserva vigente (sin reserva activa no hay control; controla el titular, un miembro del grupo titular o un docente o administrador, no otro estudiante), las reservas propias (como titular, creador o por el grupo del usuario, solo las que no terminaron) y el calendario (rango vacío, invertido, inválido o mayor a 31 días rechazado; incluye las reservas que tocan el rango y el observador con su grupo; el filtro por grupo titular solo para el administrador, el docente que lo supervisa o un miembro, 403 para los demás)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,7 +16,7 @@ import { GetMyReservationsUseCase } from "@/features/reservations/application/us
 import { GetReservationsCalendarUseCase, MAX_CALENDAR_RANGE_DAYS } from "@/features/reservations/application/use-cases/get-reservations-calendar.usecase";
 import { type Reservation } from "@/features/reservations/domain/entities/reservation.entity";
 import { type ReservationView } from "@/features/reservations/domain/read-models/reservation.read-model";
-import { InvalidReservationRangeError } from "@/features/reservations/domain/reservations.errors";
+import { InvalidReservationRangeError, ReservationGroupFilterForbiddenError } from "@/features/reservations/domain/reservations.errors";
 import { ReservationHolder } from "@/features/reservations/domain/value-objects/reservation-holder";
 
 function ids(views: ReservationView[]): string[] {
@@ -115,5 +115,31 @@ describe("GetReservationsCalendarUseCase", () => {
 
     expect(ids(result.views)).toEqual([inside.id, crossing.id]);
     expect(result.viewer).toEqual({ userId: "leader-1", role: "STUDENT", groupIds: ["group-1"] });
+  });
+
+  it.each<[string, string, string]>([
+    ["an admin", "admin-1", "ADMIN"],
+    ["a supervising teacher", "teacher-1", "TEACHER"],
+    ["a member student", "student-2", "STUDENT"],
+  ])("lists only the reservations held by the requested group for %s", async (_label: string, actorId: string, actorRole: string) => {
+    const context: ReservationsTestContext = buildContext();
+    const ofGroup: Reservation = await seedReservation(context.repository, { holder: ReservationHolder.forGroup("group-1"), createdById: "leader-1", startsAt: at("11:00"), endsAt: at("12:00") });
+
+    await seedReservation(context.repository, { holder: ReservationHolder.forUser("student-2"), createdById: "student-2", startsAt: at("12:00"), endsAt: at("13:00") });
+
+    const result: ReservationViewsResult = await build(context).execute({ from: at("10:00"), to: at("14:00"), actorId, actorRole, groupId: "group-1" });
+
+    expect(ids(result.views)).toEqual([ofGroup.id]);
+  });
+
+  it.each<[string, string, string]>([
+    ["a teacher who does not supervise it", "teacher-2", "TEACHER"],
+    ["a student outside it", "student-9", "STUDENT"],
+  ])("rejects the group filter for %s", async (_label: string, actorId: string, actorRole: string) => {
+    const context: ReservationsTestContext = buildContext();
+
+    await expect(build(context).execute({ from: at("10:00"), to: at("14:00"), actorId, actorRole, groupId: "group-1" })).rejects.toBeInstanceOf(
+      ReservationGroupFilterForbiddenError,
+    );
   });
 });

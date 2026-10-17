@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Constructor de analítica por estudiante
- * Descripción: Funciones puras que combinan en memoria los resultados por lotes de las fachadas (progreso, notas publicadas, sesiones de simulación, uso y valoraciones de IA y horas de ventilador) indexándolos por usuario, sin ninguna lectura adicional: resumen de progreso por sección, nivel y módulo, nota vigente por evaluación (último intento publicado) con su promedio, filas del panel de un grupo y filas largas del conjunto de datos de investigación con identificadores seudonimizados (usuario y grupo, y las evaluaciones con separación de dominio "evaluation:")
- * Versión: 1.2
+ * Descripción: Funciones puras que combinan en memoria los resultados por lotes de las fachadas (progreso, notas publicadas, sesiones de simulación, uso y valoraciones de IA y horas de ventilador) indexándolos por usuario, sin ninguna lectura adicional: resumen de progreso por sección, nivel y módulo, nota vigente por evaluación (último intento publicado) con su promedio, filas del panel de un grupo con el riesgo de cada estudiante según los umbrales vigentes, progreso agregado por módulo del grupo a partir de esas filas y filas largas del conjunto de datos de investigación con identificadores seudonimizados (usuario y grupo, y las evaluaciones con separación de dominio "evaluation:")
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { type AiRatingUserUseCaseStats } from "@/features/ai-ratings/application
 import { AI_RATING_DIMENSIONS } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { type AiUserUseCaseUsage } from "@/features/ai-telemetry/domain/repositories/ai-call-log-analytics.repository";
 import {
+  type GroupModuleSummary,
   type ProgressItemSummary,
   type ResearchDatasetRow,
   type StudentAiUseCaseUsage,
@@ -21,6 +22,7 @@ import {
   type StudentProgressSummary,
   type StudentSimulationSummary,
 } from "@/features/analytics/application/results/analytics.results";
+import { assessStudentRisk, type StudentRiskAssessment, type StudentRiskThresholds } from "@/features/analytics/domain/services/student-risk";
 import { type LessonWeightedProgress } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
 import { type EvaluationUserGrade } from "@/features/evaluation/application/results/evaluation-grading.result";
 import { type GroupMemberSummary } from "@/features/groups/application/services/groups.facade";
@@ -143,7 +145,12 @@ function toAiUsage(usage: ReadonlyArray<AiUserUseCaseUsage>, ratings: ReadonlyAr
   return [...byUseCase.values()].sort((left: StudentAiUseCaseUsage, right: StudentAiUseCaseUsage) => left.useCase.localeCompare(right.useCase));
 }
 
-export function buildStudentDashboardRows(students: ReadonlyArray<GroupMemberSummary>, sources: StudentAnalyticsSources): StudentDashboardRow[] {
+export function buildStudentDashboardRows(
+  students: ReadonlyArray<GroupMemberSummary>,
+  sources: StudentAnalyticsSources,
+  thresholds: StudentRiskThresholds,
+  now: Date,
+): StudentDashboardRow[] {
   const progress: Map<string, UserLearningProgress> = new Map(sources.progress.map((item: UserLearningProgress): [string, UserLearningProgress] => [item.userId, item]));
   const grades: Map<string, EvaluationUserGrade[]> = groupByUser(sources.grades);
   const simulation: Map<string, SimulationUserSessionStats> = new Map(
@@ -153,16 +160,49 @@ export function buildStudentDashboardRows(students: ReadonlyArray<GroupMemberSum
   const aiRatings: Map<string, AiRatingUserUseCaseStats[]> = groupByUser(sources.aiRatings);
   const ventilator: Map<string, UserVentilatorUsage> = new Map(sources.ventilator.map((item: UserVentilatorUsage): [string, UserVentilatorUsage] => [item.userId, item]));
 
-  return students.map(
-    (student: GroupMemberSummary): StudentDashboardRow => ({
+  return students.map((student: GroupMemberSummary): StudentDashboardRow => {
+    const studentProgress: StudentProgressSummary = toProgressSummary(progress.get(student.userId)?.report);
+    const studentGrades: EvaluationUserGrade[] = grades.get(student.userId) ?? [];
+    const risk: StudentRiskAssessment = assessStudentRisk({ evaluations: studentGrades, progressPct: studentProgress.overall.percentage }, thresholds, now);
+
+    return {
       userId: student.userId,
       name: student.name,
       email: student.email,
-      progress: toProgressSummary(progress.get(student.userId)?.report),
-      grades: toGradesSummary(grades.get(student.userId) ?? []),
+      progress: studentProgress,
+      grades: toGradesSummary(studentGrades),
       simulation: toSimulationSummary(simulation.get(student.userId)),
       aiUsage: toAiUsage(aiUsage.get(student.userId) ?? [], aiRatings.get(student.userId) ?? []),
       ventilatorHours: round(ventilator.get(student.userId)?.hours ?? 0, 2),
+      atRisk: risk.atRisk,
+      riskReasons: risk.riskReasons,
+      failedEvaluationIds: risk.failedEvaluationIds,
+    };
+  });
+}
+
+export function buildModuleSummary(rows: ReadonlyArray<StudentDashboardRow>): GroupModuleSummary[] {
+  const modules: Map<string, { title?: string; percentageSum: number; completedCount: number }> = new Map();
+
+  for (const row of rows) {
+    for (const module of row.progress.modules) {
+      const current: { title?: string; percentageSum: number; completedCount: number } = modules.get(module.id) ?? { title: module.title, percentageSum: 0, completedCount: 0 };
+
+      modules.set(module.id, {
+        title: current.title ?? module.title,
+        percentageSum: current.percentageSum + module.percentage,
+        completedCount: current.completedCount + (module.completed ? 1 : 0),
+      });
+    }
+  }
+
+  return [...modules.entries()].map(
+    ([moduleId, totals]: [string, { title?: string; percentageSum: number; completedCount: number }]): GroupModuleSummary => ({
+      moduleId,
+      moduleTitle: totals.title,
+      averageProgressPct: rows.length > 0 ? round(totals.percentageSum / rows.length, 1) : 0,
+      completedCount: totals.completedCount,
+      studentCount: rows.length,
     }),
   );
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo EvaluationModule
- * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación (EVALUATION_GRADING_CONFIG_TOKEN, enlazada por la raíz de composición), vinculación de sesiones de simulación con eventos vía SimulationFacade (SimulationModule), casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (gateway de IA vía AiModule con respaldo determinista), puntaje práctico recalculado por repetición de la sesión en el servidor y lector de sesiones del simulador heredadas; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión); registra el repositorio de lecturas por lotes para analítica que usa EvaluationFacade
- * Versión: 1.8
+ * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación (EVALUATION_GRADING_CONFIG_TOKEN, enlazada por la raíz de composición), vinculación de sesiones de simulación con eventos vía SimulationFacade (SimulationModule), casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (gateway de IA vía AiModule con respaldo determinista), puntaje práctico recalculado por repetición de la sesión en el servidor y lector de sesiones del simulador heredadas; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola y su conteo, notas de un estudiante, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión); registra el repositorio de lecturas por lotes para analítica que usa EvaluationFacade
+ * Versión: 1.9
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,6 +21,7 @@ import { EvaluationEditor } from "@/features/evaluation/application/services/eva
 import { EvaluationGradingAccess } from "@/features/evaluation/application/services/evaluation-grading-access";
 import { EvaluationFacade } from "@/features/evaluation/application/services/evaluation.facade";
 import { GradeFeedbackAccess } from "@/features/evaluation/application/services/grade-feedback-access";
+import { GradingQueueLazyCloser } from "@/features/evaluation/application/services/grading-queue-lazy-closer";
 import { StudentAnswerRecorder } from "@/features/evaluation/application/services/student-answer-recorder";
 import { AddEvaluationOptionUseCase } from "@/features/evaluation/application/use-cases/add-evaluation-option.usecase";
 import { AddEvaluationQuestionUseCase } from "@/features/evaluation/application/use-cases/add-evaluation-question.usecase";
@@ -37,10 +38,12 @@ import { GetEvaluationAssignmentsUseCase } from "@/features/evaluation/applicati
 import { GetEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/get-evaluation-attempt.usecase";
 import { GetEvaluationDetailUseCase } from "@/features/evaluation/application/use-cases/get-evaluation-detail.usecase";
 import { GetEvaluationsUseCase } from "@/features/evaluation/application/use-cases/get-evaluations.usecase";
+import { GetGradingQueueCountUseCase } from "@/features/evaluation/application/use-cases/get-grading-queue-count.usecase";
 import { GetGradingQueueUseCase } from "@/features/evaluation/application/use-cases/get-grading-queue.usecase";
 import { GetManagedEvaluationAssignmentsUseCase } from "@/features/evaluation/application/use-cases/get-managed-evaluation-assignments.usecase";
 import { GetMyEvaluationsUseCase } from "@/features/evaluation/application/use-cases/get-my-evaluations.usecase";
 import { GetStudentEvaluationAssignmentsUseCase } from "@/features/evaluation/application/use-cases/get-student-evaluation-assignments.usecase";
+import { GetStudentGradesUseCase } from "@/features/evaluation/application/use-cases/get-student-grades.usecase";
 import { GradeEvaluationAnswerUseCase } from "@/features/evaluation/application/use-cases/grade-evaluation-answer.usecase";
 import { GenerateGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-generation.usecase";
 import { RegenerateGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-regeneration.usecase";
@@ -171,7 +174,10 @@ import { SimulationModule } from "@/features/simulation/simulation.module";
     SaveEvaluationAnswerUseCase,
     SubmitEvaluationAttemptUseCase,
     EvaluationGradingAccess,
+    GradingQueueLazyCloser,
     GetGradingQueueUseCase,
+    GetGradingQueueCountUseCase,
+    GetStudentGradesUseCase,
     GetAttemptForGradingUseCase,
     GradeEvaluationAnswerUseCase,
     PublishEvaluationAttemptGradeUseCase,

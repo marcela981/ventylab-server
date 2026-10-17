@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la política de gestión de grupos
- * Descripción: Verifica quién puede crear, gestionar y leer grupos según su rol (ADMIN, TEACHER, STUDENT), el tipo del grupo, su creador, la supervisión y la pertenencia
- * Versión: 1.0
+ * Descripción: Verifica quién puede crear, gestionar y leer grupos según su rol (ADMIN, TEACHER, STUDENT), el tipo del grupo, su creador, la supervisión y la pertenencia, y la relación MANAGED o SUPERVISED de un actor con un grupo STUDENT
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import {
   canManageGroup,
   canReadGroup,
   type GroupActor,
+  groupRelationOf,
   type ManagedGroup,
 } from "@/features/groups/domain/services/group-management-policy";
 
@@ -111,5 +112,26 @@ describe("canReadGroup", () => {
     ];
 
     expect(results).toEqual([true, false, false]);
+  });
+});
+
+describe("groupRelationOf", () => {
+  it("reports MANAGED for a created student group even when it is also supervised", () => {
+    const relations: (string | undefined)[] = [
+      groupRelationOf(TEACHER, OWN_STUDENT_GROUP, { supervisedByActor: false }),
+      groupRelationOf(TEACHER, OWN_STUDENT_GROUP, { supervisedByActor: true }),
+    ];
+
+    expect(relations).toEqual(["MANAGED", "MANAGED"]);
+  });
+
+  it("reports SUPERVISED for a supervised student group created by someone else and nothing otherwise", () => {
+    const relations: (string | undefined)[] = [
+      groupRelationOf(TEACHER, OTHER_STUDENT_GROUP, { supervisedByActor: true }),
+      groupRelationOf(TEACHER, OTHER_STUDENT_GROUP, { supervisedByActor: false }),
+      groupRelationOf(TEACHER, TEACHER_GROUP, { supervisedByActor: true }),
+    ];
+
+    expect(relations).toEqual(["SUPERVISED", undefined, undefined]);
   });
 });

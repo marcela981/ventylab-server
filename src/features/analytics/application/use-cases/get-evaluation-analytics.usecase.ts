@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetEvaluationAnalyticsUseCase
- * Descripción: Estadísticas de una evaluación para su profesor o un administrador: verifica que la evaluación exista y esté asignada a un grupo del alcance del solicitante (o, sin asignaciones, que la haya creado) y, con caché de 60 s por evaluación, solicitante y grupos en alcance, combina las estadísticas de notas (promedio, mediana, histograma en intervalos de 0.5 y tasa de aprobación) con el índice de dificultad por pregunta de EvaluationFacade; para un profesor solo cuentan los intentos de las asignaciones de sus grupos (o sin asignación de evaluaciones que creó), el administrador ve la evaluación completa
- * Versión: 1.1
+ * Descripción: Estadísticas de una evaluación para su profesor o un administrador: verifica que la evaluación exista y esté asignada a un grupo del alcance del solicitante (o, sin asignaciones, que la haya creado) y, con caché de 60 s por evaluación, solicitante y grupos en alcance, combina las estadísticas de notas (promedio, mediana, histograma en intervalos de 0.5 y tasa de aprobación) con el índice de dificultad por pregunta de EvaluationFacade; para un profesor solo cuentan los intentos de las asignaciones de sus grupos (o sin asignación de evaluaciones que creó), el administrador ve la evaluación completa; con un grupo, para cualquiera de los dos solo cuentan los intentos de las asignaciones de ese grupo
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,7 +17,8 @@ import { EvaluationFacade } from "@/features/evaluation/application/services/eva
 
 /**
  * @throws {AnalyticsEvaluationNotFoundError} If the evaluation does not exist
- * @throws {AnalyticsScopeForbiddenError} If the requester neither administers the platform, nor manages a group the evaluation is assigned to, nor created an evaluation without assignments
+ * @throws {AnalyticsGroupNotFoundError} If a group is requested and it does not exist
+ * @throws {AnalyticsScopeForbiddenError} If the requester neither administers the platform, nor manages a group the evaluation is assigned to, nor created an evaluation without assignments, or does not manage the requested group
  */
 @Injectable()
 export class GetEvaluationAnalyticsUseCase {
@@ -27,19 +28,20 @@ export class GetEvaluationAnalyticsUseCase {
     private readonly _evaluationFacade: EvaluationFacade,
   ) {}
 
-  public async execute(actor: AnalyticsActor, evaluationId: string): Promise<EvaluationAnalytics> {
-    const scoped: ScopedEvaluation = await this._scope.assertEvaluationInScope(actor, evaluationId);
-    const key: string = `evaluation:${scoped.evaluation.id}:${this._scope.scopeKey(actor, scoped.attemptScope)}`;
+  public async execute(actor: AnalyticsActor, evaluationId: string, groupId?: string): Promise<EvaluationAnalytics> {
+    const scoped: ScopedEvaluation =
+      groupId === undefined ? await this._scope.assertEvaluationInScope(actor, evaluationId) : await this._scope.assertEvaluationGroupInScope(actor, evaluationId, groupId);
+    const key: string = `evaluation:${scoped.evaluation.id}:${groupId === undefined ? "all" : `group:${groupId}`}:${this._scope.scopeKey(actor, scoped.attemptScope)}`;
 
-    return await this._cache.getOrLoad(key, () => this._build(scoped));
+    return await this._cache.getOrLoad(key, () => this._build(scoped, groupId));
   }
 
-  private async _build({ evaluation, attemptScope }: ScopedEvaluation): Promise<EvaluationAnalytics> {
+  private async _build({ evaluation, attemptScope }: ScopedEvaluation, groupId: string | undefined): Promise<EvaluationAnalytics> {
     const [stats, questions] = await Promise.all([
       this._evaluationFacade.getEvaluationStats(evaluation.id, attemptScope),
       this._evaluationFacade.getEvaluationQuestionStats(evaluation.id, attemptScope),
     ]);
 
-    return { evaluationId: evaluation.id, title: evaluation.title, type: evaluation.type, stats, questions };
+    return { evaluationId: evaluation.id, groupId, title: evaluation.title, type: evaluation.type, stats, questions };
   }
 }

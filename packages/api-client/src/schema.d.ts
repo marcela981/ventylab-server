@@ -640,7 +640,7 @@ export interface paths {
         };
         /**
          * Get evaluation statistics
-         * @description Average, median, histogram in 0.5 buckets on the 0–5 scale and pass rate over graded attempts, plus the difficulty index and correct rate of each question. Teachers only see evaluations assigned to a group they manage; cached 60 s
+         * @description Average, median, histogram in 0.5 buckets on the 0–5 scale and pass rate over graded attempts, plus the difficulty index and correct rate of each question. Teachers only see evaluations assigned to a group they manage; groupId limits the statistics to the attempts of that group's assignments (teachers must manage or supervise the group, otherwise 403; unknown group 404); cached 60 s
          *
          *     **Required access:** bearer token holding `analytics:read`; minimum role TEACHER.
          */
@@ -662,7 +662,7 @@ export interface paths {
         };
         /**
          * Get a group dashboard
-         * @description One row per student: progress by section, level and module, counted grade per evaluation and average, simulation sessions (count, average score, average time to stabilize), AI usage per use case with the percentage of useful ratings and ventilator hours. Teachers only see groups they created or supervise; cached 60 s
+         * @description One row per student: progress by section, level and module, counted grade per evaluation and average, simulation sessions (count, average score, average time to stabilize), AI usage per use case with the percentage of useful ratings, ventilator hours and risk (atRisk, riskReasons, failedEvaluationIds) under the current risk thresholds; plus the current passing grade, the thresholds and the per-module progress aggregate of the group. Teachers only see groups they created or supervise; cached 60 s
          *
          *     **Required access:** bearer token holding `analytics:read`; minimum role TEACHER.
          */
@@ -2093,11 +2093,55 @@ export interface paths {
         };
         /**
          * Get grading queue
-         * @description PENDING_REVIEW attempts of students in the STUDENT groups the caller created or supervises (legacy attempts without assignment: evaluations the caller created; admins: all), oldest first; expired attempts in progress of the filtered evaluations/groups are closed first (at most 50 per request)
+         * @description PENDING_REVIEW attempts of students in the STUDENT groups the caller created or supervises (legacy attempts without assignment: evaluations the caller created; admins: all), optionally filtered by evaluation, group and student, oldest first; expired attempts in progress of the filtered evaluations/groups/student are closed first (at most 50 per request)
          *
          *     **Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.
          */
         get: operations["getQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/evaluation-grading/queue/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count the grading queue
+         * @description Number of PENDING_REVIEW attempts with the same scope and filters (evaluation, group, student) as the grading queue; expired attempts in progress matching the filters are closed first (at most 50 per request)
+         *
+         *     **Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.
+         */
+        get: operations["getQueueCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/evaluation-grading/students/{userId}/grades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a student's grades
+         * @description Published grades of a student with attempt, evaluation, module, grade on the 0.0–5.0 scale, pass flag and publication date. Admins see every grade; a teacher must create or supervise a STUDENT group of the student (403 otherwise) and only sees the grades of their grading scope (assignments of those groups, legacy attempts of evaluations they created)
+         *
+         *     **Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.
+         */
+        get: operations["getStudentGrades"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2640,7 +2684,7 @@ export interface paths {
         };
         /**
          * Get groups
-         * @description Lists groups ordered by depth and name. Admins see every group; teachers see the student groups they created or supervise and the teacher groups they belong to; myGroups=true applies that teacher scope to admins too
+         * @description Lists groups ordered by depth and name. Admins see every group; teachers see the student groups they created or supervise and the teacher groups they belong to; myGroups=true applies that teacher scope to admins too. When the list is scoped to the requester (teachers, or myGroups=true), each student group carries relation MANAGED (created by the requester) or SUPERVISED (supervised by a teacher group of the requester)
          *
          *     **Required access:** bearer token holding `groups:read`; minimum role TEACHER.
          */
@@ -4843,7 +4887,7 @@ export interface paths {
         };
         /**
          * Reservations calendar
-         * @description Reservations overlapping [from, to) (at most 31 days). Students get other people's reservations as { id, startsAt, endsAt, status, label } only
+         * @description Reservations overlapping [from, to) (at most 31 days), optionally only those held by groupId (admins: any group; teachers: groups they manage or supervise; students: their own group; otherwise 403). Students get other people's reservations as { id, startsAt, endsAt, status, label } only
          *
          *     **Required access:** bearer token holding `reservations:read`; minimum role STUDENT.
          */
@@ -11015,6 +11059,11 @@ export interface components {
              * @example 20
              */
             gradedCount: number;
+            /**
+             * @description Group the statistics are limited to (groupId query), null for the whole requester scope
+             * @example null
+             */
+            groupId: string | null;
             /** @description Grade histogram in 0.5 buckets on the 0–5 scale */
             histogram: components["schemas"]["GradeHistogramBucketDTO"][];
             /**
@@ -12281,6 +12330,13 @@ export interface components {
              */
             userId: string;
         };
+        GradingQueueCountDTO: {
+            /**
+             * @description PENDING_REVIEW attempts matching the queue scope and filters
+             * @example 7
+             */
+            pending: number;
+        };
         GradingQueueItemDTO: {
             /**
              * @description Assignment ID (null for legacy attempts)
@@ -12429,6 +12485,12 @@ export interface components {
              */
             parentGroupId: string | null;
             /**
+             * @description Relation of the requester with this STUDENT group when the list is scoped to the requester (teachers, or myGroups=true): MANAGED if they created it, SUPERVISED if a teacher group they belong to supervises it; null otherwise
+             * @example MANAGED
+             * @enum {string|null}
+             */
+            relation?: "MANAGED" | "SUPERVISED" | null;
+            /**
              * @description Semester
              * @example 2026-2
              */
@@ -12474,6 +12536,15 @@ export interface components {
              * @example Group A
              */
             groupName: string;
+            /** @description Progress per published module aggregated over the group's students */
+            moduleSummary: components["schemas"]["GroupModuleSummaryDTO"][];
+            /**
+             * @description Current passing grade (0–5 scale) used for the pass flags
+             * @example 3
+             */
+            passingGrade: number;
+            /** @description Current risk thresholds (platform settings analytics.risk.*) */
+            riskThresholds: components["schemas"]["RiskThresholdsDTO"];
             /** @description One row per student member */
             students: components["schemas"]["StudentDashboardRowDTO"][];
         };
@@ -12547,6 +12618,12 @@ export interface components {
              * @example null
              */
             parentGroupId: string | null;
+            /**
+             * @description Relation of the requester with this STUDENT group when the list is scoped to the requester (teachers, or myGroups=true): MANAGED if they created it, SUPERVISED if a teacher group they belong to supervises it; null otherwise
+             * @example MANAGED
+             * @enum {string|null}
+             */
+            relation?: "MANAGED" | "SUPERVISED" | null;
             /**
              * @description Semester
              * @example 2026-2
@@ -12682,6 +12759,33 @@ export interface components {
              * @enum {string}
              */
             memberRole: "LEADER" | "MEMBER";
+        };
+        GroupModuleSummaryDTO: {
+            /**
+             * @description Average module progress of the group's students (students without progress count as 0), 0–100
+             * @example 62.5
+             */
+            averageProgressPct: number;
+            /**
+             * @description Students who completed every published lesson of the module
+             * @example 4
+             */
+            completedCount: number;
+            /**
+             * @description Module identifier
+             * @example cm5x2k9a00000abcd1234efgh
+             */
+            moduleId: string;
+            /**
+             * @description Module title
+             * @example Ventilation basics
+             */
+            moduleTitle: string | null;
+            /**
+             * @description Students of the group
+             * @example 25
+             */
+            studentCount: number;
         };
         GroupNameDTO: {
             /**
@@ -16508,7 +16612,7 @@ export interface components {
              * @example telemetry
              * @enum {string}
              */
-            category: "ai" | "evaluation" | "simulation" | "reservations" | "telemetry" | "commands";
+            category: "ai" | "evaluation" | "analytics" | "simulation" | "reservations" | "telemetry" | "commands";
             /**
              * @description Default value, from the server configuration or code
              * @example 33
@@ -17721,6 +17825,23 @@ export interface components {
              * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
              */
             id: string;
+        };
+        RiskThresholdsDTO: {
+            /**
+             * @description Days without activity after which a student is at risk (0 disables the rule)
+             * @example 0
+             */
+            inactivityDays: number;
+            /**
+             * @description Failed evaluations a student may have before being at risk (0: any failed evaluation flags the student)
+             * @example 0
+             */
+            maxFailedEvaluations: number;
+            /**
+             * @description Overall progress percentage below which a student is at risk (0 disables the rule)
+             * @example 0
+             */
+            minProgressPct: number;
         };
         RoleChangedNotificationDTO: {
             /**
@@ -19287,10 +19408,22 @@ export interface components {
             /** @description AI usage per use case */
             aiUsage: components["schemas"]["StudentAiUsageDTO"][];
             /**
+             * @description Whether any risk rule of the dashboard thresholds applies to the student
+             * @example true
+             */
+            atRisk: boolean;
+            /**
              * @description Student email
              * @example ana@example.com
              */
             email: string;
+            /**
+             * @description Evaluations whose latest published attempt (highest attempt number) is failed
+             * @example [
+             *       "cm5x2k9a00000abcd1234efgh"
+             *     ]
+             */
+            failedEvaluationIds: string[];
             /** @description Published grades */
             grades: components["schemas"]["StudentGradesDTO"];
             /**
@@ -19300,6 +19433,13 @@ export interface components {
             name: string | null;
             /** @description Learning progress */
             progress: components["schemas"]["AnalyticsStudentProgressDTO"];
+            /**
+             * @description Risk rules that apply: FAILED_EVALUATIONS (failed latest attempts above maxFailedEvaluations), LOW_PROGRESS (overall progress below minProgressPct), INACTIVE (no activity for more than inactivityDays)
+             * @example [
+             *       "FAILED_EVALUATIONS"
+             *     ]
+             */
+            riskReasons: ("FAILED_EVALUATIONS" | "LOW_PROGRESS" | "INACTIVE")[];
             /** @description Simulation sessions */
             simulation: components["schemas"]["StudentSimulationDTO"];
             /**
@@ -23980,7 +24120,10 @@ export interface operations {
     };
     getEvaluationAnalytics: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only attempts of the assignments of this STUDENT group; teachers must manage or supervise it */
+                groupId?: string;
+            };
             header?: never;
             path: {
                 evaluationId: string;
@@ -24000,7 +24143,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Validation error or malformed request */
+            /** @description Validation error */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -24018,7 +24161,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Forbidden or evaluation outside the requester scope */
+            /** @description Forbidden, evaluation or group outside the requester scope */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -24027,7 +24170,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Evaluation not found */
+            /** @description Evaluation or group not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -29398,6 +29541,8 @@ export interface operations {
                 evaluationId?: string;
                 /** @description Filter by STUDENT group */
                 groupId?: string;
+                /** @description Filter by student */
+                studentId?: string;
             };
             header?: never;
             path?: never;
@@ -29436,6 +29581,158 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getQueueCount: {
+        parameters: {
+            query?: {
+                /** @description Filter by evaluation */
+                evaluationId?: string;
+                /** @description Filter by STUDENT group */
+                groupId?: string;
+                /** @description Filter by student */
+                studentId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending count retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["GradingQueueCountDTO"];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getStudentGrades: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Grades retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["MyEvaluationGradeDTO"][];
+                    };
+                };
+            };
+            /** @description Validation error or malformed request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden or student outside the caller's groups */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The resource does not exist or is not visible to the caller */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39138,7 +39435,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Only settings of this category */
-                category?: "ai" | "evaluation" | "simulation" | "reservations" | "telemetry" | "commands";
+                category?: "ai" | "evaluation" | "analytics" | "simulation" | "reservations" | "telemetry" | "commands";
             };
             header?: never;
             path?: never;
@@ -41179,6 +41476,8 @@ export interface operations {
                 from: string;
                 /** @description End of the range (ISO 8601, at most 31 days after from) */
                 to: string;
+                /** @description Only reservations held by this group; admins may pass any group, teachers a group they manage or supervise, students their own group */
+                groupId?: string;
             };
             header?: never;
             path?: never;
@@ -41215,7 +41514,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Forbidden or group outside the requester scope */
             403: {
                 headers: {
                     [name: string]: unknown;

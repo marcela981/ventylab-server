@@ -14,6 +14,7 @@
   "invalid_holder": "Una reserva de usuario necesita un usuario y una de grupo necesita un grupo",
   "holder_not_found": "El usuario o grupo de la reserva no existe",
   "reserve_forbidden": "No puedes reservar el ventilador para este usuario o grupo",
+  "group_filter_forbidden": "No puedes consultar las reservas de este grupo",
   "cancel_forbidden": "No puedes cancelar esta reserva",
   "not_scheduled": "La reserva ya no está programada",
   "invalid_range": "El rango debe ser válido y abarcar como máximo {maxDays} días",

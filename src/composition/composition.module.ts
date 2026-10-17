@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo de composición
- * Descripción: Raíz de composición global fuera de src/features: registra PlatformSettingsModule con sus valores por defecto (configuración y constantes de cada feature) y la disponibilidad de proveedores de IA, y enlaza los puertos de ajustes de las features consumidoras (AI_SETTINGS_PROVIDER_TOKEN, AI_PRICE_TABLE_TOKEN, RESERVATION_SETTINGS_TOKEN, VENTILATOR_TELEMETRY_SETTINGS_TOKEN, VENTILATOR_COMMANDS_SETTINGS_TOKEN, SIMULATION_SESSION_SETTINGS_TOKEN, EVALUATION_GRADING_CONFIG_TOKEN) a adaptadores sobre PlatformSettingsFacade, de modo que ninguna feature importa platform-settings
- * Versión: 1.0
+ * Descripción: Raíz de composición global fuera de src/features: registra PlatformSettingsModule con sus valores por defecto (configuración y constantes de cada feature) y la disponibilidad de proveedores de IA, y enlaza los puertos de ajustes de las features consumidoras (AI_SETTINGS_PROVIDER_TOKEN, AI_PRICE_TABLE_TOKEN, RESERVATION_SETTINGS_TOKEN, VENTILATOR_TELEMETRY_SETTINGS_TOKEN, VENTILATOR_COMMANDS_SETTINGS_TOKEN, SIMULATION_SESSION_SETTINGS_TOKEN, EVALUATION_GRADING_CONFIG_TOKEN, ANALYTICS_SETTINGS_TOKEN) a adaptadores sobre PlatformSettingsFacade, de modo que ninguna feature importa platform-settings
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import {
   PlatformAiSettingsProvider,
 } from "@/composition/adapters/ai-settings.adapters";
 import {
+  createAnalyticsSettings,
   createEvaluationGradingConfig,
   createReservationSettings,
   createSimulationSessionSettings,
@@ -28,6 +29,7 @@ import {
 import { readPlatformSettingDefaults } from "@/composition/platform-setting-defaults";
 import { AI_SETTINGS_PROVIDER_TOKEN, type IAiSettingsProvider } from "@/features/ai/application/ports/ai-settings-provider.interface";
 import { AI_PRICE_TABLE_TOKEN, type IAiPriceTableProvider } from "@/features/ai-telemetry/application/ports/ai-price-table.interface";
+import { ANALYTICS_SETTINGS_TOKEN, type AnalyticsSettings } from "@/features/analytics/application/ports/analytics-settings.interface";
 import { EVALUATION_GRADING_CONFIG_TOKEN, type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
 import { AI_PROVIDER_AVAILABILITY_TOKEN } from "@/features/platform-settings/application/ports/ai-provider-availability.interface";
 import { PLATFORM_SETTING_DEFAULTS_TOKEN } from "@/features/platform-settings/application/ports/platform-setting-defaults.interface";
@@ -90,6 +92,11 @@ export const SETTINGS_PORT_PROVIDERS: Provider[] = [
     inject: [PlatformSettingsFacade],
     useFactory: (settings: PlatformSettingsFacade): EvaluationGradingConfig => createEvaluationGradingConfig(settings),
   },
+  {
+    provide: ANALYTICS_SETTINGS_TOKEN,
+    inject: [PlatformSettingsFacade],
+    useFactory: (settings: PlatformSettingsFacade): AnalyticsSettings => createAnalyticsSettings(settings),
+  },
 ];
 
 export const SETTINGS_PORT_TOKENS: symbol[] = [
@@ -100,6 +107,7 @@ export const SETTINGS_PORT_TOKENS: symbol[] = [
   VENTILATOR_COMMANDS_SETTINGS_TOKEN,
   SIMULATION_SESSION_SETTINGS_TOKEN,
   EVALUATION_GRADING_CONFIG_TOKEN,
+  ANALYTICS_SETTINGS_TOKEN,
 ];
 
 @Global()

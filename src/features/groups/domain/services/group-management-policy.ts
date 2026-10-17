@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Política de gestión de grupos
- * Descripción: Reglas puras de alcance por rol: ADMIN crea, gestiona y lee todo; TEACHER crea grupos STUDENT y gestiona los que creó o que supervisa un grupo TEACHER al que pertenece, y lee además los grupos TEACHER de los que es miembro; STUDENT no gestiona y solo lee su propio grupo STUDENT
- * Versión: 1.0
+ * Descripción: Reglas puras de alcance por rol: ADMIN crea, gestiona y lee todo; TEACHER crea grupos STUDENT y gestiona los que creó o que supervisa un grupo TEACHER al que pertenece, y lee además los grupos TEACHER de los que es miembro; STUDENT no gestiona y solo lee su propio grupo STUDENT; relación de un actor con un grupo STUDENT: MANAGED si lo creó, SUPERVISED si lo supervisa un grupo TEACHER al que pertenece
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,10 @@ export interface ManagedGroup {
   readonly type: GroupTypeValue;
   readonly createdBy?: string;
 }
+
+export type GroupRelationValue = "MANAGED" | "SUPERVISED";
+
+export const GROUP_RELATION_VALUES: readonly GroupRelationValue[] = ["MANAGED", "SUPERVISED"] as const;
 
 export interface GroupManagementContext {
   readonly supervisedByActor: boolean;
@@ -59,6 +63,18 @@ export function canManageGroup(actor: GroupActor, group: ManagedGroup, context: 
   }
 
   return group.createdBy === actor.id || context.supervisedByActor;
+}
+
+export function groupRelationOf(actor: GroupActor, group: ManagedGroup, context: GroupManagementContext): GroupRelationValue | undefined {
+  if (group.type !== STUDENT_GROUP_TYPE) {
+    return undefined;
+  }
+
+  if (group.createdBy === actor.id) {
+    return "MANAGED";
+  }
+
+  return context.supervisedByActor ? "SUPERVISED" : undefined;
 }
 
 export function canReadGroup(actor: GroupActor, group: ManagedGroup, context: GroupReadContext): boolean {

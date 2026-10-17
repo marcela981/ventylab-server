@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de la calificación docente de evaluaciones
- * Descripción: Respuestas documentadas con Swagger de la cola de revisión, la vista de calificación de un intento (evaluación con respuestas correctas, respuestas del estudiante con puntajes y desglose práctico), la calificación de una pregunta, la publicación individual y masiva y las notas publicadas del estudiante
- * Versión: 1.1
+ * Descripción: Respuestas documentadas con Swagger de la cola de revisión, la vista de calificación de un intento (evaluación con respuestas correctas, respuestas del estudiante con puntajes y desglose práctico), la calificación de una pregunta, la publicación individual y masiva, el conteo de pendientes de la cola y las notas publicadas del estudiante (propias o de un estudiante del profesor)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -364,6 +364,15 @@ export class PublishGradesResponseDTO {
 
   public constructor(publishedCount: number) {
     this.publishedCount = publishedCount;
+  }
+}
+
+export class GradingQueueCountDTO {
+  @ApiProperty({ description: "PENDING_REVIEW attempts matching the queue scope and filters", example: 7 })
+  public pending: number;
+
+  public constructor(pending: number) {
+    this.pending = pending;
   }
 }
 

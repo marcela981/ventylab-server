@@ -1,13 +1,15 @@
 /*
  * Funcionalidad: Adaptadores de ajustes de las features
- * Descripción: Construyen los objetos de ajustes que consumen reservas, telemetría y comandos del ventilador, sesiones de simulación y calificación de evaluaciones: los campos editables son getters que leen el valor vigente de la fachada de ajustes de la plataforma en cada acceso y el resto sale de los lectores puros de configuración de cada feature
- * Versión: 1.0
+ * Descripción: Construyen los objetos de ajustes que consumen reservas, telemetría y comandos del ventilador, sesiones de simulación, calificación de evaluaciones y analítica (nota aprobatoria y umbrales de riesgo): los campos editables son getters que leen el valor vigente de la fachada de ajustes de la plataforma en cada acceso y el resto sale de los lectores puros de configuración de cada feature
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type AnalyticsSettings } from "@/features/analytics/application/ports/analytics-settings.interface";
+import { type StudentRiskThresholds } from "@/features/analytics/domain/services/student-risk";
 import { type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
 import { PlatformSettingsFacade } from "@/features/platform-settings/application/services/platform-settings.facade";
 import { type ReservationSettings } from "@/features/reservations/application/tokens/reservation-settings.token";
@@ -104,6 +106,21 @@ export function createEvaluationGradingConfig(settings: PlatformSettingsFacade):
     },
     get submitGraceMs(): number {
       return settings.get("evaluation.submitGraceSeconds") * MS_PER_SECOND;
+    },
+  };
+}
+
+export function createAnalyticsSettings(settings: PlatformSettingsFacade): AnalyticsSettings {
+  return {
+    get passingGrade(): number {
+      return settings.get("evaluation.passingGrade");
+    },
+    get riskThresholds(): StudentRiskThresholds {
+      return {
+        maxFailedEvaluations: settings.get("analytics.risk.maxFailedEvaluations"),
+        minProgressPct: settings.get("analytics.risk.minProgressPct"),
+        inactivityDays: settings.get("analytics.risk.inactivityDays"),
+      };
     },
   };
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de acceso a reservas
- * Descripción: Resuelve con GroupsFacade los hechos de grupo que necesita la política (liderazgo, supervisión, tipo de grupo), el grupo de estudiantes de quien consulta, si un usuario es titular de una reserva (usuario titular o miembro del grupo titular), los usuarios a avisar y si puede controlar el ventilador
- * Versión: 1.0
+ * Descripción: Resuelve con GroupsFacade los hechos de grupo que necesita la política (liderazgo, supervisión, tipo de grupo), los hechos para filtrar el calendario por grupo (gestión o supervisión de un profesor, pertenencia de un estudiante), el grupo de estudiantes de quien consulta, si un usuario es titular de una reserva (usuario titular o miembro del grupo titular), los usuarios a avisar y si puede controlar el ventilador
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,7 +13,14 @@ import { Injectable } from "@nestjs/common";
 import { type GroupMemberSummary, type GroupSummary, GroupsFacade } from "@/features/groups/application/services/groups.facade";
 import { type StudentGroupSummaryView } from "@/features/groups/domain/read-models/group.read-model";
 import { type ReservationViewer } from "@/features/reservations/domain/read-models/reservation.read-model";
-import { type HolderGroupFacts, isPrivilegedActor, type ReservationActor, TEACHER_ACTOR_ROLE } from "@/features/reservations/domain/services/reservation-access-policy";
+import {
+  ADMIN_ACTOR_ROLE,
+  type CalendarGroupFacts,
+  type HolderGroupFacts,
+  isPrivilegedActor,
+  type ReservationActor,
+  TEACHER_ACTOR_ROLE,
+} from "@/features/reservations/domain/services/reservation-access-policy";
 import { type ReservationHolderSnapshot } from "@/features/reservations/domain/value-objects/reservation-holder";
 
 export interface ResolvedGroupFacts extends HolderGroupFacts {
@@ -47,6 +54,18 @@ export class ReservationAccessService {
       supervisesGroup: supervisedGroupIds.includes(groupId),
       isStudentGroup: summary.type === "STUDENT" && summary.isActive,
     };
+  }
+
+  public async resolveCalendarGroupFacts(actor: ReservationActor, groupId: string): Promise<CalendarGroupFacts> {
+    if (actor.role === ADMIN_ACTOR_ROLE) {
+      return { managesGroup: true, isMember: false };
+    }
+
+    if (actor.role === TEACHER_ACTOR_ROLE) {
+      return { managesGroup: await this._groupsFacade.canManageGroup({ id: actor.userId, role: actor.role }, groupId), isMember: false };
+    }
+
+    return { managesGroup: false, isMember: await this._groupsFacade.isMemberOf(actor.userId, groupId) };
   }
 
   public async isHolder(userId: string, holder: ReservationHolderSnapshot): Promise<boolean> {

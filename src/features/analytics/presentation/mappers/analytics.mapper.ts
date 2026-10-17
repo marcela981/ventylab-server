@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador AnalyticsMapper
- * Descripción: Convierte los resultados de analítica (panel de grupo, línea de tiempo, estadísticas de evaluación y resumen del estudiante) en sus DTOs de respuesta, con fechas ISO 8601, valores ausentes como null y el porcentaje de valoraciones útiles por caso de uso
- * Versión: 1.1
+ * Descripción: Convierte los resultados de analítica (panel de grupo con nota aprobatoria, umbrales de riesgo, resumen por módulo y riesgo por fila, línea de tiempo, estadísticas de evaluación y resumen del estudiante) en sus DTOs de respuesta, con fechas ISO 8601, valores ausentes como null y el porcentaje de valoraciones útiles por caso de uso
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { type AiConversationSummary } from "@/features/ai-tutor/application/serv
 import {
   type EvaluationAnalytics,
   type GroupDashboard,
+  type GroupModuleSummary,
   type MySummary,
   type ProgressItemSummary,
   type StudentAiUseCaseUsage,
@@ -93,6 +94,9 @@ export class AnalyticsMapper {
         helpfulPercentage: usage.helpfulRate,
       })),
       ventilatorHours: row.ventilatorHours,
+      atRisk: row.atRisk,
+      riskReasons: [...row.riskReasons],
+      failedEvaluationIds: [...row.failedEvaluationIds],
     };
   }
 
@@ -101,6 +105,15 @@ export class AnalyticsMapper {
       groupId: dashboard.groupId,
       groupName: dashboard.groupName,
       generatedAt: dashboard.generatedAt.toISOString(),
+      passingGrade: dashboard.passingGrade,
+      riskThresholds: { ...dashboard.riskThresholds },
+      moduleSummary: dashboard.moduleSummary.map((module: GroupModuleSummary) => ({
+        moduleId: module.moduleId,
+        moduleTitle: module.moduleTitle ?? null,
+        averageProgressPct: module.averageProgressPct,
+        completedCount: module.completedCount,
+        studentCount: module.studentCount,
+      })),
       students: dashboard.students.map((row: StudentDashboardRow) => AnalyticsMapper.toDashboardRowDTO(row)),
     };
   }
@@ -130,6 +143,7 @@ export class AnalyticsMapper {
 
     return {
       evaluationId: analytics.evaluationId,
+      groupId: analytics.groupId ?? null,
       title: analytics.title,
       type: analytics.type,
       totalAttempts: stats.totalAttempts,

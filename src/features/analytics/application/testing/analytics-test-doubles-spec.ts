@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de analítica
- * Descripción: Fachadas falsas (grupos con dos grupos STUDENT gestionados por profesores distintos, progreso, evaluaciones, simulación, telemetría y valoraciones de IA, reservas, notas y tutor) con métodos jest.fn que responden datos deterministas para N estudiantes, y el arnés que construye el servicio de alcance, la caché, el lector por lotes y los casos de uso de analítica sobre ellas
- * Versión: 1.1
+ * Descripción: Fachadas falsas (grupos con dos grupos STUDENT gestionados por profesores distintos, progreso, evaluaciones, simulación, telemetría y valoraciones de IA, reservas, notas y tutor) con métodos jest.fn que responden datos deterministas para N estudiantes, ajustes de analítica mutables (nota aprobatoria y umbrales de riesgo) y el arnés que construye el servicio de alcance, la caché, el lector por lotes y los casos de uso de analítica sobre ellas
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,7 @@ import { type EnvironmentVariables } from "@/common/infrastructure/config/env.va
 import { type AiRatingsFacade } from "@/features/ai-ratings/application/services/ai-ratings.facade";
 import { type AiTelemetryFacade } from "@/features/ai-telemetry/application/ai-telemetry.facade";
 import { type AiTutorFacade } from "@/features/ai-tutor/application/services/ai-tutor.facade";
+import { type AnalyticsSettings } from "@/features/analytics/application/ports/analytics-settings.interface";
 import { AnalyticsCache } from "@/features/analytics/application/services/analytics-cache";
 import { type AnalyticsActor, AnalyticsScopeService } from "@/features/analytics/application/services/analytics-scope.service";
 import { StudentAnalyticsSourcesReader } from "@/features/analytics/application/services/student-analytics-sources.reader";
@@ -22,6 +23,7 @@ import { GetEvaluationAnalyticsUseCase } from "@/features/analytics/application/
 import { GetGroupDashboardUseCase } from "@/features/analytics/application/use-cases/get-group-dashboard.usecase";
 import { GetMySummaryUseCase } from "@/features/analytics/application/use-cases/get-my-summary.usecase";
 import { GetStudentTimelineUseCase } from "@/features/analytics/application/use-cases/get-student-timeline.usecase";
+import { DEFAULT_STUDENT_RISK_THRESHOLDS } from "@/features/analytics/domain/services/student-risk";
 import { HmacPseudonymizer } from "@/features/analytics/infrastructure/security/hmac-pseudonymizer";
 import { type EvaluationFacade } from "@/features/evaluation/application/services/evaluation.facade";
 import { type GroupMemberSummary, type GroupsFacade } from "@/features/groups/application/services/groups.facade";
@@ -232,8 +234,14 @@ export function fakeConfig(salt: string | undefined): ConfigService<EnvironmentV
   return { get: (key: string): unknown => (key === "ANALYTICS_EXPORT_SALT" ? salt : undefined) } as unknown as ConfigService<EnvironmentVariables>;
 }
 
+export interface MutableAnalyticsSettings {
+  passingGrade: number;
+  riskThresholds: AnalyticsSettings["riskThresholds"];
+}
+
 export interface AnalyticsHarness {
   facades: FakeFacades;
+  settings: MutableAnalyticsSettings;
   cache: AnalyticsCache;
   dashboard: GetGroupDashboardUseCase;
   timeline: GetStudentTimelineUseCase;
@@ -250,6 +258,7 @@ export function buildAnalyticsHarness(students: GroupMemberSummary[], salt: stri
   const simulation: SimulationFacade = facades.simulation as unknown as SimulationFacade;
   const reservations: ReservationsFacade = facades.reservations as unknown as ReservationsFacade;
   const cache: AnalyticsCache = new AnalyticsCache();
+  const settings: MutableAnalyticsSettings = { passingGrade: 3, riskThresholds: { ...DEFAULT_STUDENT_RISK_THRESHOLDS } };
   const scope: AnalyticsScopeService = new AnalyticsScopeService(groups, evaluation);
   const reader: StudentAnalyticsSourcesReader = new StudentAnalyticsSourcesReader(
     progress,
@@ -262,8 +271,9 @@ export function buildAnalyticsHarness(students: GroupMemberSummary[], salt: stri
 
   return {
     facades,
+    settings,
     cache,
-    dashboard: new GetGroupDashboardUseCase(scope, cache, groups, reader),
+    dashboard: new GetGroupDashboardUseCase(scope, cache, groups, reader, settings),
     timeline: new GetStudentTimelineUseCase(scope, cache, progress, evaluation, simulation, reservations),
     evaluation: new GetEvaluationAnalyticsUseCase(scope, cache, evaluation),
     summary: new GetMySummaryUseCase(

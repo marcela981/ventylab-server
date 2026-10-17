@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de grupos
- * Descripción: Convierte las vistas de grupos, miembros, grupos propios y supervisiones a los DTOs de respuesta de /api/groups
- * Versión: 1.1
+ * Descripción: Convierte las vistas de grupos, miembros, grupos propios y supervisiones a los DTOs de respuesta de /api/groups, con la relación del solicitante en el listado propio
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -123,6 +123,7 @@ export class GroupsMapper {
       subGroups: view.subGroups.map((subGroup: SubgroupView) => new SubgroupDTO(subGroup)),
       membersCount: view.membersCount,
       subGroupsCount: view.subGroupsCount,
+      relation: view.relation ?? null,
     };
   }
 

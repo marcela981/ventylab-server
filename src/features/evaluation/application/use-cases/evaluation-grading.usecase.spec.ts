@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la cola, la vista de calificación y la publicación de notas
- * Descripción: Verifica la cola de revisión del profesor (solo PENDING_REVIEW en su alcance, cierre perezoso acotado de intentos vencidos antes de listar), la vista de calificación con respuestas correctas, puntajes y desglose práctico recalculado bajo demanda, la publicación individual idempotente solo de intentos GRADED y la publicación masiva por evaluación con el conteo y un evento por intento tras confirmar
- * Versión: 1.2
+ * Descripción: Verifica la cola de revisión del profesor (solo PENDING_REVIEW en su alcance, filtro por estudiante, cierre perezoso acotado de intentos vencidos antes de listar) y su conteo con los mismos filtros, las notas de un estudiante (administrador sin alcance, profesor solo de sus grupos y con su alcance, 403 fuera de ellos), la vista de calificación con respuestas correctas, puntajes y desglose práctico recalculado bajo demanda, la publicación individual idempotente solo de intentos GRADED y la publicación masiva por evaluación con el conteo y un evento por intento tras confirmar
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { type Paginated } from "@/common/domain/utils/paginated";
 import { PublishEvaluationGradesCommand } from "@/features/evaluation/application/commands/publish-evaluation-grades.command";
 import {
+  type EvaluationUserGrade,
   type GradingAttemptDetailResult,
   type PublishEvaluationAttemptGradeResult,
 } from "@/features/evaluation/application/results/evaluation-grading.result";
@@ -24,16 +25,20 @@ import {
 } from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
 import { ADMIN, buildGradingDoubles, type GradingDoubles, TEACHER } from "@/features/evaluation/application/testing/evaluation-grading-test-doubles-spec";
 import { GetAttemptForGradingUseCase } from "@/features/evaluation/application/use-cases/get-attempt-for-grading.usecase";
+import { GetGradingQueueCountUseCase } from "@/features/evaluation/application/use-cases/get-grading-queue-count.usecase";
 import { GetGradingQueueUseCase } from "@/features/evaluation/application/use-cases/get-grading-queue.usecase";
+import { GetStudentGradesUseCase } from "@/features/evaluation/application/use-cases/get-student-grades.usecase";
 import { PublishEvaluationAttemptGradeUseCase } from "@/features/evaluation/application/use-cases/publish-evaluation-attempt-grade.usecase";
 import { PublishEvaluationGradesUseCase } from "@/features/evaluation/application/use-cases/publish-evaluation-grades.usecase";
 import {
   EvaluationAttemptNotGradedError,
   EvaluationGradingForbiddenError,
   EvaluationNotFoundError,
+  EvaluationStudentGradesForbiddenError,
 } from "@/features/evaluation/domain/evaluation.errors";
 import { EvaluationGradePublishedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
-import { type GradingQueueItemView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
+import { type GradingQueueItemView, type PublishedGradeView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
+import { type GroupsFacade } from "@/features/groups/application/services/groups.facade";
 
 describe("GetGradingQueueUseCase", () => {
   it("lazily closes expired attempts in scope and lists only PENDING_REVIEW attempts", async () => {
@@ -48,16 +53,104 @@ describe("GetGradingQueueUseCase", () => {
       scopedAttemptIds: ["attempt-1", "attempt-2", "attempt-4"],
     });
 
-    const result: Paginated<GradingQueueItemView> = await new GetGradingQueueUseCase(
-      doubles.gradingRepository,
-      doubles.attemptsRepository,
-      doubles.closer,
-      doubles.gradingAccess,
-    ).execute({ evaluationId: "evaluation-1", page: 1, limit: 10 }, TEACHER);
+    const result: Paginated<GradingQueueItemView> = await new GetGradingQueueUseCase(doubles.gradingRepository, doubles.lazyCloser, doubles.gradingAccess).execute(
+      { evaluationId: "evaluation-1", page: 1, limit: 10 },
+      TEACHER,
+    );
 
     expect(result.data.map((item: GradingQueueItemView) => item.attemptId).sort()).toEqual(["attempt-1", "attempt-2"]);
     expect(doubles.attemptsRepository.store.get("attempt-1")?.status).toBe("PENDING_REVIEW");
     expect(doubles.attemptsRepository.store.get("attempt-4")?.status).toBe("IN_PROGRESS");
+  });
+
+  it("lists only the attempts of the requested student", async () => {
+    const doubles: GradingDoubles = buildGradingDoubles({
+      attempts: [
+        buildStoredAttempt({ id: "attempt-1", userId: "student-1", status: "PENDING_REVIEW" }),
+        buildStoredAttempt({ id: "attempt-2", userId: "student-2", status: "PENDING_REVIEW" }),
+      ],
+    });
+
+    const result: Paginated<GradingQueueItemView> = await new GetGradingQueueUseCase(doubles.gradingRepository, doubles.lazyCloser, doubles.gradingAccess).execute(
+      { studentId: "student-2", page: 1, limit: 10 },
+      ADMIN,
+    );
+
+    expect(result.data.map((item: GradingQueueItemView) => item.attemptId)).toEqual(["attempt-2"]);
+  });
+});
+
+describe("GetGradingQueueCountUseCase", () => {
+  it("counts the queue with the same scope, filters and lazy close as the list", async () => {
+    const doubles: GradingDoubles = buildGradingDoubles({
+      evaluation: buildAttemptEvaluation({ questions: [attemptQuestion("q1", "OPEN_TEXT", 2)] }),
+      attempts: [
+        buildStoredAttempt({ id: "attempt-1", deadlineAt: minutesFromNow(-5) }),
+        buildStoredAttempt({ id: "attempt-2", userId: "student-2", status: "PENDING_REVIEW" }),
+        buildStoredAttempt({ id: "attempt-3", userId: "student-3", status: "PENDING_REVIEW" }),
+      ],
+      scopedAttemptIds: ["attempt-1", "attempt-2"],
+    });
+    const useCase: GetGradingQueueCountUseCase = new GetGradingQueueCountUseCase(doubles.gradingRepository, doubles.lazyCloser, doubles.gradingAccess);
+
+    const teacherCount: number = await useCase.execute({ evaluationId: "evaluation-1" }, TEACHER);
+    const studentCount: number = await useCase.execute({ studentId: "student-3" }, ADMIN);
+
+    expect(teacherCount).toBe(2);
+    expect(studentCount).toBe(1);
+  });
+});
+
+describe("GetStudentGradesUseCase", () => {
+  const view: PublishedGradeView = {
+    attemptId: "attempt-1",
+    evaluationId: "evaluation-1",
+    evaluationTitle: "Ventilation basics",
+    evaluationType: "QUIZ",
+    moduleId: "module-1",
+    moduleTitle: "Basics",
+    userId: STUDENT_ID,
+    attemptNumber: 1,
+    grade: 2.5,
+    publishedAt: new Date("2026-10-01T10:00:00.000Z"),
+    legacy: false,
+  };
+
+  function build(doubles: GradingDoubles, canManage: boolean): { useCase: GetStudentGradesUseCase; canManageAnyGroupOfUser: jest.Mock } {
+    const canManageAnyGroupOfUser: jest.Mock = jest.fn().mockResolvedValue(canManage);
+    const groupsFacade: GroupsFacade = { canManageAnyGroupOfUser } as unknown as GroupsFacade;
+
+    doubles.gradingRepository.getPublishedGradesOfUser.mockResolvedValue([view]);
+
+    return { useCase: new GetStudentGradesUseCase(doubles.gradingRepository, doubles.gradingAccess, groupsFacade, doubles.gradingConfig), canManageAnyGroupOfUser };
+  }
+
+  it("returns every grade to an admin with the pass flag of the current passing grade", async () => {
+    const doubles: GradingDoubles = buildGradingDoubles();
+    const { useCase, canManageAnyGroupOfUser } = build(doubles, false);
+
+    const grades: EvaluationUserGrade[] = await useCase.execute(STUDENT_ID, ADMIN);
+
+    expect(grades).toEqual([expect.objectContaining({ attemptId: "attempt-1", moduleTitle: "Basics", passed: false })]);
+    expect(doubles.gradingRepository.getPublishedGradesOfUser).toHaveBeenCalledWith(STUDENT_ID, undefined);
+    expect(canManageAnyGroupOfUser).not.toHaveBeenCalled();
+  });
+
+  it("limits a teacher of the student's group to the grading scope", async () => {
+    const doubles: GradingDoubles = buildGradingDoubles();
+    const { useCase } = build(doubles, true);
+
+    await useCase.execute(STUDENT_ID, TEACHER);
+
+    expect(doubles.gradingRepository.getPublishedGradesOfUser).toHaveBeenCalledWith(STUDENT_ID, { teacherId: TEACHER.id, supervisedGroupIds: ["group-supervised"] });
+  });
+
+  it("forbids a teacher outside the student's groups", async () => {
+    const doubles: GradingDoubles = buildGradingDoubles();
+    const { useCase } = build(doubles, false);
+
+    await expect(useCase.execute(STUDENT_ID, TEACHER)).rejects.toBeInstanceOf(EvaluationStudentGradesForbiddenError);
+    expect(doubles.gradingRepository.getPublishedGradesOfUser).not.toHaveBeenCalled();
   });
 });
 

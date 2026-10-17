@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: DTOs de solicitud de la calificación docente de evaluaciones
- * Descripción: Consulta paginada de la cola de revisión (evaluación y grupo opcionales) y cuerpos validados con class-validator de la calificación manual de una pregunta (puntaje numérico y comentario opcional, cuyo rango y obligatoriedad se validan en el dominio) y de la publicación masiva por evaluación y grupo
- * Versión: 1.0
+ * Descripción: Consulta paginada de la cola de revisión (evaluación, grupo y estudiante opcionales), los mismos filtros sin paginación para su conteo y cuerpos validados con class-validator de la calificación manual de una pregunta (puntaje numérico y comentario opcional, cuyo rango y obligatoriedad se validan en el dominio) y de la publicación masiva por evaluación y grupo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional, PickType } from "@nestjs/swagger";
 import { IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
 
@@ -26,7 +26,14 @@ export class GetGradingQueueQueryDTO extends ListQueryDTO {
   @IsOptional()
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   public groupId?: string;
+
+  @ApiPropertyOptional({ description: "Filter by student", example: "cm5student01" })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("common.validation.string") })
+  public studentId?: string;
 }
+
+export class GetGradingQueueCountQueryDTO extends PickType(GetGradingQueueQueryDTO, ["evaluationId", "groupId", "studentId"] as const) {}
 
 export class GradeEvaluationAnswerDTO {
   @ApiProperty({ description: "Manual score between 0 and the question points", example: 2.5 })

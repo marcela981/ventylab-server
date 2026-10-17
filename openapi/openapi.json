@@ -7183,6 +7183,14 @@
             "example": 20,
             "type": "number"
           },
+          "groupId": {
+            "description": "Group the statistics are limited to (groupId query), null for the whole requester scope",
+            "example": null,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "histogram": {
             "description": "Grade histogram in 0.5 buckets on the 0–5 scale",
             "items": {
@@ -7257,6 +7265,7 @@
         },
         "required": [
           "evaluationId",
+          "groupId",
           "title",
           "type",
           "totalAttempts",
@@ -9309,6 +9318,19 @@
         ],
         "type": "object"
       },
+      "GradingQueueCountDTO": {
+        "properties": {
+          "pending": {
+            "description": "PENDING_REVIEW attempts matching the queue scope and filters",
+            "example": 7,
+            "type": "number"
+          }
+        },
+        "required": [
+          "pending"
+        ],
+        "type": "object"
+      },
       "GradingQueueItemDTO": {
         "properties": {
           "assignmentId": {
@@ -9569,6 +9591,19 @@
               "null"
             ]
           },
+          "relation": {
+            "description": "Relation of the requester with this STUDENT group when the list is scoped to the requester (teachers, or myGroups=true): MANAGED if they created it, SUPERVISED if a teacher group they belong to supervises it; null otherwise",
+            "enum": [
+              "MANAGED",
+              "SUPERVISED",
+              null
+            ],
+            "example": "MANAGED",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "semester": {
             "description": "Semester",
             "example": "2026-2",
@@ -9655,6 +9690,26 @@
             "example": "Group A",
             "type": "string"
           },
+          "moduleSummary": {
+            "description": "Progress per published module aggregated over the group's students",
+            "items": {
+              "$ref": "#/components/schemas/GroupModuleSummaryDTO"
+            },
+            "type": "array"
+          },
+          "passingGrade": {
+            "description": "Current passing grade (0–5 scale) used for the pass flags",
+            "example": 3,
+            "type": "number"
+          },
+          "riskThresholds": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RiskThresholdsDTO"
+              }
+            ],
+            "description": "Current risk thresholds (platform settings analytics.risk.*)"
+          },
           "students": {
             "description": "One row per student member",
             "items": {
@@ -9667,6 +9722,9 @@
           "groupId",
           "groupName",
           "generatedAt",
+          "passingGrade",
+          "riskThresholds",
+          "moduleSummary",
           "students"
         ],
         "type": "object"
@@ -9799,6 +9857,19 @@
           "parentGroupId": {
             "description": "Parent group ID",
             "example": null,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "relation": {
+            "description": "Relation of the requester with this STUDENT group when the list is scoped to the requester (teachers, or myGroups=true): MANAGED if they created it, SUPERVISED if a teacher group they belong to supervises it; null otherwise",
+            "enum": [
+              "MANAGED",
+              "SUPERVISED",
+              null
+            ],
+            "example": "MANAGED",
             "type": [
               "string",
               "null"
@@ -10043,6 +10114,46 @@
           "groupType",
           "isActive",
           "memberRole"
+        ],
+        "type": "object"
+      },
+      "GroupModuleSummaryDTO": {
+        "properties": {
+          "averageProgressPct": {
+            "description": "Average module progress of the group's students (students without progress count as 0), 0–100",
+            "example": 62.5,
+            "type": "number"
+          },
+          "completedCount": {
+            "description": "Students who completed every published lesson of the module",
+            "example": 4,
+            "type": "number"
+          },
+          "moduleId": {
+            "description": "Module identifier",
+            "example": "cm5x2k9a00000abcd1234efgh",
+            "type": "string"
+          },
+          "moduleTitle": {
+            "description": "Module title",
+            "example": "Ventilation basics",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "studentCount": {
+            "description": "Students of the group",
+            "example": 25,
+            "type": "number"
+          }
+        },
+        "required": [
+          "moduleId",
+          "moduleTitle",
+          "averageProgressPct",
+          "completedCount",
+          "studentCount"
         ],
         "type": "object"
       },
@@ -16169,6 +16280,7 @@
             "enum": [
               "ai",
               "evaluation",
+              "analytics",
               "simulation",
               "reservations",
               "telemetry",
@@ -18145,6 +18257,31 @@
         },
         "required": [
           "id"
+        ],
+        "type": "object"
+      },
+      "RiskThresholdsDTO": {
+        "properties": {
+          "inactivityDays": {
+            "description": "Days without activity after which a student is at risk (0 disables the rule)",
+            "example": 0,
+            "type": "number"
+          },
+          "maxFailedEvaluations": {
+            "description": "Failed evaluations a student may have before being at risk (0: any failed evaluation flags the student)",
+            "example": 0,
+            "type": "number"
+          },
+          "minProgressPct": {
+            "description": "Overall progress percentage below which a student is at risk (0 disables the rule)",
+            "example": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "maxFailedEvaluations",
+          "minProgressPct",
+          "inactivityDays"
         ],
         "type": "object"
       },
@@ -20621,10 +20758,25 @@
             },
             "type": "array"
           },
+          "atRisk": {
+            "description": "Whether any risk rule of the dashboard thresholds applies to the student",
+            "example": true,
+            "type": "boolean"
+          },
           "email": {
             "description": "Student email",
             "example": "ana@example.com",
             "type": "string"
+          },
+          "failedEvaluationIds": {
+            "description": "Evaluations whose latest published attempt (highest attempt number) is failed",
+            "example": [
+              "cm5x2k9a00000abcd1234efgh"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "grades": {
             "allOf": [
@@ -20649,6 +20801,21 @@
               }
             ],
             "description": "Learning progress"
+          },
+          "riskReasons": {
+            "description": "Risk rules that apply: FAILED_EVALUATIONS (failed latest attempts above maxFailedEvaluations), LOW_PROGRESS (overall progress below minProgressPct), INACTIVE (no activity for more than inactivityDays)",
+            "example": [
+              "FAILED_EVALUATIONS"
+            ],
+            "items": {
+              "enum": [
+                "FAILED_EVALUATIONS",
+                "LOW_PROGRESS",
+                "INACTIVE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
           },
           "simulation": {
             "allOf": [
@@ -20677,7 +20844,10 @@
           "grades",
           "simulation",
           "aiUsage",
-          "ventilatorHours"
+          "ventilatorHours",
+          "atRisk",
+          "riskReasons",
+          "failedEvaluationIds"
         ],
         "type": "object"
       },
@@ -29153,7 +29323,7 @@
     },
     "/api/analytics/evaluations/{evaluationId}/stats": {
       "get": {
-        "description": "Average, median, histogram in 0.5 buckets on the 0–5 scale and pass rate over graded attempts, plus the difficulty index and correct rate of each question. Teachers only see evaluations assigned to a group they manage; cached 60 s\n\n**Required access:** bearer token holding `analytics:read`; minimum role TEACHER.",
+        "description": "Average, median, histogram in 0.5 buckets on the 0–5 scale and pass rate over graded attempts, plus the difficulty index and correct rate of each question. Teachers only see evaluations assigned to a group they manage; groupId limits the statistics to the attempts of that group's assignments (teachers must manage or supervise the group, otherwise 403; unknown group 404); cached 60 s\n\n**Required access:** bearer token holding `analytics:read`; minimum role TEACHER.",
         "operationId": "getEvaluationAnalytics",
         "parameters": [
           {
@@ -29161,6 +29331,17 @@
             "name": "evaluationId",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only attempts of the assignments of this STUDENT group; teachers must manage or supervise it",
+            "in": "query",
+            "name": "groupId",
+            "required": false,
+            "schema": {
+              "example": "cm5x2k9a00000abcd1234efgh",
+              "maxLength": 100,
               "type": "string"
             }
           }
@@ -29204,7 +29385,7 @@
                 }
               }
             },
-            "description": "Validation error or malformed request"
+            "description": "Validation error"
           },
           "401": {
             "content": {
@@ -29234,7 +29415,7 @@
                 }
               }
             },
-            "description": "Forbidden or evaluation outside the requester scope"
+            "description": "Forbidden, evaluation or group outside the requester scope"
           },
           "404": {
             "content": {
@@ -29249,7 +29430,7 @@
                 }
               }
             },
-            "description": "Evaluation not found"
+            "description": "Evaluation or group not found"
           },
           "429": {
             "content": {
@@ -29299,7 +29480,7 @@
     },
     "/api/analytics/groups/{groupId}/dashboard": {
       "get": {
-        "description": "One row per student: progress by section, level and module, counted grade per evaluation and average, simulation sessions (count, average score, average time to stabilize), AI usage per use case with the percentage of useful ratings and ventilator hours. Teachers only see groups they created or supervise; cached 60 s\n\n**Required access:** bearer token holding `analytics:read`; minimum role TEACHER.",
+        "description": "One row per student: progress by section, level and module, counted grade per evaluation and average, simulation sessions (count, average score, average time to stabilize), AI usage per use case with the percentage of useful ratings, ventilator hours and risk (atRisk, riskReasons, failedEvaluationIds) under the current risk thresholds; plus the current passing grade, the thresholds and the per-module progress aggregate of the group. Teachers only see groups they created or supervise; cached 60 s\n\n**Required access:** bearer token holding `analytics:read`; minimum role TEACHER.",
         "operationId": "getGroupDashboard",
         "parameters": [
           {
@@ -39831,7 +40012,7 @@
     },
     "/api/evaluation-grading/queue": {
       "get": {
-        "description": "PENDING_REVIEW attempts of students in the STUDENT groups the caller created or supervises (legacy attempts without assignment: evaluations the caller created; admins: all), oldest first; expired attempts in progress of the filtered evaluations/groups are closed first (at most 50 per request)\n\n**Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.",
+        "description": "PENDING_REVIEW attempts of students in the STUDENT groups the caller created or supervises (legacy attempts without assignment: evaluations the caller created; admins: all), optionally filtered by evaluation, group and student, oldest first; expired attempts in progress of the filtered evaluations/groups/student are closed first (at most 50 per request)\n\n**Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.",
         "operationId": "getQueue",
         "parameters": [
           {
@@ -39922,6 +40103,16 @@
             "required": false,
             "schema": {
               "example": "cm5group01",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by student",
+            "in": "query",
+            "name": "studentId",
+            "required": false,
+            "schema": {
+              "example": "cm5student01",
               "type": "string"
             }
           }
@@ -40037,6 +40228,308 @@
           }
         ],
         "summary": "Get grading queue",
+        "tags": [
+          "Evaluation grading"
+        ],
+        "x-min-role": "TEACHER",
+        "x-required-permissions": [
+          "evaluations:grade"
+        ]
+      }
+    },
+    "/api/evaluation-grading/queue/count": {
+      "get": {
+        "description": "Number of PENDING_REVIEW attempts with the same scope and filters (evaluation, group, student) as the grading queue; expired attempts in progress matching the filters are closed first (at most 50 per request)\n\n**Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.",
+        "operationId": "getQueueCount",
+        "parameters": [
+          {
+            "description": "Filter by evaluation",
+            "in": "query",
+            "name": "evaluationId",
+            "required": false,
+            "schema": {
+              "example": "cm5evaluation01",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by STUDENT group",
+            "in": "query",
+            "name": "groupId",
+            "required": false,
+            "schema": {
+              "example": "cm5group01",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by student",
+            "in": "query",
+            "name": "studentId",
+            "required": false,
+            "schema": {
+              "example": "cm5student01",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GradingQueueCountDTO"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Pending count retrieved successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ValidationError": {
+                    "$ref": "#/components/examples/ValidationError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ForbiddenError": {
+                    "$ref": "#/components/examples/ForbiddenError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Count the grading queue",
+        "tags": [
+          "Evaluation grading"
+        ],
+        "x-min-role": "TEACHER",
+        "x-required-permissions": [
+          "evaluations:grade"
+        ]
+      }
+    },
+    "/api/evaluation-grading/students/{userId}/grades": {
+      "get": {
+        "description": "Published grades of a student with attempt, evaluation, module, grade on the 0.0–5.0 scale, pass flag and publication date. Admins see every grade; a teacher must create or supervise a STUDENT group of the student (403 otherwise) and only sees the grades of their grading scope (assignments of those groups, legacy attempts of evaluations they created)\n\n**Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.",
+        "operationId": "getStudentGrades",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "items": {
+                            "$ref": "#/components/schemas/MyEvaluationGradeDTO"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Grades retrieved successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ValidationError": {
+                    "$ref": "#/components/examples/ValidationError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error or malformed request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ForbiddenError": {
+                    "$ref": "#/components/examples/ForbiddenError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden or student outside the caller's groups"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFoundError": {
+                    "$ref": "#/components/examples/NotFoundError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource does not exist or is not visible to the caller"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Get a student's grades",
         "tags": [
           "Evaluation grading"
         ],
@@ -44970,7 +45463,7 @@
     },
     "/api/groups": {
       "get": {
-        "description": "Lists groups ordered by depth and name. Admins see every group; teachers see the student groups they created or supervise and the teacher groups they belong to; myGroups=true applies that teacher scope to admins too\n\n**Required access:** bearer token holding `groups:read`; minimum role TEACHER.",
+        "description": "Lists groups ordered by depth and name. Admins see every group; teachers see the student groups they created or supervise and the teacher groups they belong to; myGroups=true applies that teacher scope to admins too. When the list is scoped to the requester (teachers, or myGroups=true), each student group carries relation MANAGED (created by the requester) or SUPERVISED (supervised by a teacher group of the requester)\n\n**Required access:** bearer token holding `groups:read`; minimum role TEACHER.",
         "operationId": "getGroups",
         "parameters": [
           {
@@ -58884,6 +59377,7 @@
               "enum": [
                 "ai",
                 "evaluation",
+                "analytics",
                 "simulation",
                 "reservations",
                 "telemetry",
@@ -62743,7 +63237,7 @@
     },
     "/api/reservations": {
       "get": {
-        "description": "Reservations overlapping [from, to) (at most 31 days). Students get other people's reservations as { id, startsAt, endsAt, status, label } only\n\n**Required access:** bearer token holding `reservations:read`; minimum role STUDENT.",
+        "description": "Reservations overlapping [from, to) (at most 31 days), optionally only those held by groupId (admins: any group; teachers: groups they manage or supervise; students: their own group; otherwise 403). Students get other people's reservations as { id, startsAt, endsAt, status, label } only\n\n**Required access:** bearer token holding `reservations:read`; minimum role STUDENT.",
         "operationId": "getReservationsCalendar",
         "parameters": [
           {
@@ -62763,6 +63257,16 @@
             "required": true,
             "schema": {
               "example": "2026-10-19T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only reservations held by this group; admins may pass any group, teachers a group they manage or supervise, students their own group",
+            "in": "query",
+            "name": "groupId",
+            "required": false,
+            "schema": {
+              "example": "cm5group01",
               "type": "string"
             }
           }
@@ -62846,7 +63350,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "Forbidden or group outside the requester scope"
           },
           "429": {
             "content": {

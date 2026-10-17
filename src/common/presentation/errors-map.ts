@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.33
+ * Versión: 1.34
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -100,6 +100,7 @@ import {
   EvaluationAttemptNotInProgressError,
   EvaluationAttemptReadOnlyError,
   EvaluationGradingForbiddenError,
+  EvaluationStudentGradesForbiddenError,
   EvaluationHasSubmittedAttemptsError,
   EvaluationManagementForbiddenError,
   EvaluationMediaNotFoundError,
@@ -231,6 +232,7 @@ import {
   ReservationCancelForbiddenError,
   ReservationConflictError,
   ReservationForbiddenError,
+  ReservationGroupFilterForbiddenError,
   ReservationHolderNotFoundError,
   ReservationInPastError,
   ReservationLimitReachedError,
@@ -512,6 +514,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [EvaluationAttemptReadOnlyError, HttpStatus.CONFLICT],
   [InvalidEvaluationAnswerError, HttpStatus.UNPROCESSABLE_ENTITY],
   [EvaluationGradingForbiddenError, HttpStatus.FORBIDDEN],
+  [EvaluationStudentGradesForbiddenError, HttpStatus.FORBIDDEN],
   [EvaluationAttemptNotGradableError, HttpStatus.CONFLICT],
   [EvaluationAttemptNotGradedError, HttpStatus.CONFLICT],
   [InvalidManualScoreError, HttpStatus.UNPROCESSABLE_ENTITY],
@@ -530,6 +533,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [ReservationLimitReachedError, HttpStatus.CONFLICT],
   [ReservationHolderNotFoundError, HttpStatus.NOT_FOUND],
   [ReservationForbiddenError, HttpStatus.FORBIDDEN],
+  [ReservationGroupFilterForbiddenError, HttpStatus.FORBIDDEN],
   [ReservationCancelForbiddenError, HttpStatus.FORBIDDEN],
   [ReservationNotScheduledError, HttpStatus.CONFLICT],
   [ReservationConflictError, HttpStatus.CONFLICT],

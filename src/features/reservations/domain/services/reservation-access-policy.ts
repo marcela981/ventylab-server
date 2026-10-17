@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Política de acceso a reservas
- * Descripción: Decisiones puras sobre quién puede reservar para un titular, cancelar una reserva, desplazar la reserva de otro titular y controlar el ventilador durante la reserva activa, a partir del actor y de hechos ya resueltos sobre grupos
- * Versión: 1.0
+ * Descripción: Decisiones puras sobre quién puede reservar para un titular, cancelar una reserva, desplazar la reserva de otro titular y controlar el ventilador durante la reserva activa y filtrar el calendario por un grupo (ADMIN cualquiera, TEACHER los que gestiona o supervisa, STUDENT los suyos), a partir del actor y de hechos ya resueltos sobre grupos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -69,6 +69,23 @@ export function canPreempt(actor: ReservationActor, holderRole: ReservationParty
   }
 
   return actor.role === TEACHER_ACTOR_ROLE && holderRole === STUDENT_ACTOR_ROLE;
+}
+
+export interface CalendarGroupFacts {
+  readonly managesGroup: boolean;
+  readonly isMember: boolean;
+}
+
+export function canFilterCalendarByGroup(actor: ReservationActor, facts: CalendarGroupFacts): boolean {
+  if (actor.role === ADMIN_ACTOR_ROLE) {
+    return true;
+  }
+
+  if (actor.role === TEACHER_ACTOR_ROLE) {
+    return facts.managesGroup;
+  }
+
+  return facts.isMember;
 }
 
 export function toReservationPartyRole(role: string): ReservationPartyRole {

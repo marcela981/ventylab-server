@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de analítica
- * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (fila por estudiante con progreso, notas, simulación, uso de IA y horas de ventilador), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación con dificultad por pregunta y del resumen del propio estudiante; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO)
- * Versión: 1.2
+ * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (nota aprobatoria y umbrales de riesgo vigentes, progreso agregado por módulo y fila por estudiante con progreso, notas, simulación, uso de IA, horas de ventilador y riesgo), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación (opcionalmente de un grupo) con dificultad por pregunta y del resumen del propio estudiante; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { ApiProperty, ApiSchema } from "@nestjs/swagger";
 
 import { TIMELINE_ENTRY_KIND_VALUES } from "@/features/analytics/domain/services/activity-timeline";
+import { STUDENT_RISK_REASON_VALUES } from "@/features/analytics/domain/services/student-risk";
 
 const DATE_EXAMPLE: string = "2026-10-11T15:04:05.000Z";
 
@@ -139,6 +140,49 @@ export class StudentDashboardRowDTO {
 
   @ApiProperty({ description: "Hours of physical ventilator use in reservations held by the student", example: 1.5 })
   public ventilatorHours: number;
+
+  @ApiProperty({ description: "Whether any risk rule of the dashboard thresholds applies to the student", example: true })
+  public atRisk: boolean;
+
+  @ApiProperty({
+    description:
+      "Risk rules that apply: FAILED_EVALUATIONS (failed latest attempts above maxFailedEvaluations), LOW_PROGRESS (overall progress below minProgressPct), INACTIVE (no activity for more than inactivityDays)",
+    enum: STUDENT_RISK_REASON_VALUES,
+    isArray: true,
+    example: ["FAILED_EVALUATIONS"],
+  })
+  public riskReasons: string[];
+
+  @ApiProperty({ description: "Evaluations whose latest published attempt (highest attempt number) is failed", type: String, isArray: true, example: [ID_EXAMPLE] })
+  public failedEvaluationIds: string[];
+}
+
+export class RiskThresholdsDTO {
+  @ApiProperty({ description: "Failed evaluations a student may have before being at risk (0: any failed evaluation flags the student)", example: 0 })
+  public maxFailedEvaluations: number;
+
+  @ApiProperty({ description: "Overall progress percentage below which a student is at risk (0 disables the rule)", example: 0 })
+  public minProgressPct: number;
+
+  @ApiProperty({ description: "Days without activity after which a student is at risk (0 disables the rule)", example: 0 })
+  public inactivityDays: number;
+}
+
+export class GroupModuleSummaryDTO {
+  @ApiProperty({ description: "Module identifier", example: ID_EXAMPLE })
+  public moduleId: string;
+
+  @ApiProperty({ description: "Module title", example: "Ventilation basics", nullable: true, type: String })
+  public moduleTitle: string | null;
+
+  @ApiProperty({ description: "Average module progress of the group's students (students without progress count as 0), 0–100", example: 62.5 })
+  public averageProgressPct: number;
+
+  @ApiProperty({ description: "Students who completed every published lesson of the module", example: 4 })
+  public completedCount: number;
+
+  @ApiProperty({ description: "Students of the group", example: 25 })
+  public studentCount: number;
 }
 
 export class GroupDashboardDTO {
@@ -150,6 +194,15 @@ export class GroupDashboardDTO {
 
   @ApiProperty({ description: "When the panel was computed (cached up to 60 s)", example: DATE_EXAMPLE })
   public generatedAt: string;
+
+  @ApiProperty({ description: "Current passing grade (0–5 scale) used for the pass flags", example: 3 })
+  public passingGrade: number;
+
+  @ApiProperty({ description: "Current risk thresholds (platform settings analytics.risk.*)", type: RiskThresholdsDTO })
+  public riskThresholds: RiskThresholdsDTO;
+
+  @ApiProperty({ description: "Progress per published module aggregated over the group's students", type: GroupModuleSummaryDTO, isArray: true })
+  public moduleSummary: GroupModuleSummaryDTO[];
 
   @ApiProperty({ description: "One row per student member", type: StudentDashboardRowDTO, isArray: true })
   public students: StudentDashboardRowDTO[];
@@ -235,6 +288,9 @@ export class QuestionStatsDTO {
 export class EvaluationAnalyticsDTO {
   @ApiProperty({ description: "Evaluation identifier", example: ID_EXAMPLE })
   public evaluationId: string;
+
+  @ApiProperty({ description: "Group the statistics are limited to (groupId query), null for the whole requester scope", example: null, nullable: true, type: String })
+  public groupId: string | null;
 
   @ApiProperty({ description: "Evaluation title", example: "Ventilation basics" })
   public title: string;

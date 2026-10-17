@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de dominio de evaluaciones
- * Descripción: Errores de la feature de evaluaciones (evaluación, escenario, pregunta u opción inexistentes, alcance de gestión, bloqueo estructural por intentos entregados, validación de READY, transición de estado, opciones no admitidas, reordenamiento, contenido enriquecido, medios y referencias inexistentes) de sus asignaciones (inexistente, alcance de grupo, evaluación no activable, grupo destino inválido, ventana inválida, solapamiento, asignación cerrada e intentos existentes) y de los intentos de estudiante (evaluación no abierta, límite de intentos, plazo vencido, intento inexistente, no en curso o heredado de solo lectura, respuesta inválida) y de la retroalimentación de calificación (no disponible antes de publicar la nota, intento sin calificar, revisión fuera de alcance) y de la calificación docente (fuera de alcance, intento en curso no calificable, publicación de un intento no calificado, puntaje manual fuera de rango, sobrescritura sin comentario) con sus claves i18n
- * Versión: 1.4
+ * Descripción: Errores de la feature de evaluaciones (evaluación, escenario, pregunta u opción inexistentes, alcance de gestión, bloqueo estructural por intentos entregados, validación de READY, transición de estado, opciones no admitidas, reordenamiento, contenido enriquecido, medios y referencias inexistentes) de sus asignaciones (inexistente, alcance de grupo, evaluación no activable, grupo destino inválido, ventana inválida, solapamiento, asignación cerrada e intentos existentes) y de los intentos de estudiante (evaluación no abierta, límite de intentos, plazo vencido, intento inexistente, no en curso o heredado de solo lectura, respuesta inválida) y de la retroalimentación de calificación (no disponible antes de publicar la nota, intento sin calificar, revisión fuera de alcance) y de la calificación docente (fuera de alcance, intento en curso no calificable, publicación de un intento no calificado, puntaje manual fuera de rango, sobrescritura sin comentario, notas de un estudiante fuera de los grupos del profesor) con sus claves i18n
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -187,6 +187,12 @@ export class EvaluationAttemptReadOnlyError extends DomainError {
 export class EvaluationGradingForbiddenError extends DomainError {
   public constructor() {
     super("You cannot grade attempts of this student group", "evaluation.grading_forbidden");
+  }
+}
+
+export class EvaluationStudentGradesForbiddenError extends DomainError {
+  public constructor() {
+    super("You cannot read the grades of a student outside your groups", "evaluation.student_grades_forbidden");
   }
 }
 

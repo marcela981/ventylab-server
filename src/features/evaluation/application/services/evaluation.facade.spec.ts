@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de EvaluationFacade
  * Descripción: Verifica con repositorios simulados las notas publicadas de un usuario y de un grupo con su aprobación según la nota mínima configurada, las estadísticas de una evaluación (conteos por estado, publicadas, promedio, mínimo, máximo y tasa de aprobación) el conteo de intentos pendientes de revisión en el alcance de un profesor y las lecturas para analítica (mediana e histograma, notas de varios usuarios en una sola llamada al repositorio, índice de dificultad por pregunta, reenvío del alcance de intentos de un profesor y asignaciones abiertas de un estudiante)
- * Versión: 1.3
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -68,6 +68,7 @@ function build(): FacadeHarness {
       passedCount: 3,
     }),
     countPendingReview: jest.fn().mockResolvedValue(7),
+    countQueue: jest.fn().mockResolvedValue(0),
   };
 
   const scopeFor: jest.Mock = jest.fn().mockResolvedValue({ teacherId: "teacher-1", supervisedGroupIds: ["group-2"] });

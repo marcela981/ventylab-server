@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de ajustes de la plataforma
  * Descripción: Valores por defecto completos de prueba, repositorio en memoria de sobrescrituras (con fallo de carga opcional), gestor de transacciones que deshace los cambios si el trabajo falla, registrador de auditoría en memoria y disponibilidad de proveedores de IA configurable
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -40,6 +40,9 @@ export function buildTestDefaults(): PlatformSettingDefaults {
     "ai.tutor.topicCheck.enabled": true,
     "evaluation.passingGrade": 3,
     "evaluation.submitGraceSeconds": 30,
+    "analytics.risk.maxFailedEvaluations": 0,
+    "analytics.risk.minProgressPct": 0,
+    "analytics.risk.inactivityDays": 0,
     "simulation.rubric.defaultThresholds": { targetsReached: 1, timeToStabilizeSeconds: 300, timeInRangePercent: 80, safetyToleranceSeconds: 0 },
     "simulation.allowedTimeMultipliers": [1, 2, 4],
     "simulation.abandonAfterMinutes": 30,
