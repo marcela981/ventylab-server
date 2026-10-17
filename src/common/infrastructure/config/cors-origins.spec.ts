@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la configuración de CORS
  * Descripción: Verifica los orígenes permitidos explícitos, el comodín, las peticiones sin cabecera Origin y que las vistas previas de Vercel solo se acepten con CORS_ALLOW_VERCEL_PREVIEWS activo
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,7 @@
  */
 import { type ConfigService } from "@nestjs/config";
 
-import { buildCorsOrigin, type CorsOrigin } from "@/common/infrastructure/config/cors-origins";
+import { buildAllowedOrigins, buildCorsOrigin, type CorsOrigin } from "@/common/infrastructure/config/cors-origins";
 import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
 
 const PREVIEW_ORIGIN: string = "https://ventilab-web-git-feature-team.vercel.app";
@@ -41,6 +41,28 @@ function isAllowed(corsOrigin: CorsOrigin, origin: string | undefined): boolean 
 
   return result;
 }
+
+describe("buildAllowedOrigins", () => {
+  it("parses the comma-separated CORS_ORIGIN list, adds FRONTEND_URL and PRODUCTION_URL, trims, drops trailing slashes and duplicates", () => {
+    const config: ConfigService<EnvironmentVariables, true> = configWith({
+      CORS_ORIGIN: " https://app.vercel.app/ ,http://localhost:3000,, https://app.example.com",
+      FRONTEND_URL: "https://app.example.com/",
+      PRODUCTION_URL: "",
+    });
+
+    const origins: string[] = buildAllowedOrigins(config);
+
+    expect(origins).toEqual(["https://app.vercel.app", "http://localhost:3000", "https://app.example.com"]);
+  });
+
+  it("adds the VERCEL_URL deployment as an https origin", () => {
+    const config: ConfigService<EnvironmentVariables, true> = configWith({ CORS_ORIGIN: "http://localhost:3000", VERCEL_URL: "ventilab-web.vercel.app" });
+
+    const origins: string[] = buildAllowedOrigins(config);
+
+    expect(origins).toContain("https://ventilab-web.vercel.app");
+  });
+});
 
 describe("buildCorsOrigin", () => {
   it("allows configured origins and ignores a trailing slash", () => {
