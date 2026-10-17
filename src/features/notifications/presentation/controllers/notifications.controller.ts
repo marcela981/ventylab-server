@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de notificaciones
  * Descripción: Rutas /api/notifications del usuario autenticado sobre sus propias notificaciones: listado paginado, conteo de no leídas, marcar una o todas como leídas y eliminar; la notificación de otro usuario responde 404
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiExtraModels, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { type Paginated } from "@/common/domain/utils/paginated";
@@ -25,11 +25,19 @@ import { MarkAllNotificationsReadUseCase } from "@/features/notifications/applic
 import { MarkNotificationReadUseCase } from "@/features/notifications/application/use-cases/mark-notification-read.usecase";
 import { type Notification } from "@/features/notifications/domain/entities/notification.entity";
 import { ListNotificationsQueryDTO } from "@/features/notifications/presentation/dtos/notification-request.dto";
-import { NotificationDTO, ReadAllNotificationsResultDTO, UnreadNotificationsCountDTO } from "@/features/notifications/presentation/dtos/notification.dto";
+import {
+  NOTIFICATION_DATA_DTOS,
+  NOTIFICATION_UNION_SCHEMA,
+  NOTIFICATION_VARIANT_DTOS,
+  NotificationDTO,
+  ReadAllNotificationsResultDTO,
+  UnreadNotificationsCountDTO,
+} from "@/features/notifications/presentation/dtos/notification.dto";
 import { NotificationsPresentationMapper } from "@/features/notifications/presentation/mappers/notifications.mapper";
 
 @ApiTags("Notifications")
 @ApiBearerAuth("JWT-auth")
+@ApiExtraModels(NotificationDTO, ...NOTIFICATION_DATA_DTOS, ...Object.values(NOTIFICATION_VARIANT_DTOS))
 @Controller("api/notifications")
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
@@ -44,7 +52,7 @@ export class NotificationsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "List my notifications", description: "Paginated notifications of the authenticated user, newest first, optionally only unread ones" })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Notifications retrieved successfully", type: NotificationDTO, isArray: true })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Notifications retrieved successfully; each item is discriminated by type", schema: { type: "array", items: NOTIFICATION_UNION_SCHEMA } })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   public async listNotifications(
@@ -97,7 +105,7 @@ export class NotificationsController {
   @Patch(":id/read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Mark one of my notifications as read", description: "Idempotent; a notification of another user responds as not found" })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Notification marked as read", type: NotificationDTO })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Notification marked as read; discriminated by type", schema: NOTIFICATION_UNION_SCHEMA })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Notification not found" })
   public async markRead(@Param("id") id: string, @CurrentUser() currentUser: JwtPayload, @I18n() i18n: I18nContext): Promise<APIResponse<NotificationDTO>> {

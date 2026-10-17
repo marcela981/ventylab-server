@@ -10951,6 +10951,54 @@ export interface components {
             /** @description Ventilator configuration chosen by the student */
             configuration: components["schemas"]["VentilatorConfigurationDTO"];
         };
+        EvaluationActivatedNotificationDTO: {
+            /**
+             * @description Body shown to the user
+             * @example Ya puedes consultar tu calificación: 8 de 10 puntos (aprobada).
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the notification was created
+             * @example 2026-10-11T14:00:00.000Z
+             */
+            createdAt: string;
+            /** @description References of the assigned evaluation */
+            data: components["schemas"]["EvaluationActivatedNotificationDataDTO"] | null;
+            /**
+             * @description Notification ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the notification was read (null while unread)
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * @description Title shown to the user
+             * @example Calificación publicada
+             */
+            title: string;
+            /**
+             * @description Notification type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "EVALUATION_ACTIVATED";
+        };
+        EvaluationActivatedNotificationDataDTO: {
+            /**
+             * @description ID of the assignment of the evaluation to the group
+             * @example 01932e9f-3456-7abc-9def-1a2b3c4d5e6f
+             */
+            assignmentId: string;
+            /**
+             * @description ID of the assigned evaluation
+             * @example 01932e9f-2345-7abc-9def-1a2b3c4d5e6f
+             */
+            evaluationId: string;
+        };
         EvaluationAnalyticsDTO: {
             /**
              * @description Average grade
@@ -11731,6 +11779,59 @@ export interface components {
              */
             title?: string;
         };
+        FeedbackReadyNotificationDTO: {
+            /**
+             * @description Body shown to the user
+             * @example Ya puedes consultar tu calificación: 8 de 10 puntos (aprobada).
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the notification was created
+             * @example 2026-10-11T14:00:00.000Z
+             */
+            createdAt: string;
+            /** @description References of the ready feedback */
+            data: components["schemas"]["FeedbackReadyNotificationDataDTO"] | null;
+            /**
+             * @description Notification ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the notification was read (null while unread)
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * @description Title shown to the user
+             * @example Calificación publicada
+             */
+            title: string;
+            /**
+             * @description Notification type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "FEEDBACK_READY";
+        };
+        FeedbackReadyNotificationDataDTO: {
+            /**
+             * @description ID of the attempt the feedback belongs to
+             * @example 01932e9f-5678-7abc-9def-1a2b3c4d5e6f
+             */
+            attemptId: string;
+            /**
+             * @description ID of the evaluation
+             * @example 01932e9f-2345-7abc-9def-1a2b3c4d5e6f
+             */
+            evaluationId: string;
+            /**
+             * @description ID of the generated feedback
+             * @example 01932e9f-6789-7abc-9def-1a2b3c4d5e6f
+             */
+            feedbackId: string;
+        };
         FieldOverridesDTO: {
             /**
              * @description Overridden content
@@ -11923,6 +12024,54 @@ export interface components {
              * @example 3.5
              */
             to: number;
+        };
+        GradePublishedNotificationDTO: {
+            /**
+             * @description Body shown to the user
+             * @example Ya puedes consultar tu calificación: 8 de 10 puntos (aprobada).
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the notification was created
+             * @example 2026-10-11T14:00:00.000Z
+             */
+            createdAt: string;
+            /** @description References of the published grade */
+            data: components["schemas"]["GradePublishedNotificationDataDTO"] | null;
+            /**
+             * @description Notification ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the notification was read (null while unread)
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * @description Title shown to the user
+             * @example Calificación publicada
+             */
+            title: string;
+            /**
+             * @description Notification type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "GRADE_PUBLISHED";
+        };
+        GradePublishedNotificationDataDTO: {
+            /**
+             * @description ID of the graded attempt
+             * @example 01932e9f-5678-7abc-9def-1a2b3c4d5e6f
+             */
+            attemptId: string;
+            /**
+             * @description ID of the graded evaluation
+             * @example 01932e9f-2345-7abc-9def-1a2b3c4d5e6f
+             */
+            evaluationId: string;
         };
         GradeSubmissionDTO: {
             /**
@@ -15479,13 +15628,13 @@ export interface components {
              */
             createdAt: string;
             /**
-             * @description Deep-link references (record IDs) for the client to build the target route
+             * @description Deep-link references (record IDs) for the client to build the target route; its shape depends on type
              * @example {
              *       "attemptId": "01932e9f-5678-7abc-9def-1a2b3c4d5e6f",
              *       "evaluationId": "01932e9f-1234-7abc-9def-1a2b3c4d5e6f"
              *     }
              */
-            data: Record<string, never> | null;
+            data: (components["schemas"]["ReservationPreemptedNotificationDataDTO"] | components["schemas"]["ReservationCancelledNotificationDataDTO"] | components["schemas"]["EvaluationActivatedNotificationDataDTO"] | components["schemas"]["GradePublishedNotificationDataDTO"] | components["schemas"]["FeedbackReadyNotificationDataDTO"] | components["schemas"]["RoleChangedNotificationDataDTO"] | components["schemas"]["VentilatorOfflineNotificationDataDTO"]) | null;
             /**
              * @description Notification ID
              * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
@@ -15503,7 +15652,7 @@ export interface components {
              */
             title: string;
             /**
-             * @description Notification type
+             * @description Notification type; it decides the shape of data
              * @example GRADE_PUBLISHED
              * @enum {string}
              */
@@ -17217,6 +17366,49 @@ export interface components {
              */
             stepIds: string[];
         };
+        ReservationCancelledNotificationDTO: {
+            /**
+             * @description Body shown to the user
+             * @example Ya puedes consultar tu calificación: 8 de 10 puntos (aprobada).
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the notification was created
+             * @example 2026-10-11T14:00:00.000Z
+             */
+            createdAt: string;
+            /** @description References of the cancelled reservation */
+            data: components["schemas"]["ReservationCancelledNotificationDataDTO"] | null;
+            /**
+             * @description Notification ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the notification was read (null while unread)
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * @description Title shown to the user
+             * @example Calificación publicada
+             */
+            title: string;
+            /**
+             * @description Notification type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "RESERVATION_CANCELLED";
+        };
+        ReservationCancelledNotificationDataDTO: {
+            /**
+             * @description ID of the cancelled reservation
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            reservationId: string;
+        };
         ReservationDTO: {
             /**
              * @description Reservation end (ms epoch)
@@ -17343,6 +17535,54 @@ export interface components {
              */
             role: string;
         };
+        ReservationPreemptedNotificationDTO: {
+            /**
+             * @description Body shown to the user
+             * @example Ya puedes consultar tu calificación: 8 de 10 puntos (aprobada).
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the notification was created
+             * @example 2026-10-11T14:00:00.000Z
+             */
+            createdAt: string;
+            /** @description References of the preempted reservation */
+            data: components["schemas"]["ReservationPreemptedNotificationDataDTO"] | null;
+            /**
+             * @description Notification ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the notification was read (null while unread)
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * @description Title shown to the user
+             * @example Calificación publicada
+             */
+            title: string;
+            /**
+             * @description Notification type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "RESERVATION_PREEMPTED";
+        };
+        ReservationPreemptedNotificationDataDTO: {
+            /**
+             * @description ID of the reservation that replaced it
+             * @example 01932e9f-9999-7abc-9def-1a2b3c4d5e6f
+             */
+            replacedByReservationId: string;
+            /**
+             * @description ID of the preempted reservation
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            reservationId: string;
+        };
         ReservationSummaryDTO: {
             /**
              * @description End of the reservation (ISO 8601)
@@ -17416,6 +17656,54 @@ export interface components {
              * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
              */
             id: string;
+        };
+        RoleChangedNotificationDTO: {
+            /**
+             * @description Body shown to the user
+             * @example Ya puedes consultar tu calificación: 8 de 10 puntos (aprobada).
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the notification was created
+             * @example 2026-10-11T14:00:00.000Z
+             */
+            createdAt: string;
+            /** @description Previous and new role of the user */
+            data: components["schemas"]["RoleChangedNotificationDataDTO"] | null;
+            /**
+             * @description Notification ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the notification was read (null while unread)
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * @description Title shown to the user
+             * @example Calificación publicada
+             */
+            title: string;
+            /**
+             * @description Notification type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "ROLE_CHANGED";
+        };
+        RoleChangedNotificationDataDTO: {
+            /**
+             * @description Role after the change
+             * @example TEACHER
+             */
+            newRole: string;
+            /**
+             * @description Role before the change
+             * @example STUDENT
+             */
+            previousRole: string;
         };
         RolePermissionsDTO: {
             /**
@@ -21062,6 +21350,54 @@ export interface components {
              * @example 2026-10-10T12:00:00.000Z
              */
             since?: string | null;
+        };
+        VentilatorOfflineNotificationDTO: {
+            /**
+             * @description Body shown to the user
+             * @example Ya puedes consultar tu calificación: 8 de 10 puntos (aprobada).
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the notification was created
+             * @example 2026-10-11T14:00:00.000Z
+             */
+            createdAt: string;
+            /** @description Active reservation and disconnection reason */
+            data: components["schemas"]["VentilatorOfflineNotificationDataDTO"] | null;
+            /**
+             * @description Notification ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the notification was read (null while unread)
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * @description Title shown to the user
+             * @example Calificación publicada
+             */
+            title: string;
+            /**
+             * @description Notification type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "VENTILATOR_OFFLINE";
+        };
+        VentilatorOfflineNotificationDataDTO: {
+            /**
+             * @description Reason reported for the disconnection
+             * @example heartbeat_timeout
+             */
+            reason: string;
+            /**
+             * @description ID of the active reservation during which the ventilator went offline
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            reservationId: string;
         };
         VentilatorStatusDTO: {
             /** @description Active alarms */
@@ -37060,14 +37396,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Notifications retrieved successfully */
+            /** @description Notifications retrieved successfully; each item is discriminated by type */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
-                        data: components["schemas"]["NotificationDTO"][];
+                        data: (components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"])[];
                     };
                 };
             };
@@ -37287,14 +37623,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Notification marked as read */
+            /** @description Notification marked as read; discriminated by type */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
-                        data: components["schemas"]["NotificationDTO"];
+                        data: components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"];
                     };
                 };
             };

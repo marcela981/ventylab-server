@@ -338,9 +338,17 @@ components:
         description: Ignored
     NotificationNew:
       name: "notification:new"
-      summary: A persisted notification for the user (same shape as GET /api/notifications items)
+      summary: A persisted notification for the user (same shape as GET /api/notifications items); the shape of data depends on type
       payload:
-        $ref: "./openapi.json#/components/schemas/NotificationDTO"
+        discriminator: type
+        oneOf:
+          - $ref: "./openapi.json#/components/schemas/ReservationPreemptedNotificationDTO"
+          - $ref: "./openapi.json#/components/schemas/ReservationCancelledNotificationDTO"
+          - $ref: "./openapi.json#/components/schemas/EvaluationActivatedNotificationDTO"
+          - $ref: "./openapi.json#/components/schemas/GradePublishedNotificationDTO"
+          - $ref: "./openapi.json#/components/schemas/FeedbackReadyNotificationDTO"
+          - $ref: "./openapi.json#/components/schemas/RoleChangedNotificationDTO"
+          - $ref: "./openapi.json#/components/schemas/VentilatorOfflineNotificationDTO"
     GradePublished:
       name: "grade:published"
       summary: A grade of the user was published or updated after publication
