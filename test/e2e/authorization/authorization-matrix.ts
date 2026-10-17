@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
  * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas
- * Versión: 1.3
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -466,10 +466,10 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "POST /api/ventilator/control/takeover": RESERVATION_HOLDER_ONLY, // ventilator:control; 403 without an active reservation held by the caller
 
   // ventilator-telemetry
-  "GET /api/ventilator/telemetry/metrics": ADMIN_ONLY, // ventilator:metrics
-  "GET /api/ventilator/telemetry/metrics.csv": ADMIN_ONLY, // ventilator:metrics
+  "GET /api/ventilator/telemetry/metrics": TEACHER_UP, // ventilator:metrics
+  "GET /api/ventilator/telemetry/metrics.csv": TEACHER_UP, // ventilator:metrics
   "GET /api/ventilator/telemetry/recordings/:reservationId": STUDENT_UP, // simulation:read
-  "POST /api/ventilator/telemetry/metrics/reset": ADMIN_ONLY, // ventilator:metrics
+  "POST /api/ventilator/telemetry/metrics/reset": ADMIN_ONLY, // ventilator:metrics_reset
   "POST /api/ventilator/telemetry/recordings/start": STUDENT_UP, // simulation:read
   "POST /api/ventilator/telemetry/recordings/stop": STUDENT_UP, // simulation:read
 };

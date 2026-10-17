@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador VentilatorTelemetryController
- * Descripción: Endpoints de la telemetría del ventilador físico: métricas del pipeline en JSON y CSV y su reinicio (solo administradores, permiso ventilator:metrics), inicio y fin de la grabación de la reserva activa y lectura de la grabación de una reserva (titulares, docentes o administradores)
- * Versión: 1.0
+ * Descripción: Endpoints de la telemetría del ventilador físico: métricas del pipeline en JSON y CSV de solo lectura (docentes y administradores, permiso ventilator:metrics) y su reinicio (solo administradores, permiso ventilator:metrics_reset), inicio y fin de la grabación de la reserva activa y lectura de la grabación de una reserva (titulares, docentes o administradores)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -86,7 +86,7 @@ export class VentilatorTelemetryController {
   }
 
   @Post("metrics/reset")
-  @RequirePermissions("ventilator:metrics")
+  @RequirePermissions("ventilator:metrics_reset")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Reset ventilator telemetry metrics", description: "Clears counters, rates and latency buffers" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Metrics reset successfully" })

@@ -6631,7 +6631,7 @@ export interface paths {
          * Ventilator telemetry metrics
          * @description In-memory pipeline metrics: messages and batches per second, invalid and lost messages, volatile emits and p50/p95/p99 of processing, total (including the batching wait), flush and device-to-server latency
          *
-         *     **Required access:** bearer token holding `ventilator:metrics`; minimum role ADMIN.
+         *     **Required access:** bearer token holding `ventilator:metrics`; minimum role TEACHER.
          */
         get: operations["getTelemetryMetrics"];
         put?: never;
@@ -6653,7 +6653,7 @@ export interface paths {
          * Export ventilator telemetry latency samples as CSV
          * @description One RFC 4180 row per retained latency sample: kind,valueMs,recordedAt
          *
-         *     **Required access:** bearer token holding `ventilator:metrics`; minimum role ADMIN.
+         *     **Required access:** bearer token holding `ventilator:metrics`; minimum role TEACHER.
          */
         get: operations["exportTelemetryMetricsCsv"];
         put?: never;
@@ -6677,7 +6677,7 @@ export interface paths {
          * Reset ventilator telemetry metrics
          * @description Clears counters, rates and latency buffers
          *
-         *     **Required access:** bearer token holding `ventilator:metrics`; minimum role ADMIN.
+         *     **Required access:** bearer token holding `ventilator:metrics_reset`; minimum role ADMIN.
          */
         post: operations["resetTelemetryMetrics"];
         delete?: never;

@@ -77161,7 +77161,7 @@
     },
     "/api/ventilator/telemetry/metrics": {
       "get": {
-        "description": "In-memory pipeline metrics: messages and batches per second, invalid and lost messages, volatile emits and p50/p95/p99 of processing, total (including the batching wait), flush and device-to-server latency\n\n**Required access:** bearer token holding `ventilator:metrics`; minimum role ADMIN.",
+        "description": "In-memory pipeline metrics: messages and batches per second, invalid and lost messages, volatile emits and p50/p95/p99 of processing, total (including the batching wait), flush and device-to-server latency\n\n**Required access:** bearer token holding `ventilator:metrics`; minimum role TEACHER.",
         "operationId": "getTelemetryMetrics",
         "parameters": [],
         "responses": {
@@ -77260,7 +77260,7 @@
         "tags": [
           "Ventilator telemetry"
         ],
-        "x-min-role": "ADMIN",
+        "x-min-role": "TEACHER",
         "x-required-permissions": [
           "ventilator:metrics"
         ]
@@ -77268,7 +77268,7 @@
     },
     "/api/ventilator/telemetry/metrics.csv": {
       "get": {
-        "description": "One RFC 4180 row per retained latency sample: kind,valueMs,recordedAt\n\n**Required access:** bearer token holding `ventilator:metrics`; minimum role ADMIN.",
+        "description": "One RFC 4180 row per retained latency sample: kind,valueMs,recordedAt\n\n**Required access:** bearer token holding `ventilator:metrics`; minimum role TEACHER.",
         "operationId": "exportTelemetryMetricsCsv",
         "parameters": [],
         "responses": {
@@ -77353,7 +77353,7 @@
         "tags": [
           "Ventilator telemetry"
         ],
-        "x-min-role": "ADMIN",
+        "x-min-role": "TEACHER",
         "x-required-permissions": [
           "ventilator:metrics"
         ]
@@ -77361,7 +77361,7 @@
     },
     "/api/ventilator/telemetry/metrics/reset": {
       "post": {
-        "description": "Clears counters, rates and latency buffers\n\n**Required access:** bearer token holding `ventilator:metrics`; minimum role ADMIN.",
+        "description": "Clears counters, rates and latency buffers\n\n**Required access:** bearer token holding `ventilator:metrics_reset`; minimum role ADMIN.",
         "operationId": "resetTelemetryMetrics",
         "parameters": [],
         "responses": {
@@ -77462,7 +77462,7 @@
         ],
         "x-min-role": "ADMIN",
         "x-required-permissions": [
-          "ventilator:metrics"
+          "ventilator:metrics_reset"
         ]
       }
     },
