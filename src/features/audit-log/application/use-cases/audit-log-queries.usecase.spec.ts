@@ -1,19 +1,22 @@
 /*
  * Funcionalidad: Pruebas de los casos de uso de consulta de auditoría
- * Descripción: Verifica la búsqueda filtrada y paginada, el historial de un objetivo por tipo o colección, la exportación con tope y bandera de truncado y el rechazo de rangos de fechas invertidos
- * Versión: 1.0
+ * Descripción: Verifica la búsqueda filtrada y paginada, el historial de un objetivo por tipo o colección, la exportación con tope y bandera de truncado el rechazo de rangos de fechas invertidos, el detalle de una entrada (404 si no existe) y el catálogo de acciones, tipos de objetivo y tope de exportación
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { AUDIT_ACTION_VALUES } from "@/common/domain/audit/audit-action";
 import { type Paginated } from "@/common/domain/utils/paginated";
 import { buildAuditEntry, InMemoryAuditLogQueriesRepository } from "@/features/audit-log/application/testing/audit-log-test-doubles-spec";
-import { type AuditLogExport, ExportAuditLogsUseCase } from "@/features/audit-log/application/use-cases/export-audit-logs.usecase";
+import { AUDIT_LOG_EXPORT_ROW_LIMIT, type AuditLogExport, ExportAuditLogsUseCase } from "@/features/audit-log/application/use-cases/export-audit-logs.usecase";
+import { type AuditLogCatalog, GetAuditLogCatalogUseCase } from "@/features/audit-log/application/use-cases/get-audit-log-catalog.usecase";
+import { GetAuditLogEntryUseCase } from "@/features/audit-log/application/use-cases/get-audit-log-entry.usecase";
 import { GetAuditTargetHistoryUseCase } from "@/features/audit-log/application/use-cases/get-audit-target-history.usecase";
 import { SearchAuditLogsUseCase } from "@/features/audit-log/application/use-cases/search-audit-logs.usecase";
-import { InvalidAuditLogRangeError } from "@/features/audit-log/domain/audit-log.errors";
+import { AuditLogEntryNotFoundError, InvalidAuditLogRangeError } from "@/features/audit-log/domain/audit-log.errors";
 import { type AuditLogEntryView } from "@/features/audit-log/domain/read-models/audit-log-entry.read-model";
 
 function buildRepository(): InMemoryAuditLogQueriesRepository {
@@ -82,5 +85,36 @@ describe("ExportAuditLogsUseCase", () => {
     await expect(
       useCase.execute({ from: new Date("2026-10-02T00:00:00.000Z"), to: new Date("2026-10-01T00:00:00.000Z") }),
     ).rejects.toBeInstanceOf(InvalidAuditLogRangeError);
+  });
+});
+
+describe("GetAuditLogEntryUseCase", () => {
+  it("returns the entry with that ID", async () => {
+    const useCase: GetAuditLogEntryUseCase = new GetAuditLogEntryUseCase(buildRepository());
+
+    const entry: AuditLogEntryView = await useCase.execute("a-4");
+
+    expect(entry).toMatchObject({ id: "a-4", action: "page_updated", entityType: "page" });
+  });
+
+  it("rejects an unknown ID", async () => {
+    const useCase: GetAuditLogEntryUseCase = new GetAuditLogEntryUseCase(buildRepository());
+
+    const result: Promise<AuditLogEntryView> = useCase.execute("missing");
+
+    await expect(result).rejects.toBeInstanceOf(AuditLogEntryNotFoundError);
+  });
+});
+
+describe("GetAuditLogCatalogUseCase", () => {
+  it("returns every catalog action, the target types present in the log and the export row limit", async () => {
+    const useCase: GetAuditLogCatalogUseCase = new GetAuditLogCatalogUseCase(buildRepository());
+
+    const catalog: AuditLogCatalog = await useCase.execute();
+
+    expect(catalog.actions).toEqual([...AUDIT_ACTION_VALUES].sort());
+    expect(catalog.targetTypes).toEqual(["page", "user", "users"]);
+    expect(catalog.exportRowLimit).toBe(AUDIT_LOG_EXPORT_ROW_LIMIT);
+    expect(AUDIT_LOG_EXPORT_ROW_LIMIT).toBe(50_000);
   });
 });

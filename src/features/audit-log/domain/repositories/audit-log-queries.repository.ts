@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio de consultas IAuditLogQueriesRepository
- * Descripción: Contrato de solo lectura sobre la bitácora de auditoría: búsqueda paginada con filtros, historial paginado de un objetivo y filas para exportación con límite
- * Versión: 1.0
+ * Descripción: Contrato de solo lectura sobre la bitácora de auditoría: búsqueda paginada con filtros, historial paginado de un objetivo filas para exportación con límite, una entrada por identificador y los tipos de objetivo presentes
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,4 +22,6 @@ export interface IAuditLogQueriesRepository {
   search(query: AuditLogSearchQuery): Promise<Paginated<AuditLogEntryView>>;
   getTargetHistory(targetType: string, targetId: string, page: AuditLogPage): Promise<Paginated<AuditLogEntryView>>;
   getExportRows(filters: AuditLogFilters, limit: number): Promise<AuditLogEntryView[]>;
+  getById(id: string): Promise<AuditLogEntryView | undefined>;
+  getTargetTypes(): Promise<string[]>;
 }

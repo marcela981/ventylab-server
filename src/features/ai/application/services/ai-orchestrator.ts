@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Orquestador de proveedores de IA
- * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada
- * Versión: 1.2
+ * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,7 +36,7 @@ import {
   AiStreamInterruptedError,
 } from "@/features/ai/domain/ai.errors";
 import { type BuiltPrompt } from "@/features/ai/domain/prompts/prompt-template";
-import { type AiProbeResult, type AiProviderHealth } from "@/features/ai/domain/results/ai-provider-health";
+import { type AiProbeResult, type AiProviderCatalogEntry, type AiProviderHealth } from "@/features/ai/domain/results/ai-provider-health";
 import { type AiCallStatus, type AiResult, type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
 import { classifyAiError } from "@/features/ai/domain/services/ai-error-classification";
 import { AI_PROVIDER_ID_VALUES } from "@/features/ai/domain/value-objects/ai-provider-id";
@@ -272,13 +272,29 @@ export class AiOrchestrator {
   }
 
   public getProviderHealth(now: number = Date.now()): AiProviderHealth[] {
-    const providerIds: string[] = [...new Set<string>([...AI_PROVIDER_ID_VALUES, ...this._providers.keys()])];
-
-    return providerIds.map((provider: string): AiProviderHealth => ({
+    return this._knownProviderIds().map((provider: string): AiProviderHealth => ({
       provider,
       configured: this._providers.has(provider),
       ...this._breaker.inspect(provider, now),
     }));
+  }
+
+  public getProviderCatalog(): AiProviderCatalogEntry[] {
+    const useCaseSettings: AiUseCaseSettings[] = AI_USE_CASE_VALUES.map((useCase: AiUseCaseValue) => this._settings.getUseCaseSettings(useCase));
+
+    return this._knownProviderIds().map((provider: string): AiProviderCatalogEntry => {
+      const referenced: string[] = useCaseSettings.flatMap((settings: AiUseCaseSettings) => {
+        const model: string | undefined = settings.models[provider];
+
+        return model ? [model] : [];
+      });
+
+      return {
+        provider,
+        configured: this._providers.has(provider),
+        models: [...new Set<string>([...this._settings.getPricedModels(provider), ...referenced])].sort(),
+      };
+    });
   }
 
   public async probe(request: AiOrchestrationRequest, providerId: string, limits: AiProbeLimits): Promise<AiProbeResult> {
@@ -520,6 +536,10 @@ export class AiOrchestrator {
 
       throw error;
     }
+  }
+
+  private _knownProviderIds(): string[] {
+    return [...new Set<string>([...AI_PROVIDER_ID_VALUES, ...this._providers.keys()])];
   }
 
   private _probeModel(useCase: AiUseCaseValue, providerId: string): string | undefined {

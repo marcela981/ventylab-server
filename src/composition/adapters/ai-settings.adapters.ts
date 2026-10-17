@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Adaptadores de ajustes de IA
- * Descripción: Implementan los puertos de IA sobre la fachada de ajustes de la plataforma, leyendo el valor vigente en cada llamada: IAiSettingsProvider (cadena, modelos, tiempo límite, tokens y temperatura por caso de uso, cuotas, precios y verificación de tema; cortocircuito, reintento y ventana del tutor desde la configuración), la tabla de precios de la telemetría (USD por millón de tokens con clave proveedor:modelo, recalculada solo cuando cambian los precios) y la disponibilidad de proveedores según sus credenciales configuradas
- * Versión: 1.0
+ * Descripción: Implementan los puertos de IA sobre la fachada de ajustes de la plataforma, leyendo el valor vigente en cada llamada: IAiSettingsProvider (cadena, modelos, tiempo límite, tokens y temperatura por caso de uso, cuotas, precios, modelos con precio (ajuste vigente más la tabla por defecto de la configuración) y verificación de tema; cortocircuito, reintento y ventana del tutor desde la configuración), la tabla de precios de la telemetría (USD por millón de tokens con clave proveedor:modelo, recalculada solo cuando cambian los precios) y la disponibilidad de proveedores según sus credenciales configuradas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -60,6 +60,10 @@ export class PlatformAiSettingsProvider implements IAiSettingsProvider {
 
   public getPrice(provider: string, model: string): AiModelPrice | undefined {
     return this._settings.get("ai.prices")[provider]?.[model];
+  }
+
+  public getPricedModels(provider: string): readonly string[] {
+    return [...new Set<string>([...Object.keys(this._settings.get("ai.prices")[provider] ?? {}), ...this._config.getPricedModels(provider)])];
   }
 }
 

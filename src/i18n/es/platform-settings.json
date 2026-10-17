@@ -8,7 +8,7 @@
   "version_conflict": "Otra persona cambió el ajuste {key}; vuelve a cargarlo e inténtalo de nuevo",
   "ai_provider_not_configured": "Estos proveedores de IA no tienen credenciales configuradas y no pueden entrar en una cadena de proveedores: {providers}",
   "validation": {
-    "category_invalid": "La categoría debe ser ai, evaluation, simulation, reservations, telemetry o commands",
+    "category_invalid": "La categoría debe ser ai, evaluation, analytics, simulation, reservations, telemetry o commands",
     "value_required": "El valor es obligatorio",
     "version_invalid": "La versión debe ser un entero mayor o igual que 0"
   },

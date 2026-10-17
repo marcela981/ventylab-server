@@ -1,6 +1,9 @@
 {
   "entries_retrieved": "Audit log retrieved successfully",
   "target_history_retrieved": "Target audit history retrieved successfully",
+  "entry_retrieved": "Audit entry retrieved successfully",
+  "catalog_retrieved": "Audit log catalog retrieved successfully",
+  "not_found": "Audit entry not found",
   "invalid_range": "The date range must start before it ends",
   "validation": {
     "date_invalid": "The date must be a valid ISO 8601 date",

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de salud y sonda del gateway de IA
- * Descripción: Verifica la salud de solo lectura de los proveedores (configurado, cortocircuito cerrado, abierto y semiabierto, último éxito y último código de error) sin llamar a ningún proveedor, y la sonda manual: 404 para un proveedor desconocido, 422 para uno sin configuración, un único intento con el prompt mínimo registrado en la telemetría y fallos reportados sin lanzar
- * Versión: 1.0
+ * Descripción: Verifica la salud de solo lectura de los proveedores (configurado, cortocircuito cerrado, abierto y semiabierto, último éxito y último código de error) sin llamar a ningún proveedor, el catálogo de proveedores (configurado y modelos con precio o referenciados por los ajustes, sin duplicados) y la sonda manual: 404 para un proveedor desconocido, 422 para uno sin configuración, un único intento con el prompt mínimo registrado en la telemetría y fallos reportados sin lanzar
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,7 +26,7 @@ import {
   HEALTH_PROBE_REF_TYPE,
   HEALTH_PROBE_USE_CASE,
 } from "@/features/ai/domain/prompts/health-probe-prompt";
-import { type AiProbeResult, type AiProviderHealth } from "@/features/ai/domain/results/ai-provider-health";
+import { type AiProbeResult, type AiProviderCatalogEntry, type AiProviderHealth } from "@/features/ai/domain/results/ai-provider-health";
 
 function buildGateway(...providers: FakeLlmProvider[]): { gateway: AiGateway; recorder: InMemoryAiCallRecorder } {
   const settings: StaticAiSettingsProvider = new StaticAiSettingsProvider(
@@ -71,6 +71,32 @@ describe("AiGateway provider health", () => {
 
     expect(healthOf(gateway, "gemini")).toMatchObject({ state: "open", lastErrorCode: "CLIENT" });
     expect(healthOf(gateway, "gemini")?.lastErrorAt).toBeInstanceOf(Date);
+  });
+});
+
+describe("AiGateway provider catalog", () => {
+  it("lists every known provider with its configuration and the priced and referenced models without calling any provider", () => {
+    const gemini: FakeLlmProvider = new FakeLlmProvider("gemini", { kind: "text", text: "OK" });
+    const settings: StaticAiSettingsProvider = new StaticAiSettingsProvider(
+      { providerChain: ["gemini"], models: { gemini: "gemini-model", openai: "gpt-model" }, timeoutMs: 1000, maxOutputTokens: 256, temperature: 0.2 },
+      undefined,
+      1,
+      {},
+      { gemini: ["gemini-priced", "gemini-model"] },
+    );
+    const recorder: InMemoryAiCallRecorder = new InMemoryAiCallRecorder();
+    const gateway: AiGateway = new AiGateway(new AiOrchestrator(providerRegistry(gemini), settings, recorder), new AllowAllAiQuotaGuard());
+
+    const catalog: AiProviderCatalogEntry[] = gateway.getProviderCatalog();
+
+    expect(catalog).toEqual([
+      { provider: "gemini", configured: true, models: ["gemini-model", "gemini-priced"] },
+      { provider: "openai", configured: false, models: ["gpt-model"] },
+      { provider: "anthropic", configured: false, models: [] },
+      { provider: "custom", configured: false, models: [] },
+    ]);
+    expect(gemini.calls).toBe(0);
+    expect(recorder.records).toHaveLength(0);
   });
 });
 

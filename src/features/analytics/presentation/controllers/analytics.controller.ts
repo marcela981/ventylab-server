@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador AnalyticsController
- * Descripción: Expone la analítica docente bajo /api/analytics con analytics:read (TEACHER y ADMIN; un profesor solo ve sus grupos creados o supervisados, sus estudiantes y las evaluaciones asignadas a ellos): panel de un grupo, su exportación CSV de notas y progreso, línea de tiempo de un estudiante y estadísticas de una evaluación (opcionalmente de un grupo gestionable); y con analytics:research-export (solo ADMIN) la exportación CSV anonimizada para investigación
- * Versión: 1.1
+ * Descripción: Expone la analítica docente bajo /api/analytics con analytics:read (TEACHER y ADMIN; un profesor solo ve sus grupos creados o supervisados, sus estudiantes y las evaluaciones asignadas a ellos): panel de un grupo, su exportación CSV de notas y progreso, línea de tiempo de un estudiante y estadísticas de una evaluación (opcionalmente de un grupo gestionable); y con analytics:research-export (solo ADMIN) la exportación CSV anonimizada para investigación y su diccionario de datos (columnas, tipo, descripción y ejemplo)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,9 +27,10 @@ import { GetEvaluationAnalyticsUseCase } from "@/features/analytics/application/
 import { GetGroupDashboardUseCase } from "@/features/analytics/application/use-cases/get-group-dashboard.usecase";
 import { GetStudentTimelineUseCase } from "@/features/analytics/application/use-cases/get-student-timeline.usecase";
 import { EvaluationStatsQueryDTO, ResearchExportQueryDTO, StudentTimelineQueryDTO } from "@/features/analytics/presentation/dtos/analytics-request.dto";
-import { EvaluationAnalyticsDTO, GroupDashboardDTO, StudentTimelineDTO } from "@/features/analytics/presentation/dtos/analytics-response.dto";
+import { EvaluationAnalyticsDTO, GroupDashboardDTO, ResearchExportColumnDTO, StudentTimelineDTO } from "@/features/analytics/presentation/dtos/analytics-response.dto";
 import { AnalyticsMapper } from "@/features/analytics/presentation/mappers/analytics.mapper";
 import { toGroupDashboardCsv, toResearchCsv } from "@/features/analytics/presentation/utils/analytics-csv";
+import { RESEARCH_EXPORT_DICTIONARY, type ResearchExportColumnDefinition } from "@/features/analytics/presentation/utils/research-export-dictionary";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
@@ -168,7 +169,7 @@ export class AnalyticsController {
   @ApiOperation({
     summary: "Export the anonymized research dataset",
     description:
-      "Long-format RFC 4180 CSV (participant, group, domain, item, metric, value) with progress, grades, simulation scores, AI ratings and AI telemetry of the students of STUDENT groups. User and group identifiers are replaced by HMAC-SHA256 with ANALYTICS_EXPORT_SALT; no names, emails or original identifiers are exported",
+      "Long-format RFC 4180 CSV (participant, group, domain, item, metric, value) with progress, grades, simulation scores, AI ratings and AI telemetry of the students of STUDENT groups. User and group identifiers are replaced by HMAC-SHA256 with ANALYTICS_EXPORT_SALT; no names, emails or original identifiers are exported. Column meanings: GET /api/analytics/research/export/dictionary",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "CSV file" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
@@ -179,5 +180,22 @@ export class AnalyticsController {
     const rows: ResearchDatasetRow[] = await this._exportResearchDatasetUseCase.execute(query.groupId);
 
     sendCsv(response, `research-dataset-${new Date().toISOString().slice(0, 10)}.csv`, toResearchCsv(rows));
+  }
+
+  @Get("research/export/dictionary")
+  @RequirePermissions("analytics:research-export")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Get the research export data dictionary",
+    description: "Every column of GET /api/analytics/research/export.csv in file order, with its value type, Spanish description and an example; built from the same column definition the CSV writer uses",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Research export dictionary retrieved successfully", type: ResearchExportColumnDTO, isArray: true })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  public async getResearchExportDictionary(@I18n() i18n: I18nContext): Promise<APIResponse<ResearchExportColumnDTO[]>> {
+    return new APIResponseBuilder<ResearchExportColumnDTO[]>()
+      .setData(RESEARCH_EXPORT_DICTIONARY.map((definition: ResearchExportColumnDefinition) => AnalyticsMapper.toResearchExportColumnDTO(definition)))
+      .setMessage(await i18n.t("analytics.research_dictionary_retrieved"))
+      .build();
   }
 }

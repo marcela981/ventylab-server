@@ -1033,6 +1033,37 @@
         ],
         "type": "object"
       },
+      "AdminAiProviderDTO": {
+        "properties": {
+          "configured": {
+            "description": "Whether the provider credentials are configured on the server (the credentials are never returned)",
+            "example": true,
+            "type": "boolean"
+          },
+          "models": {
+            "description": "Models known to the AI feature for this provider: models of the price table and models referenced by the current use case settings, sorted",
+            "example": [
+              "gemini-2.0-flash",
+              "gemini-2.5-flash"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "provider": {
+            "description": "Provider ID (gemini, openai, anthropic or custom)",
+            "example": "gemini",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "configured",
+          "models"
+        ],
+        "type": "object"
+      },
       "AdminChangeUserRoleDTO": {
         "properties": {
           "role": {
@@ -2964,6 +2995,43 @@
         },
         "required": [
           "answers"
+        ],
+        "type": "object"
+      },
+      "AuditLogCatalogDTO": {
+        "properties": {
+          "actions": {
+            "description": "Every action of the audit action catalog, sorted",
+            "example": [
+              "user_role_changed",
+              "user_status_changed"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "exportRowLimit": {
+            "description": "Maximum number of rows of one CSV export (GET /api/audit/export)",
+            "example": 50000,
+            "type": "number"
+          },
+          "targetTypes": {
+            "description": "Target entity types present in the audit log, sorted",
+            "example": [
+              "page",
+              "user"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "actions",
+          "targetTypes",
+          "exportRowLimit"
         ],
         "type": "object"
       },
@@ -17966,6 +18034,44 @@
         ],
         "type": "object"
       },
+      "ResearchExportColumnDTO": {
+        "properties": {
+          "column": {
+            "description": "CSV column name, in file order",
+            "example": "participant",
+            "type": "string"
+          },
+          "description": {
+            "description": "Meaning of the column and its allowed values (Spanish)",
+            "example": "Seudónimo del estudiante: HMAC-SHA256 del identificador de usuario",
+            "type": "string"
+          },
+          "example": {
+            "description": "Example value (null when the column has none)",
+            "example": "progress",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "Value type of the column",
+            "enum": [
+              "string",
+              "number"
+            ],
+            "example": "string",
+            "type": "string"
+          }
+        },
+        "required": [
+          "column",
+          "type",
+          "description",
+          "example"
+        ],
+        "type": "object"
+      },
       "ReservationCancelledNotificationDTO": {
         "properties": {
           "body": {
@@ -28470,6 +28576,116 @@
         ]
       }
     },
+    "/api/admin/ai/providers": {
+      "get": {
+        "description": "Every known AI provider with whether its credentials are configured on the server (credentials are never returned) and the models known to the AI feature (price table and current use case settings), to fill the AI settings forms; no provider is called\n\n**Required access:** bearer token holding `settings:manage`; minimum role ADMIN.",
+        "operationId": "getAiProviders",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "items": {
+                            "$ref": "#/components/schemas/AdminAiProviderDTO"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "AI providers retrieved successfully"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ForbiddenError": {
+                    "$ref": "#/components/examples/ForbiddenError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Get AI providers",
+        "tags": [
+          "Admin"
+        ],
+        "x-min-role": "ADMIN",
+        "x-required-permissions": [
+          "settings:manage"
+        ]
+      }
+    },
     "/api/admin/statistics": {
       "get": {
         "description": "Platform-wide counts, progress metrics, recent activity and ventilator reservation status\n\n**Required access:** bearer token holding `admin-statistics:read`; minimum role TEACHER.",
@@ -29993,7 +30209,7 @@
     },
     "/api/analytics/research/export.csv": {
       "get": {
-        "description": "Long-format RFC 4180 CSV (participant, group, domain, item, metric, value) with progress, grades, simulation scores, AI ratings and AI telemetry of the students of STUDENT groups. User and group identifiers are replaced by HMAC-SHA256 with ANALYTICS_EXPORT_SALT; no names, emails or original identifiers are exported\n\n**Required access:** bearer token holding `analytics:research-export`; minimum role ADMIN.",
+        "description": "Long-format RFC 4180 CSV (participant, group, domain, item, metric, value) with progress, grades, simulation scores, AI ratings and AI telemetry of the students of STUDENT groups. User and group identifiers are replaced by HMAC-SHA256 with ANALYTICS_EXPORT_SALT; no names, emails or original identifiers are exported. Column meanings: GET /api/analytics/research/export/dictionary\n\n**Required access:** bearer token holding `analytics:research-export`; minimum role ADMIN.",
         "operationId": "exportResearchDataset",
         "parameters": [
           {
@@ -30117,6 +30333,116 @@
           }
         ],
         "summary": "Export the anonymized research dataset",
+        "tags": [
+          "Analytics"
+        ],
+        "x-min-role": "ADMIN",
+        "x-required-permissions": [
+          "analytics:research-export"
+        ]
+      }
+    },
+    "/api/analytics/research/export/dictionary": {
+      "get": {
+        "description": "Every column of GET /api/analytics/research/export.csv in file order, with its value type, Spanish description and an example; built from the same column definition the CSV writer uses\n\n**Required access:** bearer token holding `analytics:research-export`; minimum role ADMIN.",
+        "operationId": "getResearchExportDictionary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "items": {
+                            "$ref": "#/components/schemas/ResearchExportColumnDTO"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Research export dictionary retrieved successfully"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ForbiddenError": {
+                    "$ref": "#/components/examples/ForbiddenError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Get the research export data dictionary",
         "tags": [
           "Analytics"
         ],
@@ -30548,9 +30874,116 @@
         ]
       }
     },
+    "/api/audit/catalog": {
+      "get": {
+        "description": "Values to build the audit log filters: every action of the audit action catalog, the target entity types present in the log, and the export row limit\n\n**Required access:** bearer token holding `audit:read`; minimum role ADMIN.",
+        "operationId": "getAuditLogCatalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuditLogCatalogDTO"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Audit log catalog retrieved successfully"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ForbiddenError": {
+                    "$ref": "#/components/examples/ForbiddenError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Get audit log catalog",
+        "tags": [
+          "Audit log"
+        ],
+        "x-min-role": "ADMIN",
+        "x-required-permissions": [
+          "audit:read"
+        ]
+      }
+    },
     "/api/audit/export": {
       "get": {
-        "description": "One RFC 4180 row per audit entry matching the filters, oldest first, capped at the export row limit; cells starting with =, +, -, @ are prefixed against formula injection; the X-Export-Truncated header is \"true\" when rows were left out\n\n**Required access:** bearer token holding `audit:read`; minimum role ADMIN.",
+        "description": "One RFC 4180 row per audit entry matching the filters, oldest first, capped at the export row limit of 50000 rows (also returned as exportRowLimit by GET /api/audit/catalog); cells starting with =, +, -, @ are prefixed against formula injection; the X-Export-Truncated header is \"true\" when rows were left out\n\n**Required access:** bearer token holding `audit:read`; minimum role ADMIN.",
         "operationId": "exportAuditLogs",
         "parameters": [
           {
@@ -30924,6 +31357,152 @@
           }
         ],
         "summary": "Get target audit history",
+        "tags": [
+          "Audit log"
+        ],
+        "x-min-role": "ADMIN",
+        "x-required-permissions": [
+          "audit:read"
+        ]
+      }
+    },
+    "/api/audit/{id}": {
+      "get": {
+        "description": "One audit entry by its ID\n\n**Required access:** bearer token holding `audit:read`; minimum role ADMIN.",
+        "operationId": "getAuditLogEntry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuditLogEntryDTO"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Audit entry retrieved successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ValidationError": {
+                    "$ref": "#/components/examples/ValidationError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error or malformed request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ForbiddenError": {
+                    "$ref": "#/components/examples/ForbiddenError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFoundError": {
+                    "$ref": "#/components/examples/NotFoundError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Audit entry not found"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Get audit entry",
         "tags": [
           "Audit log"
         ],

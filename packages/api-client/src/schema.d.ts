@@ -474,6 +474,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/ai/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get AI providers
+         * @description Every known AI provider with whether its credentials are configured on the server (credentials are never returned) and the models known to the AI feature (price table and current use case settings), to fill the AI settings forms; no provider is called
+         *
+         *     **Required access:** bearer token holding `settings:manage`; minimum role ADMIN.
+         */
+        get: operations["getAiProviders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/statistics": {
         parameters: {
             query?: never;
@@ -706,11 +728,33 @@ export interface paths {
         };
         /**
          * Export the anonymized research dataset
-         * @description Long-format RFC 4180 CSV (participant, group, domain, item, metric, value) with progress, grades, simulation scores, AI ratings and AI telemetry of the students of STUDENT groups. User and group identifiers are replaced by HMAC-SHA256 with ANALYTICS_EXPORT_SALT; no names, emails or original identifiers are exported
+         * @description Long-format RFC 4180 CSV (participant, group, domain, item, metric, value) with progress, grades, simulation scores, AI ratings and AI telemetry of the students of STUDENT groups. User and group identifiers are replaced by HMAC-SHA256 with ANALYTICS_EXPORT_SALT; no names, emails or original identifiers are exported. Column meanings: GET /api/analytics/research/export/dictionary
          *
          *     **Required access:** bearer token holding `analytics:research-export`; minimum role ADMIN.
          */
         get: operations["exportResearchDataset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/research/export/dictionary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the research export data dictionary
+         * @description Every column of GET /api/analytics/research/export.csv in file order, with its value type, Spanish description and an example; built from the same column definition the CSV writer uses
+         *
+         *     **Required access:** bearer token holding `analytics:research-export`; minimum role ADMIN.
+         */
+        get: operations["getResearchExportDictionary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -763,6 +807,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/audit/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get audit log catalog
+         * @description Values to build the audit log filters: every action of the audit action catalog, the target entity types present in the log, and the export row limit
+         *
+         *     **Required access:** bearer token holding `audit:read`; minimum role ADMIN.
+         */
+        get: operations["getAuditLogCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/audit/export": {
         parameters: {
             query?: never;
@@ -772,7 +838,7 @@ export interface paths {
         };
         /**
          * Export audit log as CSV
-         * @description One RFC 4180 row per audit entry matching the filters, oldest first, capped at the export row limit; cells starting with =, +, -, @ are prefixed against formula injection; the X-Export-Truncated header is "true" when rows were left out
+         * @description One RFC 4180 row per audit entry matching the filters, oldest first, capped at the export row limit of 50000 rows (also returned as exportRowLimit by GET /api/audit/catalog); cells starting with =, +, -, @ are prefixed against formula injection; the X-Export-Truncated header is "true" when rows were left out
          *
          *     **Required access:** bearer token holding `audit:read`; minimum role ADMIN.
          */
@@ -799,6 +865,28 @@ export interface paths {
          *     **Required access:** bearer token holding `audit:read`; minimum role ADMIN.
          */
         get: operations["getTargetHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/audit/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get audit entry
+         * @description One audit entry by its ID
+         *
+         *     **Required access:** bearer token holding `audit:read`; minimum role ADMIN.
+         */
+        get: operations["getAuditLogEntry"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7222,6 +7310,26 @@ export interface components {
              */
             prerequisiteId: string;
         };
+        AdminAiProviderDTO: {
+            /**
+             * @description Whether the provider credentials are configured on the server (the credentials are never returned)
+             * @example true
+             */
+            configured: boolean;
+            /**
+             * @description Models known to the AI feature for this provider: models of the price table and models referenced by the current use case settings, sorted
+             * @example [
+             *       "gemini-2.0-flash",
+             *       "gemini-2.5-flash"
+             *     ]
+             */
+            models: string[];
+            /**
+             * @description Provider ID (gemini, openai, anthropic or custom)
+             * @example gemini
+             */
+            provider: string;
+        };
         AdminChangeUserRoleDTO: {
             /**
              * @description New role
@@ -8436,6 +8544,29 @@ export interface components {
         AttemptQuizDTO: {
             /** @description Selected option per question */
             answers: components["schemas"]["QuizAnswerDTO"][];
+        };
+        AuditLogCatalogDTO: {
+            /**
+             * @description Every action of the audit action catalog, sorted
+             * @example [
+             *       "user_role_changed",
+             *       "user_status_changed"
+             *     ]
+             */
+            actions: string[];
+            /**
+             * @description Maximum number of rows of one CSV export (GET /api/audit/export)
+             * @example 50000
+             */
+            exportRowLimit: number;
+            /**
+             * @description Target entity types present in the audit log, sorted
+             * @example [
+             *       "page",
+             *       "user"
+             *     ]
+             */
+            targetTypes: string[];
         };
         AuditLogEntryDTO: {
             /**
@@ -17648,6 +17779,29 @@ export interface components {
              */
             stepIds: string[];
         };
+        ResearchExportColumnDTO: {
+            /**
+             * @description CSV column name, in file order
+             * @example participant
+             */
+            column: string;
+            /**
+             * @description Meaning of the column and its allowed values (Spanish)
+             * @example Seudónimo del estudiante: HMAC-SHA256 del identificador de usuario
+             */
+            description: string;
+            /**
+             * @description Example value (null when the column has none)
+             * @example progress
+             */
+            example: string | null;
+            /**
+             * @description Value type of the column
+             * @example string
+             * @enum {string}
+             */
+            type: "string" | "number";
+        };
         ReservationCancelledNotificationDTO: {
             /**
              * @description Body shown to the user
@@ -23716,6 +23870,64 @@ export interface operations {
             };
         };
     };
+    getAiProviders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description AI providers retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["AdminAiProviderDTO"][];
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     getStatistics: {
         parameters: {
             query?: never;
@@ -24559,6 +24771,64 @@ export interface operations {
             };
         };
     };
+    getResearchExportDictionary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Research export dictionary retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["ResearchExportColumnDTO"][];
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     getStudentTimeline: {
         parameters: {
             query?: {
@@ -24746,6 +25016,64 @@ export interface operations {
             };
         };
     };
+    getAuditLogCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Audit log catalog retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["AuditLogCatalogDTO"];
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     exportAuditLogs: {
         parameters: {
             query?: {
@@ -24893,6 +25221,84 @@ export interface operations {
                 };
             };
             /** @description The resource does not exist or is not visible to the caller */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAuditLogEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Audit entry retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["AuditLogEntryDTO"];
+                    };
+                };
+            };
+            /** @description Validation error or malformed request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Audit entry not found */
             404: {
                 headers: {
                     [name: string]: unknown;

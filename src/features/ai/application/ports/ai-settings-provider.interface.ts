@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Puerto IAiSettingsProvider
- * Descripción: Contrato de la configuración del gateway de IA: cadena de proveedores, modelo, tiempo límite, tokens y temperatura por caso de uso; cortocircuito; reintento; cuotas por rol y caso de uso; ajustes del tutor (incluida la verificación de tema, activa salvo que sea false) y tabla de precios por proveedor y modelo; cada lectura devuelve el valor vigente
- * Versión: 1.1
+ * Descripción: Contrato de la configuración del gateway de IA: cadena de proveedores, modelo, tiempo límite, tokens y temperatura por caso de uso; cortocircuito; reintento; cuotas por rol y caso de uso; ajustes del tutor (incluida la verificación de tema, activa salvo que sea false) y tabla de precios por proveedor y modelo y los modelos con precio de cada proveedor; cada lectura devuelve el valor vigente
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -48,4 +48,5 @@ export interface IAiSettingsProvider {
   getQuota(role: string, useCase: AiUseCaseValue): AiQuotaLimit | undefined;
   getTutorSettings(): AiTutorSettings;
   getPrice(provider: string, model: string): AiModelPrice | undefined;
+  getPricedModels(provider: string): readonly string[];
 }

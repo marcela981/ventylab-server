@@ -1,6 +1,9 @@
 {
   "entries_retrieved": "Bitácora de auditoría obtenida correctamente",
   "target_history_retrieved": "Historial de auditoría del objetivo obtenido correctamente",
+  "entry_retrieved": "Entrada de auditoría obtenida correctamente",
+  "catalog_retrieved": "Catálogo de la bitácora de auditoría obtenido correctamente",
+  "not_found": "Entrada de auditoría no encontrada",
   "invalid_range": "El rango de fechas debe empezar antes de terminar",
   "validation": {
     "date_invalid": "La fecha debe ser una fecha ISO 8601 válida",

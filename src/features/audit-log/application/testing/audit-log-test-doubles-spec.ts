@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de la bitácora de auditoría
- * Descripción: Repositorio de consultas de auditoría en memoria y fábrica de vistas de auditoría para las pruebas de los casos de uso y del serializador CSV
- * Versión: 1.0
+ * Descripción: Repositorio de consultas de auditoría en memoria (búsqueda, historial, exportación, detalle y tipos de objetivo) y fábrica de vistas de auditoría para las pruebas de los casos de uso y del serializador CSV
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -57,6 +57,14 @@ export class InMemoryAuditLogQueriesRepository implements IAuditLogQueriesReposi
 
   public getExportRows(filters: AuditLogFilters, limit: number): Promise<AuditLogEntryView[]> {
     return Promise.resolve(this.entries.filter((entry: AuditLogEntryView) => matches(entry, filters)).slice(0, limit));
+  }
+
+  public getById(id: string): Promise<AuditLogEntryView | undefined> {
+    return Promise.resolve(this.entries.find((entry: AuditLogEntryView) => entry.id === id));
+  }
+
+  public getTargetTypes(): Promise<string[]> {
+    return Promise.resolve([...new Set<string>(this.entries.map((entry: AuditLogEntryView) => entry.entityType))].sort());
   }
 
   private _paginate(items: AuditLogEntryView[], page: AuditLogPage): Paginated<AuditLogEntryView> {

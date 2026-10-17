@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación del panel de administración
- * Descripción: Convierte las vistas del modelo de lectura del panel (estudiantes, detalle de estudiante, profesores y estadísticas) a los DTOs de respuesta de /api/admin
- * Versión: 1.0
+ * Descripción: Convierte las vistas del modelo de lectura del panel (estudiantes, detalle de estudiante, profesores y estadísticas) y el catálogo de proveedores de IA a los DTOs de respuesta de /api/admin
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,6 +22,7 @@ import {
   type PlatformStatistics,
   type RecentActivityItem,
 } from "@/features/admin/domain/read-models/admin-dashboard.read-model";
+import { AdminAiProviderDTO } from "@/features/admin/presentation/dtos/admin-ai-provider.dto";
 import {
   AdminTeacherDTO,
   AdminTeacherGroupDTO,
@@ -42,6 +43,7 @@ import {
   AdminStudentProgressDTO,
   AdminStudentStatisticsDTO,
 } from "@/features/admin/presentation/dtos/admin-student.dto";
+import { type AiProviderCatalogEntry } from "@/features/ai/domain/results/ai-provider-health";
 
 export class AdminMapper {
   public static toStudentListItemDTO(item: AdminStudentListItem): AdminStudentListItemDTO {
@@ -129,6 +131,10 @@ export class AdminMapper {
       studentCount: teacher.studentCount,
       groupsCreated: teacher.groupsCreated,
     });
+  }
+
+  public static toAiProviderDTO(entry: AiProviderCatalogEntry): AdminAiProviderDTO {
+    return new AdminAiProviderDTO({ provider: entry.provider, configured: entry.configured, models: [...entry.models] });
   }
 
   public static toStatisticsDTO(statistics: PlatformStatistics): PlatformStatisticsDTO {

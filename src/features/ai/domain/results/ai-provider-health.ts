@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Salud de proveedores de IA
- * Descripción: Modelos de lectura del estado de cada proveedor LLM (configurado, estado del cortocircuito, último éxito y último error con su código, sin mensajes) y del resultado de una sonda manual
- * Versión: 1.0
+ * Descripción: Modelos de lectura del estado de cada proveedor LLM (configurado, estado del cortocircuito, último éxito y último error con su código, sin mensajes) del catálogo de proveedores (configurado y modelos conocidos, sin credenciales) y del resultado de una sonda manual
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,12 @@ export interface AiBreakerSnapshot {
 export interface AiProviderHealth extends AiBreakerSnapshot {
   readonly provider: string;
   readonly configured: boolean;
+}
+
+export interface AiProviderCatalogEntry {
+  readonly provider: string;
+  readonly configured: boolean;
+  readonly models: readonly string[];
 }
 
 export interface AiProbeResult {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Contrato TypeScript de los eventos Socket.io
- * Descripción: Tipos de los mensajes que el cliente envía (authenticate y los ventilator:* reenviados), de los eventos que emite el servidor con su carga y de las salas a las que llegan; reflejan openapi/asyncapi.yaml, que es la fuente de verdad, y test/openapi/asyncapi-events.spec.ts verifica que todo evento emitido en src/ aparezca en ambos
- * Versión: 2.0
+ * Descripción: Tipos de los mensajes que el cliente envía (authenticate y los ventilator:* reenviados), de los eventos que emite el servidor con su carga (la notificación como unión discriminada por type con el data de cada tipo) y de las salas a las que llegan; reflejan openapi/asyncapi.yaml, que es la fuente de verdad, y test/openapi/asyncapi-events.spec.ts verifica que todo evento emitido en src/ aparezca en ambos
+ * Versión: 2.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,15 +21,64 @@ export interface ClientToServerEvents {
   "ventilator:heartbeat": () => void;
 }
 
-export interface NotificationPayload {
+export interface ReservationPreemptedNotificationData {
+  reservationId: string;
+  replacedByReservationId: string;
+}
+
+export interface ReservationCancelledNotificationData {
+  reservationId: string;
+}
+
+export interface EvaluationActivatedNotificationData {
+  evaluationId: string;
+  assignmentId: string;
+}
+
+export interface GradePublishedNotificationData {
+  evaluationId: string;
+  attemptId: string;
+}
+
+export interface FeedbackReadyNotificationData {
+  evaluationId: string;
+  attemptId: string;
+  feedbackId: string;
+}
+
+export interface RoleChangedNotificationData {
+  previousRole: string;
+  newRole: string;
+}
+
+export interface VentilatorOfflineNotificationData {
+  reservationId: string;
+  reason: string;
+}
+
+export interface NotificationDataByType {
+  RESERVATION_PREEMPTED: ReservationPreemptedNotificationData;
+  RESERVATION_CANCELLED: ReservationCancelledNotificationData;
+  EVALUATION_ACTIVATED: EvaluationActivatedNotificationData;
+  GRADE_PUBLISHED: GradePublishedNotificationData;
+  FEEDBACK_READY: FeedbackReadyNotificationData;
+  ROLE_CHANGED: RoleChangedNotificationData;
+  VENTILATOR_OFFLINE: VentilatorOfflineNotificationData;
+}
+
+export type NotificationType = keyof NotificationDataByType;
+
+export interface NotificationPayloadOf<T extends NotificationType> {
   id: string;
-  type: string;
+  type: T;
   title: string;
   body: string;
-  data: Record<string, unknown> | null;
+  data: NotificationDataByType[T] | null;
   readAt: string | null;
   createdAt: string;
 }
+
+export type NotificationPayload = { [T in NotificationType]: NotificationPayloadOf<T> }[NotificationType];
 
 export interface GradePublishedPayload {
   attemptId: string;

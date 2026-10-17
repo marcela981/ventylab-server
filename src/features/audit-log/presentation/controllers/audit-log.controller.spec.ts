@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de autorización de AuditLogController
  * Descripción: Verifica que todas las rutas de auditoría exijan JwtAuthGuard, PermissionsGuard y el permiso audit:read, que solo el rol ADMIN lo tenga y que el controlador solo exponga rutas GET
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -38,7 +38,7 @@ describe("AuditLogController authorization", () => {
       .filter((name: string) => name !== "constructor")
       .map((name: string) => Reflect.getMetadata(METHOD_METADATA, prototype[name] as object) as RequestMethod);
 
-    expect(methods).toHaveLength(3);
+    expect(methods).toHaveLength(5);
     expect(methods.every((method: RequestMethod) => method === RequestMethod.GET)).toBe(true);
   });
 });

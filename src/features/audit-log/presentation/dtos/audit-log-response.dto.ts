@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO de respuesta AuditLogEntryDTO
- * Descripción: Representa un registro de auditoría en las respuestas HTTP: acción, objetivo, actor y su rol, estado anterior y posterior protegidos, motivo, metadatos, petición e IP
- * Versión: 1.0
+ * Descripción: Representa un registro de auditoría en las respuestas HTTP: acción, objetivo, actor y su rol, estado anterior y posterior protegidos, motivo, metadatos, petición e IP, y el catálogo para filtrar (acciones, tipos de objetivo y tope de filas de la exportación)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -72,5 +72,22 @@ export class AuditLogEntryDTO {
     this.requestId = props.requestId;
     this.ip = props.ip;
     this.performedAt = props.performedAt;
+  }
+}
+
+export class AuditLogCatalogDTO {
+  @ApiProperty({ description: "Every action of the audit action catalog, sorted", example: ["user_role_changed", "user_status_changed"], type: String, isArray: true })
+  public actions: string[];
+
+  @ApiProperty({ description: "Target entity types present in the audit log, sorted", example: ["page", "user"], type: String, isArray: true })
+  public targetTypes: string[];
+
+  @ApiProperty({ description: "Maximum number of rows of one CSV export (GET /api/audit/export)", example: 50000 })
+  public exportRowLimit: number;
+
+  public constructor(props: AuditLogCatalogDTO) {
+    this.actions = props.actions;
+    this.targetTypes = props.targetTypes;
+    this.exportRowLimit = props.exportRowLimit;
   }
 }

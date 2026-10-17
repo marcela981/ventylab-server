@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la raíz de composición
- * Descripción: Compila CompositionModule con dependencias globales falsas para verificar que cada puerto de ajustes de las features se resuelve, que el arranque sin la tabla platform_settings sirve los valores por defecto del entorno y que los puertos leen el valor vigente tras una actualización sin reiniciar; verifica además la conversión de precios y la disponibilidad de proveedores de IA
- * Versión: 1.1
+ * Descripción: Compila CompositionModule con dependencias globales falsas para verificar que cada puerto de ajustes de las features se resuelve, que el arranque sin la tabla platform_settings sirve los valores por defecto del entorno y que los puertos leen el valor vigente tras una actualización sin reiniciar; verifica además la conversión de precios, los modelos con precio por proveedor y la disponibilidad de proveedores de IA
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -118,6 +118,16 @@ describe("CompositionModule", () => {
     store.applyOverride({ key: "ai.tutor.topicCheck.enabled", value: false, version: 1, updatedAt: UPDATED_AT });
 
     expect([telemetry.flushIntervalMs, commands.safety.maxPeep, ai.getTutorSettings().topicCheckEnabled]).toEqual([100, 12, false]);
+  });
+
+  it("lists the priced models of a provider from the current prices setting plus the configured default price table", () => {
+    const store: PlatformSettingsStore = moduleRef.get(PlatformSettingsStore, { strict: false });
+    const ai: IAiSettingsProvider = moduleRef.get(AI_SETTINGS_PROVIDER_TOKEN);
+
+    store.applyOverride({ key: "ai.prices", value: { gemini: { "gemini-new": { inputPer1kUsd: 0.001, outputPer1kUsd: 0.002 } } }, version: 1, updatedAt: UPDATED_AT });
+
+    expect(ai.getPricedModels("gemini")).toEqual(expect.arrayContaining(["gemini-new", "gemini-2.5-flash", "gemini-2.0-flash"]));
+    expect(ai.getPricedModels("unknown")).toEqual([]);
   });
 });
 

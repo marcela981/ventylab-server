@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba del gateway de IA
- * Descripción: Proveedor LLM falso con comportamientos programados (texto, error, bloqueo hasta abortar, stream, stream parcial que falla tras entregar fragmentos), configuración estática del gateway y registrador de llamadas en memoria para las pruebas unitarias
- * Versión: 1.1
+ * Descripción: Proveedor LLM falso con comportamientos programados (texto, error, bloqueo hasta abortar, stream, stream parcial que falla tras entregar fragmentos), configuración estática del gateway (con modelos con precio por proveedor) y registrador de llamadas en memoria para las pruebas unitarias
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -160,6 +160,7 @@ export class StaticAiSettingsProvider implements IAiSettingsProvider {
     public breaker: AiBreakerSettings = { failureThreshold: 3, openSeconds: 60 },
     public retryDelayMs: number = 100,
     public quotas: Partial<Record<string, AiQuotaLimit>> = {},
+    public pricedModels: Partial<Record<string, string[]>> = {},
   ) {}
 
   public getUseCaseSettings(_useCase: AiUseCaseValue): AiUseCaseSettings {
@@ -184,6 +185,10 @@ export class StaticAiSettingsProvider implements IAiSettingsProvider {
 
   public getPrice(_provider: string, _model: string): AiModelPrice | undefined {
     return undefined;
+  }
+
+  public getPricedModels(provider: string): readonly string[] {
+    return this.pricedModels[provider] ?? [];
   }
 }
 

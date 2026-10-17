@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Gateway de IA
- * Descripción: Fachada pública de la feature ai: construye el prompt versionado del caso de uso, elimina correos del contenido saliente, calcula su hash, verifica la cuota del usuario (con versión y hash para registrar el rechazo) y delega en AiOrchestrator para completar o transmitir la respuesta con respaldo determinista opcional; registra sin llamar a ningún proveedor ni consultar la cuota las llamadas que el consumidor bloquea por estar fuera de tema, expone los ajustes del tutor (ventana de historial y presupuesto de contexto), la salud de solo lectura de cada proveedor (sin llamar a ninguno) y la sonda manual de un proveedor con el prompt mínimo versionado, sin cuota y registrada en la telemetría con la referencia health_probe
- * Versión: 1.3
+ * Descripción: Fachada pública de la feature ai: construye el prompt versionado del caso de uso, elimina correos del contenido saliente, calcula su hash, verifica la cuota del usuario (con versión y hash para registrar el rechazo) y delega en AiOrchestrator para completar o transmitir la respuesta con respaldo determinista opcional; registra sin llamar a ningún proveedor ni consultar la cuota las llamadas que el consumidor bloquea por estar fuera de tema, expone los ajustes del tutor (ventana de historial y presupuesto de contexto), la salud de solo lectura de cada proveedor y el catálogo de proveedores con sus modelos conocidos (sin llamar a ninguno ni exponer credenciales) y la sonda manual de un proveedor con el prompt mínimo versionado, sin cuota y registrada en la telemetría con la referencia health_probe
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,7 +26,7 @@ import { stripEmails } from "@/features/ai/domain/prompts/personal-data-guard";
 import { computePromptHash } from "@/features/ai/domain/prompts/prompt-hash";
 import { type AiPromptInputs, getPromptTemplate } from "@/features/ai/domain/prompts/prompt-registry";
 import { type AiMessage, type BuiltPrompt, type PromptTemplate } from "@/features/ai/domain/prompts/prompt-template";
-import { type AiProbeResult, type AiProviderHealth } from "@/features/ai/domain/results/ai-provider-health";
+import { type AiProbeResult, type AiProviderCatalogEntry, type AiProviderHealth } from "@/features/ai/domain/results/ai-provider-health";
 import { type AiResult, type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
 import { isKnownAiProviderId } from "@/features/ai/domain/value-objects/ai-provider-id";
 import { type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
@@ -63,6 +63,10 @@ export class AiGateway {
 
   public getProviderHealth(): AiProviderHealth[] {
     return this._orchestrator.getProviderHealth();
+  }
+
+  public getProviderCatalog(): AiProviderCatalogEntry[] {
+    return this._orchestrator.getProviderCatalog();
   }
 
   public async probe(providerId: string): Promise<AiProbeResult> {

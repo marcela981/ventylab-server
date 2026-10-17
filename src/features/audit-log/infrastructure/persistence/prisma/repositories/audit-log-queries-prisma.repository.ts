@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio AuditLogQueriesPrismaRepository
- * Descripción: Implementa IAuditLogQueriesRepository con Prisma sobre audit_logs en modo solo lectura: búsqueda e historial paginados en base de datos (página y conteo en paralelo con el mismo filtro, orden por performed_at e id) y filas de exportación en orden cronológico con límite
- * Versión: 1.0
+ * Descripción: Implementa IAuditLogQueriesRepository con Prisma sobre audit_logs en modo solo lectura: búsqueda e historial paginados en base de datos (página y conteo en paralelo con el mismo filtro, orden por performed_at e id) y filas de exportación en orden cronológico con límite, una entrada por identificador y los tipos de entidad distintos ordenados
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -42,6 +42,22 @@ export class AuditLogQueriesPrismaRepository implements IAuditLogQueriesReposito
     });
 
     return rows.map((row: AuditLogModel) => AuditLogQueriesMapper.toView(row));
+  }
+
+  public async getById(id: string): Promise<AuditLogEntryView | undefined> {
+    const row: AuditLogModel | null = await this._prisma.auditLog.findUnique({ where: { id } });
+
+    return row ? AuditLogQueriesMapper.toView(row) : undefined;
+  }
+
+  public async getTargetTypes(): Promise<string[]> {
+    const rows: { entityType: string }[] = await this._prisma.auditLog.findMany({
+      distinct: ["entityType"],
+      select: { entityType: true },
+      orderBy: { entityType: "asc" },
+    });
+
+    return rows.map((row: { entityType: string }) => row.entityType);
   }
 
   private async _paginate(where: Prisma.AuditLogWhereInput, page: AuditLogPage): Promise<Paginated<AuditLogEntryView>> {

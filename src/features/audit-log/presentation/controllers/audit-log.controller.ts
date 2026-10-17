@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador AuditLogController
- * Descripción: Expone las rutas de solo lectura api/audit para administradores (audit:read): búsqueda paginada con filtros, historial de un objetivo y exportación CSV con tope de filas; no hay rutas de edición ni borrado
- * Versión: 1.0
+ * Descripción: Expone las rutas de solo lectura api/audit para administradores (audit:read): búsqueda paginada con filtros, historial de un objetivo, exportación CSV con tope de filas, detalle de una entrada y catálogo de acciones, tipos de objetivo y tope de exportación; no hay rutas de edición ni borrado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,7 +16,9 @@ import { I18n, I18nContext } from "nestjs-i18n";
 import { type Paginated } from "@/common/domain/utils/paginated";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
-import { type AuditLogExport, ExportAuditLogsUseCase } from "@/features/audit-log/application/use-cases/export-audit-logs.usecase";
+import { AUDIT_LOG_EXPORT_ROW_LIMIT, type AuditLogExport, ExportAuditLogsUseCase } from "@/features/audit-log/application/use-cases/export-audit-logs.usecase";
+import { type AuditLogCatalog, GetAuditLogCatalogUseCase } from "@/features/audit-log/application/use-cases/get-audit-log-catalog.usecase";
+import { GetAuditLogEntryUseCase } from "@/features/audit-log/application/use-cases/get-audit-log-entry.usecase";
 import { GetAuditTargetHistoryUseCase } from "@/features/audit-log/application/use-cases/get-audit-target-history.usecase";
 import { SearchAuditLogsUseCase } from "@/features/audit-log/application/use-cases/search-audit-logs.usecase";
 import { type AuditLogEntryView } from "@/features/audit-log/domain/read-models/audit-log-entry.read-model";
@@ -26,7 +28,7 @@ import {
   AuditTargetParamsDTO,
   SearchAuditLogsQueryDTO,
 } from "@/features/audit-log/presentation/dtos/audit-log-request.dto";
-import { AuditLogEntryDTO } from "@/features/audit-log/presentation/dtos/audit-log-response.dto";
+import { AuditLogCatalogDTO, AuditLogEntryDTO } from "@/features/audit-log/presentation/dtos/audit-log-response.dto";
 import { AuditLogMapper } from "@/features/audit-log/presentation/mappers/audit-log.mapper";
 import { toAuditLogCsv } from "@/features/audit-log/presentation/utils/audit-log-csv";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
@@ -45,6 +47,8 @@ export class AuditLogController {
     private readonly _searchAuditLogsUseCase: SearchAuditLogsUseCase,
     private readonly _getAuditTargetHistoryUseCase: GetAuditTargetHistoryUseCase,
     private readonly _exportAuditLogsUseCase: ExportAuditLogsUseCase,
+    private readonly _getAuditLogEntryUseCase: GetAuditLogEntryUseCase,
+    private readonly _getAuditLogCatalogUseCase: GetAuditLogCatalogUseCase,
   ) {}
 
   @Get()
@@ -72,7 +76,7 @@ export class AuditLogController {
   @ApiProduces("text/csv")
   @ApiOperation({
     summary: "Export audit log as CSV",
-    description: `One RFC 4180 row per audit entry matching the filters, oldest first, capped at the export row limit; cells starting with =, +, -, @ are prefixed against formula injection; the ${TRUNCATED_HEADER} header is "true" when rows were left out`,
+    description: `One RFC 4180 row per audit entry matching the filters, oldest first, capped at the export row limit of ${AUDIT_LOG_EXPORT_ROW_LIMIT} rows (also returned as exportRowLimit by GET /api/audit/catalog); cells starting with =, +, -, @ are prefixed against formula injection; the ${TRUNCATED_HEADER} header is "true" when rows were left out`,
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "CSV file" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
@@ -88,6 +92,24 @@ export class AuditLogController {
     response.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     response.setHeader(TRUNCATED_HEADER, String(result.truncated));
     response.send(toAuditLogCsv(result.rows));
+  }
+
+  @Get("catalog")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Get audit log catalog",
+    description: "Values to build the audit log filters: every action of the audit action catalog, the target entity types present in the log, and the export row limit",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Audit log catalog retrieved successfully", type: AuditLogCatalogDTO })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  public async getAuditLogCatalog(@I18n() i18n: I18nContext): Promise<APIResponse<AuditLogCatalogDTO>> {
+    const catalog: AuditLogCatalog = await this._getAuditLogCatalogUseCase.execute();
+
+    return new APIResponseBuilder<AuditLogCatalogDTO>()
+      .setData(AuditLogMapper.toCatalogDTO(catalog))
+      .setMessage(await i18n.t("audit-log.catalog_retrieved"))
+      .build();
   }
 
   @Get("targets/:type/:id")
@@ -108,6 +130,22 @@ export class AuditLogController {
       .setData(AuditLogMapper.toDTOList(entries.data))
       .setMessage(await i18n.t("audit-log.target_history_retrieved"))
       .setPagination(entries.pagination)
+      .build();
+  }
+
+  @Get(":id")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Get audit entry", description: "One audit entry by its ID" })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Audit entry retrieved successfully", type: AuditLogEntryDTO })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Audit entry not found" })
+  public async getAuditLogEntry(@Param("id") id: string, @I18n() i18n: I18nContext): Promise<APIResponse<AuditLogEntryDTO>> {
+    const entry: AuditLogEntryView = await this._getAuditLogEntryUseCase.execute(id);
+
+    return new APIResponseBuilder<AuditLogEntryDTO>()
+      .setData(AuditLogMapper.toDTO(entry))
+      .setMessage(await i18n.t("audit-log.entry_retrieved"))
       .build();
   }
 }

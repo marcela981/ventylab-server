@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: CSV de analítica
- * Descripción: Columnas y filas de las exportaciones CSV de analítica con la utilidad común toCsv (RFC 4180 y protección contra inyección de fórmulas): notas y progreso de un grupo (una fila por estudiante con progreso global y por sección, promedio y nota vigente por evaluación; encabezados dinámicos saneados a [A-Za-z0-9_-]) y conjunto de datos de investigación en formato largo solo con seudónimos
- * Versión: 1.0
+ * Descripción: Columnas y filas de las exportaciones CSV de analítica con la utilidad común toCsv (RFC 4180 y protección contra inyección de fórmulas): notas y progreso de un grupo (una fila por estudiante con progreso global y por sección, promedio y nota vigente por evaluación; encabezados dinámicos saneados a [A-Za-z0-9_-]) y conjunto de datos de investigación en formato largo solo con seudónimos, con las columnas del diccionario de datos de investigación
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,10 +16,9 @@ import {
   type StudentDashboardRow,
   type StudentEvaluationGrade,
 } from "@/features/analytics/application/results/analytics.results";
+import { RESEARCH_CSV_COLUMNS } from "@/features/analytics/presentation/utils/research-export-dictionary";
 
 type CsvRow = Record<string, CsvValue>;
-
-export const RESEARCH_CSV_COLUMNS: readonly (keyof ResearchDatasetRow)[] = ["participant", "group", "domain", "item", "metric", "value"];
 
 function headerSafe(value: string): string {
   return value.replace(/[^A-Za-z0-9_-]/g, "_");

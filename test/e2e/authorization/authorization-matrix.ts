@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
  * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -66,6 +66,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "PUT /api/activity-submissions/:id/grade": TEACHER_UP, // activity-submissions:grade
 
   // admin
+  "GET /api/admin/ai/providers": ADMIN_ONLY, // settings:manage
   "GET /api/admin/statistics": TEACHER_UP, // admin-statistics:read
   "GET /api/admin/students": TEACHER_UP, // students:read
   "GET /api/admin/students/:id/progress": TEACHER_UP, // students:read
@@ -96,11 +97,14 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/analytics/groups/:groupId/dashboard": TEACHER_UP, // analytics:read
   "GET /api/analytics/groups/:groupId/export.csv": TEACHER_UP, // analytics:read
   "GET /api/analytics/research/export.csv": ADMIN_ONLY, // analytics:research-export
+  "GET /api/analytics/research/export/dictionary": ADMIN_ONLY, // analytics:research-export
   "GET /api/analytics/students/:userId/timeline": { ...TEACHER_UP, teacher: 403 }, // analytics:read; a teacher only sees STUDENT members of their groups (403 otherwise)
   "GET /api/me/summary": AUTHENTICATED, // JwtAuthGuard
 
   // audit-log
   "GET /api/audit": ADMIN_ONLY, // audit:read
+  "GET /api/audit/:id": ADMIN_ONLY, // audit:read
+  "GET /api/audit/catalog": ADMIN_ONLY, // audit:read
   "GET /api/audit/export": ADMIN_ONLY, // audit:read
   "GET /api/audit/targets/:type/:id": ADMIN_ONLY, // audit:read
 

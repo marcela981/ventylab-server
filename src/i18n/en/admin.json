@@ -3,6 +3,7 @@
   "student_progress_retrieved": "Student progress retrieved successfully",
   "teachers_retrieved": "Teachers retrieved successfully",
   "role_changed": "User role changed successfully",
+  "ai_providers_retrieved": "AI providers retrieved successfully",
   "statistics_retrieved": "Statistics retrieved successfully",
   "validation": {
     "sort_by_invalid": "sortBy must be one of: name, email, lastActivity, progress",

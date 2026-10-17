@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador AnalyticsMapper
- * Descripción: Convierte los resultados de analítica (panel de grupo con nota aprobatoria, umbrales de riesgo, resumen por módulo, última actividad y riesgo por fila, línea de tiempo, estadísticas de evaluación y resumen del estudiante) en sus DTOs de respuesta, con fechas ISO 8601, valores ausentes como null y el porcentaje de valoraciones útiles por caso de uso
- * Versión: 1.3
+ * Descripción: Convierte los resultados de analítica (panel de grupo con nota aprobatoria, umbrales de riesgo, resumen por módulo, última actividad y riesgo por fila, línea de tiempo, estadísticas de evaluación resumen del estudiante y columnas del diccionario de datos de investigación) en sus DTOs de respuesta, con fechas ISO 8601, valores ausentes como null y el porcentaje de valoraciones útiles por caso de uso
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,11 +28,13 @@ import {
   type MyEvaluationDTO,
   type MySummaryDTO,
   type ProgressItemDTO,
+  type ResearchExportColumnDTO,
   type StudentDashboardRowDTO,
   type StudentProgressDTO,
   type StudentTimelineDTO,
   type TimelineEntryDTO,
 } from "@/features/analytics/presentation/dtos/analytics-response.dto";
+import { type ResearchExportColumnDefinition } from "@/features/analytics/presentation/utils/research-export-dictionary";
 import { type LessonWeightedProgress } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
 import { type EvaluationAssignmentResult } from "@/features/evaluation/application/results/evaluation-assignment.result";
 import { type EvaluationUserGrade } from "@/features/evaluation/application/results/evaluation-grading.result";
@@ -168,6 +170,10 @@ export class AnalyticsMapper {
         difficultyIndex: question.difficultyIndex ?? null,
       })),
     };
+  }
+
+  public static toResearchExportColumnDTO(definition: ResearchExportColumnDefinition): ResearchExportColumnDTO {
+    return { column: definition.column, type: definition.type, description: definition.description, example: definition.example ?? null };
   }
 
   public static toMySummaryDTO(summary: MySummary): MySummaryDTO {

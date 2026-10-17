@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador del panel de administración
- * Descripción: Endpoints /api/admin para el panel docente y administrativo: listado y detalle de estudiantes, listado de profesores, cambio de rol (delegado en ChangeUserRoleUseCase de usuarios) y estadísticas de la plataforma. El cambio de rol en /api/admin está deprecado en favor de PATCH /api/users/:id/role.
- * Versión: 1.2
+ * Descripción: Endpoints /api/admin para el panel docente y administrativo: listado y detalle de estudiantes, listado de profesores, catálogo de proveedores de IA (configurado y modelos conocidos, sin credenciales; permiso settings:manage), cambio de rol (delegado en ChangeUserRoleUseCase de usuarios) y estadísticas de la plataforma. El cambio de rol en /api/admin está deprecado en favor de PATCH /api/users/:id/role.
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { GetAdminStudentProgressUseCase } from "@/features/admin/application/use-cases/get-admin-student-progress.usecase";
 import { GetAdminStudentsUseCase } from "@/features/admin/application/use-cases/get-admin-students.usecase";
 import { GetAdminTeachersUseCase } from "@/features/admin/application/use-cases/get-admin-teachers.usecase";
+import { GetAiProvidersUseCase } from "@/features/admin/application/use-cases/get-ai-providers.usecase";
 import { GetPlatformStatisticsUseCase } from "@/features/admin/application/use-cases/get-platform-statistics.usecase";
 import {
   type AdminStudentListItem,
@@ -27,10 +28,12 @@ import {
   type AdminTeacherItem,
   type PlatformStatistics,
 } from "@/features/admin/domain/read-models/admin-dashboard.read-model";
+import { AdminAiProviderDTO } from "@/features/admin/presentation/dtos/admin-ai-provider.dto";
 import { AdminTeacherDTO, PlatformStatisticsDTO } from "@/features/admin/presentation/dtos/admin-platform.dto";
 import { ChangeUserRoleDTO, GetAdminStudentsQueryDTO, GetAdminTeachersQueryDTO } from "@/features/admin/presentation/dtos/admin-request.dto";
 import { AdminStudentListItemDTO, AdminStudentProgressDTO } from "@/features/admin/presentation/dtos/admin-student.dto";
 import { AdminMapper } from "@/features/admin/presentation/mappers/admin.mapper";
+import { type AiProviderCatalogEntry } from "@/features/ai/domain/results/ai-provider-health";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
@@ -50,6 +53,7 @@ export class AdminController {
     private readonly _getAdminTeachersUseCase: GetAdminTeachersUseCase,
     private readonly _changeUserRoleUseCase: ChangeUserRoleUseCase,
     private readonly _getPlatformStatisticsUseCase: GetPlatformStatisticsUseCase,
+    private readonly _getAiProvidersUseCase: GetAiProvidersUseCase,
   ) {}
 
   @Get("students")
@@ -116,6 +120,26 @@ export class AdminController {
     return new APIResponseBuilder<AdminTeacherDTO[]>()
       .setData(teachers.map((teacher: AdminTeacherItem) => AdminMapper.toTeacherDTO(teacher)))
       .setMessage(await i18n.t("admin.teachers_retrieved"))
+      .build();
+  }
+
+  @Get("ai/providers")
+  @RequirePermissions("settings:manage")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Get AI providers",
+    description:
+      "Every known AI provider with whether its credentials are configured on the server (credentials are never returned) and the models known to the AI feature (price table and current use case settings), to fill the AI settings forms; no provider is called",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "AI providers retrieved successfully", type: AdminAiProviderDTO, isArray: true })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  public async getAiProviders(@I18n() i18n: I18nContext): Promise<APIResponse<AdminAiProviderDTO[]>> {
+    const providers: AiProviderCatalogEntry[] = this._getAiProvidersUseCase.execute();
+
+    return new APIResponseBuilder<AdminAiProviderDTO[]>()
+      .setData(providers.map((entry: AiProviderCatalogEntry) => AdminMapper.toAiProviderDTO(entry)))
+      .setMessage(await i18n.t("admin.ai_providers_retrieved"))
       .build();
   }
 

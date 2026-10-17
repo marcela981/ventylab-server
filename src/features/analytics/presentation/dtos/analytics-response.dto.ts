@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de analítica
- * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (nota aprobatoria y umbrales de riesgo vigentes, progreso agregado por módulo y fila por estudiante con progreso, notas, simulación, uso de IA, horas de ventilador, última actividad y riesgo), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación (opcionalmente de un grupo) con dificultad por pregunta y del resumen del propio estudiante; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO)
- * Versión: 1.4
+ * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (nota aprobatoria y umbrales de riesgo vigentes, progreso agregado por módulo y fila por estudiante con progreso, notas, simulación, uso de IA, horas de ventilador, última actividad y riesgo), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación (opcionalmente de un grupo) con dificultad por pregunta del resumen del propio estudiante y de cada columna del diccionario de datos de la exportación de investigación; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -518,4 +518,18 @@ export class MySummaryDTO {
 
   @ApiProperty({ description: "Unread notifications", example: 3 })
   public unreadNotifications: number;
+}
+
+export class ResearchExportColumnDTO {
+  @ApiProperty({ description: "CSV column name, in file order", example: "participant" })
+  public column: string;
+
+  @ApiProperty({ description: "Value type of the column", enum: ["string", "number"], example: "string" })
+  public type: string;
+
+  @ApiProperty({ description: "Meaning of the column and its allowed values (Spanish)", example: "Seudónimo del estudiante: HMAC-SHA256 del identificador de usuario" })
+  public description: string;
+
+  @ApiProperty({ description: "Example value (null when the column has none)", example: "progress", nullable: true, type: String })
+  public example: string | null;
 }

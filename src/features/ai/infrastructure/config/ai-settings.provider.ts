@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Proveedor de configuración del gateway de IA
- * Descripción: Lectores puros de la configuración del gateway de IA desde ConfigService, usados como valores por defecto de los ajustes de la plataforma y como base de IAiSettingsProvider: valores por defecto de cadena de proveedores, modelos, tiempos límite, tokens y temperatura por caso de uso, sobrescrituras JSON (AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES) validadas al arrancar, cortocircuito, ajustes del tutor y resolución de la cuota por caso de uso antes del comodín
- * Versión: 1.1
+ * Descripción: Lectores puros de la configuración del gateway de IA desde ConfigService, usados como valores por defecto de los ajustes de la plataforma y como base de IAiSettingsProvider: valores por defecto de cadena de proveedores, modelos, tiempos límite, tokens y temperatura por caso de uso, sobrescrituras JSON (AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES) validadas al arrancar, cortocircuito, ajustes del tutor, modelos con precio por proveedor y resolución de la cuota por caso de uso antes del comodín
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -314,6 +314,10 @@ export class ConfigAiSettingsProvider implements IAiSettingsProvider {
 
   public getPrice(provider: string, model: string): AiModelPrice | undefined {
     return this._snapshot.prices[provider]?.[model];
+  }
+
+  public getPricedModels(provider: string): readonly string[] {
+    return Object.keys(this._snapshot.prices[provider] ?? {});
   }
 }
 
