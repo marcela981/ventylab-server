@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los suscriptores de notificaciones
- * Descripción: Verifica por cada evento de catálogo los destinatarios, el tipo y el texto de plantilla, la expansión de grupos en una sola inserción en lote, persistir antes de emitir notification:new, el aviso de ventilador fuera de línea solo a titulares de la reserva activa y que los errores se registran sin propagarse
- * Versión: 1.0
+ * Descripción: Verifica por cada evento de catálogo los destinatarios, el tipo y el texto de plantilla, la expansión de grupos en una sola inserción en lote, que el actor que desplaza una reserva nunca recibe el aviso, persistir antes de emitir notification:new, el aviso de ventilador fuera de línea solo a titulares de la reserva activa y que los errores se registran sin propagarse
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -102,6 +102,42 @@ describe("NotificationsEventsHandlers", () => {
 
     expect(repository.createManyCalls).toHaveLength(1);
     expect(recipientsOf(repository)).toEqual(["student-1", "student-2", "student-3"]);
+  });
+
+  it("never notifies the preempting actor while notifying every other previous holder", async () => {
+    const { handlers, repository, emitToUser } = harness({ members: { "group-1": ["student-1", "teacher-1", "student-2"] } });
+
+    await handlers.handleReservationPreempted({
+      ...META,
+      reservationId: "reservation-1",
+      previousHolder: { type: "GROUP", groupId: "group-1" },
+      startsAt: STARTS_AT,
+      endsAt: ENDS_AT,
+      wasActive: true,
+      preemptedById: "teacher-1",
+      replacedByReservationId: "reservation-2",
+    });
+
+    expect(recipientsOf(repository)).toEqual(["student-1", "student-2"]);
+    expect(emitToUser).not.toHaveBeenCalledWith("teacher-1", expect.anything(), expect.anything());
+  });
+
+  it("notifies nobody when the preempting actor is the only previous holder", async () => {
+    const { handlers, repository, emitToUser } = harness();
+
+    await handlers.handleReservationPreempted({
+      ...META,
+      reservationId: "reservation-1",
+      previousHolder: { type: "USER", userId: "teacher-1" },
+      startsAt: STARTS_AT,
+      endsAt: ENDS_AT,
+      wasActive: false,
+      preemptedById: "teacher-1",
+      replacedByReservationId: "reservation-2",
+    });
+
+    expect(repository.rows).toHaveLength(0);
+    expect(emitToUser).not.toHaveBeenCalled();
   });
 
   it("notifies the group members of an assigned evaluation except the assigning actor, phrased as available from its start", async () => {
