@@ -11,5 +11,23 @@
     "category_invalid": "La categoría debe ser ai, evaluation, simulation, reservations, telemetry o commands",
     "value_required": "El valor es obligatorio",
     "version_invalid": "La versión debe ser un entero mayor o igual que 0"
+  },
+  "reasons": {
+    "not_a_number": "Debe ser un número",
+    "not_an_integer": "Debe ser un número entero",
+    "out_of_range": "Debe estar entre {min} y {max}",
+    "not_a_boolean": "Debe ser verdadero o falso",
+    "empty_string": "Debe ser un texto no vacío",
+    "too_long": "Debe tener como máximo {max} caracteres",
+    "not_an_object": "Debe ser un objeto",
+    "unknown_field": "No es un campo conocido",
+    "not_an_array": "Debe ser una lista",
+    "entries_out_of_range": "Debe tener entre {min} y {max} elementos",
+    "repeated_provider": "No debe repetir un proveedor",
+    "missing_models": "Falta el modelo de {providers}",
+    "not_allowed_value": "Debe ser uno de {allowed}",
+    "missing_required_value": "Debe incluir {required}",
+    "repeated_multiplier": "No debe repetir un multiplicador",
+    "provider_not_configured": "Estos proveedores de IA no tienen credenciales configuradas: {providers}"
   }
 }

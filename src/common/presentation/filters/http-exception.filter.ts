@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Filtro global HttpExceptionFilter
- * Descripción: Convierte toda excepción en el envoltorio estándar traducido (validación, dominio con argumentos de traducción opcionales, detalles opcionales en data y cabecera Retry-After cuando el error indica cuándo reintentar, HTTP con códigos traducidos para 413 y 429, errores de cliente de los parsers de cuerpo como 413, Prisma P2002/P2025, protección del superadmin del trigger protect_superadmin como 403, inesperada), registra en log, Sentry y error_logs con la excepción, el cuerpo, la consulta y los parámetros sin secretos ni correos (el tráfico rechazado por tamaño o límite de peticiones solo como advertencia, sin Sentry ni error_logs) y nunca expone trazas de pila en la respuesta
- * Versión: 1.5
+ * Descripción: Convierte toda excepción en el envoltorio estándar traducido (validación con los mensajes de primer nivel y el detalle por campo en data.errors con rutas anidadas a.b[0].c, dominio con detalle por campo traducido en data.errors cuando el error lo expone, con argumentos de traducción opcionales, detalles opcionales en data y cabecera Retry-After cuando el error indica cuándo reintentar, HTTP con códigos traducidos para 413 y 429, errores de cliente de los parsers de cuerpo como 413, Prisma P2002/P2025, protección del superadmin del trigger protect_superadmin como 403, inesperada), registra en log, Sentry y error_logs con la excepción, el cuerpo, la consulta y los parámetros sin secretos ni correos (el tráfico rechazado por tamaño o límite de peticiones solo como advertencia, sin Sentry ni error_logs) y nunca expone trazas de pila en la respuesta
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -64,12 +64,27 @@ interface ExceptionResponse {
   headers?: Record<string, string>;
 }
 
-// Optional members a domain error may expose: interpolation values for its translated message, structured details for the client and the moment the client may retry.
+// Optional members a domain error may expose: interpolation values for its translated message, structured details for the client, per-field errors and the moment the client may retry.
 interface DomainErrorExtras {
   i18nArgs?: unknown;
   details?: unknown;
+  fieldErrors?: unknown;
   retryAt?: unknown;
 }
+
+interface DomainFieldError {
+  field: string;
+  code: string;
+  args?: Record<string, unknown>;
+  message: string;
+}
+
+export interface FieldErrorResponse {
+  field: string;
+  message: string;
+}
+
+const ARRAY_INDEX_PATTERN: RegExp = /^\d+$/;
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -203,6 +218,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const apiResponse: APIResponse<unknown> = new APIResponseBuilder()
       .setSuccess(false)
       .setMessage(validationMessages)
+      .setData({ errors: this._flattenValidationErrors(translatedErrors, "", false) })
       .setCode("validation_error")
       .setTraceId(request.traceId)
       .build();
@@ -221,6 +237,42 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
       return [];
     });
+  }
+
+  private _flattenValidationErrors(errors: ValidationError[], parentPath: string, parentIsArray: boolean): FieldErrorResponse[] {
+    return errors.flatMap((error: ValidationError): FieldErrorResponse[] => {
+      const field: string = this._fieldPath(parentPath, error.property, parentIsArray);
+      const own: FieldErrorResponse[] = Object.values(error.constraints ?? {}).map((message: string): FieldErrorResponse => ({ field, message }));
+
+      return [...own, ...this._flattenValidationErrors(error.children ?? [], field, Array.isArray(error.value))];
+    });
+  }
+
+  private _fieldPath(parentPath: string, property: string, parentIsArray: boolean): string {
+    if (parentPath === "") {
+      return property;
+    }
+
+    return parentIsArray && ARRAY_INDEX_PATTERN.test(property) ? `${parentPath}[${property}]` : `${parentPath}.${property}`;
+  }
+
+  private _translateFieldErrors(fieldErrors: unknown, i18nContext: I18nContext | undefined): FieldErrorResponse[] {
+    if (!Array.isArray(fieldErrors)) {
+      return [];
+    }
+
+    return fieldErrors.filter((entry: unknown): entry is DomainFieldError => this._isDomainFieldError(entry)).map(
+      (entry: DomainFieldError): FieldErrorResponse => ({
+        field: entry.field,
+        message: i18nContext ? i18nContext.t(entry.code, entry.args ? { args: entry.args } : undefined) : entry.message,
+      }),
+    );
+  }
+
+  private _isDomainFieldError(entry: unknown): entry is DomainFieldError {
+    const candidate: Partial<DomainFieldError> = (typeof entry === "object" && entry !== null ? entry : {});
+
+    return typeof candidate.field === "string" && typeof candidate.code === "string" && typeof candidate.message === "string";
   }
 
   private _handleDomainError(
@@ -247,8 +299,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
       .setCode(exception.code)
       .setTraceId(request.traceId);
 
-    if (typeof extras.details === "object" && extras.details !== null) {
-      builder.setData(extras.details);
+    const details: object | undefined = typeof extras.details === "object" && extras.details !== null ? extras.details : undefined;
+    const fieldErrors: FieldErrorResponse[] = this._translateFieldErrors(extras.fieldErrors, i18nContext);
+
+    if (fieldErrors.length > 0) {
+      builder.setData({ ...details, errors: fieldErrors });
+    } else if (details !== undefined) {
+      builder.setData(details);
     }
 
     const apiResponse: APIResponse<unknown> = builder.build();

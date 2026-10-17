@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetPlatformSettings
- * Descripción: Lista los ajustes del registro, opcionalmente de una categoría, con su valor efectivo, valor por defecto, origen, límites duros, descripción y versión leídos de la caché en memoria
- * Versión: 1.0
+ * Descripción: Lista los ajustes del registro, opcionalmente de una categoría, con su valor efectivo, valor por defecto, origen, límites duros, metadatos para un formulario genérico (tipo, etiqueta, unidad, descripción en español y esquema de claves de los mapas) y versión leídos de la caché en memoria
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,7 +28,11 @@ export class GetPlatformSettingsUseCase {
         return new PlatformSettingView({
           key,
           category: definition.category,
+          type: definition.type,
+          label: definition.label,
+          unit: definition.unit ?? undefined,
           description: definition.description,
+          keySchema: definition.keySchema ?? undefined,
           value: entry.value,
           defaultValue: entry.defaultValue,
           origin: entry.origin,

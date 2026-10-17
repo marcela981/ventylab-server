@@ -98,7 +98,7 @@
         }
       },
       "UnprocessableError": {
-        "summary": "The request is well-formed but violates a business rule",
+        "summary": "The request is well-formed but violates a business rule; errors with a field detail add it to data.errors",
         "value": {
           "code": "ai-ratings.invalid_score",
           "data": null,
@@ -113,7 +113,18 @@
         "summary": "Validation error or malformed request",
         "value": {
           "code": "validation_error",
-          "data": null,
+          "data": {
+            "errors": [
+              {
+                "field": "name",
+                "message": "name must be a string"
+              },
+              {
+                "field": "items[0].quantity",
+                "message": "quantity must be an integer"
+              }
+            ]
+          },
           "message": [
             "name must be a string"
           ],
@@ -7020,7 +7031,25 @@
             "type": "string"
           },
           "data": {
-            "description": "Structured details some errors return so the client can act (for example conflicting records); null otherwise",
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "errors": {
+                    "description": "One entry per failing field, with its translated message",
+                    "items": {
+                      "$ref": "#/components/schemas/FieldError"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Structured details some errors return so the client can act (for example conflicting records); validation errors and errors with a field detail carry `errors`; null otherwise",
             "example": null
           },
           "message": {
@@ -8556,6 +8585,26 @@
           "evaluationId",
           "attemptId",
           "feedbackId"
+        ],
+        "type": "object"
+      },
+      "FieldError": {
+        "description": "Error of one field: the request body path (nested objects with dots, array items with [index]) or, for platform settings, the setting key followed by the path inside its value",
+        "properties": {
+          "field": {
+            "description": "Path of the failing field",
+            "example": "items[0].quantity",
+            "type": "string"
+          },
+          "message": {
+            "description": "Translated message of the field error",
+            "example": "quantity must be an integer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "message"
         ],
         "type": "object"
       },
@@ -16331,13 +16380,33 @@
             ]
           },
           "description": {
-            "description": "What the setting controls",
-            "example": "Interval at which buffered telemetry frames are sent to clients",
+            "description": "What the setting controls, in Spanish",
+            "example": "Intervalo con el que se envían a los clientes los fotogramas de telemetría acumulados; un cambio reprograma el temporizador sin reiniciar",
             "type": "string"
           },
           "key": {
             "description": "Setting key",
             "example": "telemetry.flushIntervalMs",
+            "type": "string"
+          },
+          "keySchema": {
+            "anyOf": [
+              {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PlatformSettingKeySchemaDTO"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Keys of a map-like setting (or of its map field) a form can add or remove; null for other settings"
+          },
+          "label": {
+            "description": "Short name of the setting, in Spanish",
+            "example": "Intervalo de envío de telemetría",
             "type": "string"
           },
           "limits": {
@@ -16358,6 +16427,29 @@
             ],
             "example": "DEFAULT",
             "type": "string"
+          },
+          "type": {
+            "description": "Type of the value, so a generic form can pick its input",
+            "enum": [
+              "integer",
+              "number",
+              "boolean",
+              "string",
+              "string-list",
+              "integer-list",
+              "map",
+              "object"
+            ],
+            "example": "integer",
+            "type": "string"
+          },
+          "unit": {
+            "description": "Unit of the value, in Spanish; null when it has none",
+            "example": "milisegundos",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "updatedAt": {
             "description": "When the override was last changed",
@@ -16406,7 +16498,11 @@
         "required": [
           "key",
           "category",
+          "type",
+          "label",
+          "unit",
           "description",
+          "keySchema",
           "value",
           "defaultValue",
           "origin",
@@ -16414,6 +16510,98 @@
           "version",
           "updatedAt",
           "updatedById"
+        ],
+        "type": "object"
+      },
+      "PlatformSettingKeySchemaDTO": {
+        "properties": {
+          "allowedKeys": {
+            "description": "Keys a form may add (for AI provider maps, the providers the AI feature registers); null when any key is accepted",
+            "example": [
+              "gemini",
+              "openai",
+              "anthropic",
+              "custom"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "keyLabel": {
+            "description": "Label of the map keys, in Spanish",
+            "example": "Proveedor",
+            "type": "string"
+          },
+          "path": {
+            "description": "Field of the value that holds the map (null when the whole value is the map)",
+            "example": null,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "valueKeySchema": {
+            "anyOf": [
+              {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PlatformSettingKeySchemaDTO"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Key schema of the nested map when valueType is map; null otherwise"
+          },
+          "valueLimits": {
+            "additionalProperties": true,
+            "description": "Hard limits of the value under each key (per field for object values); null when the value is a nested map",
+            "example": {
+              "inputPer1kUsd": {
+                "integer": false,
+                "max": 1,
+                "min": 0
+              },
+              "outputPer1kUsd": {
+                "integer": false,
+                "max": 1,
+                "min": 0
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "valueType": {
+            "description": "Type of the value under each key",
+            "enum": [
+              "integer",
+              "number",
+              "boolean",
+              "string",
+              "string-list",
+              "integer-list",
+              "map",
+              "object"
+            ],
+            "example": "map",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "keyLabel",
+          "allowedKeys",
+          "valueType",
+          "valueLimits",
+          "valueKeySchema"
         ],
         "type": "object"
       },
@@ -23458,7 +23646,7 @@
       "UpdatePlatformSettingDTO": {
         "properties": {
           "value": {
-            "description": "New value; its type and shape depend on the setting (number, boolean, array or object, see the setting limits)",
+            "description": "New value; its type and shape depend on the setting (see its type, limits and keySchema); the setting registry validates it per key",
             "example": 50,
             "oneOf": [
               {
@@ -23466,6 +23654,9 @@
               },
               {
                 "type": "boolean"
+              },
+              {
+                "type": "string"
               },
               {
                 "items": {},

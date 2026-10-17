@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registro de ajustes de la plataforma
- * Descripción: Define en código cada ajuste editable por un administrador (categoría, descripción, validación de tipo y forma y límites duros que ni un administrador puede superar): cadena de proveedores y modelos, tiempo límite, tokens y temperatura por caso de uso de IA, cuotas, precios y verificación de tema del tutor; nota aprobatoria y gracia de entrega de evaluaciones; umbrales de riesgo del panel docente (evaluaciones reprobadas toleradas, progreso mínimo y días de inactividad, 0 desactiva las dos últimas); umbrales de la rúbrica por defecto, multiplicadores de tiempo y abandono de simulaciones; reglas de reservas; intervalos de telemetría; frecuencia, tiempo de acuse y límites de seguridad de los comandos (dentro de VENTILATOR_PARAMETER_LIMITS). Cada ajuste valida (parse) y además ajusta un valor al válido más cercano (sanitize), con lo que se resuelven al arrancar los valores por defecto de la configuración (resolvePlatformSettingDefault)
- * Versión: 1.2
+ * Descripción: Define en código cada ajuste editable por un administrador (categoría, metadatos en español para un formulario genérico (tipo de valor, etiqueta, unidad y descripción) y esquema de claves de los ajustes con forma de mapa con los proveedores que registra la feature de IA, validación de tipo y forma y límites duros que ni un administrador puede superar): cadena de proveedores y modelos, tiempo límite, tokens y temperatura por caso de uso de IA, cuotas, precios y verificación de tema del tutor; nota aprobatoria y gracia de entrega de evaluaciones; umbrales de riesgo del panel docente (evaluaciones reprobadas toleradas, progreso mínimo y días de inactividad, 0 desactiva las dos últimas); umbrales de la rúbrica por defecto, multiplicadores de tiempo y abandono de simulaciones; reglas de reservas; intervalos de telemetría; frecuencia, tiempo de acuse y límites de seguridad de los comandos (dentro de VENTILATOR_PARAMETER_LIMITS). Cada ajuste valida (parse) y además ajusta un valor al válido más cercano (sanitize), con lo que se resuelven al arrancar los valores por defecto de la configuración (resolvePlatformSettingDefault)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type VentilatorParameterLimit, VENTILATOR_PARAMETER_LIMITS } from "@/common/domain/ventilator/ventilator-limits";
+import { AI_PROVIDER_ID_VALUES } from "@/features/ai/domain/value-objects/ai-provider-id";
 import { AI_USE_CASE_VALUES, type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 import { PlatformSettingNotFoundError } from "@/features/platform-settings/domain/platform-settings.errors";
 import { type NumberLimits, PlatformSettingValueReader } from "@/features/platform-settings/domain/registry/platform-setting-value-reader";
@@ -21,7 +22,9 @@ import {
   type AiUseCaseSettingValue,
   type PlatformSettingCategoryValue,
   type PlatformSettingKey,
+  type PlatformSettingKeySchema,
   type PlatformSettingValues,
+  type PlatformSettingValueTypeValue,
   type SimulationRubricThresholdsValue,
 } from "@/features/platform-settings/domain/registry/platform-setting-values";
 import { TIME_MULTIPLIER_VALUES } from "@/features/simulation/domain/value-objects/simulation-session-values";
@@ -29,10 +32,20 @@ import { USER_ROLE_VALUES } from "@/features/users/domain/value-objects/user-rol
 
 export type PlatformSettingLimits = Readonly<Record<string, unknown>>;
 
-export interface PlatformSettingDefinition<K extends PlatformSettingKey = PlatformSettingKey> {
+export interface PlatformSettingText {
+  readonly label: string;
+  readonly unit: string | null;
+  readonly description: string;
+}
+
+export interface PlatformSettingMetadata extends PlatformSettingText {
+  readonly type: PlatformSettingValueTypeValue;
+  readonly keySchema: PlatformSettingKeySchema | null;
+}
+
+export interface PlatformSettingDefinition<K extends PlatformSettingKey = PlatformSettingKey> extends PlatformSettingMetadata {
   readonly key: K;
   readonly category: PlatformSettingCategoryValue;
-  readonly description: string;
   readonly limits: PlatformSettingLimits;
   readonly parse: (value: unknown) => PlatformSettingValues[K];
   readonly sanitize: (value: unknown) => PlatformSettingValues[K];
@@ -63,6 +76,49 @@ const AI_TOKENS_PER_DAY_LIMITS: NumberLimits = { min: 0, max: 100_000_000, integ
 const AI_PRICE_PER_1K_LIMITS: NumberLimits = { min: 0, max: 1, integer: false };
 const REQUIRED_TIME_MULTIPLIER: number = 1;
 
+const AI_PROVIDER_KEY_LABEL: string = "Proveedor";
+
+const AI_MODELS_KEY_SCHEMA: PlatformSettingKeySchema = {
+  path: "models",
+  keyLabel: AI_PROVIDER_KEY_LABEL,
+  allowedKeys: AI_PROVIDER_ID_VALUES,
+  valueType: "string",
+  valueLimits: { maxLength: MAX_MODEL_NAME_LENGTH },
+  valueKeySchema: null,
+};
+
+const AI_QUOTAS_KEY_SCHEMA: PlatformSettingKeySchema = {
+  path: null,
+  keyLabel: "Rol",
+  allowedKeys: USER_ROLE_VALUES,
+  valueType: "map",
+  valueLimits: null,
+  valueKeySchema: {
+    path: null,
+    keyLabel: "Caso de uso",
+    allowedKeys: [...AI_USE_CASE_VALUES, AI_QUOTA_ANY_USE_CASE],
+    valueType: "object",
+    valueLimits: { requestsPerDay: AI_REQUESTS_PER_DAY_LIMITS, tokensPerDay: AI_TOKENS_PER_DAY_LIMITS },
+    valueKeySchema: null,
+  },
+};
+
+const AI_PRICES_KEY_SCHEMA: PlatformSettingKeySchema = {
+  path: null,
+  keyLabel: AI_PROVIDER_KEY_LABEL,
+  allowedKeys: AI_PROVIDER_ID_VALUES,
+  valueType: "map",
+  valueLimits: null,
+  valueKeySchema: {
+    path: null,
+    keyLabel: "Modelo",
+    allowedKeys: null,
+    valueType: "object",
+    valueLimits: { inputPer1kUsd: AI_PRICE_PER_1K_LIMITS, outputPer1kUsd: AI_PRICE_PER_1K_LIMITS },
+    valueKeySchema: null,
+  },
+};
+
 const RUBRIC_THRESHOLD_LIMITS: Readonly<Record<keyof SimulationRubricThresholdsValue, NumberLimits>> = {
   targetsReached: { min: 0.01, max: 1, integer: false },
   timeToStabilizeSeconds: { min: 1, max: 3600, integer: false },
@@ -77,22 +133,24 @@ function safetyLimits(parameter: VentilatorParameterLimit): NumberLimits {
 function setting<K extends PlatformSettingKey>(
   key: K,
   category: PlatformSettingCategoryValue,
-  description: string,
+  metadata: PlatformSettingMetadata,
   limits: PlatformSettingLimits,
   read: SettingReadFn<PlatformSettingValues[K]>,
 ): PlatformSettingDefinition<K> {
   return {
     key,
     category,
-    description,
+    ...metadata,
     limits,
     parse: (value: unknown): PlatformSettingValues[K] => read(new PlatformSettingValueReader(key), value),
     sanitize: (value: unknown): PlatformSettingValues[K] => read(new PlatformSettingValueReader(key, true), value),
   };
 }
 
-function numberSetting<K extends NumberSettingKey>(key: K, category: PlatformSettingCategoryValue, description: string, limits: NumberLimits): PlatformSettingDefinition<K> {
-  return setting(key, category, description, { ...limits }, (reader: PlatformSettingValueReader, value: unknown): PlatformSettingValues[K] =>
+function numberSetting<K extends NumberSettingKey>(key: K, category: PlatformSettingCategoryValue, text: PlatformSettingText, limits: NumberLimits): PlatformSettingDefinition<K> {
+  const metadata: PlatformSettingMetadata = { ...text, type: limits.integer ? "integer" : "number", keySchema: null };
+
+  return setting(key, category, metadata, { ...limits }, (reader: PlatformSettingValueReader, value: unknown): PlatformSettingValues[K] =>
     reader.number(VALUE_PATH, value, limits) as PlatformSettingValues[K],
   );
 }
@@ -104,7 +162,7 @@ function readAiUseCase(reader: PlatformSettingValueReader, value: unknown): AiUs
     .map((provider: unknown, index: number): string => reader.string(`providerChain[${index}]`, provider, MAX_IDENTIFIER_LENGTH));
 
   if (new Set(providerChain).size !== providerChain.length) {
-    reader.invalid("providerChain", "must not repeat a provider");
+    reader.invalid("providerChain", "repeated_provider");
   }
 
   const models: Record<string, string> = {};
@@ -116,7 +174,7 @@ function readAiUseCase(reader: PlatformSettingValueReader, value: unknown): AiUs
   const withoutModel: string[] = providerChain.filter((provider: string): boolean => models[provider] === undefined);
 
   if (withoutModel.length > 0) {
-    reader.invalid("models", `needs a model for ${withoutModel.join(", ")}`);
+    reader.invalid("models", "missing_models", { providers: withoutModel.join(", ") });
   }
 
   return {
@@ -134,7 +192,13 @@ function aiUseCaseSetting(useCase: AiUseCaseValue): PlatformSettingDefinition<Ai
   return setting(
     key,
     "ai",
-    `Provider chain (in order), model per provider, timeout, max output tokens and temperature of the ${useCase} AI use case`,
+    {
+      type: "object",
+      label: `Caso de uso de IA ${useCase}`,
+      unit: null,
+      description: `Cadena de proveedores (en orden), modelo por proveedor, tiempo límite en milisegundos, máximo de tokens de salida y temperatura del caso de uso de IA ${useCase}`,
+      keySchema: AI_MODELS_KEY_SCHEMA,
+    },
     {
       providerChain: { minLength: 1, maxLength: MAX_PROVIDER_CHAIN_LENGTH, requiresCredentials: true },
       timeoutMs: AI_TIMEOUT_LIMITS,
@@ -213,15 +277,15 @@ function readTimeMultipliers(reader: PlatformSettingValueReader, value: unknown)
   const multipliers: number[] = reader.array(VALUE_PATH, value, 1, allowed.length).map((entry: unknown, index: number): number => {
     const multiplier: number = reader.number(`${VALUE_PATH}[${index}]`, entry, entryLimits);
 
-    return allowed.includes(multiplier) ? multiplier : reader.outOfLimits(`${VALUE_PATH}[${index}]`, `must be one of ${allowed.join(", ")}`);
+    return allowed.includes(multiplier) ? multiplier : reader.outOfLimits(`${VALUE_PATH}[${index}]`, "not_allowed_value", { allowed: allowed.join(", ") });
   });
 
   if (new Set(multipliers).size !== multipliers.length) {
-    reader.invalid(VALUE_PATH, "must not repeat a multiplier");
+    reader.invalid(VALUE_PATH, "repeated_multiplier");
   }
 
   if (!multipliers.includes(REQUIRED_TIME_MULTIPLIER)) {
-    reader.outOfLimits(VALUE_PATH, `must include ${REQUIRED_TIME_MULTIPLIER}`);
+    reader.outOfLimits(VALUE_PATH, "missing_required_value", { required: REQUIRED_TIME_MULTIPLIER });
   }
 
   return [...multipliers].sort((left: number, right: number): number => left - right);
@@ -236,129 +300,221 @@ export const PLATFORM_SETTINGS_REGISTRY: PlatformSettingsRegistry = {
   "ai.quotas": setting(
     "ai.quotas",
     "ai",
-    "Daily AI requests and tokens per role and use case (\"*\" applies to every use case without its own entry); roles without an entry are unlimited",
+    {
+      type: "map",
+      label: "Cuotas diarias de IA",
+      unit: null,
+      description: "Solicitudes y tokens de IA diarios por rol y caso de uso (\"*\" aplica a todo caso de uso sin entrada propia); los roles sin entrada no tienen límite",
+      keySchema: AI_QUOTAS_KEY_SCHEMA,
+    },
     { roles: USER_ROLE_VALUES, useCases: [...AI_USE_CASE_VALUES, AI_QUOTA_ANY_USE_CASE], requestsPerDay: AI_REQUESTS_PER_DAY_LIMITS, tokensPerDay: AI_TOKENS_PER_DAY_LIMITS },
     readAiQuotas,
   ),
   "ai.prices": setting(
     "ai.prices",
     "ai",
-    "USD price per 1k input and output tokens per provider and model, used for cost estimates",
+    {
+      type: "map",
+      label: "Precios de los modelos de IA",
+      unit: "USD por 1000 tokens",
+      description: "Precio en USD por cada 1000 tokens de entrada y de salida por proveedor y modelo, usado para estimar costos",
+      keySchema: AI_PRICES_KEY_SCHEMA,
+    },
     { inputPer1kUsd: AI_PRICE_PER_1K_LIMITS, outputPer1kUsd: AI_PRICE_PER_1K_LIMITS },
     readAiPrices,
   ),
   "ai.tutor.topicCheck.enabled": setting(
     "ai.tutor.topicCheck.enabled",
     "ai",
-    "Whether the AI tutor checks that free chat questions are on topic (TOPIC_CHECK) before answering",
+    {
+      type: "boolean",
+      label: "Verificación de tema del tutor",
+      unit: null,
+      description: "Si el tutor de IA verifica que las preguntas del chat libre traten del tema (TOPIC_CHECK) antes de responder",
+      keySchema: null,
+    },
     {},
     (reader: PlatformSettingValueReader, value: unknown): boolean => reader.boolean(VALUE_PATH, value),
   ),
-  "evaluation.passingGrade": numberSetting("evaluation.passingGrade", "evaluation", "Minimum grade (0-5 scale) that passes an evaluation", { min: 0, max: 5, integer: false }),
+  "evaluation.passingGrade": numberSetting(
+    "evaluation.passingGrade",
+    "evaluation",
+    { label: "Nota aprobatoria", unit: "puntos", description: "Nota mínima (escala de 0 a 5) con la que se aprueba una evaluación" },
+    { min: 0, max: 5, integer: false },
+  ),
   "evaluation.submitGraceSeconds": numberSetting(
     "evaluation.submitGraceSeconds",
     "evaluation",
-    "Seconds after an attempt deadline during which a submission is still accepted",
+    { label: "Gracia de entrega", unit: "segundos", description: "Segundos después del límite de un intento durante los que todavía se acepta la entrega" },
     { min: 0, max: 600, integer: true },
   ),
   "analytics.risk.maxFailedEvaluations": numberSetting(
     "analytics.risk.maxFailedEvaluations",
     "analytics",
-    "Failed evaluations (latest published attempt) a student may have before the teacher dashboard flags them at risk; 0 flags any failed evaluation",
+    {
+      label: "Evaluaciones reprobadas toleradas",
+      unit: "evaluaciones",
+      description: "Evaluaciones reprobadas (último intento publicado) que un estudiante puede tener antes de que el panel docente lo marque en riesgo; 0 marca cualquier evaluación reprobada",
+    },
     { min: 0, max: 100, integer: true },
   ),
   "analytics.risk.minProgressPct": numberSetting(
     "analytics.risk.minProgressPct",
     "analytics",
-    "Overall progress percentage below which the teacher dashboard flags a student at risk; 0 disables the rule",
+    { label: "Progreso mínimo", unit: "%", description: "Porcentaje de progreso general por debajo del cual el panel docente marca en riesgo a un estudiante; 0 desactiva la regla" },
     { min: 0, max: 100, integer: false },
   ),
   "analytics.risk.inactivityDays": numberSetting(
     "analytics.risk.inactivityDays",
     "analytics",
-    "Days without activity after which the teacher dashboard flags a student at risk; 0 disables the rule",
+    { label: "Días de inactividad", unit: "días", description: "Días sin actividad tras los cuales el panel docente marca en riesgo a un estudiante; 0 desactiva la regla" },
     { min: 0, max: 365, integer: true },
   ),
   "simulation.rubric.defaultThresholds": setting(
     "simulation.rubric.defaultThresholds",
     "simulation",
-    "Thresholds of the default simulation rubric, used when neither the question nor the case defines one",
+    {
+      type: "object",
+      label: "Umbrales de la rúbrica por defecto",
+      unit: null,
+      description:
+        "Umbrales de la rúbrica de simulación por defecto (fracción de objetivos alcanzados, segundos hasta estabilizar, porcentaje de tiempo en rango y segundos de tolerancia de seguridad), usada cuando ni la pregunta ni el caso definen una",
+      keySchema: null,
+    },
     RUBRIC_THRESHOLD_LIMITS,
     readRubricThresholds,
   ),
   "simulation.allowedTimeMultipliers": setting(
     "simulation.allowedTimeMultipliers",
     "simulation",
-    "Slow-dynamics time multipliers a student may choose when starting a simulation session",
+    {
+      type: "integer-list",
+      label: "Multiplicadores de tiempo permitidos",
+      unit: null,
+      description: "Multiplicadores de tiempo de dinámica lenta que un estudiante puede elegir al iniciar una sesión de simulación; siempre incluye 1",
+      keySchema: null,
+    },
     { allowedValues: TIME_MULTIPLIER_VALUES, required: [REQUIRED_TIME_MULTIPLIER] },
     readTimeMultipliers,
   ),
   "simulation.abandonAfterMinutes": numberSetting(
     "simulation.abandonAfterMinutes",
     "simulation",
-    "Minutes without events after which a simulation session is marked as abandoned",
+    { label: "Abandono de sesión", unit: "minutos", description: "Minutos sin eventos tras los cuales una sesión de simulación se marca como abandonada" },
     { min: 1, max: 1440, integer: true },
   ),
-  "reservations.maxDurationMinutes": numberSetting("reservations.maxDurationMinutes", "reservations", "Maximum duration of a ventilator reservation", { min: 5, max: 1440, integer: true }),
-  "reservations.slotMinutes": numberSetting("reservations.slotMinutes", "reservations", "Slot granularity reservations must start and end on", { min: 1, max: 60, integer: true }),
-  "reservations.maxAdvanceDays": numberSetting("reservations.maxAdvanceDays", "reservations", "How many days ahead a reservation may start", { min: 1, max: 365, integer: true }),
+  "reservations.maxDurationMinutes": numberSetting(
+    "reservations.maxDurationMinutes",
+    "reservations",
+    { label: "Duración máxima de una reserva", unit: "minutos", description: "Duración máxima de una reserva del ventilador" },
+    { min: 5, max: 1440, integer: true },
+  ),
+  "reservations.slotMinutes": numberSetting(
+    "reservations.slotMinutes",
+    "reservations",
+    { label: "Franja de reserva", unit: "minutos", description: "Granularidad de las franjas en las que deben empezar y terminar las reservas" },
+    { min: 1, max: 60, integer: true },
+  ),
+  "reservations.maxAdvanceDays": numberSetting(
+    "reservations.maxAdvanceDays",
+    "reservations",
+    { label: "Anticipación máxima", unit: "días", description: "Con cuántos días de anticipación puede empezar una reserva" },
+    { min: 1, max: 365, integer: true },
+  ),
   "reservations.maxUpcomingPerStudent": numberSetting(
     "reservations.maxUpcomingPerStudent",
     "reservations",
-    "Maximum upcoming reservations held by one student",
+    { label: "Reservas próximas por estudiante", unit: "reservas", description: "Máximo de reservas próximas que puede tener un estudiante" },
     { min: 1, max: 100, integer: true },
   ),
-  "reservations.maxUpcomingPerGroup": numberSetting("reservations.maxUpcomingPerGroup", "reservations", "Maximum upcoming reservations held by one group", { min: 1, max: 100, integer: true }),
+  "reservations.maxUpcomingPerGroup": numberSetting(
+    "reservations.maxUpcomingPerGroup",
+    "reservations",
+    { label: "Reservas próximas por grupo", unit: "reservas", description: "Máximo de reservas próximas que puede tener un grupo" },
+    { min: 1, max: 100, integer: true },
+  ),
   "telemetry.flushIntervalMs": numberSetting(
     "telemetry.flushIntervalMs",
     "telemetry",
-    "Interval at which buffered telemetry frames are sent to clients; a change reschedules the timer without a restart",
+    {
+      label: "Intervalo de envío de telemetría",
+      unit: "milisegundos",
+      description: "Intervalo con el que se envían a los clientes los fotogramas de telemetría acumulados; un cambio reprograma el temporizador sin reiniciar",
+    },
     { min: 5, max: 1000, integer: true },
   ),
   "telemetry.staleAfterMs": numberSetting(
     "telemetry.staleAfterMs",
     "telemetry",
-    "Milliseconds without telemetry after which the device is reported without data",
+    { label: "Telemetría sin datos", unit: "milisegundos", description: "Milisegundos sin telemetría tras los cuales el dispositivo se informa sin datos" },
     { min: 250, max: 600_000, integer: true },
   ),
-  "telemetry.recordingHz": numberSetting("telemetry.recordingHz", "telemetry", "Sample rate of telemetry recordings (applies to new recordings)", { min: 1, max: 1000, integer: true }),
+  "telemetry.recordingHz": numberSetting(
+    "telemetry.recordingHz",
+    "telemetry",
+    { label: "Frecuencia de grabación", unit: "Hz", description: "Frecuencia de muestreo de las grabaciones de telemetría (aplica a las grabaciones nuevas)" },
+    { min: 1, max: 1000, integer: true },
+  ),
   "telemetry.recordingFlushSeconds": numberSetting(
     "telemetry.recordingFlushSeconds",
     "telemetry",
-    "Seconds between persisted recording chunks (applies to new recordings)",
+    { label: "Intervalo de guardado de grabaciones", unit: "segundos", description: "Segundos entre los fragmentos guardados de una grabación (aplica a las grabaciones nuevas)" },
     { min: 1, max: 3600, integer: true },
   ),
-  "commands.ratePerSecond": numberSetting("commands.ratePerSecond", "commands", "Ventilator commands each user may send per second", { min: 0.1, max: 100, integer: false }),
-  "commands.ackTimeoutMs": numberSetting("commands.ackTimeoutMs", "commands", "Milliseconds to wait for the device acknowledgement of a command", { min: 100, max: 60_000, integer: true }),
+  "commands.ratePerSecond": numberSetting(
+    "commands.ratePerSecond",
+    "commands",
+    { label: "Comandos por segundo", unit: "comandos por segundo", description: "Comandos del ventilador que cada usuario puede enviar por segundo" },
+    { min: 0.1, max: 100, integer: false },
+  ),
+  "commands.ackTimeoutMs": numberSetting(
+    "commands.ackTimeoutMs",
+    "commands",
+    { label: "Tiempo de acuse de comandos", unit: "milisegundos", description: "Milisegundos de espera del acuse del dispositivo para un comando" },
+    { min: 100, max: 60_000, integer: true },
+  ),
   "commands.safety.maxPeep": numberSetting(
     "commands.safety.maxPeep",
     "commands",
-    "Highest PEEP (cmH2O) a command may set; bounded by the shared ventilator parameter limits",
+    { label: "PEEP máxima", unit: "cmH2O", description: "PEEP más alta que puede fijar un comando; acotada por los límites compartidos de los parámetros del ventilador" },
     safetyLimits(VENTILATOR_PARAMETER_LIMITS.peepCmH2O),
   ),
   "commands.safety.maxPressureLimit": numberSetting(
     "commands.safety.maxPressureLimit",
     "commands",
-    "Highest pressure limit (cmH2O) a command may set; bounded by the shared ventilator parameter limits",
+    {
+      label: "Límite de presión máximo",
+      unit: "cmH2O",
+      description: "Límite de presión más alto que puede fijar un comando; acotado por los límites compartidos de los parámetros del ventilador",
+    },
     safetyLimits(VENTILATOR_PARAMETER_LIMITS.pressureLimitCmH2O),
   ),
   "commands.safety.maxTidalVolume": numberSetting(
     "commands.safety.maxTidalVolume",
     "commands",
-    "Highest tidal volume (mL) a command may set; bounded by the shared ventilator parameter limits",
+    {
+      label: "Volumen corriente máximo",
+      unit: "mL",
+      description: "Volumen corriente más alto que puede fijar un comando; acotado por los límites compartidos de los parámetros del ventilador",
+    },
     safetyLimits(VENTILATOR_PARAMETER_LIMITS.tidalVolumeMl),
   ),
   "commands.safety.maxRespiratoryRate": numberSetting(
     "commands.safety.maxRespiratoryRate",
     "commands",
-    "Highest respiratory rate (breaths/min) a command may set; bounded by the shared ventilator parameter limits",
+    {
+      label: "Frecuencia respiratoria máxima",
+      unit: "respiraciones por minuto",
+      description: "Frecuencia respiratoria más alta que puede fijar un comando; acotada por los límites compartidos de los parámetros del ventilador",
+    },
     safetyLimits(VENTILATOR_PARAMETER_LIMITS.respiratoryRateBpm),
   ),
-  "commands.safety.maxIeRatio": numberSetting("commands.safety.maxIeRatio", "commands", "Highest I:E ratio (inspiration over expiration) a command may set", {
-    min: 0.1,
-    max: 4,
-    integer: false,
-  }),
+  "commands.safety.maxIeRatio": numberSetting(
+    "commands.safety.maxIeRatio",
+    "commands",
+    { label: "Relación I:E máxima", unit: null, description: "Relación I:E más alta (inspiración sobre espiración) que puede fijar un comando" },
+    { min: 0.1, max: 4, integer: false },
+  ),
 };
 
 export const PLATFORM_SETTING_KEYS: readonly PlatformSettingKey[] = Object.keys(PLATFORM_SETTINGS_REGISTRY) as PlatformSettingKey[];

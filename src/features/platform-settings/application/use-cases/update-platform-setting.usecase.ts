@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso UpdatePlatformSetting
- * Descripción: Valida el nuevo valor contra el registro y sus límites duros, exige credenciales a los proveedores de IA que entran en una cadena, y en una transacción bajo el bloqueo de la clave compara la versión (concurrencia optimista), guarda la sobrescritura con la versión siguiente (también tras una marca de restablecimiento o una sobrescritura que ya no es válida) y registra SETTINGS_CHANGED en la auditoría con el valor anterior y el nuevo; tras confirmar actualiza la caché y notifica a los suscriptores
- * Versión: 1.1
+ * Descripción: Valida el nuevo valor contra el registro y sus límites duros, exige credenciales a los proveedores de IA que entran en una cadena (con el detalle por campo de la clave), y en una transacción bajo el bloqueo de la clave compara la versión (concurrencia optimista), guarda la sobrescritura con la versión siguiente (también tras una marca de restablecimiento o una sobrescritura que ya no es válida) y registra SETTINGS_CHANGED en la auditoría con el valor anterior y el nuevo; tras confirmar actualiza la caché y notifica a los suscriptores
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -103,7 +103,7 @@ export class UpdatePlatformSettingUseCase {
     );
 
     if (missing.length > 0) {
-      throw new AiProviderNotConfiguredError(missing);
+      throw new AiProviderNotConfiguredError(missing, definition.key);
     }
   }
 

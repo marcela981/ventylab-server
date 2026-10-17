@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los casos de uso de ajustes de la plataforma
- * Descripción: Verifica la actualización (límites duros 422, concurrencia optimista 409, proveedor de IA sin credenciales, auditoría SETTINGS_CHANGED en la transacción, invalidación de caché y notificación), el restablecimiento al valor por defecto y el listado por categoría con su origen
- * Versión: 1.1
+ * Descripción: Verifica la actualización (límites duros 422, concurrencia optimista 409, proveedor de IA sin credenciales con su detalle por campo, auditoría SETTINGS_CHANGED en la transacción, invalidación de caché y notificación), el restablecimiento al valor por defecto y el listado por categoría con su origen y los metadatos de formulario
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -127,7 +127,10 @@ describe("UpdatePlatformSettingUseCase", () => {
     const withoutCredentials: Promise<void> = update.execute(new UpdatePlatformSettingCommand({ key: "ai.useCase.FREE_CHAT", value, version: 0 }));
 
     await expect(withoutCredentials).rejects.toBeInstanceOf(AiProviderNotConfiguredError);
-    await expect(withoutCredentials).rejects.toMatchObject({ details: { providers: ["openai"] } });
+    await expect(withoutCredentials).rejects.toMatchObject({
+      details: { providers: ["openai"] },
+      fieldErrors: [{ field: "ai.useCase.FREE_CHAT.providerChain", code: "platform-settings.reasons.provider_not_configured", args: { providers: "openai" } }],
+    });
     expect(repository.rows.size).toBe(0);
     expect(audit.entries).toEqual([]);
     expect(store.get("ai.useCase.FREE_CHAT").providerChain).toEqual(["gemini"]);
@@ -235,5 +238,16 @@ describe("GetPlatformSettingsUseCase", () => {
     ]);
     expect(views[1]).toMatchObject({ value: 5000, defaultValue: 2000, origin: "OVERRIDE", version: 1, limits: { min: 250, max: 600_000, integer: true } });
     expect(views[0]).toMatchObject({ value: 33, origin: "DEFAULT", version: 0 });
+  });
+
+  it("lists the form metadata of each setting, with the key schema of map-like settings", async () => {
+    const { list }: Fixture = await buildFixture();
+
+    const views: PlatformSettingView[] = list.execute("ai");
+    const prices: PlatformSettingView | undefined = views.find((view: PlatformSettingView): boolean => view.key === "ai.prices");
+    const topicCheck: PlatformSettingView | undefined = views.find((view: PlatformSettingView): boolean => view.key === "ai.tutor.topicCheck.enabled");
+
+    expect(prices).toMatchObject({ type: "map", label: "Precios de los modelos de IA", unit: "USD por 1000 tokens", keySchema: { keyLabel: "Proveedor", valueType: "map" } });
+    expect(topicCheck).toMatchObject({ type: "boolean", unit: undefined, keySchema: undefined });
   });
 });

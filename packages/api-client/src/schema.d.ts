@@ -10988,10 +10988,15 @@ export interface components {
              */
             code: string;
             /**
-             * @description Structured details some errors return so the client can act (for example conflicting records); null otherwise
+             * @description Structured details some errors return so the client can act (for example conflicting records); validation errors and errors with a field detail carry `errors`; null otherwise
              * @example null
              */
-            data: unknown;
+            data: ({
+                /** @description One entry per failing field, with its translated message */
+                errors?: components["schemas"]["FieldError"][];
+            } & {
+                [key: string]: unknown;
+            }) | null;
             /**
              * @description Translated message (an array of messages for validation errors)
              * @example Resource not found
@@ -11909,6 +11914,19 @@ export interface components {
              * @example 01932e9f-6789-7abc-9def-1a2b3c4d5e6f
              */
             feedbackId: string;
+        };
+        /** @description Error of one field: the request body path (nested objects with dots, array items with [index]) or, for platform settings, the setting key followed by the path inside its value */
+        FieldError: {
+            /**
+             * @description Path of the failing field
+             * @example items[0].quantity
+             */
+            field: string;
+            /**
+             * @description Translated message of the field error
+             * @example quantity must be an integer
+             */
+            message: string;
         };
         FieldOverridesDTO: {
             /**
@@ -16648,8 +16666,8 @@ export interface components {
              */
             defaultValue: number | boolean | string | unknown[] | Record<string, never>;
             /**
-             * @description What the setting controls
-             * @example Interval at which buffered telemetry frames are sent to clients
+             * @description What the setting controls, in Spanish
+             * @example Intervalo con el que se envían a los clientes los fotogramas de telemetría acumulados; un cambio reprograma el temporizador sin reiniciar
              */
             description: string;
             /**
@@ -16657,6 +16675,13 @@ export interface components {
              * @example telemetry.flushIntervalMs
              */
             key: string;
+            /** @description Keys of a map-like setting (or of its map field) a form can add or remove; null for other settings */
+            keySchema: components["schemas"]["PlatformSettingKeySchemaDTO"] | null;
+            /**
+             * @description Short name of the setting, in Spanish
+             * @example Intervalo de envío de telemetría
+             */
+            label: string;
             /**
              * @description Hard limits no value may exceed (ranges, allowed values, required credentials)
              * @example {
@@ -16674,6 +16699,17 @@ export interface components {
              * @enum {string}
              */
             origin: "DEFAULT" | "OVERRIDE";
+            /**
+             * @description Type of the value, so a generic form can pick its input
+             * @example integer
+             * @enum {string}
+             */
+            type: "integer" | "number" | "boolean" | "string" | "string-list" | "integer-list" | "map" | "object";
+            /**
+             * @description Unit of the value, in Spanish; null when it has none
+             * @example milisegundos
+             */
+            unit: string | null;
             /**
              * @description When the override was last changed
              * @example 2026-10-11T12:00:00.000Z
@@ -16694,6 +16730,54 @@ export interface components {
              * @example 0
              */
             version: number;
+        };
+        PlatformSettingKeySchemaDTO: {
+            /**
+             * @description Keys a form may add (for AI provider maps, the providers the AI feature registers); null when any key is accepted
+             * @example [
+             *       "gemini",
+             *       "openai",
+             *       "anthropic",
+             *       "custom"
+             *     ]
+             */
+            allowedKeys: string[] | null;
+            /**
+             * @description Label of the map keys, in Spanish
+             * @example Proveedor
+             */
+            keyLabel: string;
+            /**
+             * @description Field of the value that holds the map (null when the whole value is the map)
+             * @example null
+             */
+            path: string | null;
+            /** @description Key schema of the nested map when valueType is map; null otherwise */
+            valueKeySchema: components["schemas"]["PlatformSettingKeySchemaDTO"] | null;
+            /**
+             * @description Hard limits of the value under each key (per field for object values); null when the value is a nested map
+             * @example {
+             *       "inputPer1kUsd": {
+             *         "integer": false,
+             *         "max": 1,
+             *         "min": 0
+             *       },
+             *       "outputPer1kUsd": {
+             *         "integer": false,
+             *         "max": 1,
+             *         "min": 0
+             *       }
+             *     }
+             */
+            valueLimits: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * @description Type of the value under each key
+             * @example map
+             * @enum {string}
+             */
+            valueType: "integer" | "number" | "boolean" | "string" | "string-list" | "integer-list" | "map" | "object";
         };
         PlatformStatisticsDTO: {
             /**
@@ -21053,10 +21137,10 @@ export interface components {
         };
         UpdatePlatformSettingDTO: {
             /**
-             * @description New value; its type and shape depend on the setting (number, boolean, array or object, see the setting limits)
+             * @description New value; its type and shape depend on the setting (see its type, limits and keySchema); the setting registry validates it per key
              * @example 50
              */
-            value: number | boolean | unknown[] | Record<string, never>;
+            value: number | boolean | string | unknown[] | Record<string, never>;
             /**
              * @description Version of the setting the change is based on (0 while it uses its default)
              * @example 0

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de HttpExceptionFilter
- * Descripción: Verifica que el filtro global responda 429 con el código common.too_many_requests a la excepción del limitador de peticiones y 413 con common.payload_too_large a los errores de cliente de los parsers de cuerpo (en lugar de unknown_error o 500), que ese tráfico rechazado solo se registre como advertencia sin Sentry ni error_logs, y que el registro de un error de validación no contenga el objeto recibido, sus valores ni correos
- * Versión: 1.0
+ * Descripción: Verifica que el filtro global responda 429 con el código common.too_many_requests a la excepción del limitador de peticiones y 413 con common.payload_too_large a los errores de cliente de los parsers de cuerpo (en lugar de unknown_error o 500), que ese tráfico rechazado solo se registre como advertencia sin Sentry ni error_logs, que el registro de un error de validación no contenga el objeto recibido, sus valores ni correos, que un error de validación conserve los mensajes de primer nivel y agregue data.errors con las rutas anidadas a.b[0].c, y que un error de dominio con detalle por campo agregue data.errors traducido junto a sus detalles
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import { ThrottlerException } from "@nestjs/throttler";
 import { type ValidationError } from "class-validator";
 import { I18nContext, I18nValidationException } from "nestjs-i18n";
 
+import { DomainError } from "@/common/domain/errors/domain-error";
 import { type ErrorLogService } from "@/common/infrastructure/logging/error-log/error-log.service";
 import { HttpExceptionFilter } from "@/common/presentation/filters/http-exception.filter";
 
@@ -62,6 +63,29 @@ function createHarness(body: Record<string, unknown> = {}): FilterHarness {
 
 function payloadTooLargeError(): Error {
   return Object.assign(new Error("request entity too large"), { status: HttpStatus.PAYLOAD_TOO_LARGE, statusCode: HttpStatus.PAYLOAD_TOO_LARGE, expose: true, type: "entity.too.large" });
+}
+
+class FieldDetailedError extends DomainError {
+  public readonly fieldErrors: unknown[] = [
+    { field: "orders.limit.items[0]", code: "orders.reasons.out_of_range", args: { min: 1, max: 5 }, message: "must be between 1 and 5" },
+    { field: "ignored" },
+  ];
+
+  public constructor() {
+    super("Invalid order limit", "orders.invalid_limit");
+  }
+
+  public get details(): { key: string } {
+    return { key: "orders.limit" };
+  }
+}
+
+function translatingContext(): Partial<I18nContext> {
+  return {
+    lang: "es",
+    service: { translate: (key: string): string => `t:${key}` } as unknown as I18nContext["service"],
+    t: ((key: string, options?: { args?: Record<string, unknown> }): string => `t:${key}${options?.args ? JSON.stringify(options.args) : ""}`) as I18nContext["t"],
+  };
 }
 
 describe("HttpExceptionFilter", () => {
@@ -126,5 +150,60 @@ describe("HttpExceptionFilter", () => {
     expect(logged).not.toContain(USER_EMAIL);
     expect(persisted).not.toContain(SECRET_PASSWORD);
     expect(persisted).not.toContain(USER_EMAIL);
+  });
+
+  it("should keep the top-level validation messages and add every nested field error to data.errors", () => {
+    const errors: ValidationError[] = [
+      { property: "name", value: 1, constraints: { isString: "common.name_invalid" }, children: [] },
+      {
+        property: "value",
+        value: { items: [{ label: 2 }] },
+        children: [
+          {
+            property: "items",
+            value: [{ label: 2 }],
+            children: [{ property: "0", value: { label: 2 }, children: [{ property: "label", value: 2, constraints: { isString: "common.label_invalid" }, children: [] }] }],
+          },
+        ],
+      },
+    ];
+    const harness: FilterHarness = createHarness();
+
+    jest.spyOn(I18nContext, "current").mockReturnValue(translatingContext() as I18nContext);
+    harness.filter.catch(new I18nValidationException(errors), harness.host);
+
+    expect(harness.sent.statusCode).toBe(HttpStatus.BAD_REQUEST);
+    expect(harness.sent.body).toMatchObject({
+      code: "validation_error",
+      message: ["t:common.name_invalid"],
+      data: {
+        errors: [
+          { field: "name", message: "t:common.name_invalid" },
+          { field: "value.items[0].label", message: "t:common.label_invalid" },
+        ],
+      },
+    });
+  });
+
+  it("should add the translated field errors of a domain error next to its details", () => {
+    const harness: FilterHarness = createHarness();
+
+    jest.spyOn(I18nContext, "current").mockReturnValue(translatingContext() as I18nContext);
+    harness.filter.catch(new FieldDetailedError(), harness.host);
+
+    expect(harness.sent.body).toMatchObject({
+      code: "orders.invalid_limit",
+      data: { key: "orders.limit", errors: [{ field: "orders.limit.items[0]", message: `t:orders.reasons.out_of_range${JSON.stringify({ min: 1, max: 5 })}` }] },
+    });
+    expect((harness.sent.body?.data as { errors: unknown[] }).errors).toHaveLength(1);
+  });
+
+  it("should fall back to the field error message without a translation context", () => {
+    const harness: FilterHarness = createHarness();
+
+    jest.spyOn(I18nContext, "current").mockReturnValue(undefined);
+    harness.filter.catch(new FieldDetailedError(), harness.host);
+
+    expect(harness.sent.body).toMatchObject({ data: { errors: [{ field: "orders.limit.items[0]", message: "must be between 1 and 5" }] } });
   });
 });

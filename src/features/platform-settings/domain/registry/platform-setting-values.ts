@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Tipos de valores de la configuración de la plataforma
- * Descripción: Categorías, claves y tipo del valor de cada ajuste editable (IA, evaluación, analítica, simulación, reservas, telemetría y comandos del ventilador), origen del valor efectivo y la forma de una fila guardada (sobrescritura o marca de restablecimiento que conserva la versión)
- * Versión: 1.2
+ * Descripción: Categorías, claves y tipo del valor de cada ajuste editable (IA, evaluación, analítica, simulación, reservas, telemetría y comandos del ventilador), tipos de valor que describen la forma de cada ajuste a un formulario genérico, esquema de claves de los ajustes con forma de mapa (etiqueta, claves permitidas, tipo y límites del valor, mapa anidado), origen del valor efectivo y la forma de una fila guardada (sobrescritura o marca de restablecimiento que conserva la versión)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,6 +21,28 @@ export const PLATFORM_SETTING_CATEGORY_VALUES: readonly PlatformSettingCategoryV
   "telemetry",
   "commands",
 ] as const;
+
+export type PlatformSettingValueTypeValue = "integer" | "number" | "boolean" | "string" | "string-list" | "integer-list" | "map" | "object";
+
+export const PLATFORM_SETTING_VALUE_TYPE_VALUES: readonly PlatformSettingValueTypeValue[] = [
+  "integer",
+  "number",
+  "boolean",
+  "string",
+  "string-list",
+  "integer-list",
+  "map",
+  "object",
+] as const;
+
+export interface PlatformSettingKeySchema {
+  readonly path: string | null;
+  readonly keyLabel: string;
+  readonly allowedKeys: readonly string[] | null;
+  readonly valueType: PlatformSettingValueTypeValue;
+  readonly valueLimits: Readonly<Record<string, unknown>> | null;
+  readonly valueKeySchema: PlatformSettingKeySchema | null;
+}
 
 export type PlatformSettingOriginValue = "DEFAULT" | "OVERRIDE";
 

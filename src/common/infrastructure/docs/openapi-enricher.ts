@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Completado del documento OpenAPI
- * Descripción: Completa cada operación que genera @nestjs/swagger con los metadatos de su ruta: envoltorio APIResponse en las respuestas 2xx JSON (data con el esquema documentado o null), contenido de las respuestas por streaming y CSV, respuestas de error estándar con el componente ErrorResponse (400, 401, 403, 404, 429 y 500 según cuerpo, parámetros, guards y limitación de peticiones (todas las rutas salvo las excluidas con @SkipThrottle)), acceso requerido (x-min-role, x-required-permissions, x-self-or-permissions, seguridad y una línea en la descripción), deprecación con su ruta sucesora y operationId únicos
- * Versión: 1.1
+ * Descripción: Completa cada operación que genera @nestjs/swagger con los metadatos de su ruta: envoltorio APIResponse en las respuestas 2xx JSON (data con el esquema documentado o null), contenido de las respuestas por streaming y CSV, respuestas de error estándar con el componente ErrorResponse (cuyo data documenta el detalle por campo errors con el componente FieldError, con ejemplo en la respuesta 400; 400, 401, 403, 404, 429 y 500 según cuerpo, parámetros, guards y limitación de peticiones (todas las rutas salvo las excluidas con @SkipThrottle)), acceso requerido (x-min-role, x-required-permissions, x-self-or-permissions, seguridad y una línea en la descripción), deprecación con su ruta sucesora y operationId únicos
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,6 +21,7 @@ type JsonObject = Record<string, unknown>;
 export const ERROR_RESPONSE_SCHEMA: string = "ErrorResponse";
 export const SUCCESS_ENVELOPE_SCHEMA: string = "APIResponseEnvelope";
 export const PAGINATION_SCHEMA: string = "APIPagination";
+export const FIELD_ERROR_SCHEMA: string = "FieldError";
 
 const HTTP_METHODS: readonly string[] = ["get", "put", "post", "delete", "options", "head", "patch", "trace"];
 
@@ -34,15 +35,22 @@ interface StandardError {
   readonly example: string;
   readonly code: string;
   readonly message: string | string[];
+  readonly data?: JsonObject;
 }
 
 const STANDARD_ERRORS: Readonly<Record<string, StandardError>> = {
-  400: { description: "Validation error or malformed request", example: "ValidationError", code: "validation_error", message: ["name must be a string"] },
+  400: {
+    description: "Validation error or malformed request",
+    example: "ValidationError",
+    code: "validation_error",
+    message: ["name must be a string"],
+    data: { errors: [{ field: "name", message: "name must be a string" }, { field: "items[0].quantity", message: "quantity must be an integer" }] },
+  },
   401: { description: "Missing, invalid or expired credentials", example: "UnauthorizedError", code: "auth.unauthorized", message: "Unauthorized" },
   403: { description: "The caller lacks the required permission or is not allowed to act on this resource", example: "ForbiddenError", code: "auth.forbidden", message: "Forbidden" },
   404: { description: "The resource does not exist or is not visible to the caller", example: "NotFoundError", code: "common.not_found", message: "Resource not found" },
   409: { description: "The request conflicts with the current state of the resource", example: "ConflictError", code: "common.conflict", message: "Conflict" },
-  422: { description: "The request is well-formed but violates a business rule", example: "UnprocessableError", code: "ai-ratings.invalid_score", message: "The rating must be an integer between 1 and 5" },
+  422: { description: "The request is well-formed but violates a business rule; errors with a field detail add it to data.errors", example: "UnprocessableError", code: "ai-ratings.invalid_score", message: "The rating must be an integer between 1 and 5" },
   429: { description: "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present", example: "TooManyRequestsError", code: "common.too_many_requests", message: "Too many requests, please try again later" },
   500: { description: "Unexpected server error", example: "InternalServerError", code: "internal_server_error", message: "Internal server error" },
   503: { description: "A required dependency or configuration is not available", example: "ServiceUnavailableError", code: "unknown_error", message: "Service unavailable" },
@@ -59,7 +67,7 @@ function ref(schema: string): JsonObject {
 }
 
 function errorExample(error: StandardError): JsonObject {
-  return { success: false, message: error.message, data: null, code: error.code, timestamp: EXAMPLE_TIMESTAMP, traceId: EXAMPLE_TRACE_ID, pagination: null };
+  return { success: false, message: error.message, data: error.data ?? null, code: error.code, timestamp: EXAMPLE_TIMESTAMP, traceId: EXAMPLE_TRACE_ID, pagination: null };
 }
 
 function standardError(status: string): StandardError {
@@ -92,6 +100,15 @@ export function buildEnvelopeSchemas(): Record<string, JsonObject> {
         pagination: { anyOf: [ref(PAGINATION_SCHEMA), { type: "null" }], description: "Pagination of list responses; null otherwise" },
       },
     },
+    [FIELD_ERROR_SCHEMA]: {
+      type: "object",
+      description: "Error of one field: the request body path (nested objects with dots, array items with [index]) or, for platform settings, the setting key followed by the path inside its value",
+      required: ["field", "message"],
+      properties: {
+        field: { type: "string", description: "Path of the failing field", example: "items[0].quantity" },
+        message: { type: "string", description: "Translated message of the field error", example: "quantity must be an integer" },
+      },
+    },
     [ERROR_RESPONSE_SCHEMA]: {
       type: "object",
       description: "Error envelope produced by the global exception filter",
@@ -99,7 +116,19 @@ export function buildEnvelopeSchemas(): Record<string, JsonObject> {
       properties: {
         success: { type: "boolean", enum: [false], description: "Always false for errors", example: false },
         message: { ...message, example: "Resource not found" },
-        data: { description: "Structured details some errors return so the client can act (for example conflicting records); null otherwise", example: null },
+        data: {
+          description:
+            "Structured details some errors return so the client can act (for example conflicting records); validation errors and errors with a field detail carry `errors`; null otherwise",
+          anyOf: [
+            {
+              type: "object",
+              properties: { errors: { type: "array", items: ref(FIELD_ERROR_SCHEMA), description: "One entry per failing field, with its translated message" } },
+              additionalProperties: true,
+            },
+            { type: "null" },
+          ],
+          example: null,
+        },
         code: { type: "string", description: "Error code: the domain error i18n key, validation_error, or a code derived from the HTTP status", example: "common.not_found" },
         timestamp: { type: "string", format: "date-time", description: "Server time of the response", example: EXAMPLE_TIMESTAMP },
         traceId: { type: ["string", "null"], description: "Request trace ID to correlate the error with the server logs", example: EXAMPLE_TRACE_ID },

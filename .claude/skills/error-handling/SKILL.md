@@ -12,7 +12,7 @@ Every exception is caught by one global filter and turned into a standardized `A
 | Type             | Source                      | `code`                                             | Example                          |
 | ---------------- | --------------------------- | -------------------------------------------------- | -------------------------------- |
 | Domain error     | business rule violation     | the error's i18n key (e.g. `users.user_not_found`) | `throw new UserNotFoundError()`  |
-| Validation error | class-validator on a DTO    | `validation_error`, `message` is an array          | `@MinLength(2)` failing          |
+| Validation error | class-validator on a DTO    | `validation_error`, `message` is an array, `data.errors` per field | `@MinLength(2)` failing          |
 | HTTP exception   | NestJS framework exception, or a body-parser client error (`status` 4xx + `expose`) | mapped from the HTTP status; 413 and 429 use the translated `common.payload_too_large` / `common.too_many_requests` | `throw new ForbiddenException()`, `ThrottlerException` |
 | Prisma known error | `P2002` unique violation / `P2025` record not found | `common.conflict` (409) / `common.not_found` (404) | duplicate key on insert |
 | Unexpected error | unhandled (DB/network/etc.) | `internal_server_error`                            | —                                |
@@ -42,10 +42,11 @@ export const DOMAIN_ERROR_STATUS_MAP = new Map<
 
 ## Optional domain error extras
 
-A domain error may expose three optional members that the filter reads:
+A domain error may expose four optional members that the filter reads:
 
 - `i18nArgs: Record<string, unknown>` — interpolation values passed as `{ args }` when translating its code (`"Quota reached until {resetAt}"`).
 - `details: object` — structured data the client needs to act on the error (the conflicting records, the list of rule violations); the filter puts it in the error response's `data`. Never include stack traces, internal identifiers the caller may not see, or personal data the caller is not allowed to read.
+- `fieldErrors: { field, code, args?, message }[]` — per-field failures; the filter translates each `code` with its `args` (falling back to `message` without a translation context) and returns `data` as the `details` object plus `errors: [{ field, message }]`. `field` is the path the client can attach the message to (dots for nested objects, `[index]` for array items).
 - `retryAt: Date` — the filter sets `Retry-After` (whole seconds from now, never negative) on the response. Use it for 429/503 errors that know when the client may retry.
 
 ```typescript
@@ -70,7 +71,7 @@ A browser on another origin can only read a response header listed in `CORS_EXPO
 
 Configured globally in `main.ts` via `app.useGlobalPipes(new TrimPipe(), new I18nValidationPipe({ transform: true }))`. `I18nValidationPipe` extends Nest's `ValidationPipe`; `transform: true` turns bodies and query objects into DTO instances, so `@Type` conversions and DTO field defaults apply (undeclared optional fields exist as `undefined` on the instance, so never spread a DTO over defaults). Everything else keeps Nest's defaults (`whitelist: false`, `forbidNonWhitelisted: false`) — extra fields on a request body that aren't declared on the DTO are **not** stripped or rejected; they pass through untouched to whatever reads the DTO downstream. `TrimPipe` ([trim.pipe.ts](../../../src/common/infrastructure/pipes/trim.pipe.ts)) runs first, recursively trimming string values in `body`/`query`/`param` before validation sees them — register it ahead of the validation pipe so trimmed values are what get validated.
 
-Messages must be set manually per-field with `i18nValidationMessage("namespace.action.field_rule")` — automatic translation is not used (see `i18n` skill for the translation-file side). A failing DTO returns `message` as an array of translated strings with `code: "validation_error"`.
+Messages must be set manually per-field with `i18nValidationMessage("namespace.action.field_rule")` — automatic translation is not used (see `i18n` skill for the translation-file side). A failing DTO returns `message` as an array of the translated messages of the top-level properties with `code: "validation_error"`, and `data.errors` as `[{ field, message }]` flattened from every nested child: `field` is the request path (`a.b`, `items[0].name`), one entry per failed constraint. The OpenAPI post-processor documents it through the `FieldError` component referenced by `ErrorResponse.data.errors`.
 
 ## Logging
 

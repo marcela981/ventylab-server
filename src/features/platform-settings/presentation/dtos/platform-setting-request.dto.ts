@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de solicitud de ajustes de la plataforma
- * Descripción: Filtro por categoría del listado, cuerpo de la actualización (valor y versión leída) y cuerpo del restablecimiento (versión leída), validados con class-validator y mensajes i18n
- * Versión: 1.0
+ * Descripción: Filtro por categoría del listado, cuerpo de la actualización (valor de cualquier tipo JSON, también texto, validado por el registro según la clave, y versión leída) y cuerpo del restablecimiento (versión leída), validados con class-validator y mensajes i18n
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,9 +23,9 @@ export class GetPlatformSettingsQueryDTO {
 
 export class UpdatePlatformSettingDTO {
   @ApiProperty({
-    description: "New value; its type and shape depend on the setting (number, boolean, array or object, see the setting limits)",
+    description: "New value; its type and shape depend on the setting (see its type, limits and keySchema); the setting registry validates it per key",
     example: 50,
-    oneOf: [{ type: "number" }, { type: "boolean" }, { type: "array", items: {} }, { type: "object" }],
+    oneOf: [{ type: "number" }, { type: "boolean" }, { type: "string" }, { type: "array", items: {} }, { type: "object" }],
   })
   @IsDefined({ message: i18nValidationMessage("platform-settings.validation.value_required") })
   public value: unknown;
