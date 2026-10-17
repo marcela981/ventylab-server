@@ -19456,6 +19456,12 @@ export interface components {
             /** @description Published grades */
             grades: components["schemas"]["StudentGradesDTO"];
             /**
+             * Format: date-time
+             * @description Latest learning activity of the student (page view or lesson progress update, simulation session start or end), null without recorded activity
+             * @example 2026-10-01T14:30:00.000Z
+             */
+            lastActivityAt: string | null;
+            /**
              * @description Student name
              * @example Ana Gómez
              */
@@ -19463,7 +19469,7 @@ export interface components {
             /** @description Learning progress */
             progress: components["schemas"]["AnalyticsStudentProgressDTO"];
             /**
-             * @description Risk rules that apply: FAILED_EVALUATIONS (failed latest attempts above maxFailedEvaluations), LOW_PROGRESS (overall progress below minProgressPct), INACTIVE (no activity for more than inactivityDays)
+             * @description Risk rules that apply: FAILED_EVALUATIONS (failed latest attempts above maxFailedEvaluations), LOW_PROGRESS (overall progress below minProgressPct), INACTIVE (lastActivityAt older than inactivityDays; never applies without recorded activity)
              * @example [
              *       "FAILED_EVALUATIONS"
              *     ]

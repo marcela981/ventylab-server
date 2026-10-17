@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de analítica
- * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (nota aprobatoria y umbrales de riesgo vigentes, progreso agregado por módulo y fila por estudiante con progreso, notas, simulación, uso de IA, horas de ventilador y riesgo), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación (opcionalmente de un grupo) con dificultad por pregunta y del resumen del propio estudiante; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO)
- * Versión: 1.3
+ * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (nota aprobatoria y umbrales de riesgo vigentes, progreso agregado por módulo y fila por estudiante con progreso, notas, simulación, uso de IA, horas de ventilador, última actividad y riesgo), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación (opcionalmente de un grupo) con dificultad por pregunta y del resumen del propio estudiante; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -141,12 +141,21 @@ export class StudentDashboardRowDTO {
   @ApiProperty({ description: "Hours of physical ventilator use in reservations held by the student", example: 1.5 })
   public ventilatorHours: number;
 
+  @ApiProperty({
+    description: "Latest learning activity of the student (page view or lesson progress update, simulation session start or end), null without recorded activity",
+    example: "2026-10-01T14:30:00.000Z",
+    nullable: true,
+    type: String,
+    format: "date-time",
+  })
+  public lastActivityAt: string | null;
+
   @ApiProperty({ description: "Whether any risk rule of the dashboard thresholds applies to the student", example: true })
   public atRisk: boolean;
 
   @ApiProperty({
     description:
-      "Risk rules that apply: FAILED_EVALUATIONS (failed latest attempts above maxFailedEvaluations), LOW_PROGRESS (overall progress below minProgressPct), INACTIVE (no activity for more than inactivityDays)",
+      "Risk rules that apply: FAILED_EVALUATIONS (failed latest attempts above maxFailedEvaluations), LOW_PROGRESS (overall progress below minProgressPct), INACTIVE (lastActivityAt older than inactivityDays; never applies without recorded activity)",
     enum: STUDENT_RISK_REASON_VALUES,
     isArray: true,
     example: ["FAILED_EVALUATIONS"],

@@ -1,15 +1,15 @@
 /*
  * Funcionalidad: Pruebas de AnalyticsMapper
- * Descripción: Verifica que el resumen del estudiante expone el título de cada sección de progreso, el intento y el módulo de cada nota publicada, el módulo, la lección y la página tituladas de cada apunte y el título del caso de cada sesión de simulación, con null cuando falta el dato
- * Versión: 1.0
+ * Descripción: Verifica que el resumen del estudiante expone el título de cada sección de progreso, el intento y el módulo de cada nota publicada, el módulo, la lección y la página tituladas de cada apunte y el título del caso de cada sesión de simulación, con null cuando falta el dato; y que la fila del panel de grupo expone la última actividad en ISO 8601 o null
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { type MySummary } from "@/features/analytics/application/results/analytics.results";
-import { type MySummaryDTO } from "@/features/analytics/presentation/dtos/analytics-response.dto";
+import { type MySummary, type StudentDashboardRow } from "@/features/analytics/application/results/analytics.results";
+import { type MySummaryDTO, type StudentDashboardRowDTO } from "@/features/analytics/presentation/dtos/analytics-response.dto";
 import { AnalyticsMapper } from "@/features/analytics/presentation/mappers/analytics.mapper";
 import { type LessonWeightedProgress } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
 
@@ -78,5 +78,34 @@ describe("AnalyticsMapper.toMySummaryDTO", () => {
       [null, null, null],
     ]);
     expect(dto.latestSimulationSessions[0].caseTitle).toBe("Normal lung");
+  });
+});
+
+describe("AnalyticsMapper.toDashboardRowDTO", () => {
+  const ROW: StudentDashboardRow = {
+    userId: "student-1",
+    email: "student@example.edu",
+    progress: { overall: { completedLessons: 0, totalLessons: 0, percentage: 0, completed: false }, sections: [], levels: [], modules: [] },
+    grades: { averageGrade: null, evaluations: [] },
+    simulation: { sessionCount: 0, averageScore: null, averageTimeToStabilizeSeconds: null },
+    aiUsage: [],
+    ventilatorHours: 0,
+    lastActivityAt: new Date("2026-10-05T10:00:00.000Z"),
+    atRisk: true,
+    riskReasons: ["INACTIVE"],
+    failedEvaluationIds: [],
+  };
+
+  it("exposes the last activity as ISO 8601", () => {
+    const dto: StudentDashboardRowDTO = AnalyticsMapper.toDashboardRowDTO(ROW);
+
+    expect(dto.lastActivityAt).toBe("2026-10-05T10:00:00.000Z");
+    expect(dto.riskReasons).toEqual(["INACTIVE"]);
+  });
+
+  it("exposes a missing last activity as null", () => {
+    const dto: StudentDashboardRowDTO = AnalyticsMapper.toDashboardRowDTO({ ...ROW, lastActivityAt: undefined });
+
+    expect(dto.lastActivityAt).toBeNull();
   });
 });

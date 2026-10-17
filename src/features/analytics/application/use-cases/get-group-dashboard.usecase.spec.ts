@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GetGroupDashboardUseCase
- * Descripción: Verifica con fachadas falsas que el panel de un grupo de 30 estudiantes llama exactamente una vez a cada función por lotes (sin N+1) con los 30 identificadores y una vez a los miembros, que reutiliza la caché del mismo solicitante, que combina una fila por estudiante (nota vigente = último intento publicado, porcentaje de útiles), que las notas de un profesor se leen con el alcance de intentos de sus grupos (el administrador sin alcance) que aplica el alcance con una sola lectura de grupos gestionables (403 fuera de alcance, 404 grupo inexistente), que el panel trae la nota aprobatoria, los umbrales y el resumen por módulo, y que el riesgo de cada fila sigue los umbrales vigentes (que también separan la caché)
- * Versión: 1.2
+ * Descripción: Verifica con fachadas falsas que el panel de un grupo de 30 estudiantes llama exactamente una vez a cada función por lotes (sin N+1) con los 30 identificadores y una vez a los miembros, que reutiliza la caché del mismo solicitante, que combina una fila por estudiante (nota vigente = último intento publicado, porcentaje de útiles), que las notas de un profesor se leen con el alcance de intentos de sus grupos (el administrador sin alcance) que aplica el alcance con una sola lectura de grupos gestionables (403 fuera de alcance, 404 grupo inexistente), que el panel trae la nota aprobatoria, los umbrales y el resumen por módulo, y que el riesgo de cada fila sigue los umbrales vigentes (que también separan la caché); que la última actividad de cada fila es la más reciente entre progreso y simulación (null sin actividad) y que INACTIVE aplica solo con el umbral activo y actividad conocida más antigua que el límite
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -129,6 +129,39 @@ describe("GetGroupDashboardUseCase", () => {
     expect(after.students[0]).toMatchObject({ atRisk: true, riskReasons: ["LOW_PROGRESS"] });
     expect(after.riskThresholds.minProgressPct).toBe(60);
     expect(harness.facades.progress.getProgressForUsers).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses the latest progress or simulation activity of each student and flags inactivity above the threshold", async () => {
+    const harness: AnalyticsHarness = buildAnalyticsHarness(buildStudents(3));
+    const now: number = Date.now();
+    const daysAgo = (days: number): Date => new Date(now - days * 86_400_000);
+
+    harness.facades.progress.getLastActivityForUsers.mockResolvedValueOnce([
+      { userId: "student-01", lastActivityAt: daysAgo(30) },
+      { userId: "student-02", lastActivityAt: daysAgo(40) },
+    ]);
+    harness.facades.simulation.getLastActivityForUsers.mockResolvedValueOnce([
+      { userId: "student-01", lastActivityAt: daysAgo(20) },
+      { userId: "student-02", lastActivityAt: daysAgo(2) },
+    ]);
+    harness.settings.riskThresholds = { maxFailedEvaluations: 0, minProgressPct: 0, inactivityDays: 14 };
+
+    const dashboard: GroupDashboard = await harness.dashboard.execute(ADMIN, GROUP_ID);
+    const [inactive, active, unknown]: StudentDashboardRow[] = dashboard.students;
+
+    expect(inactive).toMatchObject({ userId: "student-01", lastActivityAt: daysAgo(20), atRisk: true, riskReasons: ["INACTIVE"] });
+    expect(active).toMatchObject({ userId: "student-02", lastActivityAt: daysAgo(2), atRisk: false, riskReasons: [] });
+    expect(unknown).toMatchObject({ userId: "student-03", lastActivityAt: undefined, atRisk: false, riskReasons: [] });
+  });
+
+  it("never flags inactivity when the threshold is off", async () => {
+    const harness: AnalyticsHarness = buildAnalyticsHarness(buildStudents(1));
+
+    harness.facades.progress.getLastActivityForUsers.mockResolvedValueOnce([{ userId: "student-01", lastActivityAt: new Date(Date.now() - 365 * 86_400_000) }]);
+
+    const dashboard: GroupDashboard = await harness.dashboard.execute(ADMIN, GROUP_ID);
+
+    expect(dashboard.students[0]).toMatchObject({ atRisk: false, riskReasons: [] });
   });
 
   it("rejects a teacher outside the group scope without loading any data", async () => {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma SimulationAnalyticsPrismaRepository
- * Descripción: Verifica con un cliente Prisma simulado que las estadísticas de varios usuarios salen de una sola consulta $queryRaw con los ids como parámetros (nunca en el texto SQL), que lee el tiempo de estabilización del criterio TIME_TO_STABILIZE del resumen persistido, que convierte bigint y nulos, y que no consulta sin usuarios
- * Versión: 1.0
+ * Descripción: Verifica con un cliente Prisma simulado que las estadísticas de varios usuarios salen de una sola consulta $queryRaw con los ids como parámetros (nunca en el texto SQL), que lee el tiempo de estabilización del criterio TIME_TO_STABILIZE del resumen persistido, que convierte bigint y nulos, que no consulta sin usuarios y que la última actividad (inicio o fin más reciente) de varios usuarios sale de una sola consulta agrupada que descarta usuarios sin fecha
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,7 +11,7 @@
 import { type Prisma } from "@prisma/client";
 
 import { type PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
-import { type SimulationUserSessionStats } from "@/features/simulation/domain/repositories/simulation-analytics.repository";
+import { type SimulationUserLastActivity, type SimulationUserSessionStats } from "@/features/simulation/domain/repositories/simulation-analytics.repository";
 import { SimulationAnalyticsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/simulation-analytics-prisma.repository";
 
 describe("SimulationAnalyticsPrismaRepository", () => {
@@ -45,6 +45,29 @@ describe("SimulationAnalyticsPrismaRepository", () => {
     const stats: SimulationUserSessionStats[] = await repository.getSessionStatsForUsers([]);
 
     expect(stats).toEqual([]);
+    expect(queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("reads the latest session start or end of every user in one parameterized query", async () => {
+    queryRaw.mockResolvedValue([
+      { user_id: "student-1", last_activity_at: new Date("2026-10-05T10:00:00Z") },
+      { user_id: "student-2", last_activity_at: null },
+    ]);
+
+    const activity: SimulationUserLastActivity[] = await repository.getLastActivityForUsers(["student-1", "student-2", "student-1"]);
+    const query: Prisma.Sql = queryRaw.mock.calls[0][0] as Prisma.Sql;
+
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    expect(query.sql).toContain("GREATEST(started_at, ended_at)");
+    expect(query.sql).toContain("GROUP BY user_id");
+    expect(query.values).toEqual(["student-1", "student-2"]);
+    expect(activity).toEqual([{ userId: "student-1", lastActivityAt: new Date("2026-10-05T10:00:00Z") }]);
+  });
+
+  it("does not read the last activity without users", async () => {
+    const activity: SimulationUserLastActivity[] = await repository.getLastActivityForUsers([]);
+
+    expect(activity).toEqual([]);
     expect(queryRaw).not.toHaveBeenCalled();
   });
 });

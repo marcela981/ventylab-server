@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma SimulationAnalyticsPrismaRepository
- * Descripción: Implementa ISimulationAnalyticsRepository con $queryRaw parametrizado sobre simulation_sessions: una sola consulta agrupada por usuario con IN para el conteo, el puntaje promedio (summary.score) y el tiempo promedio de estabilización (valor del criterio TIME_TO_STABILIZE del desglose persistido en summary.breakdown; las sesiones sin resumen o que nunca se estabilizaron no entran en el promedio), y las sesiones de un usuario iniciadas en un rango con su puntaje persistido
- * Versión: 1.0
+ * Descripción: Implementa ISimulationAnalyticsRepository con $queryRaw parametrizado sobre simulation_sessions: una sola consulta agrupada por usuario con IN para el conteo, el puntaje promedio (summary.score) y el tiempo promedio de estabilización (valor del criterio TIME_TO_STABILIZE del desglose persistido en summary.breakdown; las sesiones sin resumen o que nunca se estabilizaron no entran en el promedio), y las sesiones de un usuario iniciadas en un rango con su puntaje persistido; y la última actividad de varios usuarios en una sola consulta agrupada con IN (máximo entre inicio y fin de sus sesiones)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma
 import {
   type ISimulationAnalyticsRepository,
   type SimulationSessionActivityView,
+  type SimulationUserLastActivity,
   type SimulationUserSessionStats,
 } from "@/features/simulation/domain/repositories/simulation-analytics.repository";
 import { type SimulationModeValue, type SimulationSessionStatusValue } from "@/features/simulation/domain/value-objects/simulation-session-values";
@@ -36,6 +37,11 @@ interface ActivityRow {
   readonly started_at: Date;
   readonly ended_at: Date | null;
   readonly score: number | null;
+}
+
+interface LastActivityRow {
+  readonly user_id: string;
+  readonly last_activity_at: Date | null;
 }
 
 @Injectable()
@@ -98,6 +104,23 @@ export class SimulationAnalyticsPrismaRepository implements ISimulationAnalytics
         endedAt: row.ended_at ?? undefined,
         score: row.score === null ? undefined : Number(row.score),
       }),
+    );
+  }
+
+  public async getLastActivityForUsers(userIds: readonly string[]): Promise<SimulationUserLastActivity[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const rows: LastActivityRow[] = await this._prisma.$queryRaw<LastActivityRow[]>(Prisma.sql`
+      SELECT user_id, max(GREATEST(started_at, ended_at)) AS last_activity_at
+      FROM simulation_sessions
+      WHERE user_id IN (${Prisma.join([...new Set<string>(userIds)])})
+      GROUP BY user_id
+    `);
+
+    return rows.flatMap((row: LastActivityRow): SimulationUserLastActivity[] =>
+      row.last_activity_at === null ? [] : [{ userId: row.user_id, lastActivityAt: new Date(row.last_activity_at) }],
     );
   }
 }

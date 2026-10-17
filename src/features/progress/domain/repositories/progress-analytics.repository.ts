@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Puerto de repositorio PROGRESS_ANALYTICS_REPOSITORY_TOKEN
- * Descripción: Define la interfaz IProgressAnalyticsRepository de lecturas por lotes para analítica (estructura publicada con los hechos de completitud de varios usuarios a la vez y lecciones completadas por un usuario en un rango), sus modelos de lectura y su token de inyección
- * Versión: 1.0
+ * Descripción: Define la interfaz IProgressAnalyticsRepository de lecturas por lotes para analítica (estructura publicada con los hechos de completitud de varios usuarios a la vez , lecciones completadas por un usuario en un rango y última actividad de varios usuarios), sus modelos de lectura y su token de inyección
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,7 +25,13 @@ export interface LessonCompletionActivity {
   readonly completedAt: Date;
 }
 
+export interface UserProgressLastActivity {
+  readonly userId: string;
+  readonly lastActivityAt: Date;
+}
+
 export interface IProgressAnalyticsRepository {
   getProgressSourceForUsers(userIds: readonly string[]): Promise<UsersProgressSource>;
   getLessonCompletionsOfUser(userId: string, from: Date, to: Date, limit: number): Promise<LessonCompletionActivity[]>;
+  getLastActivityForUsers(userIds: readonly string[]): Promise<UserProgressLastActivity[]>;
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados de analítica
- * Descripción: Tipos de salida de los casos de uso de analítica: panel de un grupo con una fila por estudiante (progreso por sección, nivel y módulo, notas por evaluación y promedio, sesiones de simulación, uso de IA por caso de uso con porcentaje de útiles y horas de ventilador), línea de tiempo de un estudiante, estadísticas de una evaluación con dificultad por pregunta, resumen del propio estudiante y filas anonimizadas del conjunto de datos de investigación; el panel incluye la nota aprobatoria y los umbrales de riesgo vigentes, el riesgo de cada fila (motivos y evaluaciones reprobadas) y el progreso agregado por módulo, y las estadísticas pueden acotarse a un grupo
- * Versión: 1.2
+ * Descripción: Tipos de salida de los casos de uso de analítica: panel de un grupo con una fila por estudiante (progreso por sección, nivel y módulo, notas por evaluación y promedio, sesiones de simulación, uso de IA por caso de uso con porcentaje de útiles, horas de ventilador y última actividad), línea de tiempo de un estudiante, estadísticas de una evaluación con dificultad por pregunta, resumen del propio estudiante y filas anonimizadas del conjunto de datos de investigación; el panel incluye la nota aprobatoria y los umbrales de riesgo vigentes, el riesgo de cada fila (motivos y evaluaciones reprobadas) y el progreso agregado por módulo, y las estadísticas pueden acotarse a un grupo
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -74,6 +74,7 @@ export interface StudentDashboardRow {
   readonly simulation: StudentSimulationSummary;
   readonly aiUsage: StudentAiUseCaseUsage[];
   readonly ventilatorHours: number;
+  readonly lastActivityAt?: Date;
   readonly atRisk: boolean;
   readonly riskReasons: StudentRiskReasonValue[];
   readonly failedEvaluationIds: string[];

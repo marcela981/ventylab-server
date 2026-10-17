@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada LearningProgressFacade
- * Descripción: API pública de progreso por páginas que exporta ProgressModule para otras features: getModuleProgress, getLevelProgress, getSectionProgress, getSummary e isUnlocked, delegando en sus casos de uso; y lecturas por lotes para analítica: getProgressForUsers (informe por sección, nivel y módulo de varios usuarios con un número fijo de lecturas) y getLessonCompletionsOfUser (lecciones completadas en un rango)
- * Versión: 1.1
+ * Descripción: API pública de progreso por páginas que exporta ProgressModule para otras features: getModuleProgress, getLevelProgress, getSectionProgress, getSummary e isUnlocked, delegando en sus casos de uso; y lecturas por lotes para analítica: getProgressForUsers (informe por sección, nivel y módulo de varios usuarios con un número fijo de lecturas), getLessonCompletionsOfUser (lecciones completadas en un rango) y getLastActivityForUsers (última actividad de aprendizaje de varios usuarios en una sola consulta)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,6 +26,7 @@ import {
 import {
   type IProgressAnalyticsRepository,
   type LessonCompletionActivity,
+  type UserProgressLastActivity,
   PROGRESS_ANALYTICS_REPOSITORY_TOKEN,
   type UsersProgressSource,
 } from "@/features/progress/domain/repositories/progress-analytics.repository";
@@ -79,6 +80,10 @@ export class LearningProgressFacade {
 
   public async getLessonCompletionsOfUser(userId: string, range: ProgressActivityRange, limit: number): Promise<LessonCompletionActivity[]> {
     return await this._analyticsRepository.getLessonCompletionsOfUser(userId, range.from, range.to, limit);
+  }
+
+  public async getLastActivityForUsers(userIds: readonly string[]): Promise<UserProgressLastActivity[]> {
+    return await this._analyticsRepository.getLastActivityForUsers(userIds);
   }
 
   public async isUnlocked(userId: string, target: ContentUnlockTarget): Promise<boolean> {

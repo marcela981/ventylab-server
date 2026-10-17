@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma ProgressAnalyticsPrismaRepository
- * Descripción: Implementa IProgressAnalyticsRepository sobre PrismaService con lecturas por lotes sin bucles por usuario: la estructura publicada (tres lecturas), las lecciones publicadas con su conteo filtrado de páginas publicadas, las vistas completadas de páginas publicadas de todos los usuarios con IN y sus registros de lecciones completadas con IN (seis lecturas en total, independientes del número de usuarios); y las lecciones completadas por un usuario en un rango
- * Versión: 1.0
+ * Descripción: Implementa IProgressAnalyticsRepository sobre PrismaService con lecturas por lotes sin bucles por usuario: la estructura publicada (tres lecturas), las lecciones publicadas con su conteo filtrado de páginas publicadas, las vistas completadas de páginas publicadas de todos los usuarios con IN y sus registros de lecciones completadas con IN (seis lecturas en total, independientes del número de usuarios); las lecciones completadas por un usuario en un rango; y la última actividad de varios usuarios en una sola consulta $queryRaw con IN y GROUP BY (máximo entre la última visita o actualización de páginas y la última actualización o acceso de lecciones)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { type LessonCompletionFact } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
@@ -17,6 +18,7 @@ import { type ProgressStructure } from "@/features/progress/domain/read-models/l
 import {
   type IProgressAnalyticsRepository,
   type LessonCompletionActivity,
+  type UserProgressLastActivity,
   type UsersProgressSource,
 } from "@/features/progress/domain/repositories/progress-analytics.repository";
 import { loadPublishedProgressStructure } from "@/features/progress/infrastructure/persistence/prisma/published-progress-structure";
@@ -42,6 +44,11 @@ interface CompletionActivityRow {
   lessonId: string;
   completedAt: Date | null;
   lesson: { title: string; moduleId: string };
+}
+
+interface LastActivityRow {
+  readonly user_id: string;
+  readonly last_activity_at: Date | null;
 }
 
 function countKey(userId: string, lessonId: string): string {
@@ -123,6 +130,32 @@ export class ProgressAnalyticsPrismaRepository implements IProgressAnalyticsRepo
 
     return rows.flatMap((row: CompletionActivityRow): LessonCompletionActivity[] =>
       row.completedAt === null ? [] : [{ lessonId: row.lessonId, lessonTitle: row.lesson.title, moduleId: row.lesson.moduleId, completedAt: row.completedAt }],
+    );
+  }
+
+  public async getLastActivityForUsers(userIds: readonly string[]): Promise<UserProgressLastActivity[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const ids: Prisma.Sql = Prisma.join([...new Set<string>(userIds)]);
+
+    const rows: LastActivityRow[] = await this._prisma.$queryRaw<LastActivityRow[]>(Prisma.sql`
+      SELECT activity.user_id, max(activity.at) AS last_activity_at
+      FROM (
+        SELECT pp."userId" AS user_id, GREATEST(pp."lastVisitedAt", pp."updatedAt") AS at
+        FROM page_progress pp
+        WHERE pp."userId" IN (${ids})
+        UNION ALL
+        SELECT lc."userId" AS user_id, GREATEST(lc."lastAccessed", lc."updatedAt") AS at
+        FROM lesson_completions lc
+        WHERE lc."userId" IN (${ids})
+      ) activity
+      GROUP BY activity.user_id
+    `);
+
+    return rows.flatMap((row: LastActivityRow): UserProgressLastActivity[] =>
+      row.last_activity_at === null ? [] : [{ userId: row.user_id, lastActivityAt: new Date(row.last_activity_at) }],
     );
   }
 }

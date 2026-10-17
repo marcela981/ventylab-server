@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de LearningProgressFacade (lecturas por lotes)
- * Descripción: Verifica que el progreso de varios usuarios sale de una sola llamada al repositorio de analítica y se calcula por usuario con el mismo motor de progreso ponderado por lecciones, y que las lecciones completadas en un rango se piden con sus límites
- * Versión: 1.0
+ * Descripción: Verifica que el progreso de varios usuarios sale de una sola llamada al repositorio de analítica y se calcula por usuario con el mismo motor de progreso ponderado por lecciones, que las lecciones completadas en un rango se piden con sus límites y que la última actividad de varios usuarios sale de una sola llamada al repositorio
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,7 @@ import { type GetLearningProgressSummaryUseCase } from "@/features/progress/appl
 import { type GetLevelLearningProgressUseCase } from "@/features/progress/application/use-cases/get-level-learning-progress.usecase";
 import { type GetModuleLearningProgressUseCase } from "@/features/progress/application/use-cases/get-module-learning-progress.usecase";
 import { type GetSectionLearningProgressUseCase } from "@/features/progress/application/use-cases/get-section-learning-progress.usecase";
-import { type IProgressAnalyticsRepository } from "@/features/progress/domain/repositories/progress-analytics.repository";
+import { type IProgressAnalyticsRepository, type UserProgressLastActivity } from "@/features/progress/domain/repositories/progress-analytics.repository";
 
 describe("LearningProgressFacade batch reads", () => {
   it("computes the report of every user from one repository call", async () => {
@@ -27,6 +27,7 @@ describe("LearningProgressFacade batch reads", () => {
         ]),
       }),
       getLessonCompletionsOfUser: jest.fn().mockResolvedValue([]),
+      getLastActivityForUsers: jest.fn().mockResolvedValue([]),
     };
     const facade: LearningProgressFacade = new LearningProgressFacade(
       {} as GetModuleLearningProgressUseCase,
@@ -47,5 +48,28 @@ describe("LearningProgressFacade batch reads", () => {
       ["student-2", 0, 0],
     ]);
     expect(repository.getLessonCompletionsOfUser).toHaveBeenCalledWith("student-1", range.from, range.to, 50);
+  });
+
+  it("reads the last learning activity of many users from one repository call", async () => {
+    const lastActivity: UserProgressLastActivity[] = [{ userId: "student-1", lastActivityAt: new Date("2026-10-05T10:00:00Z") }];
+    const repository: jest.Mocked<IProgressAnalyticsRepository> = {
+      getProgressSourceForUsers: jest.fn(),
+      getLessonCompletionsOfUser: jest.fn(),
+      getLastActivityForUsers: jest.fn().mockResolvedValue(lastActivity),
+    };
+    const facade: LearningProgressFacade = new LearningProgressFacade(
+      {} as GetModuleLearningProgressUseCase,
+      {} as GetLevelLearningProgressUseCase,
+      {} as GetSectionLearningProgressUseCase,
+      {} as GetLearningProgressSummaryUseCase,
+      {} as CheckContentUnlockedUseCase,
+      repository,
+    );
+
+    const activity: UserProgressLastActivity[] = await facade.getLastActivityForUsers(["student-1", "student-2"]);
+
+    expect(repository.getLastActivityForUsers).toHaveBeenCalledTimes(1);
+    expect(repository.getLastActivityForUsers).toHaveBeenCalledWith(["student-1", "student-2"]);
+    expect(activity).toEqual(lastActivity);
   });
 });

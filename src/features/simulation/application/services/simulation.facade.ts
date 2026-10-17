@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada SimulationFacade
- * Descripción: API pública de las sesiones de simulación con eventos para otras features: resumen de una sesión, calificación por rúbrica recalculada siempre con la repetición del servidor (nunca con datos del cliente), sesiones paginadas de un usuario con el título de su caso clínico (una lectura de ClinicalCasesFacade por página) y estadísticas de sesiones de los miembros de un grupo obtenidos con GroupsFacade, la versión del motor de simulación y lecturas por lotes para analítica: estadísticas por usuario de varios usuarios en una sola consulta (conteo, puntaje promedio y tiempo promedio de estabilización tomado del resumen persistido) y sesiones de un usuario en un rango
- * Versión: 1.3
+ * Descripción: API pública de las sesiones de simulación con eventos para otras features: resumen de una sesión, calificación por rúbrica recalculada siempre con la repetición del servidor (nunca con datos del cliente), sesiones paginadas de un usuario con el título de su caso clínico (una lectura de ClinicalCasesFacade por página) y estadísticas de sesiones de los miembros de un grupo obtenidos con GroupsFacade, la versión del motor de simulación y lecturas por lotes para analítica: estadísticas por usuario de varios usuarios en una sola consulta (conteo, puntaje promedio y tiempo promedio de estabilización tomado del resumen persistido), sesiones de un usuario en un rango y última actividad de simulación de varios usuarios en una sola consulta
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -33,6 +33,7 @@ import {
   type ISimulationAnalyticsRepository,
   SIMULATION_ANALYTICS_REPOSITORY_TOKEN,
   type SimulationSessionActivityView,
+  type SimulationUserLastActivity,
   type SimulationUserSessionStats,
 } from "@/features/simulation/domain/repositories/simulation-analytics.repository";
 import {
@@ -153,6 +154,10 @@ export class SimulationFacade {
 
   public async getSessionActivityOfUser(userId: string, range: SimulationActivityRange, limit: number): Promise<SimulationSessionActivityView[]> {
     return await this._analyticsRepository.getSessionActivityOfUser(userId, range.from, range.to, limit);
+  }
+
+  public async getLastActivityForUsers(userIds: readonly string[]): Promise<SimulationUserLastActivity[]> {
+    return await this._analyticsRepository.getLastActivityForUsers(userIds);
   }
 
   public async getGroupSessionStats(groupId: string): Promise<SimulationGroupSessionStats> {

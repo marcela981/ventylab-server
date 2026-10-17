@@ -1,16 +1,18 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma ProgressAnalyticsPrismaRepository
- * Descripción: Verifica con un cliente Prisma simulado que los hechos de completitud de varios usuarios salen de un número fijo de lecturas (estructura, lecciones con conteo de páginas publicadas, vistas y completitudes con IN) independiente del número de usuarios, y que cuenta por usuario y lección las páginas vistas y los registros de completitud
- * Versión: 1.0
+ * Descripción: Verifica con un cliente Prisma simulado que los hechos de completitud de varios usuarios salen de un número fijo de lecturas (estructura, lecciones con conteo de páginas publicadas, vistas y completitudes con IN) independiente del número de usuarios, y que cuenta por usuario y lección las páginas vistas y los registros de completitud; y que la última actividad de varios usuarios sale de una sola consulta $queryRaw parametrizada sobre páginas y lecciones, descarta usuarios sin fecha y no consulta sin usuarios
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type Prisma } from "@prisma/client";
+
 import { type PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { type LessonCompletionFact } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
-import { type UsersProgressSource } from "@/features/progress/domain/repositories/progress-analytics.repository";
+import { type UserProgressLastActivity, type UsersProgressSource } from "@/features/progress/domain/repositories/progress-analytics.repository";
 import { ProgressAnalyticsPrismaRepository } from "@/features/progress/infrastructure/persistence/prisma/repositories/progress-analytics-prisma.repository";
 
 interface PrismaMock {
@@ -81,5 +83,38 @@ describe("ProgressAnalyticsPrismaRepository", () => {
       expect.objectContaining({ lessonId: "lesson-1", viewedPageCount: 1, hasCompletionRecord: false }),
       expect.objectContaining({ lessonId: "lesson-2", hasCompletionRecord: true }),
     ]);
+  });
+});
+
+describe("ProgressAnalyticsPrismaRepository last activity", () => {
+  let queryRaw: jest.Mock;
+  let repository: ProgressAnalyticsPrismaRepository;
+
+  beforeEach(() => {
+    queryRaw = jest.fn().mockResolvedValue([
+      { user_id: "student-1", last_activity_at: new Date("2026-10-05T10:00:00Z") },
+      { user_id: "student-2", last_activity_at: null },
+    ]);
+    repository = new ProgressAnalyticsPrismaRepository({ $queryRaw: queryRaw } as unknown as PrismaService);
+  });
+
+  it("reads the last page or lesson activity of every user in one parameterized query", async () => {
+    const activity: UserProgressLastActivity[] = await repository.getLastActivityForUsers(["student-1", "student-2", "student-1"]);
+    const query: Prisma.Sql = queryRaw.mock.calls[0][0] as Prisma.Sql;
+
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    expect(query.sql).toContain("page_progress");
+    expect(query.sql).toContain("lesson_completions");
+    expect(query.sql).toContain("GROUP BY activity.user_id");
+    expect(query.sql).not.toContain("student-1");
+    expect(query.values).toEqual(["student-1", "student-2", "student-1", "student-2"]);
+    expect(activity).toEqual([{ userId: "student-1", lastActivityAt: new Date("2026-10-05T10:00:00Z") }]);
+  });
+
+  it("does not query without users", async () => {
+    const activity: UserProgressLastActivity[] = await repository.getLastActivityForUsers([]);
+
+    expect(activity).toEqual([]);
+    expect(queryRaw).not.toHaveBeenCalled();
   });
 });

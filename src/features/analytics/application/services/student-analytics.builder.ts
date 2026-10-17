@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Constructor de analítica por estudiante
- * Descripción: Funciones puras que combinan en memoria los resultados por lotes de las fachadas (progreso, notas publicadas, sesiones de simulación, uso y valoraciones de IA y horas de ventilador) indexándolos por usuario, sin ninguna lectura adicional: resumen de progreso por sección, nivel y módulo, nota vigente por evaluación (último intento publicado) con su promedio, filas del panel de un grupo con el riesgo de cada estudiante según los umbrales vigentes, progreso agregado por módulo del grupo a partir de esas filas y filas largas del conjunto de datos de investigación con identificadores seudonimizados (usuario y grupo, y las evaluaciones con separación de dominio "evaluation:")
- * Versión: 1.3
+ * Descripción: Funciones puras que combinan en memoria los resultados por lotes de las fachadas (progreso, notas publicadas, sesiones de simulación, uso y valoraciones de IA, horas de ventilador y última actividad de progreso y simulación) indexándolos por usuario, sin ninguna lectura adicional: resumen de progreso por sección, nivel y módulo, nota vigente por evaluación (último intento publicado) con su promedio, filas del panel de un grupo con la última actividad (la más reciente de ambas fuentes) y el riesgo de cada estudiante según los umbrales vigentes, progreso agregado por módulo del grupo a partir de esas filas y filas largas del conjunto de datos de investigación con identificadores seudonimizados (usuario y grupo, y las evaluaciones con separación de dominio "evaluation:")
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -43,6 +43,12 @@ export interface StudentAnalyticsSources {
   readonly aiUsage: AiUserUseCaseUsage[];
   readonly aiRatings: AiRatingUserUseCaseStats[];
   readonly ventilator: UserVentilatorUsage[];
+  readonly lastActivity: StudentLastActivity[];
+}
+
+export interface StudentLastActivity {
+  readonly userId: string;
+  readonly lastActivityAt: Date;
 }
 
 export interface ResearchParticipant {
@@ -58,6 +64,20 @@ function round(value: number, decimals: number): number {
   const factor: number = 10 ** decimals;
 
   return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+function latestActivityByUser(activities: ReadonlyArray<StudentLastActivity>): Map<string, Date> {
+  const latest: Map<string, Date> = new Map<string, Date>();
+
+  for (const activity of activities) {
+    const current: Date | undefined = latest.get(activity.userId);
+
+    if (!current || activity.lastActivityAt.getTime() > current.getTime()) {
+      latest.set(activity.userId, activity.lastActivityAt);
+    }
+  }
+
+  return latest;
 }
 
 function groupByUser<T extends { readonly userId: string }>(items: ReadonlyArray<T>): Map<string, T[]> {
@@ -159,11 +179,17 @@ export function buildStudentDashboardRows(
   const aiUsage: Map<string, AiUserUseCaseUsage[]> = groupByUser(sources.aiUsage);
   const aiRatings: Map<string, AiRatingUserUseCaseStats[]> = groupByUser(sources.aiRatings);
   const ventilator: Map<string, UserVentilatorUsage> = new Map(sources.ventilator.map((item: UserVentilatorUsage): [string, UserVentilatorUsage] => [item.userId, item]));
+  const lastActivity: Map<string, Date> = latestActivityByUser(sources.lastActivity);
 
   return students.map((student: GroupMemberSummary): StudentDashboardRow => {
     const studentProgress: StudentProgressSummary = toProgressSummary(progress.get(student.userId)?.report);
     const studentGrades: EvaluationUserGrade[] = grades.get(student.userId) ?? [];
-    const risk: StudentRiskAssessment = assessStudentRisk({ evaluations: studentGrades, progressPct: studentProgress.overall.percentage }, thresholds, now);
+    const lastActivityAt: Date | undefined = lastActivity.get(student.userId);
+    const risk: StudentRiskAssessment = assessStudentRisk(
+      { evaluations: studentGrades, progressPct: studentProgress.overall.percentage, lastActivityAt },
+      thresholds,
+      now,
+    );
 
     return {
       userId: student.userId,
@@ -174,6 +200,7 @@ export function buildStudentDashboardRows(
       simulation: toSimulationSummary(simulation.get(student.userId)),
       aiUsage: toAiUsage(aiUsage.get(student.userId) ?? [], aiRatings.get(student.userId) ?? []),
       ventilatorHours: round(ventilator.get(student.userId)?.hours ?? 0, 2),
+      lastActivityAt,
       atRisk: risk.atRisk,
       riskReasons: risk.riskReasons,
       failedEvaluationIds: risk.failedEvaluationIds,

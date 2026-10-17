@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de SimulationFacade
- * Descripción: Verifica que la calificación de una sesión se recalcula con la repetición del servidor y devuelve su desglose por criterio (con rúbrica por defecto, de caso o explícita; la por defecto con los umbrales copiados al iniciar la sesión), los motivos de no disponibilidad (sesión inexistente, rúbrica inválida, caso no disponible), el resumen guardado las estadísticas de sesiones de un grupo y la versión del motor; y que las estadísticas por lotes de varios usuarios se piden al repositorio de analítica en una sola llamada y que las sesiones de un usuario llevan el título de su caso con una sola lectura por página
- * Versión: 1.5
+ * Descripción: Verifica que la calificación de una sesión se recalcula con la repetición del servidor y devuelve su desglose por criterio (con rúbrica por defecto, de caso o explícita; la por defecto con los umbrales copiados al iniciar la sesión), los motivos de no disponibilidad (sesión inexistente, rúbrica inválida, caso no disponible), el resumen guardado las estadísticas de sesiones de un grupo y la versión del motor; y que las estadísticas por lotes de varios usuarios se piden al repositorio de analítica en una sola llamada, que la última actividad de varios usuarios se pide en una sola llamada y que las sesiones de un usuario llevan el título de su caso con una sola lectura por página
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -32,7 +32,11 @@ import { EndSimulationSessionUseCase } from "@/features/simulation/application/u
 import { ENGINE_VERSION } from "@/features/simulation/domain/engine/engine-version";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
 import { type SimulationSessionSummary, type SimulationSessionView } from "@/features/simulation/domain/read-models/simulation-session.read-model";
-import { type ISimulationAnalyticsRepository, type SimulationUserSessionStats } from "@/features/simulation/domain/repositories/simulation-analytics.repository";
+import {
+  type ISimulationAnalyticsRepository,
+  type SimulationUserLastActivity,
+  type SimulationUserSessionStats,
+} from "@/features/simulation/domain/repositories/simulation-analytics.repository";
 import { buildDefaultSimulationRubric, DEFAULT_SIMULATION_RUBRIC, DEFAULT_SIMULATION_RUBRIC_THRESHOLDS, type SimulationRubricThresholds } from "@/features/simulation/domain/scoring";
 
 const STARTED_AT: Date = new Date("2026-10-08T12:00:00Z");
@@ -49,6 +53,7 @@ const USER_STATS: SimulationUserSessionStats = {
 const ANALYTICS_REPOSITORY: jest.Mocked<ISimulationAnalyticsRepository> = {
   getSessionStatsForUsers: jest.fn().mockResolvedValue([USER_STATS]),
   getSessionActivityOfUser: jest.fn().mockResolvedValue([]),
+  getLastActivityForUsers: jest.fn().mockResolvedValue([{ userId: "student-1", lastActivityAt: new Date("2026-10-05T10:00:00Z") }]),
 };
 
 describe("SimulationFacade", () => {
@@ -195,6 +200,16 @@ describe("SimulationFacade", () => {
     expect(ANALYTICS_REPOSITORY.getSessionStatsForUsers).toHaveBeenCalledTimes(1);
     expect(ANALYTICS_REPOSITORY.getSessionStatsForUsers).toHaveBeenCalledWith(["student-1", "student-2"]);
     expect(stats).toEqual([USER_STATS]);
+  });
+
+  it("reads the last simulation activity of many users with one analytics repository call", async () => {
+    ANALYTICS_REPOSITORY.getLastActivityForUsers.mockClear();
+
+    const activity: SimulationUserLastActivity[] = await facade.getLastActivityForUsers(["student-1", "student-2"]);
+
+    expect(ANALYTICS_REPOSITORY.getLastActivityForUsers).toHaveBeenCalledTimes(1);
+    expect(ANALYTICS_REPOSITORY.getLastActivityForUsers).toHaveBeenCalledWith(["student-1", "student-2"]);
+    expect(activity).toEqual([{ userId: "student-1", lastActivityAt: new Date("2026-10-05T10:00:00Z") }]);
   });
 
   it("adds the clinical case title to a user's sessions with one batch title read per page", async () => {

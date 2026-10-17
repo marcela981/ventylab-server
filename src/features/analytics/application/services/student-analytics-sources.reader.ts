@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Lector StudentAnalyticsSourcesReader
- * Descripción: Lee en paralelo, con exactamente una llamada por lotes a cada fachada (progreso, notas publicadas, estadísticas de simulación, uso de IA, valoraciones de IA y horas de ventilador), los datos de analítica de un conjunto de usuarios; el número de consultas no depende del número de usuarios (sin N+1); con el alcance de intentos de un profesor, las notas se limitan a ese alcance
- * Versión: 1.1
+ * Descripción: Lee en paralelo, con exactamente una llamada por lotes a cada fachada (progreso, notas publicadas, estadísticas de simulación, uso de IA, valoraciones de IA, horas de ventilador y última actividad de progreso y de simulación), los datos de analítica de un conjunto de usuarios; el número de consultas no depende del número de usuarios (sin N+1); con el alcance de intentos de un profesor, las notas se limitan a ese alcance
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,15 +31,17 @@ export class StudentAnalyticsSourcesReader {
   ) {}
 
   public async read(userIds: readonly string[], now: Date, attemptScope?: EvaluationAttemptScope): Promise<StudentAnalyticsSources> {
-    const [progress, grades, simulation, aiUsage, aiRatings, ventilator] = await Promise.all([
+    const [progress, grades, simulation, aiUsage, aiRatings, ventilator, progressActivity, simulationActivity] = await Promise.all([
       this._progressFacade.getProgressForUsers(userIds),
       this._evaluationFacade.getGradesForUsers(userIds, undefined, attemptScope),
       this._simulationFacade.getSessionStatsForUsers(userIds),
       this._aiTelemetryFacade.getUsageForUsers(userIds),
       this._aiRatingsFacade.getHelpfulnessForUsers(userIds),
       this._reservationsFacade.getVentilatorUsageForUsers(userIds, now),
+      this._progressFacade.getLastActivityForUsers(userIds),
+      this._simulationFacade.getLastActivityForUsers(userIds),
     ]);
 
-    return { progress, grades, simulation, aiUsage, aiRatings, ventilator };
+    return { progress, grades, simulation, aiUsage, aiRatings, ventilator, lastActivity: [...progressActivity, ...simulationActivity] };
   }
 }
