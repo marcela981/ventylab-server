@@ -13,6 +13,9 @@
   "users_retrieved": "Users retrieved successfully",
   "role_changed": "Role changed successfully",
   "status_changed": "Account status changed successfully",
+  "student_code_changed": "Student code changed successfully",
+  "student_code_already_in_use": "The student code is already assigned to another user",
+  "student_code_invalid": "The student code must have 1 to 32 letters, digits or hyphens",
   "user_retrieved": "User retrieved successfully",
   "profile_updated": "Profile updated successfully",
   "password_changed": "Password changed successfully. Every previous session was closed",
@@ -34,6 +37,7 @@
   "validation": {
     "sort_by_invalid": "sortBy must be one of: createdAt, name, email",
     "role_invalid": "role must be one of: STUDENT, TEACHER, ADMIN",
-    "is_active_boolean": "isActive must be a boolean"
+    "is_active_boolean": "isActive must be a boolean",
+    "student_code_invalid": "studentCode must be null or 1 to 32 letters, digits or hyphens"
   }
 }

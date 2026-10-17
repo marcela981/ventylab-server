@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio UsersPrismaRepository
- * Descripción: Implementa IUserRepository con Prisma sobre la tabla de usuarios: listado paginado con filtros de búsqueda (nombre, email o ID exacto), rol, grupo y estado activo, y búsquedas por ID, IDs, email (sin distinguir mayúsculas) y googleId
- * Versión: 1.1
+ * Descripción: Implementa IUserRepository con Prisma sobre la tabla de usuarios: listado paginado con filtros de búsqueda (nombre, email o código estudiantil sin distinguir mayúsculas, o ID exacto), rol, grupo y estado activo, y búsquedas por ID, IDs, email (sin distinguir mayúsculas), googleId y código estudiantil
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -48,6 +48,7 @@ export class UsersPrismaRepository implements IUserRepository {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
+        { studentCode: { contains: search, mode: "insensitive" } },
         { id: search },
       ];
     }
@@ -115,6 +116,14 @@ export class UsersPrismaRepository implements IUserRepository {
     const client: PrismaExecutor = resolveClient(this._prisma, transaction);
 
     const row: UserModel | null = await client.user.findUnique({ where: { googleId } });
+
+    return row ? UsersMapper.toDomain(row) : undefined;
+  }
+
+  public async getByStudentCode(studentCode: string, transaction?: unknown): Promise<User | undefined> {
+    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+
+    const row: UserModel | null = await client.user.findUnique({ where: { studentCode } });
 
     return row ? UsersMapper.toDomain(row) : undefined;
   }

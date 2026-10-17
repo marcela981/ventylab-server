@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.34
+ * Versión: 1.35
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -287,6 +287,8 @@ import {
   SuperadminRoleImmutableError,
   SuperadminStatusImmutableError,
   UserAlreadyExistsError,
+  StudentCodeAlreadyInUseError,
+  InvalidStudentCodeError,
   UserNotFoundError,
   UserNotStudentError,
 } from "@/features/users/domain/users.errors";
@@ -367,6 +369,8 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [TeacherRoleRequiredError, HttpStatus.BAD_REQUEST],
   [UserNotFoundError, HttpStatus.NOT_FOUND],
   [UserAlreadyExistsError, HttpStatus.CONFLICT],
+  [StudentCodeAlreadyInUseError, HttpStatus.CONFLICT],
+  [InvalidStudentCodeError, HttpStatus.BAD_REQUEST],
   [InvalidCurrentPasswordError, HttpStatus.BAD_REQUEST],
   [PasswordNotSetError, HttpStatus.BAD_REQUEST],
   [SamePasswordError, HttpStatus.BAD_REQUEST],

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo UsersModule
  * Descripción: Registra controlador, casos de uso, repositorios (usuarios, estadísticas y membresías de grupo), el correo del superadministrador, el arranque que fuerza su rol ADMIN y los manejadores de eventos de la feature de usuarios; exporta UsersFacade y los proveedores que aún usan otras features
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { SUPERADMIN_EMAIL_TOKEN } from "@/features/users/application/tokens/supe
 import { ChangePasswordUseCase } from "@/features/users/application/use-cases/change-password.usecase";
 import { ChangeUserRoleUseCase } from "@/features/users/application/use-cases/change-user-role.usecase";
 import { ChangeUserStatusUseCase } from "@/features/users/application/use-cases/change-user-status.usecase";
+import { ChangeUserStudentCodeUseCase } from "@/features/users/application/use-cases/change-user-student-code.usecase";
 import { CreateUserUseCase } from "@/features/users/application/use-cases/create-user.usecase";
 import { EnsureSuperadminUseCase } from "@/features/users/application/use-cases/ensure-superadmin.usecase";
 import { FindOrCreateGoogleUserUseCase } from "@/features/users/application/use-cases/find-or-create-google-user.usecase";
@@ -67,6 +68,7 @@ import { UsersController } from "@/features/users/presentation/controllers/users
     GetStudentByIdUseCase,
     GetUsersUseCase,
     ChangeUserStatusUseCase,
+    ChangeUserStudentCodeUseCase,
     FindOrCreateGoogleUserUseCase,
     EnsureSuperadminUseCase,
     UsersFacade,

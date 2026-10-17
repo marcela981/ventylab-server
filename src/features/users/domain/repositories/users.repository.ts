@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio IUserRepository
- * Descripción: Define el contrato, las consultas (búsqueda, rol, grupo y estado activo) y el token de inyección del repositorio de usuarios; el correo se busca sin distinguir mayúsculas
- * Versión: 1.1
+ * Descripción: Define el contrato, las consultas (búsqueda por nombre, email, código estudiantil o ID, rol, grupo y estado activo), la búsqueda por código estudiantil y el token de inyección del repositorio de usuarios; el correo se busca sin distinguir mayúsculas
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -33,6 +33,7 @@ export interface IUserRepository {
   getByIds(ids: readonly string[], transaction?: unknown): Promise<User[]>;
   getByEmail(email: string, transaction?: unknown): Promise<User | undefined>;
   getByGoogleId(googleId: string, transaction?: unknown): Promise<User | undefined>;
+  getByStudentCode(studentCode: string, transaction?: unknown): Promise<User | undefined>;
   isStudentAssignedToTeacher(teacherId: string, studentId: string, transaction?: unknown): Promise<boolean>;
   revokeSessions(userId: string, transaction?: unknown): Promise<void>;
   save(user: User, transaction?: unknown): Promise<void>;

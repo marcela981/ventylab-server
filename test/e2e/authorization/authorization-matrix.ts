@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
  * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -448,6 +448,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/users/students/:id": TEACHER_UP, // students:read
   "PATCH /api/users/:id/role": ADMIN_ONLY, // users:update_role
   "PATCH /api/users/:id/status": ADMIN_ONLY, // users:update_status
+  "PATCH /api/users/:id/student-code": ADMIN_ONLY, // users:update_status
   "PATCH /api/users/me": AUTHENTICATED, // JwtAuthGuard
   "POST /api/users/me/change-password": AUTHENTICATED, // JwtAuthGuard
 

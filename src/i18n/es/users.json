@@ -13,6 +13,9 @@
   "users_retrieved": "Usuarios obtenidos exitosamente",
   "role_changed": "Rol cambiado exitosamente",
   "status_changed": "Estado de la cuenta cambiado exitosamente",
+  "student_code_changed": "Código estudiantil cambiado exitosamente",
+  "student_code_already_in_use": "El código estudiantil ya está asignado a otro usuario",
+  "student_code_invalid": "El código estudiantil debe tener de 1 a 32 letras, dígitos o guiones",
   "user_retrieved": "Usuario obtenido exitosamente",
   "profile_updated": "Perfil actualizado exitosamente",
   "password_changed": "Contraseña actualizada exitosamente. Todas las sesiones anteriores fueron cerradas",
@@ -34,6 +37,7 @@
   "validation": {
     "sort_by_invalid": "sortBy debe ser uno de: createdAt, name, email",
     "role_invalid": "role debe ser uno de: STUDENT, TEACHER, ADMIN",
-    "is_active_boolean": "isActive debe ser un booleano"
+    "is_active_boolean": "isActive debe ser un booleano",
+    "student_code_invalid": "studentCode debe ser null o tener de 1 a 32 letras, dígitos o guiones"
   }
 }

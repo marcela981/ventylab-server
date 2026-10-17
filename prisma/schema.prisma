@@ -26,6 +26,7 @@ model User {
   isActive               Boolean   @default(true)
   googleId               String?   @unique
   refreshTokensRevokedAt DateTime? // Refresh tokens issued (iat) before this instant are rejected
+  studentCode            String?   @unique @map("student_code") // Institutional student code, set by an admin
 
   accounts           Account[]
   sessions           Session[]

@@ -6231,7 +6231,7 @@ export interface paths {
         };
         /**
          * Get users
-         * @description Retrieves a paginated list of users filtered by search term (name, email or exact ID), role, group and account status
+         * @description Retrieves a paginated list of users filtered by search term (case-insensitive name, email or student code, or exact ID), role, group and account status; each user carries its student code and whether it is the superadmin
          *
          *     **Required access:** bearer token holding `users:list`; minimum role TEACHER.
          */
@@ -6402,6 +6402,28 @@ export interface paths {
          *     **Required access:** bearer token holding `users:update_status`; minimum role ADMIN.
          */
         patch: operations["changeUserStatus"];
+        trace?: never;
+    };
+    "/api/users/{id}/student-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change user student code
+         * @description Sets (trimmed, 1 to 32 letters, digits or hyphens) or removes (null) the institutional student code of a user; the code is unique and the change is audited with its previous and new value
+         *
+         *     **Required access:** bearer token holding `users:update_status`; minimum role ADMIN.
+         */
+        patch: operations["changeUserStudentCode"];
         trace?: never;
     };
     "/api/ventilator/commands": {
@@ -8873,6 +8895,13 @@ export interface components {
              * @example false
              */
             isActive: boolean;
+        };
+        ChangeUserStudentCodeDTO: {
+            /**
+             * @description Institutional student code (trimmed; letters, digits and hyphens), unique per user; null removes it
+             * @example 2026-0001
+             */
+            studentCode: string | null;
         };
         ClinicalCaseAttemptsDTO: {
             /** @description Attempts, most recent first */
@@ -21316,6 +21345,11 @@ export interface components {
              */
             isActive: boolean;
             /**
+             * @description Whether the user is the configured superadmin (SUPERADMIN_EMAIL), whose role and status cannot change
+             * @example false
+             */
+            isSuperadmin: boolean;
+            /**
              * @description User's full name
              * @example Ana María Pérez
              */
@@ -21326,6 +21360,11 @@ export interface components {
              * @enum {string}
              */
             role: "STUDENT" | "TEACHER" | "ADMIN";
+            /**
+             * @description Institutional student code set by an admin (unique, letters, digits and hyphens)
+             * @example 2026-0001
+             */
+            studentCode: string | null;
             /**
              * Format: date-time
              * @description Last update timestamp
@@ -47639,6 +47678,97 @@ export interface operations {
             };
             /** @description User not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    changeUserStudentCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeUserStudentCodeDTO"];
+            };
+        };
+        responses: {
+            /** @description Student code changed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The student code is already assigned to another user */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

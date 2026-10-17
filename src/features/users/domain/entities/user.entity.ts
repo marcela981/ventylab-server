@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad User
- * Descripción: Agregado de usuario con datos de perfil, rol, contraseña, estado activo, vínculo con Google y revocación de refresh tokens, y sus eventos y registros de auditoría
- * Versión: 1.1
+ * Descripción: Agregado de usuario con datos de perfil, rol, contraseña, estado activo, vínculo con Google, revocación de refresh tokens y código estudiantil opcional asignado por un administrador, y sus eventos y registros de auditoría
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,7 +30,8 @@ export type UserAuditAction =
   | "user_password_changed"
   | "user_role_changed"
   | "user_status_changed"
-  | "user_google_account_linked";
+  | "user_google_account_linked"
+  | "user_student_code_changed";
 
 export const USER_CREATED_AUDIT_ACTION: UserAuditAction = "user_created";
 export const USER_PROFILE_UPDATED_AUDIT_ACTION: UserAuditAction = "user_profile_updated";
@@ -38,6 +39,7 @@ export const USER_PASSWORD_CHANGED_AUDIT_ACTION: UserAuditAction = "user_passwor
 export const USER_ROLE_CHANGED_AUDIT_ACTION: UserAuditAction = "user_role_changed";
 export const USER_STATUS_CHANGED_AUDIT_ACTION: UserAuditAction = "user_status_changed";
 export const USER_GOOGLE_ACCOUNT_LINKED_AUDIT_ACTION: UserAuditAction = "user_google_account_linked";
+export const USER_STUDENT_CODE_CHANGED_AUDIT_ACTION: UserAuditAction = "user_student_code_changed";
 
 export class User extends AggregateRoot {
   private _id: string;
@@ -50,6 +52,7 @@ export class User extends AggregateRoot {
   private _isActive: boolean;
   private _googleId?: string;
   private _refreshTokensRevokedAt?: Date;
+  private _studentCode?: string;
   private _createdAt: Date;
   private _updatedAt: Date;
   private _auditLogs: AuditLog<UserAuditAction>[];
@@ -65,6 +68,7 @@ export class User extends AggregateRoot {
     isActive,
     googleId,
     refreshTokensRevokedAt,
+    studentCode,
     createdAt,
     updatedAt,
     auditLogs,
@@ -79,6 +83,7 @@ export class User extends AggregateRoot {
     isActive: boolean;
     googleId?: string;
     refreshTokensRevokedAt?: Date;
+    studentCode?: string;
     createdAt: Date;
     updatedAt: Date;
     auditLogs: AuditLog<UserAuditAction>[];
@@ -94,6 +99,7 @@ export class User extends AggregateRoot {
     this._isActive = isActive;
     this._googleId = googleId;
     this._refreshTokensRevokedAt = refreshTokensRevokedAt;
+    this._studentCode = studentCode;
     this._createdAt = createdAt;
     this._updatedAt = updatedAt;
     this._auditLogs = auditLogs;
@@ -137,6 +143,10 @@ export class User extends AggregateRoot {
 
   public get refreshTokensRevokedAt(): Date | undefined {
     return this._refreshTokensRevokedAt;
+  }
+
+  public get studentCode(): string | undefined {
+    return this._studentCode;
   }
 
   public get createdAt(): Date {
@@ -208,6 +218,7 @@ export class User extends AggregateRoot {
     isActive,
     googleId,
     refreshTokensRevokedAt,
+    studentCode,
     createdAt,
     updatedAt,
     auditLogs,
@@ -222,6 +233,7 @@ export class User extends AggregateRoot {
     isActive: boolean;
     googleId?: string;
     refreshTokensRevokedAt?: Date;
+    studentCode?: string;
     createdAt: Date;
     updatedAt: Date;
     auditLogs: AuditLog<UserAuditAction>[];
@@ -237,6 +249,7 @@ export class User extends AggregateRoot {
       isActive,
       googleId,
       refreshTokensRevokedAt,
+      studentCode,
       createdAt,
       updatedAt,
       auditLogs,
@@ -324,6 +337,18 @@ export class User extends AggregateRoot {
     }
 
     this.publishEvent(new UserStatusChangedEvent({ entity: this, isActive, performedBy }));
+  }
+
+  // Student code changes are audited by the use case through IAuditRecorder with the field-level before and after.
+  public changeStudentCode(studentCode: string | undefined): boolean {
+    if (studentCode === this._studentCode) {
+      return false;
+    }
+
+    this._studentCode = studentCode;
+    this._updatedAt = new Date();
+
+    return true;
   }
 
   public linkGoogleAccount({ googleId, image, performedBy }: { googleId: string; image?: string; performedBy?: string }): void {

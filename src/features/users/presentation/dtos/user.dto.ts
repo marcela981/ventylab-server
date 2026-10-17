@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO UserDTO
- * Descripción: Representa un usuario en las respuestas, incluido su estado activo
- * Versión: 1.1
+ * Descripción: Representa un usuario en las respuestas, incluidos su estado activo, su código estudiantil y si es el superadministrador
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,6 +31,12 @@ export class UserDTO {
   @ApiProperty({ description: "Whether the account is active", example: true })
   public isActive: boolean;
 
+  @ApiProperty({ description: "Institutional student code set by an admin (unique, letters, digits and hyphens)", example: "2026-0001", nullable: true, type: String })
+  public studentCode: string | null;
+
+  @ApiProperty({ description: "Whether the user is the configured superadmin (SUPERADMIN_EMAIL), whose role and status cannot change", example: false })
+  public isSuperadmin: boolean;
+
   @ApiProperty({ description: "Email verification timestamp", example: "2024-01-15T10:30:00.000Z", nullable: true, type: Date })
   public emailVerified: Date | null;
 
@@ -47,6 +53,8 @@ export class UserDTO {
     role,
     image,
     isActive,
+    studentCode,
+    isSuperadmin,
     emailVerified,
     createdAt,
     updatedAt,
@@ -57,6 +65,8 @@ export class UserDTO {
     role: string;
     image: string | null;
     isActive: boolean;
+    studentCode: string | null;
+    isSuperadmin: boolean;
     emailVerified: Date | null;
     createdAt: Date;
     updatedAt: Date;
@@ -67,6 +77,8 @@ export class UserDTO {
     this.role = role;
     this.image = image;
     this.isActive = isActive;
+    this.studentCode = studentCode;
+    this.isSuperadmin = isSuperadmin;
     this.emailVerified = emailVerified;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;

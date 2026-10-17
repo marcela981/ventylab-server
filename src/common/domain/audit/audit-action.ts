@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Catálogo de acciones de auditoría
  * Descripción: Catálogo tipado de las cadenas de acción que se persisten en audit_logs: acciones administrativas canónicas y todas las acciones de entidad ya almacenadas, con su valor persistido estable (nunca se renombran)
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ export const AUDIT_ACTIONS = {
   PASSWORD_CHANGED: "user_password_changed",
   USER_ROLE_CHANGED: "user_role_changed",
   USER_STATUS_CHANGED: "user_status_changed",
+  USER_STUDENT_CODE_CHANGED: "user_student_code_changed",
   USER_GOOGLE_ACCOUNT_LINKED: "user_google_account_linked",
   SUPERADMIN_ENFORCED: "superadmin_enforced",
   ROLE_FOLDED_SUPERUSER_TO_ADMIN: "role_folded_superuser_to_admin",

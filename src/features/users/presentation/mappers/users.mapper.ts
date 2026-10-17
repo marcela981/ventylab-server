@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper UsersMapper
- * Descripción: Convierte entidades y resultados de usuarios en DTOs de respuesta
- * Versión: 1.1
+ * Descripción: Convierte entidades y resultados de usuarios en DTOs de respuesta; el usuario indica si es el superadministrador comparando su correo con el configurado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,13 +10,14 @@
  */
 import { type StudentResult } from "@/features/users/application/results/student.result";
 import { type User } from "@/features/users/domain/entities/user.entity";
+import { isSuperadmin } from "@/features/users/domain/services/is-superadmin";
 import { type UserStats } from "@/features/users/domain/value-objects/user-stats";
 import { StudentDTO, StudentProgressDTO } from "@/features/users/presentation/dtos/student.dto";
 import { UserStatsDTO } from "@/features/users/presentation/dtos/user-stats.dto";
 import { UserDTO } from "@/features/users/presentation/dtos/user.dto";
 
 export class UsersMapper {
-  public static toDTO(user: User): UserDTO {
+  public static toDTO(user: User, superadminEmail: string): UserDTO {
     return new UserDTO({
       id: user.id,
       email: user.email,
@@ -24,6 +25,8 @@ export class UsersMapper {
       role: user.role.value,
       image: user.image ?? null,
       isActive: user.isActive,
+      studentCode: user.studentCode ?? null,
+      isSuperadmin: isSuperadmin(user.email, superadminEmail),
       emailVerified: user.emailVerified ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

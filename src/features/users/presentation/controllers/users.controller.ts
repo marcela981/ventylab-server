@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Controlador UsersController
- * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios y cambio de rol y de estado de cuenta; las rutas me se declaran antes que las de :id
- * Versión: 1.1
+ * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
 import { I18n, I18nContext } from "nestjs-i18n";
 
@@ -23,12 +23,15 @@ import { PermissionsGuard } from "@/features/auth/presentation/guards/permission
 import { ChangePasswordCommand } from "@/features/users/application/commands/change-password.command";
 import { ChangeUserRoleCommand } from "@/features/users/application/commands/change-user-role.command";
 import { ChangeUserStatusCommand } from "@/features/users/application/commands/change-user-status.command";
+import { ChangeUserStudentCodeCommand } from "@/features/users/application/commands/change-user-student-code.command";
 import { GetStudentByIdCommand } from "@/features/users/application/commands/get-student-by-id.command";
 import { UpdateProfileCommand } from "@/features/users/application/commands/update-profile.command";
 import { StudentResult } from "@/features/users/application/results/student.result";
+import { SUPERADMIN_EMAIL_TOKEN } from "@/features/users/application/tokens/superadmin-email.token";
 import { ChangePasswordUseCase } from "@/features/users/application/use-cases/change-password.usecase";
 import { ChangeUserRoleUseCase } from "@/features/users/application/use-cases/change-user-role.usecase";
 import { ChangeUserStatusUseCase } from "@/features/users/application/use-cases/change-user-status.usecase";
+import { ChangeUserStudentCodeUseCase } from "@/features/users/application/use-cases/change-user-student-code.usecase";
 import { GetStudentByIdUseCase } from "@/features/users/application/use-cases/get-student-by-id.usecase";
 import { GetStudentsUseCase } from "@/features/users/application/use-cases/get-students.usecase";
 import { GetUserByIdUseCase } from "@/features/users/application/use-cases/get-user-by-id.usecase";
@@ -42,6 +45,7 @@ import { UserStats } from "@/features/users/domain/value-objects/user-stats";
 import { ChangePasswordDTO } from "@/features/users/presentation/dtos/change-password.dto";
 import { ChangeUserRoleDTO } from "@/features/users/presentation/dtos/change-user-role.dto";
 import { ChangeUserStatusDTO } from "@/features/users/presentation/dtos/change-user-status.dto";
+import { ChangeUserStudentCodeDTO } from "@/features/users/presentation/dtos/change-user-student-code.dto";
 import { GetStudentsQueryDTO } from "@/features/users/presentation/dtos/get-students-query.dto";
 import { GetUsersQueryDTO } from "@/features/users/presentation/dtos/get-users-query.dto";
 import { StudentDTO } from "@/features/users/presentation/dtos/student.dto";
@@ -65,6 +69,9 @@ export class UsersController {
     private readonly _getUsersUseCase: GetUsersUseCase,
     private readonly _changeUserRoleUseCase: ChangeUserRoleUseCase,
     private readonly _changeUserStatusUseCase: ChangeUserStatusUseCase,
+    private readonly _changeUserStudentCodeUseCase: ChangeUserStudentCodeUseCase,
+    @Inject(SUPERADMIN_EMAIL_TOKEN)
+    private readonly _superadminEmail: string,
   ) {}
 
   @Get()
@@ -72,7 +79,8 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Get users",
-    description: "Retrieves a paginated list of users filtered by search term (name, email or exact ID), role, group and account status",
+    description:
+      "Retrieves a paginated list of users filtered by search term (case-insensitive name, email or student code, or exact ID), role, group and account status; each user carries its student code and whether it is the superadmin",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Users retrieved successfully", type: UserDTO, isArray: true })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
@@ -94,7 +102,7 @@ export class UsersController {
     });
 
     return new APIResponseBuilder<UserDTO[]>()
-      .setData(users.data.map((user: User) => UsersMapper.toDTO(user)))
+      .setData(users.data.map((user: User) => UsersMapper.toDTO(user, this._superadminEmail)))
       .setMessage(await i18n.t("users.users_retrieved"))
       .setPagination(users.pagination)
       .build();
@@ -110,7 +118,7 @@ export class UsersController {
     const user: User = await this._getUserByIdUseCase.execute(currentUser.sub);
 
     return new APIResponseBuilder<UserDTO>()
-      .setData(UsersMapper.toDTO(user))
+      .setData(UsersMapper.toDTO(user, this._superadminEmail))
       .setMessage(await i18n.t("users.user_retrieved"))
       .build();
   }
@@ -291,6 +299,33 @@ export class UsersController {
 
     return new APIResponseBuilder<null>()
       .setMessage(await i18n.t("users.status_changed"))
+      .build();
+  }
+
+  @Patch(":id/student-code")
+  @RequirePermissions("users:update_status")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Change user student code",
+    description:
+      "Sets (trimmed, 1 to 32 letters, digits or hyphens) or removes (null) the institutional student code of a user; the code is unique and the change is audited with its previous and new value",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Student code changed successfully" })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "User not found" })
+  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "The student code is already assigned to another user" })
+  public async changeUserStudentCode(
+    @Param("id") id: string,
+    @Body() dto: ChangeUserStudentCodeDTO,
+    @CurrentUser() currentUser: JwtPayload,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<null>> {
+    await this._changeUserStudentCodeUseCase.execute(new ChangeUserStudentCodeCommand({ userId: id, studentCode: dto.studentCode, performedBy: currentUser.sub }));
+
+    return new APIResponseBuilder<null>()
+      .setMessage(await i18n.t("users.student_code_changed"))
       .build();
   }
 }

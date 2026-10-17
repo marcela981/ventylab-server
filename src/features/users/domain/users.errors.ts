@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de usuarios
- * Descripción: Errores de dominio de usuarios: inexistencia, duplicados, contraseñas, acceso a estudiantes y restricciones de cambio de rol y de estado de cuenta (incluida la inmutabilidad del superadmin)
- * Versión: 1.2
+ * Descripción: Errores de dominio de usuarios: inexistencia, duplicados, contraseñas, acceso a estudiantes restricciones de cambio de rol y de estado de cuenta (incluida la inmutabilidad del superadmin) y código estudiantil inválido o en uso por otro usuario
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,18 @@ export class UserNotFoundError extends DomainError {
 export class UserAlreadyExistsError extends DomainError {
   public constructor(email: string) {
     super(`User with email ${email} already exists`, "users.user_already_exists");
+  }
+}
+
+export class StudentCodeAlreadyInUseError extends DomainError {
+  public constructor() {
+    super("The student code is already assigned to another user", "users.student_code_already_in_use");
+  }
+}
+
+export class InvalidStudentCodeError extends DomainError {
+  public constructor() {
+    super("The student code must have 1 to 32 letters, digits or hyphens", "users.student_code_invalid");
   }
 }
 

@@ -3730,6 +3730,25 @@
         ],
         "type": "object"
       },
+      "ChangeUserStudentCodeDTO": {
+        "properties": {
+          "studentCode": {
+            "description": "Institutional student code (trimmed; letters, digits and hyphens), unique per user; null removes it",
+            "example": "2026-0001",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9-]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "studentCode"
+        ],
+        "type": "object"
+      },
       "ClinicalCaseAttemptsDTO": {
         "properties": {
           "attempts": {
@@ -23907,6 +23926,11 @@
             "example": true,
             "type": "boolean"
           },
+          "isSuperadmin": {
+            "description": "Whether the user is the configured superadmin (SUPERADMIN_EMAIL), whose role and status cannot change",
+            "example": false,
+            "type": "boolean"
+          },
           "name": {
             "description": "User's full name",
             "example": "Ana María Pérez",
@@ -23925,6 +23949,14 @@
             "example": "STUDENT",
             "type": "string"
           },
+          "studentCode": {
+            "description": "Institutional student code set by an admin (unique, letters, digits and hyphens)",
+            "example": "2026-0001",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "updatedAt": {
             "description": "Last update timestamp",
             "example": "2024-01-20T14:45:00.000Z",
@@ -23939,6 +23971,8 @@
           "role",
           "image",
           "isActive",
+          "studentCode",
+          "isSuperadmin",
           "emailVerified",
           "createdAt",
           "updatedAt"
@@ -73798,7 +73832,7 @@
     },
     "/api/users": {
       "get": {
-        "description": "Retrieves a paginated list of users filtered by search term (name, email or exact ID), role, group and account status\n\n**Required access:** bearer token holding `users:list`; minimum role TEACHER.",
+        "description": "Retrieves a paginated list of users filtered by search term (case-insensitive name, email or student code, or exact ID), role, group and account status; each user carries its student code and whether it is the superadmin\n\n**Required access:** bearer token holding `users:list`; minimum role TEACHER.",
         "operationId": "getUsers",
         "parameters": [
           {
@@ -75177,6 +75211,177 @@
           }
         ],
         "summary": "Change user account status",
+        "tags": [
+          "Users"
+        ],
+        "x-min-role": "ADMIN",
+        "x-required-permissions": [
+          "users:update_status"
+        ]
+      }
+    },
+    "/api/users/{id}/student-code": {
+      "patch": {
+        "description": "Sets (trimmed, 1 to 32 letters, digits or hyphens) or removes (null) the institutional student code of a user; the code is unique and the change is audited with its previous and new value\n\n**Required access:** bearer token holding `users:update_status`; minimum role ADMIN.",
+        "operationId": "changeUserStudentCode",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeUserStudentCodeDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Student code changed successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ValidationError": {
+                    "$ref": "#/components/examples/ValidationError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ForbiddenError": {
+                    "$ref": "#/components/examples/ForbiddenError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFoundError": {
+                    "$ref": "#/components/examples/NotFoundError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "User not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ConflictError": {
+                    "$ref": "#/components/examples/ConflictError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The student code is already assigned to another user"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Change user student code",
         "tags": [
           "Users"
         ],

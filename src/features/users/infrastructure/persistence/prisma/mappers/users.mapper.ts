@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de persistencia UsersMapper
- * Descripción: Convierte entre el modelo Prisma User y la entidad de dominio User, incluidos el estado activo, el googleId y la revocación de refresh tokens
- * Versión: 1.1
+ * Descripción: Convierte entre el modelo Prisma User y la entidad de dominio User, incluidos el estado activo, el googleId, la revocación de refresh tokens y el código estudiantil
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,6 +26,7 @@ export class UsersMapper {
       isActive: row.isActive,
       googleId: row.googleId ?? undefined,
       refreshTokensRevokedAt: row.refreshTokensRevokedAt ?? undefined,
+      studentCode: row.studentCode ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       auditLogs: [],
@@ -44,6 +45,7 @@ export class UsersMapper {
       isActive: user.isActive,
       googleId: user.googleId ?? null,
       refreshTokensRevokedAt: user.refreshTokensRevokedAt ?? null,
+      studentCode: user.studentCode ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
