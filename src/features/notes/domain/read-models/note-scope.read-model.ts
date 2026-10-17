@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura del alcance de notas
- * Descripción: Datos mínimos de lección, módulo y nota con sus títulos que la feature de notas lee para validar el alcance y construir el análisis con IA
- * Versión: 1.0
+ * Descripción: Datos mínimos de lección, módulo y nota con sus títulos que la feature de notas lee para validar el alcance y construir el análisis con IA, y etiquetas de lección (título y módulo) y página (título) para mostrar las notas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,4 +27,20 @@ export interface NoteAnalysisSource {
   lessonTitle: string;
   moduleTitle: string;
   content: NoteContent;
+}
+
+export interface NoteLessonLabel {
+  readonly lessonId: string;
+  readonly lessonTitle: string;
+  readonly moduleId: string;
+}
+
+export interface NotePageLabel {
+  readonly pageId: string;
+  readonly pageTitle: string;
+}
+
+export interface NoteContentLabels {
+  readonly lessons: NoteLessonLabel[];
+  readonly pages: NotePageLabel[];
 }

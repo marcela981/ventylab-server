@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de ClinicalCasesFacade
- * Descripción: Verifica la instantánea por id y que getPublishedCaseForSimulation solo entrega casos publicados con todos los bloques que el motor necesita, con errores tipados en los demás casos
- * Versión: 1.0
+ * Descripción: Verifica la instantánea por id y que getPublishedCaseForSimulation solo entrega casos publicados con todos los bloques que el motor necesita, con errores tipados en los demás casos; y los títulos de varios casos en una sola lectura
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,6 +18,7 @@ import {
 import { type ClinicalCaseContent } from "@/features/clinical-cases/domain/entities/clinical-case.entity";
 import {
   type ClinicalCaseSnapshot,
+  type ClinicalCaseTitleView,
   type SimulationReadyClinicalCase,
 } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
 
@@ -66,5 +67,26 @@ describe("ClinicalCasesFacade", () => {
 
     expect(snapshot?.simulationReady).toBe(false);
     expect(missing).toBeUndefined();
+  });
+
+  it("reads the titles of several cases in one repository call, deduplicating IDs", async () => {
+    const doubles: ClinicalCasesDoubles = buildDoubles({ cases: [buildCase({ id: "case-a", status: "PUBLISHED" }), buildCase({ id: "case-b", status: "DRAFT" })] });
+    const facade: ClinicalCasesFacade = new ClinicalCasesFacade(doubles.repository);
+
+    const titles: ClinicalCaseTitleView[] = await facade.getCaseTitles(["case-a", "case-b", "case-a", "missing"]);
+
+    expect(titles.map((view: ClinicalCaseTitleView) => view.id)).toEqual(["case-a", "case-b"]);
+    expect(doubles.repository.getCaseTitles).toHaveBeenCalledTimes(1);
+    expect(doubles.repository.getCaseTitles).toHaveBeenCalledWith(["case-a", "case-b", "missing"]);
+  });
+
+  it("skips the repository when no case IDs are given", async () => {
+    const doubles: ClinicalCasesDoubles = buildDoubles({ cases: [] });
+    const facade: ClinicalCasesFacade = new ClinicalCasesFacade(doubles.repository);
+
+    const titles: ClinicalCaseTitleView[] = await facade.getCaseTitles([]);
+
+    expect(titles).toEqual([]);
+    expect(doubles.repository.getCaseTitles).not.toHaveBeenCalled();
   });
 });

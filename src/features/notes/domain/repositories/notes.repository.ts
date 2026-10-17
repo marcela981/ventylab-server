@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio de notas
  * Descripción: Contrato y token del repositorio de notas privadas; toda lectura y escritura de notas se filtra por su autor, e incluye lecturas mínimas de lección, módulo y página para validar el alcance
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { type Paginated } from "@/common/domain/utils/paginated";
 import { type Note } from "@/features/notes/domain/entities/note.entity";
 import {
   type NoteAnalysisSource,
+  type NoteContentLabels,
   type NoteLessonScope,
   type NoteModuleScope,
 } from "@/features/notes/domain/read-models/note-scope.read-model";
@@ -23,6 +24,8 @@ export interface GetNotesQuery extends ListQuery {
   userId: string;
   lessonId?: string;
   moduleId?: string;
+  pageId?: string;
+  search?: string;
 }
 
 export interface GetNotesForAnalysisQuery {
@@ -41,4 +44,5 @@ export interface INotesRepository {
   getLessonScope(lessonId: string, transaction?: unknown): Promise<NoteLessonScope | undefined>;
   getModuleScope(moduleId: string, transaction?: unknown): Promise<NoteModuleScope | undefined>;
   isPageInLesson(pageId: string, lessonId: string, transaction?: unknown): Promise<boolean>;
+  getContentLabels(lessonIds: readonly string[], pageIds: readonly string[]): Promise<NoteContentLabels>;
 }

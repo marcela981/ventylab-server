@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de presentación de la calificación docente de evaluaciones
  * Descripción: Proyecta las vistas y resultados de calificación a DTOs: elementos de la cola, vista de calificación con escenarios y preguntas completos (reutiliza el mapeo de gestión con medios resueltos) y una entrada por pregunta con la respuesta, los puntajes, si está pendiente y el desglose práctico; resultados de calificar y publicar, y notas publicadas del estudiante
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -102,6 +102,8 @@ export class EvaluationGradingMapper {
       evaluationId: grade.evaluationId,
       evaluationTitle: grade.evaluationTitle,
       evaluationType: grade.evaluationType,
+      moduleId: grade.moduleId ?? null,
+      moduleTitle: grade.moduleTitle ?? null,
       attemptNumber: grade.attemptNumber,
       score: grade.score ?? null,
       maxScore: grade.maxScore ?? null,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de casos clínicos
  * Descripción: Implementa IClinicalCasesRepository sobre las tablas clinical_cases, expert_configurations y evaluation_attempts con PrismaService: listado filtrado por estado, lectura y escritura del agregado ClinicalCase, bloqueo FOR UPDATE de la fila del caso, conteo de uso (sesiones de simulación, sesiones heredadas, intentos y preguntas) y auditoría del intento
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,6 +25,7 @@ import {
   EVALUATION_ATTEMPT_ENTITY_COLLECTION,
   EVALUATION_ATTEMPT_ENTITY_TYPE,
 } from "@/features/clinical-cases/domain/entities/evaluation-attempt.entity";
+import { type ClinicalCaseTitleView } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
 import {
   type CaseAttemptRecord,
   type ClinicalCaseDetail,
@@ -112,6 +113,14 @@ export class ClinicalCasesPrismaRepository implements IClinicalCasesRepository {
     const row: ClinicalCaseModel | null = await client.clinicalCase.findUnique({ where: { id: caseId } });
 
     return row ? ClinicalCasesMapper.toClinicalCase(row) : undefined;
+  }
+
+  public async getCaseTitles(caseIds: readonly string[]): Promise<ClinicalCaseTitleView[]> {
+    if (caseIds.length === 0) {
+      return [];
+    }
+
+    return await this._prisma.clinicalCase.findMany({ where: { id: { in: [...caseIds] } }, select: { id: true, title: true } });
   }
 
   public async lockCase(caseId: string, transaction: unknown): Promise<void> {

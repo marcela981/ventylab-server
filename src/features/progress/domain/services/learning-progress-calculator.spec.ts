@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la calculadora de progreso ponderado por lecciones
- * Descripción: Verifica el progreso de módulo, nivel y sección ponderado por lecciones (distinto del promedio de módulos), lecciones sin páginas, registros históricos y el desbloqueo por prerrequisitos de nivel y de módulo con la misma regla de completitud
- * Versión: 1.0
+ * Descripción: Verifica el progreso de módulo, nivel y sección ponderado por lecciones (distinto del promedio de módulos), lecciones sin páginas, registros históricos y el desbloqueo por prerrequisitos de nivel y de módulo con la misma regla de completitud; y que los títulos de la estructura pasan al progreso de sección, nivel y módulo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -47,6 +47,18 @@ const FACTS: LessonCompletionFact[] = [
 ];
 
 describe("buildLearningProgressReport", () => {
+  it("carries the structure titles into the section, level and module progress", () => {
+    const titled: ProgressStructure = {
+      sections: [{ id: "S1", title: "Basics", levelIds: ["LV1"] }],
+      levels: [{ id: "LV1", title: "Beginner", sectionId: "S1", moduleIds: ["M1"] }],
+      modules: [{ id: "M1", title: "PEEP", levelId: "LV1" }],
+    };
+
+    const report: LearningProgressReport = buildLearningProgressReport(titled, [lesson("M1-L1", "M1")]);
+
+    expect([report.sections[0].title, report.levels[0].title, report.modules[0].title, report.levels[0].modules[0].title]).toEqual(["Basics", "Beginner", "PEEP", "PEEP"]);
+  });
+
   it("computes module progress as completed lessons over lessons", () => {
     const report: LearningProgressReport = buildLearningProgressReport(STRUCTURE, FACTS);
 

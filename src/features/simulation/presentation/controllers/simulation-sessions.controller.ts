@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de sesiones de simulación con eventos
  * Descripción: Endpoints /api/simulation/sessions: inicio de sesión FREE o EXAM, lote de eventos con idempotencia y anti-manipulación de tiempo, estado repetido en el servidor, fin con calificación del servidor, resumen, repetición e historial paginado (/history, porque GET /api/simulation/sessions conserva el contrato heredado); escrituras solo del dueño y lecturas del dueño o de docentes y administradores que gestionan o supervisan su grupo
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -33,6 +33,7 @@ import {
 import { type SimulationActor } from "@/features/simulation/application/services/simulation-session-access.service";
 import { AppendSimulationEventsUseCase } from "@/features/simulation/application/use-cases/append-simulation-events.usecase";
 import { EndSimulationSessionUseCase } from "@/features/simulation/application/use-cases/end-simulation-session.usecase";
+import { GetSimulationCaseTitlesUseCase } from "@/features/simulation/application/use-cases/get-simulation-case-titles.usecase";
 import { GetSimulationSessionReplayUseCase } from "@/features/simulation/application/use-cases/get-simulation-session-replay.usecase";
 import { GetSimulationSessionStateUseCase } from "@/features/simulation/application/use-cases/get-simulation-session-state.usecase";
 import { GetSimulationSessionSummaryUseCase } from "@/features/simulation/application/use-cases/get-simulation-session-summary.usecase";
@@ -78,6 +79,7 @@ export class SimulationSessionsController {
     private readonly _getSimulationSessionSummaryUseCase: GetSimulationSessionSummaryUseCase,
     private readonly _getSimulationSessionReplayUseCase: GetSimulationSessionReplayUseCase,
     private readonly _getSimulationSessionsUseCase: GetSimulationSessionsUseCase,
+    private readonly _getSimulationCaseTitlesUseCase: GetSimulationCaseTitlesUseCase,
   ) {}
 
   @Post()
@@ -145,8 +147,10 @@ export class SimulationSessionsController {
       status: query.status as SimulationSessionStatusValue | undefined,
     });
 
+    const caseTitles: Map<string, string> = await this._getSimulationCaseTitlesUseCase.execute(sessions.data.map((session: SimulationSession): string => session.caseId));
+
     return new APIResponseBuilder<SimulationSessionDTO[]>()
-      .setData(sessions.data.map((session: SimulationSession): SimulationSessionDTO => SimulationSessionsResponseMapper.toSessionDTO(session)))
+      .setData(sessions.data.map((session: SimulationSession): SimulationSessionDTO => SimulationSessionsResponseMapper.toSessionDTO(session, caseTitles.get(session.caseId))))
       .setPagination(sessions.pagination)
       .setMessage(await i18n.t("simulation.simulation_sessions_retrieved"))
       .build();

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de la calificación docente de evaluaciones
  * Descripción: Respuestas documentadas con Swagger de la cola de revisión, la vista de calificación de un intento (evaluación con respuestas correctas, respuestas del estudiante con puntajes y desglose práctico), la calificación de una pregunta, la publicación individual y masiva y las notas publicadas del estudiante
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -380,6 +380,12 @@ export class MyEvaluationGradeDTO {
   @ApiProperty({ description: "Evaluation type", enum: EVALUATION_TYPE_VALUES, example: "EXAM" })
   public evaluationType: string;
 
+  @ApiProperty({ description: "Module the evaluation belongs to (null when it is not tied to a module)", example: "cm5module01", nullable: true, type: String })
+  public moduleId: string | null;
+
+  @ApiProperty({ description: "Title of the module the evaluation belongs to", example: "Ventilation basics", nullable: true, type: String })
+  public moduleTitle: string | null;
+
   @ApiProperty({ description: "Attempt number", example: 1 })
   public attemptNumber: number;
 
@@ -406,6 +412,8 @@ export class MyEvaluationGradeDTO {
     evaluationId: string;
     evaluationTitle: string;
     evaluationType: string;
+    moduleId: string | null;
+    moduleTitle: string | null;
     attemptNumber: number;
     score: number | null;
     maxScore: number | null;
@@ -418,6 +426,8 @@ export class MyEvaluationGradeDTO {
     this.evaluationId = fields.evaluationId;
     this.evaluationTitle = fields.evaluationTitle;
     this.evaluationType = fields.evaluationType;
+    this.moduleId = fields.moduleId;
+    this.moduleTitle = fields.moduleTitle;
     this.attemptNumber = fields.attemptNumber;
     this.score = fields.score;
     this.maxScore = fields.maxScore;

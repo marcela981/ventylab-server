@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados de la calificación docente de evaluaciones
  * Descripción: Resultados de los casos de uso de calificación (vista completa de un intento con la evaluación, respuestas, puntajes y desglose práctico recalculado; calificación de una pregunta; publicación de una nota) y tipos públicos de EvaluationFacade (nota publicada con aprobación y estadísticas de una evaluación con mediana e histograma de notas en intervalos de 0.5)
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -66,6 +66,8 @@ export interface EvaluationUserGrade {
   readonly evaluationId: string;
   readonly evaluationTitle: string;
   readonly evaluationType: EvaluationTypeValue;
+  readonly moduleId?: string;
+  readonly moduleTitle?: string;
   readonly userId: string;
   readonly attemptNumber: number;
   readonly score?: number;

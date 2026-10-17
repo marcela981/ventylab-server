@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de analítica
  * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (fila por estudiante con progreso, notas, simulación, uso de IA y horas de ventilador), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación con dificultad por pregunta y del resumen del propio estudiante; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO)
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,9 @@ const ID_EXAMPLE: string = "cm5x2k9a00000abcd1234efgh";
 export class ProgressItemDTO {
   @ApiProperty({ description: "Section, level or module identifier (overall progress has none)", example: ID_EXAMPLE, nullable: true, type: String })
   public id: string | null;
+
+  @ApiProperty({ description: "Section, level or module title (overall progress has none)", example: "Ventilation basics", nullable: true, type: String })
+  public title: string | null;
 
   @ApiProperty({ description: "Completed lessons over published lessons, 0–100", example: 40 })
   public percentage: number;
@@ -282,6 +285,9 @@ export class MyProgressDTO {
 }
 
 export class MyGradeDTO {
+  @ApiProperty({ description: "Graded attempt identifier", example: ID_EXAMPLE })
+  public attemptId: string;
+
   @ApiProperty({ description: "Evaluation identifier", example: ID_EXAMPLE })
   public evaluationId: string;
 
@@ -290,6 +296,12 @@ export class MyGradeDTO {
 
   @ApiProperty({ description: "Evaluation type", example: "QUIZ" })
   public evaluationType: string;
+
+  @ApiProperty({ description: "Module the evaluation belongs to (null when it is not tied to a module)", example: ID_EXAMPLE, nullable: true, type: String })
+  public moduleId: string | null;
+
+  @ApiProperty({ description: "Title of the module the evaluation belongs to", example: "Ventilation basics", nullable: true, type: String })
+  public moduleTitle: string | null;
 
   @ApiProperty({ description: "Attempt number", example: 1 })
   public attemptNumber: number;
@@ -335,6 +347,15 @@ export class MyNoteDTO {
   @ApiProperty({ description: "Page identifier", example: ID_EXAMPLE, nullable: true, type: String })
   public pageId: string | null;
 
+  @ApiProperty({ description: "Module of the note's lesson", example: ID_EXAMPLE, nullable: true, type: String })
+  public moduleId: string | null;
+
+  @ApiProperty({ description: "Title of the note's lesson", example: "PEEP basics", nullable: true, type: String })
+  public lessonTitle: string | null;
+
+  @ApiProperty({ description: "Title of the page (content section) the note refers to; null without a page", example: "Alveolar recruitment", nullable: true, type: String })
+  public pageTitle: string | null;
+
   @ApiProperty({ description: "Start of the note plain text", example: "PEEP keeps the alveoli open..." })
   public excerpt: string;
 
@@ -365,6 +386,9 @@ export class MySimulationSessionDTO {
 
   @ApiProperty({ description: "Clinical case identifier", example: ID_EXAMPLE })
   public caseId: string;
+
+  @ApiProperty({ description: "Clinical case title (null when the case no longer exists)", example: "Normal lung", nullable: true, type: String })
+  public caseTitle: string | null;
 
   @ApiProperty({ description: "Session mode", example: "FREE" })
   public mode: string;

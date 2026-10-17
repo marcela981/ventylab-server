@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de casos clínicos
  * Descripción: Repositorio en memoria de casos clínicos con uso configurable, gestor de transacciones y registrador de auditoría simulados, y fábricas de contenido válido para las pruebas de los casos de uso de gestión, visibilidad y fachada
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { type ITransactionManager } from "@/common/application/persistence/trans
 import { type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
 import { Paginated } from "@/common/domain/utils/paginated";
 import { ClinicalCase, type ClinicalCaseContent } from "@/features/clinical-cases/domain/entities/clinical-case.entity";
+import { type ClinicalCaseTitleView } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
 import {
   type ClinicalCaseDetail,
   type ClinicalCaseSummary,
@@ -100,6 +101,14 @@ export function buildDoubles({ cases = [], usage = NO_USAGE }: { cases?: Clinica
       return Promise.resolve(found ? toDetail(found) : undefined);
     }),
     getCaseById: jest.fn((caseId: string): Promise<ClinicalCase | undefined> => Promise.resolve(findCase(caseId))),
+    getCaseTitles: jest.fn(
+      (caseIds: readonly string[]): Promise<ClinicalCaseTitleView[]> =>
+        Promise.resolve(
+          cases
+            .filter((clinicalCase: ClinicalCase) => caseIds.includes(clinicalCase.id))
+            .map((clinicalCase: ClinicalCase): ClinicalCaseTitleView => ({ id: clinicalCase.id, title: clinicalCase.content.title })),
+        ),
+    ),
     lockCase,
     getUsage: jest.fn().mockResolvedValue(usage),
     saveCase,

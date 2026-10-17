@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador AnalyticsMapper
  * Descripción: Convierte los resultados de analítica (panel de grupo, línea de tiempo, estadísticas de evaluación y resumen del estudiante) en sus DTOs de respuesta, con fechas ISO 8601, valores ausentes como null y el porcentaje de valoraciones útiles por caso de uso
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,12 +44,12 @@ function isoOrNull(value: Date | undefined): string | null {
   return value ? value.toISOString() : null;
 }
 
-function toProgressItem(id: string | null, progress: LessonWeightedProgress | ProgressItemSummary): ProgressItemDTO {
-  return { id, percentage: progress.percentage, completedLessons: progress.completedLessons, totalLessons: progress.totalLessons, completed: progress.completed };
+function toProgressItem(id: string | null, title: string | null, progress: LessonWeightedProgress | ProgressItemSummary): ProgressItemDTO {
+  return { id, title, percentage: progress.percentage, completedLessons: progress.completedLessons, totalLessons: progress.totalLessons, completed: progress.completed };
 }
 
 function toItems(items: ProgressItemSummary[]): ProgressItemDTO[] {
-  return items.map((item: ProgressItemSummary) => toProgressItem(item.id, item));
+  return items.map((item: ProgressItemSummary) => toProgressItem(item.id, item.title ?? null, item));
 }
 
 function toEvaluationDTO(assignment: EvaluationAssignmentResult): MyEvaluationDTO {
@@ -66,7 +66,7 @@ function toEvaluationDTO(assignment: EvaluationAssignmentResult): MyEvaluationDT
 export class AnalyticsMapper {
   public static toProgressDTO(progress: StudentProgressSummary): StudentProgressDTO {
     return {
-      overall: toProgressItem(null, progress.overall),
+      overall: toProgressItem(null, null, progress.overall),
       sections: toItems(progress.sections),
       levels: toItems(progress.levels),
       modules: toItems(progress.modules),
@@ -157,11 +157,14 @@ export class AnalyticsMapper {
 
   public static toMySummaryDTO(summary: MySummary): MySummaryDTO {
     return {
-      progress: { overall: toProgressItem(null, summary.progress.overall), sections: toItems(summary.progress.sections) },
+      progress: { overall: toProgressItem(null, null, summary.progress.overall), sections: toItems(summary.progress.sections) },
       grades: summary.grades.map((grade: EvaluationUserGrade) => ({
+        attemptId: grade.attemptId,
         evaluationId: grade.evaluationId,
         evaluationTitle: grade.evaluationTitle,
         evaluationType: grade.evaluationType,
+        moduleId: grade.moduleId ?? null,
+        moduleTitle: grade.moduleTitle ?? null,
         attemptNumber: grade.attemptNumber,
         grade: grade.grade,
         passed: grade.passed,
@@ -173,6 +176,9 @@ export class AnalyticsMapper {
         id: note.id,
         lessonId: note.lessonId,
         pageId: note.pageId ?? null,
+        moduleId: note.moduleId ?? null,
+        lessonTitle: note.lessonTitle ?? null,
+        pageTitle: note.pageTitle ?? null,
         excerpt: note.excerpt,
         updatedAt: note.updatedAt.toISOString(),
       })),
@@ -186,6 +192,7 @@ export class AnalyticsMapper {
       latestSimulationSessions: summary.latestSimulationSessions.map((session: SimulationSessionView) => ({
         id: session.id,
         caseId: session.caseId,
+        caseTitle: session.caseTitle ?? null,
         mode: session.mode,
         status: session.status,
         startedAt: session.startedAt.toISOString(),

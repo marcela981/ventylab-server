@@ -1,13 +1,14 @@
 /*
  * Funcionalidad: Pruebas de SimulationFacade
- * Descripción: Verifica que la calificación de una sesión se recalcula con la repetición del servidor y devuelve su desglose por criterio (con rúbrica por defecto, de caso o explícita; la por defecto con los umbrales copiados al iniciar la sesión), los motivos de no disponibilidad (sesión inexistente, rúbrica inválida, caso no disponible), el resumen guardado las estadísticas de sesiones de un grupo y la versión del motor; y que las estadísticas por lotes de varios usuarios se piden al repositorio de analítica en una sola llamada
- * Versión: 1.4
+ * Descripción: Verifica que la calificación de una sesión se recalcula con la repetición del servidor y devuelve su desglose por criterio (con rúbrica por defecto, de caso o explícita; la por defecto con los umbrales copiados al iniciar la sesión), los motivos de no disponibilidad (sesión inexistente, rúbrica inválida, caso no disponible), el resumen guardado las estadísticas de sesiones de un grupo y la versión del motor; y que las estadísticas por lotes de varios usuarios se piden al repositorio de analítica en una sola llamada y que las sesiones de un usuario llevan el título de su caso con una sola lectura por página
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type Paginated } from "@/common/domain/utils/paginated";
 import { EndSimulationSessionCommand } from "@/features/simulation/application/commands/end-simulation-session.command";
 import {
   type SimulationGroupSessionStats,
@@ -30,7 +31,7 @@ import { type SimulationSessionSettings } from "@/features/simulation/applicatio
 import { EndSimulationSessionUseCase } from "@/features/simulation/application/use-cases/end-simulation-session.usecase";
 import { ENGINE_VERSION } from "@/features/simulation/domain/engine/engine-version";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
-import { type SimulationSessionSummary } from "@/features/simulation/domain/read-models/simulation-session.read-model";
+import { type SimulationSessionSummary, type SimulationSessionView } from "@/features/simulation/domain/read-models/simulation-session.read-model";
 import { type ISimulationAnalyticsRepository, type SimulationUserSessionStats } from "@/features/simulation/domain/repositories/simulation-analytics.repository";
 import { buildDefaultSimulationRubric, DEFAULT_SIMULATION_RUBRIC, DEFAULT_SIMULATION_RUBRIC_THRESHOLDS, type SimulationRubricThresholds } from "@/features/simulation/domain/scoring";
 
@@ -58,7 +59,7 @@ describe("SimulationFacade", () => {
   beforeEach(async () => {
     useFixedClock(STARTED_AT);
     context = createSimulationTestContext();
-    facade = new SimulationFacade(context.repository, context.runtime, context.groups.asFacade(), ANALYTICS_REPOSITORY);
+    facade = new SimulationFacade(context.repository, context.runtime, context.groups.asFacade(), ANALYTICS_REPOSITORY, context.clinicalCases.asFacade());
     session = await storeSession(context);
     session.recordActivity(30_000, STARTED_AT);
   });
@@ -113,7 +114,7 @@ describe("SimulationFacade", () => {
     const started: SimulationRubricThresholds = { ...DEFAULT_SIMULATION_RUBRIC_THRESHOLDS, timeInRangePercent: 50 };
     const changed: SimulationRubricThresholds = { ...DEFAULT_SIMULATION_RUBRIC_THRESHOLDS, timeInRangePercent: 95 };
     const snapshotContext: SimulationTestContext = createSimulationTestContext(settings);
-    const snapshotFacade: SimulationFacade = new SimulationFacade(snapshotContext.repository, snapshotContext.runtime, snapshotContext.groups.asFacade(), ANALYTICS_REPOSITORY);
+    const snapshotFacade: SimulationFacade = new SimulationFacade(snapshotContext.repository, snapshotContext.runtime, snapshotContext.groups.asFacade(), ANALYTICS_REPOSITORY, snapshotContext.clinicalCases.asFacade());
     const snapshotted: SimulationSession = await storeSession(snapshotContext);
     const legacy: SimulationSession = await storeSession(snapshotContext);
 
@@ -194,5 +195,19 @@ describe("SimulationFacade", () => {
     expect(ANALYTICS_REPOSITORY.getSessionStatsForUsers).toHaveBeenCalledTimes(1);
     expect(ANALYTICS_REPOSITORY.getSessionStatsForUsers).toHaveBeenCalledWith(["student-1", "student-2"]);
     expect(stats).toEqual([USER_STATS]);
+  });
+
+  it("adds the clinical case title to a user's sessions with one batch title read per page", async () => {
+    await storeSession(context);
+    await storeSession(context, { caseId: "case-deleted" });
+
+    const sessions: Paginated<SimulationSessionView> = await facade.getUserSessions("student-1", { page: 1, limit: 10, sortOrder: "asc" });
+
+    expect(sessions.data.map((view: SimulationSessionView): string => `${view.caseId}:${view.caseTitle ?? "-"}`).sort()).toEqual([
+      "case-deleted:-",
+      "case-normal:Normal lung",
+      "case-normal:Normal lung",
+    ]);
+    expect(context.clinicalCases.getCaseTitles).toHaveBeenCalledTimes(1);
   });
 });

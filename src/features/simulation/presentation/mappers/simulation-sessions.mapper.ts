@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de sesiones de simulación
  * Descripción: Convierte los resultados de los casos de uso de sesiones con eventos (inicio, lote de eventos, estado, resumen, repetición, listado y prueba de caso) en sus DTOs de respuesta con fechas ISO y null para valores ausentes
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -101,13 +101,14 @@ export class SimulationSessionsResponseMapper {
     });
   }
 
-  public static toSessionDTO(session: SimulationSession): SimulationSessionDTO {
+  public static toSessionDTO(session: SimulationSession, caseTitle?: string): SimulationSessionDTO {
     const view: SimulationSessionView = SimulationFacade.toView(session);
 
     return new SimulationSessionDTO({
       id: view.id,
       userId: view.userId,
       caseId: view.caseId,
+      caseTitle: caseTitle ?? null,
       mode: view.mode,
       attemptId: view.attemptId ?? null,
       questionId: view.questionId ?? null,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura del progreso por páginas
  * Descripción: Define el alcance (módulo, nivel, sección o todo), la estructura publicada, el progreso ponderado por lecciones de lecciones, módulos, niveles y secciones, el resumen del usuario y los datos de registro de vistas de página
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,17 +19,20 @@ export interface ProgressScope {
 
 export interface ProgressStructureModule {
   readonly id: string;
+  readonly title?: string;
   readonly levelId?: string;
 }
 
 export interface ProgressStructureLevel {
   readonly id: string;
+  readonly title?: string;
   readonly sectionId?: string;
   readonly moduleIds: string[];
 }
 
 export interface ProgressStructureSection {
   readonly id: string;
+  readonly title?: string;
   readonly levelIds: string[];
 }
 
@@ -55,12 +58,14 @@ export interface LessonLearningProgress {
 
 export interface ModuleLearningProgress extends LessonWeightedProgress {
   readonly moduleId: string;
+  readonly title?: string;
   readonly levelId?: string;
   readonly lessons: LessonLearningProgress[];
 }
 
 export interface LevelLearningProgress extends LessonWeightedProgress {
   readonly levelId: string;
+  readonly title?: string;
   readonly sectionId?: string;
   readonly completedModules: number;
   readonly totalModules: number;
@@ -69,6 +74,7 @@ export interface LevelLearningProgress extends LessonWeightedProgress {
 
 export interface SectionLearningProgress extends LessonWeightedProgress {
   readonly sectionId: string;
+  readonly title?: string;
   readonly completedLevels: number;
   readonly totalLevels: number;
   readonly levels: LevelLearningProgress[];

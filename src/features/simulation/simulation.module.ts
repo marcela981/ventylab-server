@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo SimulationModule
  * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, identificador del dispositivo desde ConfigService (los ajustes de sesiones SIMULATION_SESSION_SETTINGS_TOKEN los enlaza la raíz de composición), la fachada de telemetría del ventilador (VentilatorTelemetryModule) para estado y alarmas, la fachada de comandos del ventilador (VentilatorCommandsModule) para el camino físico de POST /api/simulation/command, manejadores realtime y ciclo de vida; exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService; registra el repositorio de lecturas por lotes para analítica
- * Versión: 1.7
+ * Versión: 1.8
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -32,6 +32,7 @@ import { ConfigurePatientUseCase } from "@/features/simulation/application/use-c
 import { CreateSimulatorSessionUseCase } from "@/features/simulation/application/use-cases/create-simulator-session.usecase";
 import { EndSimulationSessionUseCase } from "@/features/simulation/application/use-cases/end-simulation-session.usecase";
 import { GetActivePatientUseCase } from "@/features/simulation/application/use-cases/get-active-patient.usecase";
+import { GetSimulationCaseTitlesUseCase } from "@/features/simulation/application/use-cases/get-simulation-case-titles.usecase";
 import { GetSimulationHealthUseCase } from "@/features/simulation/application/use-cases/get-simulation-health.usecase";
 import { GetSimulationSessionReplayUseCase } from "@/features/simulation/application/use-cases/get-simulation-session-replay.usecase";
 import { GetSimulationSessionStateUseCase } from "@/features/simulation/application/use-cases/get-simulation-session-state.usecase";
@@ -126,6 +127,7 @@ function createSimulationSettings(configService: ConfigService<EnvironmentVariab
     GetSimulationSessionSummaryUseCase,
     GetSimulationSessionReplayUseCase,
     GetSimulationSessionsUseCase,
+    GetSimulationCaseTitlesUseCase,
     RunClinicalCaseTestUseCase,
     SimulationFacade,
     SimulationAssistContextService,

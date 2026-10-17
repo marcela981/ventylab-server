@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de las sesiones de simulación
  * Descripción: Forma de un evento persistido de una sesión (id, tiempo simulado, tipo, payload saneado y recepción), del resumen calculado por el servidor al terminar, de la vista pública de una sesión y de las estadísticas agregadas de sesiones por estado
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -47,6 +47,7 @@ export interface SimulationSessionView {
   readonly id: string;
   readonly userId: string;
   readonly caseId: string;
+  readonly caseTitle?: string;
   readonly mode: SimulationModeValue;
   readonly attemptId?: string;
   readonly questionId?: string;

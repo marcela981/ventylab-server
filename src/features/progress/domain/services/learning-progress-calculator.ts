@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Calculadora de progreso ponderado por lecciones
  * Descripción: Construye en memoria el progreso de lecciones, módulos, niveles y secciones a partir de la estructura publicada y de los hechos de completitud por páginas; nivel y sección se ponderan por lecciones (no promedian porcentajes de módulos)
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -46,6 +46,7 @@ function groupFactsByModule(facts: ReadonlyArray<LessonCompletionFact>): Map<str
 function buildModuleProgress(module: ProgressStructureModule, facts: LessonCompletionFact[]): ModuleLearningProgress {
   return {
     moduleId: module.id,
+    title: module.title,
     levelId: module.levelId,
     ...summarizeLessons(facts),
     lessons: facts.map((fact: LessonCompletionFact) => toLessonLearningProgress(fact)),
@@ -66,6 +67,7 @@ export function buildLearningProgressReport(structure: ProgressStructure, facts:
 
     return {
       levelId: level.id,
+      title: level.title,
       sectionId: level.sectionId,
       ...summarizeLessons(factsOfModules(level.moduleIds)),
       completedModules: levelModules.filter((module: ModuleLearningProgress) => module.completed).length,
@@ -85,6 +87,7 @@ export function buildLearningProgressReport(structure: ProgressStructure, facts:
 
     return {
       sectionId: section.id,
+      title: section.title,
       ...summarizeLessons(factsOfModules(sectionModuleIds)),
       completedLevels: sectionLevels.filter((level: LevelLearningProgress) => level.completed).length,
       totalLevels: sectionLevels.length,

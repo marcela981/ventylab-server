@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Constructor de analítica por estudiante
  * Descripción: Funciones puras que combinan en memoria los resultados por lotes de las fachadas (progreso, notas publicadas, sesiones de simulación, uso y valoraciones de IA y horas de ventilador) indexándolos por usuario, sin ninguna lectura adicional: resumen de progreso por sección, nivel y módulo, nota vigente por evaluación (último intento publicado) con su promedio, filas del panel de un grupo y filas largas del conjunto de datos de investigación con identificadores seudonimizados (usuario y grupo, y las evaluaciones con separación de dominio "evaluation:")
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -68,8 +68,8 @@ function groupByUser<T extends { readonly userId: string }>(items: ReadonlyArray
   return grouped;
 }
 
-function toItem(id: string, progress: LessonWeightedProgress): ProgressItemSummary {
-  return { id, percentage: progress.percentage, completedLessons: progress.completedLessons, totalLessons: progress.totalLessons, completed: progress.completed };
+function toItem(id: string, title: string | undefined, progress: LessonWeightedProgress): ProgressItemSummary {
+  return { id, title, percentage: progress.percentage, completedLessons: progress.completedLessons, totalLessons: progress.totalLessons, completed: progress.completed };
 }
 
 export function toProgressSummary(report: LearningProgressReport | undefined): StudentProgressSummary {
@@ -79,9 +79,9 @@ export function toProgressSummary(report: LearningProgressReport | undefined): S
 
   return {
     overall: report.overall,
-    sections: report.sections.map((section: SectionLearningProgress) => toItem(section.sectionId, section)),
-    levels: report.levels.map((level: LevelLearningProgress) => toItem(level.levelId, level)),
-    modules: report.modules.map((module: ModuleLearningProgress) => toItem(module.moduleId, module)),
+    sections: report.sections.map((section: SectionLearningProgress) => toItem(section.sectionId, section.title, section)),
+    levels: report.levels.map((level: LevelLearningProgress) => toItem(level.levelId, level.title, level)),
+    modules: report.modules.map((module: ModuleLearningProgress) => toItem(module.moduleId, module.title, module)),
   };
 }
 

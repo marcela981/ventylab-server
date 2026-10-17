@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de notas
  * Descripción: Representación HTTP de una nota (contenido Tiptap saneado) y del análisis de notas con IA (con el id de la llamada de IA para calificarla)
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,6 +22,15 @@ export class NoteDTO {
   @ApiProperty({ description: "Page of the lesson the note refers to", example: "cm5x2k9a00000abcd1234wxyz", nullable: true, type: String })
   public pageId: string | null;
 
+  @ApiProperty({ description: "Module of the note's lesson (null when the lesson cannot be resolved)", example: "cm5x2k9a00000abcd1234mnop", nullable: true, type: String })
+  public moduleId: string | null;
+
+  @ApiProperty({ description: "Title of the note's lesson", example: "PEEP basics", nullable: true, type: String })
+  public lessonTitle: string | null;
+
+  @ApiProperty({ description: "Title of the page (content section) the note refers to; null without a page", example: "Alveolar recruitment", nullable: true, type: String })
+  public pageTitle: string | null;
+
   @ApiProperty({ description: "Sanitized rich text content as a Tiptap JSON document", type: "object", additionalProperties: true })
   public content: Record<string, unknown>;
 
@@ -35,6 +44,9 @@ export class NoteDTO {
     id,
     lessonId,
     pageId,
+    moduleId,
+    lessonTitle,
+    pageTitle,
     content,
     createdAt,
     updatedAt,
@@ -42,6 +54,9 @@ export class NoteDTO {
     id: string;
     lessonId: string;
     pageId: string | null;
+    moduleId: string | null;
+    lessonTitle: string | null;
+    pageTitle: string | null;
     content: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
@@ -49,6 +64,9 @@ export class NoteDTO {
     this.id = id;
     this.lessonId = lessonId;
     this.pageId = pageId;
+    this.moduleId = moduleId;
+    this.lessonTitle = lessonTitle;
+    this.pageTitle = pageTitle;
     this.content = content;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;

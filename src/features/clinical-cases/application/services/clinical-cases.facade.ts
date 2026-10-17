@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada ClinicalCasesFacade
- * Descripción: API pública de la feature de casos clínicos para otras features: instantánea de un caso por id y caso publicado listo para simular (mecánica, ajustes iniciales, estado inicial, sexo y talla presentes) con errores tipados
- * Versión: 1.0
+ * Descripción: API pública de la feature de casos clínicos para otras features: instantánea de un caso por id, títulos de varios casos en una lectura y caso publicado listo para simular (mecánica, ajustes iniciales, estado inicial, sexo y talla presentes) con errores tipados
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import { type ClinicalCase } from "@/features/clinical-cases/domain/entities/cli
 import {
   type ClinicalCaseSimulationProfile,
   type ClinicalCaseSnapshot,
+  type ClinicalCaseTitleView,
   type SimulationReadyClinicalCase,
 } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
 import {
@@ -52,6 +53,12 @@ export class ClinicalCasesFacade {
       simulationReady: clinicalCase.isSimulationReady,
       simulation: clinicalCase.content.simulation,
     };
+  }
+
+  public async getCaseTitles(caseIds: readonly string[]): Promise<ClinicalCaseTitleView[]> {
+    const uniqueIds: string[] = [...new Set(caseIds)];
+
+    return uniqueIds.length > 0 ? await this._clinicalCasesRepository.getCaseTitles(uniqueIds) : [];
   }
 
   public async getPublishedCaseForSimulation(id: string): Promise<SimulationReadyClinicalCase> {

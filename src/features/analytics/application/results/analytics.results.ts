@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados de analítica
  * Descripción: Tipos de salida de los casos de uso de analítica: panel de un grupo con una fila por estudiante (progreso por sección, nivel y módulo, notas por evaluación y promedio, sesiones de simulación, uso de IA por caso de uso con porcentaje de útiles y horas de ventilador), línea de tiempo de un estudiante, estadísticas de una evaluación con dificultad por pregunta, resumen del propio estudiante y filas anonimizadas del conjunto de datos de investigación
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,6 +21,7 @@ import { type SimulationSessionView } from "@/features/simulation/domain/read-mo
 
 export interface ProgressItemSummary {
   readonly id: string;
+  readonly title?: string;
   readonly percentage: number;
   readonly completedLessons: number;
   readonly totalLessons: number;

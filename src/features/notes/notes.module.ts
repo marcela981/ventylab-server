@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo NotesModule
  * Descripción: Registra la feature de notas privadas (controlador, casos de uso, repositorio Prisma y analizador de notas sobre el gateway de IA de AiModule) y exporta NotesFacade
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { NotesFacade } from "@/features/notes/application/services/notes.facade"
 import { AnalyzeNotesUseCase } from "@/features/notes/application/use-cases/analyze-notes.usecase";
 import { CreateNoteUseCase } from "@/features/notes/application/use-cases/create-note.usecase";
 import { DeleteNoteUseCase } from "@/features/notes/application/use-cases/delete-note.usecase";
+import { GetNoteContentLabelsUseCase } from "@/features/notes/application/use-cases/get-note-content-labels.usecase";
 import { GetNoteUseCase } from "@/features/notes/application/use-cases/get-note.usecase";
 import { GetNotesUseCase } from "@/features/notes/application/use-cases/get-notes.usecase";
 import { UpdateNoteUseCase } from "@/features/notes/application/use-cases/update-note.usecase";
@@ -38,6 +39,7 @@ import { NotesController } from "@/features/notes/presentation/controllers/notes
       useClass: AITextNotesAnalyzer,
     },
     GetNotesUseCase,
+    GetNoteContentLabelsUseCase,
     GetNoteUseCase,
     CreateNoteUseCase,
     UpdateNoteUseCase,

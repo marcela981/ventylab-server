@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de la calificación docente de evaluaciones
- * Descripción: Vistas planas de la cola de revisión (intento, evaluación, estudiante, fechas y puntajes), de las notas publicadas (con título y tipo de la evaluación, incluidas las heredadas) y de los agregados de una evaluación (intentos por estado, publicados, calificados, promedio, mínimo, máximo y aprobados)
- * Versión: 1.0
+ * Descripción: Vistas planas de la cola de revisión (intento, evaluación, estudiante, fechas y puntajes), de las notas publicadas (con título, tipo y módulo de la evaluación, incluidas las heredadas) y de los agregados de una evaluación (intentos por estado, publicados, calificados, promedio, mínimo, máximo y aprobados)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,6 +37,8 @@ export interface PublishedGradeView {
   readonly evaluationId: string;
   readonly evaluationTitle: string;
   readonly evaluationType: EvaluationTypeValue;
+  readonly moduleId?: string;
+  readonly moduleTitle?: string;
   readonly userId: string;
   readonly attemptNumber: number;
   readonly score?: number;

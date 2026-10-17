@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio de casos clínicos
  * Descripción: Contrato y token del repositorio de casos clínicos (lectura filtrada por estado, escritura del agregado ClinicalCase, bloqueo de fila y conteo de uso), configuraciones expertas e intentos de evaluación
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { type ListQuery } from "@/common/domain/utils/list-query";
 import { type Paginated } from "@/common/domain/utils/paginated";
 import { type ClinicalCase } from "@/features/clinical-cases/domain/entities/clinical-case.entity";
 import { type EvaluationAttempt } from "@/features/clinical-cases/domain/entities/evaluation-attempt.entity";
+import { type ClinicalCaseTitleView } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
 import {
   type CaseAttemptRecord,
   type ClinicalCaseDetail,
@@ -35,6 +36,7 @@ export interface IClinicalCasesRepository {
   getCases(query: GetClinicalCasesQuery): Promise<Paginated<ClinicalCaseSummary>>;
   getById(caseId: string): Promise<ClinicalCaseDetail | undefined>;
   getCaseById(caseId: string, transaction?: unknown): Promise<ClinicalCase | undefined>;
+  getCaseTitles(caseIds: readonly string[]): Promise<ClinicalCaseTitleView[]>;
   lockCase(caseId: string, transaction: unknown): Promise<void>;
   getUsage(caseId: string, transaction?: unknown): Promise<ClinicalCaseUsage>;
   saveCase(clinicalCase: ClinicalCase, transaction?: unknown): Promise<void>;

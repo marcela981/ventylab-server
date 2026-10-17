@@ -3738,7 +3738,7 @@ export interface paths {
         };
         /**
          * Get my notes
-         * @description Paginated list of the caller's own notes, newest first
+         * @description Paginated list of the caller's own notes, newest first, optionally filtered by text (case-insensitive), lesson, module or page
          *
          *     **Required access:** bearer token holding `notes:read_own`; minimum role STUDENT.
          */
@@ -15266,6 +15266,16 @@ export interface components {
              */
             maxScore: number | null;
             /**
+             * @description Module the evaluation belongs to (null when it is not tied to a module)
+             * @example cm5module01
+             */
+            moduleId: string | null;
+            /**
+             * @description Title of the module the evaluation belongs to
+             * @example Ventilation basics
+             */
+            moduleTitle: string | null;
+            /**
              * @description Whether the grade reaches the passing grade
              * @example true
              */
@@ -15319,6 +15329,11 @@ export interface components {
         };
         MyGradeDTO: {
             /**
+             * @description Graded attempt identifier
+             * @example cm5x2k9a00000abcd1234efgh
+             */
+            attemptId: string;
+            /**
              * @description Attempt number
              * @example 1
              */
@@ -15343,6 +15358,16 @@ export interface components {
              * @example 4.2
              */
             grade: number;
+            /**
+             * @description Module the evaluation belongs to (null when it is not tied to a module)
+             * @example cm5x2k9a00000abcd1234efgh
+             */
+            moduleId: string | null;
+            /**
+             * @description Title of the module the evaluation belongs to
+             * @example Ventilation basics
+             */
+            moduleTitle: string | null;
             /**
              * @description Whether the grade reaches the passing grade
              * @example true
@@ -15377,10 +15402,25 @@ export interface components {
              */
             lessonId: string;
             /**
+             * @description Title of the note's lesson
+             * @example PEEP basics
+             */
+            lessonTitle: string | null;
+            /**
+             * @description Module of the note's lesson
+             * @example cm5x2k9a00000abcd1234efgh
+             */
+            moduleId: string | null;
+            /**
              * @description Page identifier
              * @example cm5x2k9a00000abcd1234efgh
              */
             pageId: string | null;
+            /**
+             * @description Title of the page (content section) the note refers to; null without a page
+             * @example Alveolar recruitment
+             */
+            pageTitle: string | null;
             /**
              * @description Last update
              * @example 2026-10-11T15:04:05.000Z
@@ -15431,6 +15471,11 @@ export interface components {
              * @example cm5x2k9a00000abcd1234efgh
              */
             caseId: string;
+            /**
+             * @description Clinical case title (null when the case no longer exists)
+             * @example Normal lung
+             */
+            caseTitle: string | null;
             /**
              * @description End time
              * @example 2026-10-11T15:04:05.000Z
@@ -15544,10 +15589,25 @@ export interface components {
              */
             lessonId: string;
             /**
+             * @description Title of the note's lesson
+             * @example PEEP basics
+             */
+            lessonTitle: string | null;
+            /**
+             * @description Module of the note's lesson (null when the lesson cannot be resolved)
+             * @example cm5x2k9a00000abcd1234mnop
+             */
+            moduleId: string | null;
+            /**
              * @description Page of the lesson the note refers to
              * @example cm5x2k9a00000abcd1234wxyz
              */
             pageId: string | null;
+            /**
+             * @description Title of the page (content section) the note refers to; null without a page
+             * @example Alveolar recruitment
+             */
+            pageTitle: string | null;
             /**
              * Format: date-time
              * @description Last update timestamp
@@ -16749,6 +16809,11 @@ export interface components {
              * @example 40
              */
             percentage: number;
+            /**
+             * @description Section, level or module title (overall progress has none)
+             * @example Ventilation basics
+             */
+            title: string | null;
             /**
              * @description Published lessons
              * @example 10
@@ -18280,6 +18345,11 @@ export interface components {
              * @example engine-normal-lung
              */
             caseId: string;
+            /**
+             * @description Clinical case title (null when the case no longer exists)
+             * @example Normal lung
+             */
+            caseTitle: string | null;
             /**
              * @description Session end
              * @example null
@@ -36708,6 +36778,14 @@ export interface operations {
                 createdAtTo?: string;
                 /** @description Sort direction */
                 sortOrder?: "asc" | "desc";
+                /** @description Filter by note text (partial match, case-insensitive) */
+                search?: string;
+                /** @description Only notes of this lesson */
+                lessonId?: string;
+                /** @description Only notes of the lessons of this module */
+                moduleId?: string;
+                /** @description Only notes of this page (content section) */
+                pageId?: string;
             };
             header?: never;
             path?: never;

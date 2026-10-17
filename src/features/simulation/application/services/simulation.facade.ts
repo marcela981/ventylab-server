@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada SimulationFacade
- * Descripción: API pública de las sesiones de simulación con eventos para otras features: resumen de una sesión, calificación por rúbrica recalculada siempre con la repetición del servidor (nunca con datos del cliente), sesiones paginadas de un usuario y estadísticas de sesiones de los miembros de un grupo obtenidos con GroupsFacade, la versión del motor de simulación y lecturas por lotes para analítica: estadísticas por usuario de varios usuarios en una sola consulta (conteo, puntaje promedio y tiempo promedio de estabilización tomado del resumen persistido) y sesiones de un usuario en un rango
- * Versión: 1.2
+ * Descripción: API pública de las sesiones de simulación con eventos para otras features: resumen de una sesión, calificación por rúbrica recalculada siempre con la repetición del servidor (nunca con datos del cliente), sesiones paginadas de un usuario con el título de su caso clínico (una lectura de ClinicalCasesFacade por página) y estadísticas de sesiones de los miembros de un grupo obtenidos con GroupsFacade, la versión del motor de simulación y lecturas por lotes para analítica: estadísticas por usuario de varios usuarios en una sola consulta (conteo, puntaje promedio y tiempo promedio de estabilización tomado del resumen persistido) y sesiones de un usuario en un rango
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { type Paginated } from "@/common/domain/utils/paginated";
+import { ClinicalCasesFacade } from "@/features/clinical-cases/application/services/clinical-cases.facade";
+import { type ClinicalCaseTitleView } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
 import { GroupsFacade, type GroupMemberSummary } from "@/features/groups/application/services/groups.facade";
 import {
   type SimulationGroupSessionStats,
@@ -70,6 +72,7 @@ export class SimulationFacade {
     private readonly _groupsFacade: GroupsFacade,
     @Inject(SIMULATION_ANALYTICS_REPOSITORY_TOKEN)
     private readonly _analyticsRepository: ISimulationAnalyticsRepository,
+    private readonly _clinicalCasesFacade: ClinicalCasesFacade,
   ) {}
 
   public get engineVersion(): string {
@@ -138,8 +141,10 @@ export class SimulationFacade {
 
   public async getUserSessions(userId: string, query: SimulationSessionsPageQuery): Promise<Paginated<SimulationSessionView>> {
     const sessions: Paginated<SimulationSession> = await this._sessionsRepository.getAll({ ...query, userId });
+    const titles: ClinicalCaseTitleView[] = await this._clinicalCasesFacade.getCaseTitles(sessions.data.map((session: SimulationSession): string => session.caseId));
+    const titleByCase: Map<string, string> = new Map<string, string>(titles.map((view: ClinicalCaseTitleView): [string, string] => [view.id, view.title]));
 
-    return sessions.map(SimulationFacade.toView);
+    return sessions.map((session: SimulationSession): SimulationSessionView => ({ ...SimulationFacade.toView(session), caseTitle: titleByCase.get(session.caseId) }));
   }
 
   public async getSessionStatsForUsers(userIds: readonly string[]): Promise<SimulationUserSessionStats[]> {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de solicitud de notas
  * Descripción: Valida los cuerpos para crear, actualizar y analizar notas: lección, página opcional (nula para desvincular) y contenido Tiptap como objeto JSON
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,8 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsObject, IsOptional, IsString, ValidateIf } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
+
+import { ListQueryDTO } from "@/common/presentation/dtos/list-query.dto";
 
 const TIPTAP_CONTENT_EXAMPLE: Record<string, unknown> = {
   type: "doc",
@@ -60,6 +62,31 @@ export class UpdateNoteDTO {
   @IsOptional()
   @IsObject({ message: i18nValidationMessage("notes.validation.content_must_be_object") })
   public content?: Record<string, unknown>;
+}
+
+export class GetNotesQueryDTO extends ListQueryDTO {
+  @ApiPropertyOptional({ description: "Filter by note text (partial match, case-insensitive)", example: "alveoli" })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("notes.validation.search_must_be_string") })
+  public search?: string;
+
+  @ApiPropertyOptional({ description: "Only notes of this lesson", example: "cm5x2k9a00000abcd1234efgh" })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("notes.validation.lesson_id_must_be_string") })
+  @IsNotEmpty({ message: i18nValidationMessage("notes.validation.lesson_id_must_be_string") })
+  public lessonId?: string;
+
+  @ApiPropertyOptional({ description: "Only notes of the lessons of this module", example: "cm5x2k9a00000abcd1234mnop" })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("notes.validation.module_id_must_be_string") })
+  @IsNotEmpty({ message: i18nValidationMessage("notes.validation.module_id_must_be_string") })
+  public moduleId?: string;
+
+  @ApiPropertyOptional({ description: "Only notes of this page (content section)", example: "cm5x2k9a00000abcd1234wxyz" })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("notes.validation.page_id_must_be_string") })
+  @IsNotEmpty({ message: i18nValidationMessage("notes.validation.page_id_must_be_string") })
+  public pageId?: string;
 }
 
 export class AnalyzeNotesDTO {

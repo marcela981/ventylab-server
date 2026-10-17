@@ -14100,6 +14100,22 @@
               "null"
             ]
           },
+          "moduleId": {
+            "description": "Module the evaluation belongs to (null when it is not tied to a module)",
+            "example": "cm5module01",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "moduleTitle": {
+            "description": "Title of the module the evaluation belongs to",
+            "example": "Ventilation basics",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "passed": {
             "description": "Whether the grade reaches the passing grade",
             "example": true,
@@ -14125,6 +14141,8 @@
           "evaluationId",
           "evaluationTitle",
           "evaluationType",
+          "moduleId",
+          "moduleTitle",
           "attemptNumber",
           "score",
           "maxScore",
@@ -14207,6 +14225,11 @@
       },
       "MyGradeDTO": {
         "properties": {
+          "attemptId": {
+            "description": "Graded attempt identifier",
+            "example": "cm5x2k9a00000abcd1234efgh",
+            "type": "string"
+          },
           "attemptNumber": {
             "description": "Attempt number",
             "example": 1,
@@ -14232,6 +14255,22 @@
             "example": 4.2,
             "type": "number"
           },
+          "moduleId": {
+            "description": "Module the evaluation belongs to (null when it is not tied to a module)",
+            "example": "cm5x2k9a00000abcd1234efgh",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "moduleTitle": {
+            "description": "Title of the module the evaluation belongs to",
+            "example": "Ventilation basics",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "passed": {
             "description": "Whether the grade reaches the passing grade",
             "example": true,
@@ -14244,9 +14283,12 @@
           }
         },
         "required": [
+          "attemptId",
           "evaluationId",
           "evaluationTitle",
           "evaluationType",
+          "moduleId",
+          "moduleTitle",
           "attemptNumber",
           "grade",
           "passed",
@@ -14302,9 +14344,33 @@
             "example": "cm5x2k9a00000abcd1234efgh",
             "type": "string"
           },
+          "lessonTitle": {
+            "description": "Title of the note's lesson",
+            "example": "PEEP basics",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "moduleId": {
+            "description": "Module of the note's lesson",
+            "example": "cm5x2k9a00000abcd1234efgh",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "pageId": {
             "description": "Page identifier",
             "example": "cm5x2k9a00000abcd1234efgh",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pageTitle": {
+            "description": "Title of the page (content section) the note refers to; null without a page",
+            "example": "Alveolar recruitment",
             "type": [
               "string",
               "null"
@@ -14320,6 +14386,9 @@
           "id",
           "lessonId",
           "pageId",
+          "moduleId",
+          "lessonTitle",
+          "pageTitle",
           "excerpt",
           "updatedAt"
         ],
@@ -14405,6 +14474,14 @@
             "example": "cm5x2k9a00000abcd1234efgh",
             "type": "string"
           },
+          "caseTitle": {
+            "description": "Clinical case title (null when the case no longer exists)",
+            "example": "Normal lung",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "endedAt": {
             "description": "End time",
             "example": "2026-10-11T15:04:05.000Z",
@@ -14445,6 +14522,7 @@
         "required": [
           "id",
           "caseId",
+          "caseTitle",
           "mode",
           "status",
           "startedAt",
@@ -14623,9 +14701,33 @@
             "example": "cm5x2k9a00000abcd1234efgh",
             "type": "string"
           },
+          "lessonTitle": {
+            "description": "Title of the note's lesson",
+            "example": "PEEP basics",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "moduleId": {
+            "description": "Module of the note's lesson (null when the lesson cannot be resolved)",
+            "example": "cm5x2k9a00000abcd1234mnop",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "pageId": {
             "description": "Page of the lesson the note refers to",
             "example": "cm5x2k9a00000abcd1234wxyz",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pageTitle": {
+            "description": "Title of the page (content section) the note refers to; null without a page",
+            "example": "Alveolar recruitment",
             "type": [
               "string",
               "null"
@@ -14642,6 +14744,9 @@
           "id",
           "lessonId",
           "pageId",
+          "moduleId",
+          "lessonTitle",
+          "pageTitle",
           "content",
           "createdAt",
           "updatedAt"
@@ -16535,6 +16640,14 @@
             "example": 40,
             "type": "number"
           },
+          "title": {
+            "description": "Section, level or module title (overall progress has none)",
+            "example": "Ventilation basics",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "totalLessons": {
             "description": "Published lessons",
             "example": 10,
@@ -16543,6 +16656,7 @@
         },
         "required": [
           "id",
+          "title",
           "percentage",
           "completedLessons",
           "totalLessons",
@@ -19032,6 +19146,14 @@
             "example": "engine-normal-lung",
             "type": "string"
           },
+          "caseTitle": {
+            "description": "Clinical case title (null when the case no longer exists)",
+            "example": "Normal lung",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "endedAt": {
             "description": "Session end",
             "example": null,
@@ -19106,6 +19228,7 @@
           "id",
           "userId",
           "caseId",
+          "caseTitle",
           "mode",
           "attemptId",
           "questionId",
@@ -54029,7 +54152,7 @@
     },
     "/api/notes": {
       "get": {
-        "description": "Paginated list of the caller's own notes, newest first\n\n**Required access:** bearer token holding `notes:read_own`; minimum role STUDENT.",
+        "description": "Paginated list of the caller's own notes, newest first, optionally filtered by text (case-insensitive), lesson, module or page\n\n**Required access:** bearer token holding `notes:read_own`; minimum role STUDENT.",
         "operationId": "getNotes",
         "parameters": [
           {
@@ -54100,6 +54223,46 @@
                 "desc"
               ],
               "example": "desc",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by note text (partial match, case-insensitive)",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "example": "alveoli",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only notes of this lesson",
+            "in": "query",
+            "name": "lessonId",
+            "required": false,
+            "schema": {
+              "example": "cm5x2k9a00000abcd1234efgh",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only notes of the lessons of this module",
+            "in": "query",
+            "name": "moduleId",
+            "required": false,
+            "schema": {
+              "example": "cm5x2k9a00000abcd1234mnop",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only notes of this page (content section)",
+            "in": "query",
+            "name": "pageId",
+            "required": false,
+            "schema": {
+              "example": "cm5x2k9a00000abcd1234wxyz",
               "type": "string"
             }
           }

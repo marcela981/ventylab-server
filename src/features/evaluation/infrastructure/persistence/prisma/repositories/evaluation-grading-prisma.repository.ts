@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de lectura de la calificación docente de evaluaciones
  * Descripción: Implementa IEvaluationGradingRepository con Prisma sobre student_evaluation_attempts: alcance del profesor (asignación en un grupo STUDENT creado o supervisado, o intento heredado sin asignación de una evaluación que creó), filtro por grupo (asignación del grupo, o intento sin asignación de un miembro del grupo), cola PENDING_REVIEW paginada con evaluación y estudiante (sin intentos heredados, que se califican por las rutas heredadas), intentos en curso vencidos por el plazo del intento o el fin de la asignación, intentos GRADED sin publicar, notas publicadas y agregados por evaluación (opcionalmente acotados al alcance de intentos de analítica de un profesor); exporta la selección, el filtro, el filtro de alcance de intentos de analítica y el mapeo de notas publicadas que reutiliza el repositorio de analítica
- * Versión: 1.3
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -90,7 +90,7 @@ export const PUBLISHED_SELECT: {
   grade: true;
   gradePublishedAt: true;
   legacySource: true;
-  evaluation: { select: { title: true; type: true } };
+  evaluation: { select: { title: true; type: true; moduleId: true; module: { select: { title: true } } } };
 } = {
   id: true,
   evaluationId: true,
@@ -101,7 +101,7 @@ export const PUBLISHED_SELECT: {
   grade: true,
   gradePublishedAt: true,
   legacySource: true,
-  evaluation: { select: { title: true, type: true } },
+  evaluation: { select: { title: true, type: true, moduleId: true, module: { select: { title: true } } } },
 };
 
 export interface PublishedRow {
@@ -114,7 +114,7 @@ export interface PublishedRow {
   grade: number | null;
   gradePublishedAt: Date | null;
   legacySource: string | null;
-  evaluation: { title: string; type: EvaluationType };
+  evaluation: { title: string; type: EvaluationType; moduleId: string | null; module: { title: string } | null };
 }
 
 function scopeWhere(scope: EvaluationAssignmentScope): Prisma.StudentEvaluationAttemptWhereInput {
@@ -169,6 +169,8 @@ export function toPublishedView(row: PublishedRow): PublishedGradeView[] {
       evaluationId: row.evaluationId,
       evaluationTitle: row.evaluation.title,
       evaluationType: row.evaluation.type,
+      moduleId: row.evaluation.moduleId ?? undefined,
+      moduleTitle: row.evaluation.module?.title,
       userId: row.userId,
       attemptNumber: row.attemptNumber,
       score: row.score ?? undefined,

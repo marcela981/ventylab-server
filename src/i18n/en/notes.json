@@ -18,6 +18,7 @@
     "lesson_id_must_be_string": "The lesson must be a non-empty string",
     "module_id_must_be_string": "The module must be a non-empty string",
     "page_id_must_be_string": "The page must be a non-empty string",
+    "search_must_be_string": "The search text must be a string",
     "content_must_be_object": "The content must be a JSON document"
   }
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de notas
- * Descripción: Implementa INotesRepository sobre PrismaService; toda consulta y escritura de notas filtra por user_id, y hace lecturas mínimas de lessons, modules y pages (título, módulo y lessonId de la página) solo para validar el alcance y titular el análisis
- * Versión: 1.0
+ * Descripción: Implementa INotesRepository sobre PrismaService; toda consulta y escritura de notas filtra por user_id, y hace lecturas mínimas de lessons, modules y pages (título, módulo y lessonId de la página) solo para validar el alcance, titular el análisis y etiquetar notas por lotes (lecciones y páginas en dos lecturas); filtra el listado por lección, módulo, página y texto (búsqueda sin distinguir mayúsculas en los nodos de texto del documento Tiptap)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,7 +17,10 @@ import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma
 import { type Note } from "@/features/notes/domain/entities/note.entity";
 import {
   type NoteAnalysisSource,
+  type NoteContentLabels,
+  type NoteLessonLabel,
   type NoteLessonScope,
+  type NotePageLabel,
   type NoteModuleScope,
 } from "@/features/notes/domain/read-models/note-scope.read-model";
 import { type GetNotesForAnalysisQuery, type GetNotesQuery, type INotesRepository } from "@/features/notes/domain/repositories/notes.repository";
@@ -39,7 +42,7 @@ export class NotesPrismaRepository implements INotesRepository {
   }
 
   public async getAll(query: GetNotesQuery, transaction?: unknown): Promise<Paginated<Note>> {
-    const { page, limit, userId, lessonId, moduleId, ids, createdAtFrom, createdAtTo, sortOrder } = query;
+    const { page, limit, userId, lessonId, moduleId, pageId, search, ids, createdAtFrom, createdAtTo, sortOrder } = query;
 
     const client: PrismaExecutor = resolveClient(this._prisma, transaction);
 
@@ -49,8 +52,18 @@ export class NotesPrismaRepository implements INotesRepository {
       where.id = { in: ids };
     }
 
+    if (pageId !== undefined) {
+      where.pageId = pageId;
+    }
+
     if (createdAtFrom || createdAtTo) {
       where.createdAt = { gte: createdAtFrom, lte: createdAtTo };
+    }
+
+    const term: string = search?.trim() ?? "";
+
+    if (term.length > 0) {
+      where.AND = [{ id: { in: await this._findIdsMatchingText(client, userId, term) } }];
     }
 
     const [rows, total] = await Promise.all([
@@ -134,6 +147,36 @@ export class NotesPrismaRepository implements INotesRepository {
     const count: number = await client.page.count({ where: { id: pageId, lessonId } });
 
     return count > 0;
+  }
+
+  public async getContentLabels(lessonIds: readonly string[], pageIds: readonly string[]): Promise<NoteContentLabels> {
+    const uniqueLessonIds: string[] = [...new Set(lessonIds)];
+    const uniquePageIds: string[] = [...new Set(pageIds)];
+
+    const [lessons, pages] = await Promise.all([
+      uniqueLessonIds.length > 0
+        ? this._prisma.lesson.findMany({ where: { id: { in: uniqueLessonIds } }, select: { id: true, title: true, moduleId: true } })
+        : Promise.resolve([]),
+      uniquePageIds.length > 0 ? this._prisma.page.findMany({ where: { id: { in: uniquePageIds } }, select: { id: true, title: true } }) : Promise.resolve([]),
+    ]);
+
+    return {
+      lessons: lessons.map((lesson: { id: string; title: string; moduleId: string }): NoteLessonLabel => ({ lessonId: lesson.id, lessonTitle: lesson.title, moduleId: lesson.moduleId })),
+      pages: pages.map((notePage: { id: string; title: string }): NotePageLabel => ({ pageId: notePage.id, pageTitle: notePage.title })),
+    };
+  }
+
+  // The content is a Tiptap document, so only its text nodes are searched (not node types or attributes)
+  private async _findIdsMatchingText(client: PrismaExecutor, userId: string, term: string): Promise<string[]> {
+    const pattern: string = `%${term.replace(/[\\%_]/g, (character: string): string => `\\${character}`)}%`;
+
+    const rows: { id: string }[] = await client.$queryRaw<{ id: string }[]>`
+      SELECT n.id FROM notes n
+      WHERE n.user_id = ${userId}
+        AND EXISTS (SELECT 1 FROM jsonb_path_query(n.content, 'lax $.**.text') AS t(value) WHERE t.value #>> '{}' ILIKE ${pattern})
+    `;
+
+    return rows.map((row: { id: string }): string => row.id);
   }
 
   private _buildScopeWhere(userId: string, lessonId?: string, moduleId?: string): Prisma.NoteWhereInput {

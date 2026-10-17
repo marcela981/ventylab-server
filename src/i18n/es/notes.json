@@ -18,6 +18,7 @@
     "lesson_id_must_be_string": "La lección debe ser un texto no vacío",
     "module_id_must_be_string": "El módulo debe ser un texto no vacío",
     "page_id_must_be_string": "La página debe ser un texto no vacío",
+    "search_must_be_string": "El texto de búsqueda debe ser una cadena",
     "content_must_be_object": "El contenido debe ser un documento JSON"
   }
 }

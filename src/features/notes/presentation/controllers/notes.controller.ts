@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de notas
  * Descripción: Endpoints autenticados de /api/notes para las notas privadas del usuario: CRUD solo del autor (sin excepción por rol; una nota ajena responde 404), listados paginados de todas, por lección y por módulo, y análisis con IA limitado a 10 solicitudes por minuto y a la cuota diaria de IA del rol
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,12 +31,14 @@ import { NotesAnalysisResult } from "@/features/notes/application/results/notes-
 import { AnalyzeNotesUseCase } from "@/features/notes/application/use-cases/analyze-notes.usecase";
 import { CreateNoteUseCase } from "@/features/notes/application/use-cases/create-note.usecase";
 import { DeleteNoteUseCase } from "@/features/notes/application/use-cases/delete-note.usecase";
+import { GetNoteContentLabelsUseCase } from "@/features/notes/application/use-cases/get-note-content-labels.usecase";
 import { GetNoteUseCase } from "@/features/notes/application/use-cases/get-note.usecase";
 import { GetNotesUseCase } from "@/features/notes/application/use-cases/get-notes.usecase";
 import { UpdateNoteUseCase } from "@/features/notes/application/use-cases/update-note.usecase";
 import { type Note } from "@/features/notes/domain/entities/note.entity";
+import { type NoteContentLabels } from "@/features/notes/domain/read-models/note-scope.read-model";
 import { type GetNotesQuery } from "@/features/notes/domain/repositories/notes.repository";
-import { AnalyzeNotesDTO, CreateNoteDTO, UpdateNoteDTO } from "@/features/notes/presentation/dtos/note-request.dto";
+import { AnalyzeNotesDTO, CreateNoteDTO, GetNotesQueryDTO, UpdateNoteDTO } from "@/features/notes/presentation/dtos/note-request.dto";
 import { NoteDTO, NotesAnalysisDTO } from "@/features/notes/presentation/dtos/note.dto";
 import { NotesMapper } from "@/features/notes/presentation/mappers/notes.mapper";
 
@@ -55,21 +57,24 @@ export class NotesController {
     private readonly _updateNoteUseCase: UpdateNoteUseCase,
     private readonly _deleteNoteUseCase: DeleteNoteUseCase,
     private readonly _analyzeNotesUseCase: AnalyzeNotesUseCase,
+    private readonly _getNoteContentLabelsUseCase: GetNoteContentLabelsUseCase,
   ) {}
 
   @Get()
   @RequirePermissions("notes:read_own")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Get my notes", description: "Paginated list of the caller's own notes, newest first" })
+  @ApiOperation({ summary: "Get my notes", description: "Paginated list of the caller's own notes, newest first, optionally filtered by text (case-insensitive), lesson, module or page" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Notes retrieved successfully", type: NoteDTO, isArray: true })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   public async getNotes(
-    @Query() query: ListQueryDTO,
+    @Query() query: GetNotesQueryDTO,
     @CurrentUser() currentUser: JwtPayload,
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<NoteDTO[]>> {
-    const notes: Paginated<Note> = await this._getNotesUseCase.execute(this._toNotesQuery(query, currentUser.sub, {}));
+    const notes: Paginated<Note> = await this._getNotesUseCase.execute(
+      this._toNotesQuery(query, currentUser.sub, { lessonId: query.lessonId, moduleId: query.moduleId, pageId: query.pageId, search: query.search }),
+    );
 
     return this._buildListResponse(notes, i18n);
   }
@@ -167,8 +172,10 @@ export class NotesController {
   ): Promise<APIResponse<NoteDTO>> {
     const note: Note = await this._getNoteUseCase.execute(noteId, currentUser.sub);
 
+    const labels: NoteContentLabels = await this._getNoteContentLabelsUseCase.execute([note]);
+
     return new APIResponseBuilder<NoteDTO>()
-      .setData(NotesMapper.toDTO(note))
+      .setData(NotesMapper.toDTO(note, labels))
       .setMessage(await i18n.t("notes.note_retrieved"))
       .build();
   }
@@ -190,8 +197,10 @@ export class NotesController {
       new CreateNoteCommand({ userId: currentUser.sub, lessonId: dto.lessonId, pageId: dto.pageId, content: dto.content }),
     );
 
+    const labels: NoteContentLabels = await this._getNoteContentLabelsUseCase.execute([note]);
+
     return new APIResponseBuilder<NoteDTO>()
-      .setData(NotesMapper.toDTO(note))
+      .setData(NotesMapper.toDTO(note, labels))
       .setMessage(await i18n.t("notes.note_created"))
       .build();
   }
@@ -214,8 +223,10 @@ export class NotesController {
       new UpdateNoteCommand({ noteId, userId: currentUser.sub, content: dto.content, pageId: dto.pageId }),
     );
 
+    const labels: NoteContentLabels = await this._getNoteContentLabelsUseCase.execute([note]);
+
     return new APIResponseBuilder<NoteDTO>()
-      .setData(NotesMapper.toDTO(note))
+      .setData(NotesMapper.toDTO(note, labels))
       .setMessage(await i18n.t("notes.note_updated"))
       .build();
   }
@@ -235,7 +246,7 @@ export class NotesController {
       .build();
   }
 
-  private _toNotesQuery(query: ListQueryDTO, userId: string, scope: { lessonId?: string; moduleId?: string }): GetNotesQuery {
+  private _toNotesQuery(query: ListQueryDTO, userId: string, scope: { lessonId?: string; moduleId?: string; pageId?: string; search?: string }): GetNotesQuery {
     return {
       page: query.page,
       limit: query.limit,
@@ -246,12 +257,16 @@ export class NotesController {
       userId,
       lessonId: scope.lessonId,
       moduleId: scope.moduleId,
+      pageId: scope.pageId,
+      search: scope.search,
     };
   }
 
   private async _buildListResponse(notes: Paginated<Note>, i18n: I18nContext): Promise<APIResponse<NoteDTO[]>> {
+    const labels: NoteContentLabels = await this._getNoteContentLabelsUseCase.execute(notes.data);
+
     return new APIResponseBuilder<NoteDTO[]>()
-      .setData(notes.data.map((note: Note) => NotesMapper.toDTO(note)))
+      .setData(notes.data.map((note: Note) => NotesMapper.toDTO(note, labels)))
       .setPagination(notes.pagination)
       .setMessage(await i18n.t("notes.notes_retrieved"))
       .build();

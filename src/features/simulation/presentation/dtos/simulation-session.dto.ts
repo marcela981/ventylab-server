@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de sesiones de simulación
  * Descripción: Serialización de las sesiones con eventos: sesión iniciada con el caso del motor, resultado de un lote de eventos, estado actual, resumen calificado, repetición con aviso de versión del motor, vista de sesión del listado y línea de tiempo de la prueba de caso
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -181,6 +181,9 @@ export class SimulationSessionDTO {
 
   @ApiProperty({ description: "Clinical case ID", example: "engine-normal-lung" })
   public caseId: string;
+
+  @ApiProperty({ description: "Clinical case title (null when the case no longer exists)", example: "Normal lung", nullable: true, type: String })
+  public caseTitle: string | null;
 
   @ApiProperty({ description: "Simulation mode", example: "FREE" })
   public mode: string;
