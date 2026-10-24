@@ -1,3 +1,12 @@
+# Funcionalidad: Exclusiones de git del backend
+# Descripción: Evita versionar dependencias, artefactos compilados, secretos (.env*), archivos de IDE y del sistema, logs, copias de seguridad de la base de datos (*.sql, *.dump) salvo las migraciones de Prisma (prisma/migrations/**/migration.sql), reportes de cobertura y archivos locales de los asistentes
+# Versión: 1.0
+# Autor: Marcela Mazo Castro
+# Proyecto: VentyLab
+# Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+# Institución: Universidad del Valle
+# Contacto: marcela.mazo@correounivalle.edu.co
+
 # Dependencies
 node_modules/
 yarn.lock
@@ -37,6 +46,8 @@ yarn-error.log*
 # Database backups
 *.dump
 *.sql
+# Prisma migrations are versioned; only ad-hoc SQL backups stay ignored.
+!prisma/migrations/**/migration.sql
 neon_backup*
 
 # Testing
