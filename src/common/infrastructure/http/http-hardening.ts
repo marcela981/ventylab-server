@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Endurecimiento HTTP de la aplicación
- * Descripción: Configuración HTTP compartida por main.ts y la aplicación de pruebas e2e: desactiva x-powered-by, aplica helmet (CSP por defecto en las respuestas de la API y una CSP propia para la interfaz de documentación, que carga Scalar desde jsDelivr), límites de tamaño de los cuerpos JSON y urlencoded, y CORS restringido a los orígenes configurados
- * Versión: 1.0
+ * Descripción: Configuración HTTP compartida por main.ts y la aplicación de pruebas e2e: desactiva x-powered-by, aplica helmet (CSP por defecto en las respuestas de la API y una CSP propia para la interfaz de documentación, que carga Scalar desde jsDelivr), límites de tamaño de los cuerpos JSON y urlencoded, y CORS restringido a los orígenes configurados con las cabeceras expuestas compartidas (descargas, Retry-After, Date y trazas)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -79,7 +79,7 @@ export function applyHttpHardening(app: NestExpressApplication, configService: C
     origin: buildCorsOrigin(configService),
     methods: [...CORS_METHODS],
     allowedHeaders: [...CORS_ALLOWED_HEADERS],
-    // Content-Disposition lets the browser read download filenames; the trace headers let clients report a request id.
+    // Content-Disposition lets the browser read download filenames, Date lets clients align their clock with the server and the trace headers let clients report a request id.
     exposedHeaders: [...CORS_EXPOSED_HEADERS],
     credentials: true,
   });
