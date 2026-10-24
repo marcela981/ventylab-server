@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Manual de operación (runbook)
   Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos
-  Versión: 1.0
+  Versión: 1.1
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -142,8 +142,8 @@ All secrets are environment variables read at boot through `ConfigService`; **ev
 | `JWT_REFRESH_SECRET` | refresh tokens (`src/features/auth/infrastructure/jwt/jwt-token-generator.ts`) | Every refresh token: users must sign in again when their access token (`JWT_EXPIRES_IN`) expires. | Rotate outside class hours. |
 | Per-user revocation | `users.refreshTokensRevokedAt` | Refresh tokens of **one** user issued before that instant (401 on refresh). Set by password change, role change and deactivation (`src/features/users/domain/entities/user.entity.ts`). Access tokens stay valid until they expire: `JwtAuthGuard` is stateless and logout only tells the client to discard tokens. | Prefer this over a global rotation for a single compromised account. |
 | `NEXTAUTH_BRIDGE_SECRET` | `POST /api/auth/nextauth-token`, header `x-nextauth-bridge-secret` (`src/features/auth/presentation/guards/nextauth-bridge.guard.ts`) | The frontend's token exchange until `ventilab-web` has the same value. | Change both deployments together. |
-| `NEXTAUTH_SECRET` | validated at startup; no other code in `src/` reads it | Nothing in this backend. It belongs to NextAuth in the frontend. | Rotate in the frontend; keep it set here because validation requires it. |
-| `ADMIN_API_KEY` | `src/common/presentation/guards/admin-api-key.guard.ts` (`x-admin-api-key`) | Nothing today: no route uses that guard. | Rotate anyway if leaked; validation requires it. |
+| `NEXTAUTH_SECRET` | validated at startup; no other code in `src/` reads it | Nothing in this backend. It belongs to NextAuth in the frontend. | Optional since it is unused; unset it or rotate it with the frontend. |
+| `ADMIN_API_KEY` | `src/common/presentation/guards/admin-api-key.guard.ts` (`x-admin-api-key`) | Nothing today: no route uses that guard. | Optional; rotate anyway if leaked, or unset it. |
 | `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AI_CUSTOM_HTTP_AUTH_VALUE` | AI providers | Only that provider until the new key is set; the gateway falls over to the next provider or the fallback meanwhile (section 3). | Create the new key at the provider, set it, restart, `POST /api/system/probe/ai/<provider>`, then revoke the old key. |
 | `MQTT_USERNAME` / `MQTT_PASSWORD` | broker connection | The server's broker connection when the broker changes credentials (section 1 symptoms). The device has its own credentials on the broker. | Add the new credentials on the broker, update the server, restart, then remove the old ones. |
 | DB password (inside `DATABASE_URL` and `DIRECT_URL`) | Prisma | The whole API (readiness 503, status `DOWN`) until both URLs use it. | Rotate in Supabase, update both URLs, restart, check `/health/ready`. |
