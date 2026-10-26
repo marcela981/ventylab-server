@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultado AuthenticatedUser
- * Descripción: Datos mínimos del usuario autenticado que comparten los inicios de sesión local, con Google y del puente de NextAuth
- * Versión: 1.0
+ * Descripción: Datos mínimos del usuario autenticado que comparten los inicios de sesión local y con Google. v1.1: sin el puente de NextAuth retirado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje

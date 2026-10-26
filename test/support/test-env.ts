@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entorno explícito de pruebas
  * Descripción: Construye las variables de entorno de las suites de integración y e2e a partir de los contenedores locales (PostgreSQL y Mosquitto), fija un valor para cada clave de EnvironmentVariables para que ni .env ni dotenv ni Prisma aporten credenciales, vacía las llaves de proveedores de IA, Supabase, Sentry e InfluxDB, aísla los tópicos MQTT bajo test/<runId> y rechaza cualquier base de datos o broker que no sea local
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -61,8 +61,6 @@ export function buildTestEnvironment(infrastructure: TestInfrastructure): Record
     JWT_EXPIRES_IN: "15m",
     JWT_REFRESH_SECRET: "test-jwt-refresh-secret-only-for-automated-tests",
     JWT_REFRESH_EXPIRES_IN: "7d",
-    NEXTAUTH_SECRET: "test-nextauth-secret",
-    NEXTAUTH_BRIDGE_SECRET: "test-nextauth-bridge-secret",
     ADMIN_API_KEY: "test-admin-api-key",
     SUPERADMIN_EMAIL: TEST_SUPERADMIN_EMAIL,
     ALLOWED_EMAIL_DOMAINS: "",

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Arranque desde cero (npm run verify:boot)
  * Descripción: Levanta un PostgreSQL desechable en Docker, aplica las migraciones, ejecuta el seed actual, compila la aplicación en una carpeta temporal ignorada por git y la arranca con un entorno mínimo (secretos ficticios, sin MQTT, almacenamiento, IA ni Sentry y sin leer .env), espera a que /health/ready responda 200 y siempre detiene la aplicación y elimina el contenedor
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -45,8 +45,6 @@ function appEnv(databaseUrl, port) {
     JWT_EXPIRES_IN: "15m",
     JWT_REFRESH_SECRET: "verify-boot-refresh-secret-0123456789abcdef",
     JWT_REFRESH_EXPIRES_IN: "7d",
-    NEXTAUTH_SECRET: "verify-boot-nextauth-secret",
-    NEXTAUTH_BRIDGE_SECRET: "verify-boot-bridge-secret",
     ADMIN_API_KEY: "verify-boot-admin-api-key",
     SUPERADMIN_EMAIL: "superadmin@verify.local",
     CORS_ORIGIN: "http://localhost:3000",

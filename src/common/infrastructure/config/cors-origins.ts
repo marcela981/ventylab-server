@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Configuración de CORS
- * Descripción: Construye los orígenes permitidos a partir de CORS_ORIGIN, FRONTEND_URL, PRODUCTION_URL y VERCEL_URL, acepta las vistas previas *.vercel.app solo si CORS_ALLOW_VERCEL_PREVIEWS está activo, y define las cabeceras permitidas compartidas por HTTP y Socket.io y las expuestas en las respuestas HTTP (incluida Date, que el cliente lee para sincronizar su reloj con el del servidor)
- * Versión: 1.4
+ * Descripción: Construye los orígenes permitidos a partir de CORS_ORIGIN, FRONTEND_URL, PRODUCTION_URL y VERCEL_URL, acepta las vistas previas *.vercel.app solo si CORS_ALLOW_VERCEL_PREVIEWS está activo, y define las cabeceras permitidas compartidas por HTTP y Socket.io y las expuestas en las respuestas HTTP (incluida Date, que el cliente lee para sincronizar su reloj con el del servidor). v1.5: sin la cabecera x-nextauth-bridge-secret del puente de NextAuth retirado
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,7 +30,6 @@ export const CORS_ALLOWED_HEADERS: readonly string[] = [
   "X-Requested-With",
   "x-lang",
   "x-admin-api-key",
-  "x-nextauth-bridge-secret",
   TRACE_ID_HEADER,
   REQUEST_ID_HEADER,
 ];
