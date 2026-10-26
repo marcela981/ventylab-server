@@ -1,7 +1,7 @@
 <!--
  * Funcionalidad: Contexto del backend para asistentes de IA
  * Descripción: Estado real del backend NestJS de VentyLab: stack, arquitectura, familias de rutas, roles y permisos, contrato OpenAPI compartido con ventilab-web, contrato Socket.io (incluido el lote ventilator:telemetry), MQTT, variables de entorno, migraciones versionadas, despliegue en un contenedor persistente de una sola réplica sobre Dokploy y comandos
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -79,7 +79,7 @@ Prisma schema: `prisma/schema.prisma`, **59 models**. `PrismaService` is the onl
   - `ventilator:telemetry` — the main channel: batched `{ frames: TelemetryFrame[], serverTs }`, volatile, flushed every `VENTILATOR_FLUSH_INTERVAL_MS` (33 ms) to the `ventilator` room + `role:TEACHER` + `role:ADMIN`.
   - `ventilator:alarm`, `ventilator:availability`, `ventilator:connected` / `ventilator:disconnected`, `ventilator:control-changed`, `ventilator:command-status`, `reservation:preempted`.
   - `evaluation:activated` (group), `grade:published`, `notification:new`, `user:role-changed` (user), `system:status-changed` (TEACHER/ADMIN roles).
-  - Emitted but not consumed by the frontend: `ventilator:data` (legacy single reading, same audience as the batch, and per user for the legacy patient simulation), `ventilator:reserved` / `ventilator:released` (legacy `api/simulation/reserve`, broadcast) and `achievement:unlocked` (user).
+  - Emitted but not consumed by the frontend: `ventilator:data` (legacy single reading, only per user for the legacy patient simulation `api/simulation/patient/*`) and `achievement:unlocked` (user). `ventilator:reserved` / `ventilator:released` are no longer emitted.
 
 ## MQTT and the physical ventilator
 

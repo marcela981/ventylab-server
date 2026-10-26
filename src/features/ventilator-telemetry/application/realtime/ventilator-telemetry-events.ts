@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Eventos en tiempo real de la telemetría del ventilador
- * Descripción: Nombres de los eventos Socket.io de la telemetría (lote ventilator:telemetry, lectura heredada ventilator:data, alarma, disponibilidad, rechazo de unión, conexión y desconexión del dispositivo), del mensaje entrante ventilator:join y la forma de sus cargas
- * Versión: 1.0
+ * Descripción: Nombres de los eventos Socket.io de la telemetría (lote ventilator:telemetry, alarma, disponibilidad, rechazo de unión, conexión y desconexión del dispositivo), del mensaje entrante ventilator:join y la forma de sus cargas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,7 +11,6 @@
 import { type TelemetryFrame } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-frame";
 
 export const VENTILATOR_TELEMETRY_EVENT: string = "ventilator:telemetry";
-export const VENTILATOR_DATA_EVENT: string = "ventilator:data";
 export const VENTILATOR_ALARM_EVENT: string = "ventilator:alarm";
 export const VENTILATOR_AVAILABILITY_EVENT: string = "ventilator:availability";
 export const VENTILATOR_JOIN_REJECTED_EVENT: string = "ventilator:join-rejected";

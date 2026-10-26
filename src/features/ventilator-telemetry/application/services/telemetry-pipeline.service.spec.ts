@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del pipeline de telemetría
- * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia (con tramas duplicadas contadas aparte), el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas y la forma heredada de ventilator:data, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
- * Versión: 1.5
+ * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia (con tramas duplicadas contadas aparte), el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -190,20 +190,6 @@ describe("TelemetryPipelineService", () => {
       pipeline.stop();
 
       expect([batchesAtOldInterval, batchesBeforeNewInterval, batchesAtNewInterval]).toEqual([1, 1, 2]);
-    });
-
-    it("keeps the legacy ventilator:data shape with the latest frame", () => {
-      const { pipeline, publisher, clock }: PipelineFixture = buildPipeline();
-
-      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 2, volume: 3 }));
-      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 10, flow: 20, volume: 30, spo2: 96, seq: 9, mode: "VCV" }));
-      pipeline.flush();
-      const legacy: RecordedEmit[] = publisher.emitsOf("ventilator:data");
-
-      expect(legacy).toHaveLength(1);
-      expect(legacy[0].method).toBe("emitToRoomsVolatile");
-      expect(legacy[0].target).toEqual(["ventilator", "role:TEACHER", "role:ADMIN"]);
-      expect(legacy[0].payload).toEqual({ pressure: 10, flow: 20, volume: 30, spo2: 96, timestamp: clock.nowMs, deviceId: "ventilab-device-001" });
     });
 
     it("records processing, total and flush latencies", () => {

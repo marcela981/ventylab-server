@@ -1,6 +1,6 @@
 # Funcionalidad: Contrato de eventos en tiempo real (AsyncAPI 3.0)
-# Descripción: Documenta los eventos Socket.io que emite el servidor (sala, destinatarios y carga), los mensajes que acepta del cliente (authenticate y los ventilator:* reenviados) y los flujos de eventos SSE del tutor de IA y de la asistencia de simulación; test/openapi/asyncapi-events.spec.ts falla si un evento emitido en src/ no aparece aquí
-# Versión: 1.0
+# Descripción: Documenta los eventos Socket.io que emite el servidor (sala, destinatarios y carga), los mensajes que acepta del cliente (authenticate y los ventilator:* reenviados) y los flujos de eventos SSE del tutor de IA y de la asistencia de simulación; test/openapi/asyncapi-events.spec.ts falla si un evento emitido en src/ no aparece aquí. v1.1: sin ventilator:reserved ni ventilator:released, y ventilator:data solo para la simulación de paciente (sala del usuario)
+# Versión: 1.1
 # Autor: Marcela Mazo Castro
 # Proyecto: VentyLab
 # Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -109,8 +109,6 @@ channels:
         $ref: "#/components/messages/SystemStatusChanged"
       ventilatorTelemetry:
         $ref: "#/components/messages/VentilatorTelemetry"
-      ventilatorData:
-        $ref: "#/components/messages/VentilatorData"
       ventilatorCommandStatus:
         $ref: "#/components/messages/VentilatorCommandStatus"
       ventilatorControlChanged:
@@ -123,8 +121,6 @@ channels:
     messages:
       ventilatorTelemetry:
         $ref: "#/components/messages/VentilatorTelemetry"
-      ventilatorData:
-        $ref: "#/components/messages/VentilatorData"
       ventilatorCommandStatus:
         $ref: "#/components/messages/VentilatorCommandStatus"
       ventilatorControlChanged:
@@ -135,10 +131,6 @@ channels:
     servers:
       - $ref: "#/servers/socketio"
     messages:
-      ventilatorReserved:
-        $ref: "#/components/messages/VentilatorReserved"
-      ventilatorReleased:
-        $ref: "#/components/messages/VentilatorReleased"
       ventilatorAlarm:
         $ref: "#/components/messages/VentilatorAlarm"
       ventilatorAvailability:
@@ -255,7 +247,6 @@ operations:
     messages:
       - $ref: "#/channels/roleRoom/messages/systemStatusChanged"
       - $ref: "#/channels/roleRoom/messages/ventilatorTelemetry"
-      - $ref: "#/channels/roleRoom/messages/ventilatorData"
       - $ref: "#/channels/roleRoom/messages/ventilatorCommandStatus"
       - $ref: "#/channels/roleRoom/messages/ventilatorControlChanged"
   sendVentilatorRoomEvents:
@@ -264,7 +255,6 @@ operations:
       $ref: "#/channels/ventilatorRoom"
     messages:
       - $ref: "#/channels/ventilatorRoom/messages/ventilatorTelemetry"
-      - $ref: "#/channels/ventilatorRoom/messages/ventilatorData"
       - $ref: "#/channels/ventilatorRoom/messages/ventilatorCommandStatus"
       - $ref: "#/channels/ventilatorRoom/messages/ventilatorControlChanged"
   sendBroadcastEvents:
@@ -272,8 +262,6 @@ operations:
     channel:
       $ref: "#/channels/broadcast"
     messages:
-      - $ref: "#/channels/broadcast/messages/ventilatorReserved"
-      - $ref: "#/channels/broadcast/messages/ventilatorReleased"
       - $ref: "#/channels/broadcast/messages/ventilatorAlarm"
       - $ref: "#/channels/broadcast/messages/ventilatorAvailability"
       - $ref: "#/channels/broadcast/messages/ventilatorConnected"
@@ -479,7 +467,7 @@ components:
             description: Server time in epoch milliseconds
     VentilatorData:
       name: "ventilator:data"
-      summary: Latest single reading (legacy shape). The physical ventilator sends it with each telemetry batch to the ventilator room and privileged roles; the patient simulation sends it to the user room of the session owner
+      summary: Latest single reading (legacy shape) of the patient simulation, sent to the user room of the session owner. The physical ventilator only uses ventilator:telemetry
       payload:
         $ref: "#/components/schemas/VentilatorReading"
     VentilatorAlarm:
@@ -522,35 +510,6 @@ components:
       summary: The physical ventilator stopped sending telemetry or the broker connection was lost
       payload:
         $ref: "#/components/schemas/VentilatorConnection"
-    VentilatorReserved:
-      name: "ventilator:reserved"
-      summary: The simulation ventilator was reserved (legacy simulation flow)
-      payload:
-        type: object
-        required: [userId, userName, reservationId, groupId, leaderId, endTime]
-        properties:
-          userId:
-            type: string
-          userName:
-            type: [string, "null"]
-          reservationId:
-            type: string
-          groupId:
-            type: [string, "null"]
-          leaderId:
-            type: "null"
-          endTime:
-            type: number
-            description: Epoch milliseconds
-    VentilatorReleased:
-      name: "ventilator:released"
-      summary: The simulation ventilator reservation was released (legacy simulation flow)
-      payload:
-        type: object
-        required: [userId]
-        properties:
-          userId:
-            type: string
     VentilatorCommandStatus:
       name: "ventilator:command-status"
       summary: Lifecycle update of a command sent to the physical ventilator

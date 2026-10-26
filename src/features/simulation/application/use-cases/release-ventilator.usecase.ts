@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso ReleaseVentilatorUseCase
- * Descripción: Adaptador heredado de DELETE /api/simulation/reserve: delega en ReservationsFacade.releaseActive (completa la reserva activa si quien la libera puede hacerlo), publica el evento que difunde `ventilator:released`
- * Versión: 1.2
+ * Descripción: Adaptador heredado de DELETE /api/simulation/reserve: delega en ReservationsFacade.releaseActive (completa la reserva activa si quien la libera puede hacerlo), publica el evento de dominio VentilatorReleasedEvent (v1.3: ya no se difunde por Socket.io)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
