@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador UsersController
- * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id
- * Versión: 1.2
+ * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id. v1.3: la descripción del cambio de contraseña ya no menciona sesiones de NextAuth
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -153,7 +153,7 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Change own password",
-    description: "Changes the authenticated user's password and closes every NextAuth session of the user",
+    description: "Changes the authenticated user's password; access and refresh tokens already issued stay valid until they expire",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Password changed successfully" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error, wrong current password, or no password set" })

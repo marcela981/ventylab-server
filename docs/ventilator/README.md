@@ -1,3 +1,14 @@
+<!--
+ * Funcionalidad: Índice de las features del ventilador físico
+ * Descripción: Features de reservas, telemetría y comandos del ventilador físico y catálogos de eventos Socket.io y rutas HTTP. v1.1: retira ventilator:reserved, ventilator:released y el ventilator:data de la telemetría, que ya no se emiten
+ * Versión: 1.1
+ * Autor: Marcela Mazo Castro
+ * Proyecto: VentyLab
+ * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+ * Institución: Universidad del Valle
+ * Contacto: marcela.mazo@correounivalle.edu.co
+-->
+
 # Physical ventilator features
 
 Three NestJS features own everything related to the physical ventilator. They replace the real-device code that lived in `src/features/simulation`, which now only keeps thin legacy adapters.
@@ -69,10 +80,7 @@ Each module exports exactly one facade.
 
 | Event | Direction | Audience | Payload | Status |
 | --- | --- | --- | --- | --- |
-| `ventilator:data` | server → client | rooms `ventilator`, `role:TEACHER`, `role:ADMIN`, volatile, once per flush | `VentilatorReading` of the latest frame | legacy (consumed by the current frontend) |
-| `ventilator:alarm` | server → client | broadcast | `VentilatorAlarm` | legacy (consumed by the current frontend) |
-| `ventilator:reserved` | server → client | broadcast, legacy reserve route only | `{ userId, userName, reservationId, groupId, leaderId: null, endTime }` | legacy (consumed by the current frontend) |
-| `ventilator:released` | server → client | broadcast, legacy release route only | `{ userId }` | legacy (consumed by the current frontend) |
+| `ventilator:alarm` | server → client | broadcast | `VentilatorAlarm` | legacy |
 | `ventilator:telemetry` | server → client | rooms `ventilator`, `role:TEACHER`, `role:ADMIN`, volatile | `{ frames: TelemetryFrame[], serverTs }` | new |
 | `ventilator:availability` | server → client | broadcast on reservation change; the user on authentication and on `ventilator:join` | `{ occupied, startsAt?, endsAt? }` | new |
 | `ventilator:join-rejected` | server → client | the requesting user | `{ reason: "no_active_reservation" \| "not_reservation_holder" }` | new |
@@ -84,7 +92,7 @@ Each module exports exactly one facade.
 | `ventilator:join` | client → server | — | none | new |
 | `ventilator:heartbeat` | client → server | — | none | new |
 
-The frontend in `ventilab-web` listens only to `ventilator:data`, `ventilator:alarm`, `ventilator:reserved` and `ventilator:released`; the new events are additive.
+The telemetry no longer emits the legacy `ventilator:data` reading, and the legacy reserve and release routes no longer broadcast `ventilator:reserved` / `ventilator:released` (they sent `userId` and `userName` to unauthenticated sockets and had no listener in `ventilab-web`). The frontend consumes `ventilator:telemetry` and the other events above.
 
 ## HTTP endpoint catalogue
 

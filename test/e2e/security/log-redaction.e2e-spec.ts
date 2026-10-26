@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e de redacción de secretos y datos personales en los registros
- * Descripción: Con un logger de captura instalado en la aplicación e2e recorre inicio de sesión (correcto, con credenciales erróneas y con validación fallida), renovación de token (manipulada y con validación fallida), cambio de contraseña (contraseña actual errónea y nueva contraseña débil), el puente de NextAuth (secreto erróneo, correo que no coincide y cuerpo inválido) y una llamada de IA del tutor cuyo primer proveedor falla con un mensaje que contiene claves; comprueba que ni la salida del logger, ni las filas de error_logs, ni las filas de ai_call_logs, ni el prompt enviado al proveedor contienen contraseñas, tokens, secretos, claves de API, correos o nombres del usuario
- * Versión: 1.1
+ * Descripción: Con un logger de captura instalado en la aplicación e2e recorre inicio de sesión (correcto, con credenciales erróneas y con validación fallida), renovación de token (manipulada y con validación fallida), cambio de contraseña (contraseña actual errónea y nueva contraseña débil) y una llamada de IA del tutor cuyo primer proveedor falla con un mensaje que contiene claves; comprueba que ni la salida del logger, ni las filas de error_logs, ni las filas de ai_call_logs, ni el prompt enviado al proveedor contienen contraseñas, tokens, secretos, claves de API, correos o nombres del usuario. v1.2: sin los pasos del puente de NextAuth retirado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,7 +24,6 @@ import { delay } from "../../support/polling";
 const STUDENT_NAME: string = "Valentina Restrepo";
 const STUDENT_EMAIL: string = "valentina.restrepo@ventylab.test";
 const NEW_PASSWORD: string = "Rotated-Secret-Pass-987";
-const BRIDGE_SECRET: string = "test-nextauth-bridge-secret";
 const JWT_SECRETS: readonly string[] = ["test-jwt-secret-only-for-automated-tests", "test-jwt-refresh-secret-only-for-automated-tests"];
 const FAKE_PROVIDER_KEY: string = "fake-provider-key-security-test-0000000000";
 const FAKE_PROVIDER_BEARER: string = "sk-fake-security-test-bearer-0000000000";
@@ -117,20 +116,6 @@ describe("security: secrets and personal data never reach the logs", () => {
 
     expectErrorPathRecorded(haystack);
     expect(leaks(haystack, [TEST_USER_PASSWORD, "Not-The-Current-1", NEW_PASSWORD, token])).toEqual([]);
-  });
-
-  it("should keep the bridge secret and the session email out of the logs", async () => {
-    const wrongSecret: Response = await post("/api/auth/nextauth-token", { userId: student.id, email: STUDENT_EMAIL }, { "x-nextauth-bridge-secret": "not-the-bridge-secret" });
-    const emailMismatch: Response = await post("/api/auth/nextauth-token", { userId: student.id, email: "someone.else@ventylab.test" }, { "x-nextauth-bridge-secret": BRIDGE_SECRET });
-    const invalidBody: Response = await post("/api/auth/nextauth-token", { email: STUDENT_EMAIL }, { "x-nextauth-bridge-secret": BRIDGE_SECRET });
-
-    expect(wrongSecret.status).toBe(401);
-    expect(emailMismatch.status).toBe(401);
-    expect(invalidBody.status).toBe(400);
-    const haystack: Haystack = await collect();
-
-    expectErrorPathRecorded(haystack);
-    expect(leaks(haystack, [BRIDGE_SECRET, "not-the-bridge-secret", STUDENT_EMAIL, "someone.else@ventylab.test"])).toEqual([]);
   });
 
   it("should redact the student's name and email from the prompt and keep provider keys out of telemetry and logs", async () => {

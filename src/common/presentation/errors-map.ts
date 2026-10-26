@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.36
+ * Versión: 1.37
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -64,7 +64,6 @@ import {
   ForbiddenPermissionError,
   GoogleEmailNotVerifiedError,
   GoogleSignInNotConfiguredError,
-  InvalidBridgeSecretError,
   InvalidCredentialsError,
   InvalidGoogleTokenError,
   InvalidTokenError,
@@ -337,7 +336,6 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [InvalidTokenError, HttpStatus.UNAUTHORIZED],
   [RefreshTokenExpiredError, HttpStatus.UNAUTHORIZED],
   [RefreshTokenInvalidError, HttpStatus.UNAUTHORIZED],
-  [InvalidBridgeSecretError, HttpStatus.UNAUTHORIZED],
   [RefreshTokenRevokedError, HttpStatus.UNAUTHORIZED],
   [UserInactiveError, HttpStatus.FORBIDDEN],
   [PasswordLoginNotAvailableError, HttpStatus.BAD_REQUEST],

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba de cobertura del contrato AsyncAPI
- * Descripción: Recorre src/ y obtiene los eventos Socket.io que se emiten (segundo argumento de emitToUser/emitToGroup/emitToRole/emitToRoom/emitToRoomsVolatile, primer argumento de broadcast y client.emit, resolviendo constantes y, cuando el evento es una variable, todas las constantes *_EVENT del archivo), los mensajes del cliente (@SubscribeMessage y comparaciones message.event === o !== CONSTANTE) y los eventos SSE escritos por los helpers de streaming; falla si alguno falta en openapi/asyncapi.yaml o en contracts/websocket-events.contracts.ts, si el AsyncAPI documenta eventos Socket.io que nadie emite o recibe, o si una ruta SSE de openapi.json no tiene canal
- * Versión: 1.0
+ * Descripción: Recorre src/ y obtiene los eventos Socket.io que se emiten (segundo argumento de emitToUser/emitToGroup/emitToRole/emitToRoom/emitToRoomsVolatile, primer argumento de broadcast y client.emit, resolviendo constantes y, cuando el evento es una variable, todas las constantes *_EVENT del archivo), los mensajes del cliente (@SubscribeMessage y comparaciones message.event === o !== CONSTANTE) y los eventos SSE escritos por los helpers de streaming; falla si alguno falta en openapi/asyncapi.yaml o en contracts/websocket-events.contracts.ts, si el AsyncAPI documenta eventos Socket.io que nadie emite o recibe, o si una ruta SSE de openapi.json no tiene canal. v1.1: el piso de eventos emitidos baja a 18 al retirar ventilator:reserved y ventilator:released
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -117,7 +117,7 @@ describe("AsyncAPI contract coverage", () => {
   const documented: Set<string> = documentedMessageNames();
 
   it("should find the realtime events emitted in src", () => {
-    expect(emitted.size).toBeGreaterThanOrEqual(20);
+    expect(emitted.size).toBeGreaterThanOrEqual(18);
     expect(received).toEqual(new Set<string>(["authenticate", "ventilator:join", "ventilator:heartbeat"]));
     expect(sse).toEqual(new Set<string>(["delta", "done", "error"]));
   });

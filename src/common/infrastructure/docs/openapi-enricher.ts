@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Completado del documento OpenAPI
- * Descripción: Completa cada operación que genera @nestjs/swagger con los metadatos de su ruta: envoltorio APIResponse en las respuestas 2xx JSON (data con el esquema documentado o null), contenido de las respuestas por streaming y CSV, respuestas de error estándar con el componente ErrorResponse (cuyo data documenta el detalle por campo errors con el componente FieldError, con ejemplo en la respuesta 400; 400, 401, 403, 404, 429 y 500 según cuerpo, parámetros, guards y limitación de peticiones (todas las rutas salvo las excluidas con @SkipThrottle)), acceso requerido (x-min-role, x-required-permissions, x-self-or-permissions, seguridad y una línea en la descripción), deprecación con su ruta sucesora y operationId únicos
- * Versión: 1.2
+ * Descripción: Completa cada operación que genera @nestjs/swagger con los metadatos de su ruta: envoltorio APIResponse en las respuestas 2xx JSON (data con el esquema documentado o null), contenido de las respuestas por streaming y CSV, respuestas de error estándar con el componente ErrorResponse (cuyo data documenta el detalle por campo errors con el componente FieldError, con ejemplo en la respuesta 400; 400, 401, 403, 404, 429 y 500 según cuerpo, parámetros, guards y limitación de peticiones (todas las rutas salvo las excluidas con @SkipThrottle)), acceso requerido (x-min-role, x-required-permissions, x-self-or-permissions, seguridad y una línea en la descripción), deprecación con su ruta sucesora y operationId únicos. v1.3: ya no añade el esquema de seguridad del puente de NextAuth retirado
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,6 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import {
-  BRIDGE_SECURITY_SCHEME,
   classifyAccess,
   type RoleModel,
   type RouteAccess,
@@ -349,17 +348,12 @@ export function enrichOpenAPIDocument(document: JsonObject, routes: readonly Rou
 
   const components: JsonObject = isObject(document.components) ? document.components : {};
   const schemas: JsonObject = isObject(components.schemas) ? components.schemas : {};
-  const securitySchemes: JsonObject = isObject(components.securitySchemes) ? components.securitySchemes : {};
   const examples: JsonObject = isObject(components.examples) ? components.examples : {};
 
   document.components = {
     ...components,
     schemas: { ...schemas, ...buildEnvelopeSchemas() },
     examples: { ...examples, ...buildErrorExamples() },
-    securitySchemes: {
-      ...securitySchemes,
-      [BRIDGE_SECURITY_SCHEME]: { type: "apiKey", in: "header", name: "x-nextauth-bridge-secret", description: "Server-to-server secret shared with the frontend server" },
-    },
   };
 
   return document;

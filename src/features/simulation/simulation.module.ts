@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo SimulationModule
- * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, identificador del dispositivo desde ConfigService (los ajustes de sesiones SIMULATION_SESSION_SETTINGS_TOKEN los enlaza la raíz de composición), la fachada de telemetría del ventilador (VentilatorTelemetryModule) para estado y alarmas, la fachada de comandos del ventilador (VentilatorCommandsModule) para el camino físico de POST /api/simulation/command, manejadores realtime y ciclo de vida; exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService; registra el repositorio de lecturas por lotes para analítica
- * Versión: 1.8
+ * Descripción: Registra la feature de simulación: controladores /api/simulation, /api/simulation/patient, /api/simulation/sessions y la prueba de casos /api/clinical-cases/:caseId/test-run, asistencia de IA SSE /api/simulation/sessions/:id/assist sobre AiGateway de AiModule, casos de uso, servicios en memoria (pacientes simulados), servicios de sesiones con eventos, repositorios Prisma, lector de intentos de examen, generador de semillas, identificador del dispositivo desde ConfigService (los ajustes de sesiones SIMULATION_SESSION_SETTINGS_TOKEN los enlaza la raíz de composición), la fachada de telemetría del ventilador (VentilatorTelemetryModule) para estado y alarmas, la fachada de comandos del ventilador (VentilatorCommandsModule) para el camino físico de POST /api/simulation/command y ciclo de vida (v1.9: sin los manejadores realtime de ventilator:reserved/released); exporta los repositorios de reservas y sesiones heredadas, SimulationFacade y SimulationAssistContextService; registra el repositorio de lecturas por lotes para analítica
+ * Versión: 1.9
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -51,7 +51,6 @@ import { StopPatientSimulationUseCase } from "@/features/simulation/application/
 import { SIMULATION_ANALYTICS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/simulation-analytics.repository";
 import { SIMULATION_SESSIONS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/simulation-sessions.repository";
 import { SIMULATOR_SESSIONS_REPOSITORY_TOKEN } from "@/features/simulation/domain/repositories/simulator-sessions.repository";
-import { SimulationRealtimeHandlers } from "@/features/simulation/infrastructure/events/simulation-realtime.handlers";
 import { SimulationLifecycleService } from "@/features/simulation/infrastructure/lifecycle/simulation-lifecycle.service";
 import { ExamAttemptsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/exam-attempts-prisma.repository";
 import { SimulationAnalyticsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/simulation-analytics-prisma.repository";
@@ -115,7 +114,6 @@ function createSimulationSettings(configService: ConfigService<EnvironmentVariab
     StartPatientSimulationUseCase,
     StopPatientSimulationUseCase,
     GetActivePatientUseCase,
-    SimulationRealtimeHandlers,
     SimulationLifecycleService,
     SimulationSessionRuntime,
     SimulationSessionAccessService,

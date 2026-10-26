@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Utilidad issueLoginResult
- * Descripción: Emite el mismo par de tokens de acceso y de refresco para cualquier inicio de sesión (local, Google o puente de NextAuth) y arma el LoginResult
- * Versión: 1.0
+ * Descripción: Emite el mismo par de tokens de acceso y de refresco para cualquier inicio de sesión (local o con Google) y arma el LoginResult. v1.1: sin el puente de NextAuth retirado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje

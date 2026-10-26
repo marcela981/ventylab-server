@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e del endurecimiento HTTP
- * Descripción: Con la aplicación e2e (misma configuración HTTP que main.ts y la documentación montada) comprueba las cabeceras de seguridad de helmet en respuestas correctas y de error, la ausencia de x-powered-by, que la interfaz de documentación conserva su comportamiento fuera de producción, que CORS no autoriza un origen ajeno ni una vista previa de Vercel deshabilitada pero sí el origen configurado, y que un cuerpo JSON o urlencoded por encima del límite responde 413 con el código traducido common.payload_too_large sin escribir error_logs
- * Versión: 1.0
+ * Descripción: Con la aplicación e2e (misma configuración HTTP que main.ts y la documentación montada) comprueba las cabeceras de seguridad de helmet en respuestas correctas y de error, la ausencia de x-powered-by, que la interfaz de documentación conserva su comportamiento fuera de producción, que CORS no autoriza un origen ajeno ni una vista previa de Vercel deshabilitada pero sí el origen configurado (exponiendo la cabecera Date en las respuestas), y que un cuerpo JSON o urlencoded por encima del límite responde 413 con el código traducido common.payload_too_large sin escribir error_logs
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -84,6 +84,15 @@ describe("security: HTTP hardening", () => {
     expect(preview.headers["access-control-allow-origin"]).toBeUndefined();
     expect(allowed.headers["access-control-allow-origin"]).toBe(ALLOWED_ORIGIN);
     expect(allowed.headers["access-control-allow-credentials"]).toBe("true");
+  });
+
+  it("should expose the Date header to the configured origin so the client can read the server clock", async () => {
+    const response: Response = await request(e2e.baseUrl).get("/health").set("origin", ALLOWED_ORIGIN);
+    const exposed: string[] = String(response.headers["access-control-expose-headers"] ?? "").split(",").map((header: string): string => header.trim().toLowerCase());
+
+    expect(response.headers["access-control-allow-origin"]).toBe(ALLOWED_ORIGIN);
+    expect(exposed).toContain("date");
+    expect(response.headers.date).toBeDefined();
   });
 
   it("should answer 413 with the translated code for a JSON body over the limit without an error log row", async () => {

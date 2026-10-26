@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba de completitud del contrato OpenAPI
  * Descripción: Lee openapi/openapi.json y falla si el documento no es OpenAPI 3.1 sin nullable, si alguna operación no tiene respuesta 2xx con contenido (salvo 204), seguridad cuando está protegida, x-min-role, x-required-permissions, respuestas de error con ErrorResponse (500 siempre, 401 si autentica, 403 si exige permisos) u operationId único; además contrasta x-min-role con la matriz de autorización e2e (misma cantidad de operaciones y el rol mínimo que la matriz observa, salvo divergencias explicadas por reglas del caso de uso) y verifica que ningún DTO comparta nombre de esquema con otro
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,7 +23,7 @@ interface OperationEntry {
 const REPO_ROOT: string = resolve(__dirname, "..", "..");
 const DOCUMENT: JsonObject = JSON.parse(readFileSync(join(REPO_ROOT, "openapi", "openapi.json"), "utf-8")) as JsonObject;
 const HTTP_METHODS: readonly string[] = ["get", "put", "post", "delete", "patch", "options", "head", "trace"];
-const ACCESS_LEVELS: readonly string[] = ["ANONYMOUS", "SERVER", "STUDENT", "TEACHER", "ADMIN"];
+const ACCESS_LEVELS: readonly string[] = ["ANONYMOUS", "STUDENT", "TEACHER", "ADMIN"];
 const ERROR_RESPONSE_REF: string = "#/components/schemas/ErrorResponse";
 
 // Routes where the guards admit a lower role than the matrix observes, because the use case or the self-or rule adds a check the random fixture cannot satisfy.
@@ -84,10 +84,6 @@ function toMatrixKey(key: string): string {
 }
 
 function expectedMinRole(outcomes: ActorOutcomes): string | undefined {
-  if (Object.values(outcomes).every((outcome: ActorOutcomes[Actor]): boolean => outcome === 401)) {
-    return "SERVER";
-  }
-
   return MATRIX_ACTOR_ROLES.find(([actor]: [Actor, string]): boolean => outcomes[actor] === "allow")?.[1];
 }
 

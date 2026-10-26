@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de autenticación
- * Descripción: Errores de dominio de credenciales, tokens, revocación, usuario inactivo, inicio de sesión con Google, permisos y secreto del puente de NextAuth
- * Versión: 1.1
+ * Descripción: Errores de dominio de credenciales, tokens, revocación, usuario inactivo, inicio de sesión con Google y permisos. v1.2: sin el error del secreto del puente de NextAuth retirado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -55,12 +55,6 @@ export class RefreshTokenInvalidError extends DomainError {
 export class ForbiddenPermissionError extends DomainError {
   public constructor() {
     super("Forbidden", "auth.forbidden");
-  }
-}
-
-export class InvalidBridgeSecretError extends DomainError {
-  public constructor() {
-    super("Missing or invalid NextAuth bridge secret", "auth.invalid_bridge_secret");
   }
 }
 

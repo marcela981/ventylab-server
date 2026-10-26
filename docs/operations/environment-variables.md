@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Referencia de variables de entorno
   Descripción: Lista cada variable que valida env.validation.ts, las que se leen antes del arranque de Nest (Sentry), las de pruebas y herramientas y las de interpolación de docker-compose, con obligatoriedad, valor por defecto, descripción y ejemplo no real
-  Versión: 1.0
+  Versión: 1.2
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -40,9 +40,7 @@ Source of truth: `src/common/infrastructure/config/env.validation.ts` (`Environm
 | `JWT_EXPIRES_IN` | yes | — | Access token lifetime (`ms`-style duration). | `15m` |
 | `JWT_REFRESH_SECRET` | yes | — | Signs refresh tokens; different from `JWT_SECRET`. | `change-me-other-32-random-chars` |
 | `JWT_REFRESH_EXPIRES_IN` | yes | — | Refresh token lifetime. | `7d` |
-| `NEXTAUTH_SECRET` | yes | — | Same secret as the frontend NextAuth, to verify its tokens in the bridge. | `change-me` |
-| `NEXTAUTH_BRIDGE_SECRET` | yes | — | Shared secret of the `x-nextauth-bridge-secret` header (server-to-server bridge). | `change-me` |
-| `ADMIN_API_KEY` | yes | — | Value of the `x-admin-api-key` header accepted by `AdminApiKeyGuard`. | `change-me` |
+| `ADMIN_API_KEY` | no | — | Value of the `x-admin-api-key` header accepted by `AdminApiKeyGuard`; no route applies that guard today. | `change-me` |
 | `SUPERADMIN_EMAIL` | yes | — | Account forced to ADMIN and active at startup; its role and status are immutable. Must be an email. | `superadmin@example.com` |
 | `GOOGLE_CLIENT_ID` | no | — | Google sign-in client ID. | `example.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET` | no | — | Google sign-in client secret. | `change-me` |

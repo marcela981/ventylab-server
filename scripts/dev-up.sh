@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
+# Funcionalidad: Arranque del backend en desarrollo
+# Descripción: Levanta el backend de VentyLab en modo desarrollo de forma idempotente: verifica las variables de entorno requeridas, genera el cliente de Prisma, aplica migraciones y comprueba el puerto. v1.1: deja de exigir NEXTAUTH_SECRET y NEXTAUTH_URL, que el backend nunca valida
+# Versión: 1.1
+# Autor: Marcela Mazo Castro
+# Proyecto: VentyLab
+# Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
+# Institución: Universidad del Valle
+# Contacto: marcela.mazo@correounivalle.edu.co
 # ============================================================================
 # scripts/dev-up.sh
 # ----------------------------------------------------------------------------
 # Levanta el backend de VentyLab en modo desarrollo de forma idempotente.
 #
 # Pasos (fail-fast):
-#   (a) Verifica variables de entorno requeridas (DATABASE_URL, NEXTAUTH_SECRET,
-#       NEXTAUTH_URL, JWT_SECRET).
+#   (a) Verifica variables de entorno requeridas (DATABASE_URL, JWT_SECRET).
 #   (b) Genera el cliente de Prisma si falta o está desactualizado.
 #   (c) Aplica migraciones pendientes (prisma migrate deploy).
 #   (d) Verifica que el puerto 4000 no esté ocupado por otro proceso, y arranca
@@ -54,7 +61,7 @@ log "Paso (a): verificando variables de entorno..."
 ENV_FILE=".env"
 if [[ ! -f "$ENV_FILE" ]]; then
   fatal "No se encontró .env en $PROJECT_ROOT.
-       Crea uno con al menos: DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, JWT_SECRET."
+       Crea uno con al menos: DATABASE_URL, JWT_SECRET."
 fi
 ok "Archivo de entorno detectado: $ENV_FILE (única fuente de verdad)"
 
@@ -65,7 +72,7 @@ set -a
 source <(grep -v '^[[:space:]]*#' "$ENV_FILE" | grep -E '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=' || true)
 set +a
 
-REQUIRED_VARS=(DATABASE_URL NEXTAUTH_SECRET NEXTAUTH_URL JWT_SECRET)
+REQUIRED_VARS=(DATABASE_URL JWT_SECRET)
 MISSING=()
 for var in "${REQUIRED_VARS[@]}"; do
   if [[ -z "${!var:-}" ]]; then

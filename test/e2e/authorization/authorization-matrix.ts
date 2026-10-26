@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
  * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas
- * Versión: 1.4
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,9 +31,6 @@ const TEACHER_UP: ActorOutcomes = { anonymous: 401, student: 403, teacher: "allo
 
 // The permission is held by ADMIN only (ADMIN holds the full catalog; the superadmin is an ADMIN).
 const ADMIN_ONLY: ActorOutcomes = { anonymous: 401, student: 403, teacher: 403, admin: "allow", superadmin: "allow" };
-
-// NextAuthBridgeGuard: only the server-to-server bridge secret header opens it; a JWT never does.
-const BRIDGE_SECRET_ONLY: ActorOutcomes = { anonymous: 401, student: 401, teacher: 401, admin: 401, superadmin: 401 };
 
 // Guards pass, but the use case answers 403 to callers whose role is not STUDENT.
 const STUDENT_ROLE_ONLY: ActorOutcomes = { anonymous: 401, student: "allow", teacher: 403, admin: 403, superadmin: 403 };
@@ -113,7 +110,6 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "POST /api/auth/google": PUBLIC, // no guard
   "POST /api/auth/login": PUBLIC, // no guard
   "POST /api/auth/logout": AUTHENTICATED, // JwtAuthGuard
-  "POST /api/auth/nextauth-token": BRIDGE_SECRET_ONLY, // NextAuthBridgeGuard (x-nextauth-bridge-secret)
   "POST /api/auth/refresh": PUBLIC, // no guard
   "POST /api/auth/register": PUBLIC, // no guard
 

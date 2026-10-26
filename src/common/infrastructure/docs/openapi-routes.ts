@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Metadatos de rutas para OpenAPI
- * Descripción: Recorre los controladores registrados en el contenedor de Nest y describe cada operación (método, ruta OpenAPI y Express, guards, permisos de @RequirePermissions y @AllowSelfOr, límites de @Throttle y exclusiones de @SkipThrottle, respuesta sin envoltorio o por streaming, tipos producidos y regla de deprecación); también clasifica el acceso requerido (rol mínimo, permisos, esquema de seguridad) a partir de esos metadatos y del mapa rol → permisos que recibe
- * Versión: 1.1
+ * Descripción: Recorre los controladores registrados en el contenedor de Nest y describe cada operación (método, ruta OpenAPI y Express, guards, permisos de @RequirePermissions y @AllowSelfOr, límites de @Throttle y exclusiones de @SkipThrottle, respuesta sin envoltorio o por streaming, tipos producidos y regla de deprecación); también clasifica el acceso requerido (rol mínimo, permisos, esquema de seguridad) a partir de esos metadatos y del mapa rol → permisos que recibe. v1.2: sin el guard, el esquema de seguridad ni el acceso SERVER del puente de NextAuth retirado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,16 +25,13 @@ const DEFAULT_THROTTLER_SKIP_METADATA: string = "THROTTLER:SKIPdefault";
 const DEFAULT_THROTTLER_LIMIT_METADATA: string = "THROTTLER:LIMITdefault";
 
 export const JWT_SECURITY_SCHEME: string = "JWT-auth";
-export const BRIDGE_SECURITY_SCHEME: string = "NextAuth-bridge";
 
 export const ANONYMOUS_ACCESS: string = "ANONYMOUS";
-export const SERVER_ACCESS: string = "SERVER";
 
 const JWT_GUARD: string = "JwtAuthGuard";
 const OPTIONAL_JWT_GUARD: string = "OptionalJwtAuthGuard";
 const PERMISSIONS_GUARD: string = "PermissionsGuard";
 const SELF_OR_PERMISSION_GUARD: string = "SelfOrPermissionGuard";
-const BRIDGE_GUARD: string = "NextAuthBridgeGuard";
 
 export interface SelfOrPermissions {
   readonly paramKey: string;
@@ -207,17 +204,6 @@ function codeList(values: readonly string[]): string {
 
 export function classifyAccess(route: RouteDescriptor, roles: RoleModel): RouteAccess {
   const guards: readonly string[] = route.guards;
-
-  if (guards.includes(BRIDGE_GUARD)) {
-    return {
-      minRole: SERVER_ACCESS,
-      permissions: [],
-      security: [{ [BRIDGE_SECURITY_SCHEME]: [] }],
-      authenticated: true,
-      permissionChecked: false,
-      summary: "server-to-server only: the `x-nextauth-bridge-secret` header must carry the bridge secret; user tokens are rejected",
-    };
-  }
 
   if (!guards.includes(JWT_GUARD)) {
     const optional: boolean = guards.includes(OPTIONAL_JWT_GUARD);

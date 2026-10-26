@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultado LoginResult
- * Descripción: Datos devueltos por el inicio de sesión (local, Google o puente de NextAuth): usuario autenticado y tokens
- * Versión: 1.1
+ * Descripción: Datos devueltos por el inicio de sesión (local o con Google): usuario autenticado y tokens. v1.2: sin el puente de NextAuth retirado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje

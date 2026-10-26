@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la redacción de eventos de Sentry
- * Descripción: Verifica que redactSentryEvent oculte contraseñas, tokens, cabeceras de autorización, secretos compartidos y cookies, y enmascare correos en el cuerpo (objeto o texto JSON), la consulta y la URL de la petición adjunta a un evento, sin tocar eventos sin petición
- * Versión: 1.0
+ * Descripción: Verifica que redactSentryEvent oculte contraseñas, tokens, cabeceras de autorización, secretos compartidos y cookies, y enmascare correos en el cuerpo (objeto o texto JSON), la consulta y la URL de la petición adjunta a un evento, sin tocar eventos sin petición. v1.1: el secreto compartido de la cabecera usa x-admin-api-key en lugar de la cabecera del puente de NextAuth retirado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,7 @@ import { redactSentryEvent } from "@/common/infrastructure/logging/sentry-redact
 
 const PASSWORD: string = "Secret-Password-123";
 const EMAIL: string = "ana@ventylab.com";
-const BRIDGE_SECRET: string = "bridge-secret-value";
+const SHARED_SECRET: string = "shared-api-key-value";
 const JWT: string = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl";
 
 describe("redactSentryEvent", () => {
@@ -24,7 +24,7 @@ describe("redactSentryEvent", () => {
         url: `https://api.ventylab.test/api/users/${EMAIL}?token=${JWT}&page=2`,
         data: JSON.stringify({ email: EMAIL, password: PASSWORD, nested: { refreshToken: JWT } }),
         query_string: `token=${JWT}&q=${EMAIL}`,
-        headers: { authorization: `Bearer ${JWT}`, "x-nextauth-bridge-secret": BRIDGE_SECRET, "content-type": "application/json" },
+        headers: { authorization: `Bearer ${JWT}`, "x-admin-api-key": SHARED_SECRET, "content-type": "application/json" },
         cookies: { session: "cookie-value" },
       },
     };
@@ -32,7 +32,7 @@ describe("redactSentryEvent", () => {
     const redacted: Event = redactSentryEvent(event);
     const serialized: string = JSON.stringify(redacted);
 
-    [PASSWORD, EMAIL, BRIDGE_SECRET, JWT, "cookie-value"].forEach((secret: string): void => {
+    [PASSWORD, EMAIL, SHARED_SECRET, JWT, "cookie-value"].forEach((secret: string): void => {
       expect(serialized).not.toContain(secret);
     });
     expect(redacted.request?.headers?.["content-type"]).toBe("application/json");

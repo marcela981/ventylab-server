@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso ReserveVentilatorUseCase
- * Descripción: Adaptador heredado de POST /api/simulation/reserve: delega en ReservationsFacade.reserveNow (mismo bloqueo del dispositivo y reglas de solapamiento que las reservas programadas), conserva la recuperación de la reserva del mismo usuario y el error de ventilador ocupado, publica el evento que difunde `ventilator:reserved`
- * Versión: 1.2
+ * Descripción: Adaptador heredado de POST /api/simulation/reserve: delega en ReservationsFacade.reserveNow (mismo bloqueo del dispositivo y reglas de solapamiento que las reservas programadas), conserva la recuperación de la reserva del mismo usuario y el error de ventilador ocupado, publica el evento de dominio VentilatorReservedEvent (v1.3: ya no se difunde por Socket.io)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje

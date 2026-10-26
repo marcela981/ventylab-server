@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pipeline de telemetría del ventilador
- * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia y tramas duplicadas (con ventana de reordenamiento VENTILATOR_SEQ_REORDER_WINDOW y vuelta opcional VENTILATOR_SEQ_WRAP_BITS), actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada intervalo de envío vigente (ajuste de la plataforma, reprogramado sin reiniciar cuando cambia) emite un lote volátil ventilator:telemetry y la lectura heredada ventilator:data a la sala ventilator y a docentes y administradores, y registra las latencias
- * Versión: 1.4
+ * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia y tramas duplicadas (con ventana de reordenamiento VENTILATOR_SEQ_REORDER_WINDOW y vuelta opcional VENTILATOR_SEQ_WRAP_BITS), actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada intervalo de envío vigente (ajuste de la plataforma, reprogramado sin reiniciar cuando cambia) emite un lote volátil ventilator:telemetry a la sala ventilator y a docentes y administradores, y registra las latencias. v1.5: ya no emite la lectura heredada ventilator:data (sin oyentes en ventilab-web)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,7 +15,6 @@ import { type ITelemetryClock, TELEMETRY_CLOCK_TOKEN } from "@/features/ventilat
 import {
   TELEMETRY_PRIVILEGED_ROLES,
   VENTILATOR_ALARM_EVENT,
-  VENTILATOR_DATA_EVENT,
   VENTILATOR_TELEMETRY_EVENT,
   type VentilatorTelemetryBatchPayload,
 } from "@/features/ventilator-telemetry/application/realtime/ventilator-telemetry-events";
@@ -30,7 +29,7 @@ import {
 import { decodeJsonAlarm } from "@/features/ventilator-telemetry/domain/decoders/json-alarm.decoder";
 import { type DecodeResult, type TelemetryDecoder, type TelemetryDecoderName } from "@/features/ventilator-telemetry/domain/decoders/telemetry-decoder";
 import { type SequenceObservation, SequenceGapTracker } from "@/features/ventilator-telemetry/domain/services/sequence-gap-tracker";
-import { stampTelemetryFrame, type TelemetryFrame, toVentilatorReading } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-frame";
+import { stampTelemetryFrame, type TelemetryFrame } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-frame";
 import { type VentilatorAlarm } from "@/features/ventilator-telemetry/domain/value-objects/ventilator-alarm";
 
 export type TelemetryFrameListener = (frame: TelemetryFrame) => void;
@@ -172,7 +171,6 @@ export class TelemetryPipelineService {
       const batch: VentilatorTelemetryBatchPayload = { frames, serverTs: this._clock.now() };
 
       this._realtimePublisher.emitToRoomsVolatile(this._audience, VENTILATOR_TELEMETRY_EVENT, batch);
-      this._realtimePublisher.emitToRoomsVolatile(this._audience, VENTILATOR_DATA_EVENT, toVentilatorReading(frames[frames.length - 1]));
 
       const emittedAt: number = this._clock.monotonic();
       const now: number = this._clock.now();
