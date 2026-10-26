@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Manual de operación (runbook)
-  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos
-  Versión: 1.1
+  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos. v1.2: la base de producción es PostgreSQL en Dokploy (VPS), no Supabase
+  Versión: 1.2
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -101,7 +101,7 @@ Correlating a request: every response carries `x-trace-id`/`x-request-id` (`src/
 - Invalid key: rotate it (section 6).
 - Provider-side quota: raise it with the provider or move traffic to another provider.
 
-## 4. Slow database or Supabase cold start
+## 4. Slow or restarting database (PostgreSQL on Dokploy, VPS)
 
 **Symptoms**
 
@@ -113,13 +113,13 @@ Correlating a request: every response carries `x-trace-id`/`x-request-id` (`src/
 
 1. `PrismaService` (`src/common/infrastructure/persistence/prisma/prisma.service.ts`) calls `$connect()` once at startup **without retry**, so an unreachable database at boot stops the start; a database that becomes slow later only fails requests and readiness.
 2. Readiness has a hard budget: a `SELECT 1` slower than `HEALTH_CHECK_TIMEOUT_MS` counts as not ready.
-3. Supabase: check the project status in the dashboard (paused or restoring projects answer slowly or not at all on the first connections). `DATABASE_URL` (runtime, usually the pooler) and `DIRECT_URL` (migrations) must both be valid.
+3. PostgreSQL on Dokploy (VPS): check the database service status and logs in Dokploy (a stopped or restarting container refuses or delays the first connections) and the free disk and memory of the VPS. `DATABASE_URL` (runtime) and `DIRECT_URL` (migrations) must both be valid.
 4. No pool or connection-timeout variables are defined by this code; any `connection_limit`/`pool_timeout` must be part of the connection string.
 
 **Actions**
 
-- Cold start: wait for the project to wake, then check `/health/ready`; restart the server if it failed at boot.
-- Persistent slowness: check slow queries in the Supabase dashboard; reduce load (cached panels already hold 60 s, system status 5–10 s).
+- Database restart: wait until the Dokploy database service is running again, then check `/health/ready`; restart the server if it failed at boot.
+- Persistent slowness: check slow queries on the PostgreSQL on Dokploy (VPS) database (`pg_stat_activity` from the service terminal); reduce load (cached panels already hold 60 s, system status 5–10 s).
 - Do not raise `HEALTH_CHECK_TIMEOUT_MS` to hide a slow database; it is bounded 100–10000 ms.
 
 ## 5. Backup restore
@@ -146,7 +146,7 @@ All secrets are environment variables read at boot through `ConfigService`; **ev
 | `ADMIN_API_KEY` | `src/common/presentation/guards/admin-api-key.guard.ts` (`x-admin-api-key`) | Nothing today: no route uses that guard. | Optional; rotate anyway if leaked, or unset it. |
 | `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AI_CUSTOM_HTTP_AUTH_VALUE` | AI providers | Only that provider until the new key is set; the gateway falls over to the next provider or the fallback meanwhile (section 3). | Create the new key at the provider, set it, restart, `POST /api/system/probe/ai/<provider>`, then revoke the old key. |
 | `MQTT_USERNAME` / `MQTT_PASSWORD` | broker connection | The server's broker connection when the broker changes credentials (section 1 symptoms). The device has its own credentials on the broker. | Add the new credentials on the broker, update the server, restart, then remove the old ones. |
-| DB password (inside `DATABASE_URL` and `DIRECT_URL`) | Prisma | The whole API (readiness 503, status `DOWN`) until both URLs use it. | Rotate in Supabase, update both URLs, restart, check `/health/ready`. |
+| DB password (inside `DATABASE_URL` and `DIRECT_URL`) | Prisma | The whole API (readiness 503, status `DOWN`) until both URLs use it. | Change the role password on PostgreSQL on Dokploy (VPS) (`ALTER ROLE`), update both URLs, restart, check `/health/ready`. |
 | `SUPABASE_SERVICE_ROLE_KEY` | media storage | Uploads and storage checks (`storage: down`). | Rotate in Supabase, update, restart. |
 | `ANALYTICS_EXPORT_SALT` | HMAC pseudonyms of the research export | Pseudonymous IDs change: new exports cannot be joined with old ones. Not a session secret. | Rotate only if leaked, and record the date for researchers. |
 | `SENTRY_DSN` | error reporting | Events stop reaching the old project. No user impact. | Rotate in Sentry, update, restart. |
