@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de casos clínicos
  * Descripción: Repositorio en memoria de casos clínicos con uso configurable, gestor de transacciones y registrador de auditoría simulados, y fábricas de contenido válido para las pruebas de los casos de uso de gestión, visibilidad y fachada
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -77,6 +77,13 @@ function toDetail(clinicalCase: ClinicalCase): ClinicalCaseDetail {
     educationalGoal: clinicalCase.content.educationalGoal,
     isActive: clinicalCase.isActive,
     status: clinicalCase.status,
+    patient: {
+      sex: clinicalCase.content.simulation.patientSex,
+      heightCm: clinicalCase.content.simulation.patientHeightCm,
+      history: [...(clinicalCase.content.history?.relevantHistory ?? [])],
+      allergies: [...(clinicalCase.content.history?.allergies ?? [])],
+      initialVitals: clinicalCase.content.initialVitals,
+    },
   };
 }
 

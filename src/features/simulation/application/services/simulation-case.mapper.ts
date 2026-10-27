@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeo de caso clínico a caso del motor
- * Descripción: Convierte la instantánea de un caso clínico entregada por ClinicalCasesFacade en el caso del motor fisiológico (paciente, mecánica, esfuerzo, intercambio gaseoso con la curva de reclutamiento o el shunt basal, hemodinamia, deterioro, ajustes iniciales, eventos y objetivos) y en el resumen sin datos personales que usa la asistencia; devuelve undefined si el perfil de simulación está incompleto
- * Versión: 1.0
+ * Descripción: Convierte la instantánea de un caso clínico entregada por ClinicalCasesFacade en el caso del motor fisiológico (paciente, mecánica, esfuerzo, intercambio gaseoso con la curva de reclutamiento o el shunt basal, hemodinamia, deterioro, ajustes iniciales, eventos y objetivos) y en el resumen sin datos personales que usa la asistencia; devuelve undefined si el perfil de simulación está incompleto; aplica sobre la instantánea los ajustes ya resueltos del paciente propio de una sesión (edad, peso, sexo, talla, compliance, resistencia, frecuencia respiratoria inicial, PaO2 inicial y PAM basal)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,7 @@ import {
   type ShuntCurvePoint,
   type VentilatorSettings,
 } from "@/features/simulation/domain/engine";
+import { type PatientOverrides } from "@/features/simulation/domain/patient/patient-overrides";
 
 export interface SimulationCaseDefinition {
   readonly id: string;
@@ -82,6 +83,30 @@ export class SimulationCaseMapper {
         patient: { sex: patientSex, ageYears: snapshot.patientAge, heightCm: patientHeightCm, weightKg: snapshot.patientWeightKg },
       },
       defaultRubric: simulation.defaultRubric,
+    };
+  }
+
+  /** The base case with the resolved overrides of an own patient; parts the base case lacks stay absent */
+  public static withPatient(snapshot: ClinicalCaseSnapshot, overrides: PatientOverrides): ClinicalCaseSnapshot {
+    const { mechanics, initialVentilatorSettings, initialState } = snapshot.simulation;
+
+    return {
+      ...snapshot,
+      patientAge: overrides.patientAge,
+      patientWeightKg: overrides.patientWeightKg,
+      simulation: {
+        ...snapshot.simulation,
+        patientSex: overrides.patientSex,
+        patientHeightCm: overrides.patientHeightCm,
+        mechanics: mechanics && {
+          ...mechanics,
+          complianceMlPerCmH2O: overrides.complianceMlPerCmH2O,
+          resistanceCmH2OPerLps: overrides.resistanceCmH2OPerLps,
+          hemodynamics: { ...mechanics.hemodynamics, baselineMapMmHg: overrides.baselineMapMmHg ?? mechanics.hemodynamics.baselineMapMmHg },
+        },
+        initialVentilatorSettings: initialVentilatorSettings && { ...initialVentilatorSettings, respiratoryRateBpm: overrides.respiratoryRateBpm },
+        initialState: initialState && { ...initialState, pao2MmHg: overrides.pao2MmHg },
+      },
     };
   }
 

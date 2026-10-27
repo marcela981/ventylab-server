@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de casos clínicos
- * Descripción: Convierte modelos de lectura y resultados de casos clínicos y evaluaciones a sus DTOs de respuesta (los valores expertos y las diferencias solo se incluyen para quien puede ver la configuración experta), y la configuración del ventilador recibida al modelo de dominio
- * Versión: 1.1
+ * Descripción: Convierte modelos de lectura y resultados de casos clínicos y evaluaciones a sus DTOs de respuesta (los valores expertos y las diferencias solo se incluyen para quien puede ver la configuración experta), y la configuración del ventilador recibida al modelo de dominio; el detalle incluye los datos del paciente
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -46,7 +46,9 @@ import {
   ClinicalCaseDetailDTO,
   ClinicalCaseDTO,
   ClinicalCaseListItemDTO,
+  ClinicalCasePatientDTO,
   ClinicalCaseSummaryDTO,
+  ClinicalCaseVitalsDTO,
 } from "@/features/clinical-cases/presentation/dtos/clinical-case.dto";
 
 export class ClinicalCasesMapper {
@@ -106,6 +108,13 @@ export class ClinicalCasesMapper {
         pathology: clinicalCase.pathology,
         educationalGoal: clinicalCase.educationalGoal,
         labData: clinicalCase.labData ?? null,
+      }),
+      patient: new ClinicalCasePatientDTO({
+        sex: clinicalCase.patient.sex ?? null,
+        heightCm: clinicalCase.patient.heightCm ?? null,
+        history: [...clinicalCase.patient.history],
+        allergies: [...clinicalCase.patient.allergies],
+        initialVitals: clinicalCase.patient.initialVitals ? new ClinicalCaseVitalsDTO({ ...clinicalCase.patient.initialVitals }) : null,
       }),
       userAttempts: new CaseRecentAttemptsDTO({
         total: result.totalAttempts,

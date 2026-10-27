@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso StartSimulationSessionUseCase
- * Descripción: Inicia una sesión de simulación con eventos con un multiplicador de tiempo permitido por los ajustes. Modo libre: caso publicado y listo para simular según ClinicalCasesFacade, sin depender de reservas. Modo examen: intento propio en curso y vigente y pregunta de tipo SIMULATION de la misma evaluación; el caso sale de la pregunta (se ignora el del cliente) y la rúbrica de la pregunta, del caso o la de por defecto debe ser válida. El servidor genera la semilla, fija ENGINE_VERSION, valida el caso en el motor y registra el evento START con una copia de los umbrales vigentes de la rúbrica por defecto, con los que se califica la sesión aunque el ajuste cambie después
- * Versión: 1.2
+ * Descripción: Inicia una sesión de simulación con eventos con un multiplicador de tiempo permitido por los ajustes. Modo libre: caso publicado y listo para simular según ClinicalCasesFacade, sin depender de reservas. Modo examen: intento propio en curso y vigente y pregunta de tipo SIMULATION de la misma evaluación; el caso sale de la pregunta (se ignora el del cliente) y la rúbrica de la pregunta, del caso o la de por defecto debe ser válida. El servidor genera la semilla, fija ENGINE_VERSION, valida el caso en el motor y registra el evento START con una copia de los umbrales vigentes de la rúbrica por defecto, con los que se califica la sesión aunque el ajuste cambie después. Paciente propio (solo modo libre): sin caseId el caso base sale de la condición; buildPatientOverrides resuelve los ajustes, el caso resultante se valida con las reglas de edición de casos y se guardan en patient_profile (formulario, ajustes y versión del mapeo); la respuesta devuelve el caso del motor ya con el paciente
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -32,6 +32,13 @@ import { SimulationSessionRuntime } from "@/features/simulation/application/serv
 import { createSimulation, ENGINE_VERSION, EngineValidationError } from "@/features/simulation/domain/engine";
 import { SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
 import {
+  baseCaseIdForCondition,
+  buildPatientOverrides,
+  PATIENT_MAPPING_VERSION,
+  type PatientOverrides,
+  type SimulationPatientProfile,
+} from "@/features/simulation/domain/patient/patient-overrides";
+import {
   type ISimulationSessionsRepository,
   SIMULATION_SESSIONS_REPOSITORY_TOKEN,
 } from "@/features/simulation/domain/repositories/simulation-sessions.repository";
@@ -46,11 +53,13 @@ import { EXAM_SIMULATION_MODE, START_EVENT_TYPE } from "@/features/simulation/do
 interface ResolvedSessionCase {
   readonly caseDefinition: SimulationCaseDefinition;
   readonly expiresAt?: Date;
+  readonly patientProfile?: SimulationPatientProfile;
 }
 
 /**
  * @throws {SimulationTimeMultiplierNotAllowedError} If the time multiplier is not one of the allowed multipliers
- * @throws {SimulationCaseRequiredError} If a free session has no caseId
+ * @throws {SimulationCaseRequiredError} If a free session has neither a caseId nor an own patient
+ * @throws {ClinicalCasePhysiologicalRangeError} If the own patient leaves a value of the base case outside its physiological range
  * @throws {ClinicalCaseNotFoundError} If the free session case does not exist
  * @throws {ClinicalCaseUnavailableError} If the free session case is not published
  * @throws {ClinicalCaseNotSimulationReadyError} If the free session case lacks its simulation profile
@@ -101,6 +110,7 @@ export class StartSimulationSessionUseCase {
       seed,
       engineVersion: ENGINE_VERSION,
       timeMultiplier: command.timeMultiplier,
+      patientProfile: resolved.patientProfile,
       now,
     });
 
@@ -132,17 +142,29 @@ export class StartSimulationSessionUseCase {
   }
 
   private async _resolveFreeCase(command: StartSimulationSessionCommand): Promise<ResolvedSessionCase> {
-    if (command.caseId === undefined) {
+    const { patient } = command;
+    const caseId: string | undefined = command.caseId ?? (patient ? baseCaseIdForCondition(patient.condition) : undefined);
+
+    if (caseId === undefined) {
       throw new SimulationCaseRequiredError();
     }
 
-    await this._clinicalCasesFacade.getPublishedCaseForSimulation(command.caseId);
+    await this._clinicalCasesFacade.getPublishedCaseForSimulation(caseId);
 
-    const caseDefinition: SimulationCaseDefinition = await this._runtime.loadCase(command.caseId);
+    if (!patient) {
+      const caseDefinition: SimulationCaseDefinition = await this._runtime.loadCase(caseId);
+
+      resolveSessionRubric([caseDefinition.defaultRubric]);
+
+      return { caseDefinition };
+    }
+
+    const overrides: PatientOverrides = buildPatientOverrides({ id: caseId }, patient);
+    const caseDefinition: SimulationCaseDefinition = await this._runtime.loadPatientCase(caseId, overrides);
 
     resolveSessionRubric([caseDefinition.defaultRubric]);
 
-    return { caseDefinition };
+    return { caseDefinition, patientProfile: { form: patient, overrides, mappingVersion: PATIENT_MAPPING_VERSION } };
   }
 
   private async _resolveExamCase(command: StartSimulationSessionCommand, now: Date): Promise<ResolvedSessionCase> {

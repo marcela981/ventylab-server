@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los casos de uso de gestión de casos clínicos
- * Descripción: Verifica creación en borrador con auditoría, rechazo de valores implausibles sin persistir, bloqueo de edición con sesiones de simulación, cambio de estado sincronizando isActive, duplicado como borrador no validado, validación por experto y eliminación (409 si el caso está en uso)
- * Versión: 1.0
+ * Descripción: Verifica creación en borrador con auditoría, rechazo de valores implausibles sin persistir, bloqueo de edición con sesiones de simulación, cambio de estado sincronizando isActive, duplicado como borrador no validado, validación por experto y eliminación (409 si el caso está en uso); una edición sin signos vitales iniciales ni alergias conserva los que el caso tenía
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -98,6 +98,26 @@ describe("UpdateClinicalCaseUseCase", () => {
 
     await expect(result).rejects.toBeInstanceOf(ClinicalCaseHasSimulationSessionsError);
     expect(doubles.saveCase).not.toHaveBeenCalled();
+  });
+
+  it("keeps the initial vitals and allergies when the edit does not carry them", async () => {
+    const current: ClinicalCaseContent = validContent({
+      history: { presentIllness: "Disnea", relevantHistory: ["EPOC"], allergies: ["Penicilina"] },
+      initialVitals: { heartRateBpm: 95, spo2Percent: 88 },
+    });
+    const doubles: ClinicalCasesDoubles = buildDoubles({ cases: [buildCase({ content: current })] });
+    const useCase: UpdateClinicalCaseUseCase = new UpdateClinicalCaseUseCase(doubles.repository, doubles.transactionManager, doubles.auditRecorder);
+
+    await useCase.execute(
+      new UpdateClinicalCaseCommand({
+        caseId: "case-1",
+        content: validContent({ history: { presentIllness: "Disnea", relevantHistory: ["EPOC", "HTA"] }, initialVitals: undefined }),
+        performedBy: TEACHER_ID,
+      }),
+    );
+
+    expect(savedCase(doubles).content.history).toEqual({ presentIllness: "Disnea", relevantHistory: ["EPOC", "HTA"], allergies: ["Penicilina"] });
+    expect(savedCase(doubles).content.initialVitals).toEqual({ heartRateBpm: 95, spo2Percent: 88 });
   });
 
   it("rejects an unknown case", async () => {

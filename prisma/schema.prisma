@@ -688,6 +688,7 @@ model ClinicalCase {
   events                    Json?
   targets                   Json?
   defaultRubric             Json?              @map("default_rubric")
+  initialVitals             Json?              @map("initial_vitals")
   status                    ClinicalCaseStatus @default(DRAFT)
   validatedByExpert         Boolean            @default(false) @map("validated_by_expert")
   validatedById             String?            @map("validated_by_id")
@@ -1939,6 +1940,7 @@ model SimulationSession {
   lastEventAt    DateTime                @default(now()) @map("last_event_at") @db.Timestamptz(6)
   lastSimTimeMs  Int                     @default(0) @map("last_sim_time_ms")
   summary        Json?
+  patientProfile Json?                   @map("patient_profile")
 
   user     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   case     ClinicalCase              @relation(fields: [caseId], references: [id], onDelete: Restrict)

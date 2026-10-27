@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso AppendSimulationEventsUseCase
  * Descripción: Registra un lote de eventos del cliente en una sesión activa del actor bajo bloqueo de fila de la sesión: aplica antes las transiciones diferidas (examen vencido, abandono), descarta los ids ya registrados en la sesión (idempotencia) y rechaza los de otra sesión, exige tiempo simulado no decreciente y no adelantado al tiempo real por el multiplicador más la tolerancia, valida los ajustes contra los límites del motor, guarda solo los campos conocidos y actualiza el último tiempo simulado y la última actividad
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -138,7 +138,7 @@ export class AppendSimulationEventsUseCase {
       maxAllowedSimTimeMs(session.startedAt, now, session.timeMultiplier, this._settings.eventTimeToleranceMs),
     );
 
-    const caseDefinition: SimulationCaseDefinition = await this._runtime.loadCase(session.caseId);
+    const caseDefinition: SimulationCaseDefinition = await this._runtime.loadSessionCase(session);
     const storedEvents: SimulationEventRecord[] = await this._sessionsRepository.getEvents(session.id, transaction);
     const currentSettings: VentilatorSettings = settingsAfterEvents(caseDefinition.engineCase.initialSettings, storedEvents);
     const sanitized: SanitizedSimulationEvent[] = sanitizeClientEvents(fresh, currentSettings);

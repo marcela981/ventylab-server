@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de ejecución de sesiones de simulación
- * Descripción: Carga el caso del motor de una sesión con ClinicalCasesFacade, sus eventos y su rúbrica (pregunta de examen, rúbrica del caso o la rúbrica por defecto con los umbrales fijados en el evento START al iniciar la sesión, o los configurados para sesiones sin esa copia, así un cambio del ajuste no altera calificaciones pasadas), valida el multiplicador de tiempo contra los permitidos, repite la simulación en el servidor con la semilla y el multiplicador de la sesión, calcula el resumen calificado y aplica las transiciones diferidas: una sesión de examen pasada la fecha límite del intento se termina con su resumen y una sesión sin actividad por más del umbral configurado pasa a ABANDONED, también en barrido para las sesiones activas de un usuario antes de listarlas
- * Versión: 1.3
+ * Descripción: Carga el caso del motor de una sesión con ClinicalCasesFacade, sus eventos y su rúbrica (pregunta de examen, rúbrica del caso o la rúbrica por defecto con los umbrales fijados en el evento START al iniciar la sesión, o los configurados para sesiones sin esa copia, así un cambio del ajuste no altera calificaciones pasadas), valida el multiplicador de tiempo contra los permitidos, repite la simulación en el servidor con la semilla y el multiplicador de la sesión, calcula el resumen calificado y aplica las transiciones diferidas: una sesión de examen pasada la fecha límite del intento se termina con su resumen y una sesión sin actividad por más del umbral configurado pasa a ABANDONED, también en barrido para las sesiones activas de un usuario antes de listarlas; el caso de una sesión con paciente propio aplica los ajustes guardados en su patient_profile, así la repetición y la nota reproducen el mismo paciente
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -29,6 +29,7 @@ import {
 } from "@/features/simulation/application/tokens/simulation-session-settings.token";
 import { replay, EngineValidationError, type ReplayResult } from "@/features/simulation/domain/engine";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
+import { type PatientOverrides } from "@/features/simulation/domain/patient/patient-overrides";
 import {
   type SimulationEventRecord,
   type SimulationSessionSummary,
@@ -86,24 +87,32 @@ export class SimulationSessionRuntime {
     }
   }
 
-  public async loadCase(caseId: string): Promise<SimulationCaseDefinition> {
-    const snapshot: ClinicalCaseSnapshot | undefined = await this._clinicalCasesFacade.getCaseById(caseId);
+  public async loadCase(caseId: string, overrides?: PatientOverrides): Promise<SimulationCaseDefinition> {
+    const snapshot: ClinicalCaseSnapshot = await this._loadSnapshot(caseId);
 
-    if (!snapshot) {
-      throw new SimulationCaseNotFoundError();
-    }
+    return SimulationSessionRuntime._toDefinition(overrides ? SimulationCaseMapper.withPatient(snapshot, overrides) : snapshot);
+  }
 
-    const definition: SimulationCaseDefinition | undefined = SimulationCaseMapper.toDefinition(snapshot);
+  /**
+   * The base case with a new own patient, validated with the case editing rules before a session starts
+   * @throws {ClinicalCasePhysiologicalRangeError} If the patient leaves a value outside its physiological range
+   * @throws {InvalidClinicalCaseDefinitionError} If the patient makes the definition inconsistent
+   */
+  public async loadPatientCase(caseId: string, overrides: PatientOverrides): Promise<SimulationCaseDefinition> {
+    const snapshot: ClinicalCaseSnapshot = SimulationCaseMapper.withPatient(await this._loadSnapshot(caseId), overrides);
 
-    if (!definition) {
-      throw new SimulationCaseNotReadyError();
-    }
+    this._clinicalCasesFacade.assertValidSnapshot(snapshot);
 
-    return definition;
+    return SimulationSessionRuntime._toDefinition(snapshot);
+  }
+
+  /** The engine case of a session: its case with the overrides of its own patient, if any */
+  public async loadSessionCase(session: SimulationSession): Promise<SimulationCaseDefinition> {
+    return await this.loadCase(session.caseId, session.patientProfile?.overrides);
   }
 
   public async loadContext(session: SimulationSession, transaction?: unknown): Promise<SimulationSessionContext> {
-    const caseDefinition: SimulationCaseDefinition = await this.loadCase(session.caseId);
+    const caseDefinition: SimulationCaseDefinition = await this.loadSessionCase(session);
     const events: SimulationEventRecord[] = await this._sessionsRepository.getEvents(session.id, transaction);
 
     return { session, caseDefinition, events };
@@ -260,6 +269,26 @@ export class SimulationSessionRuntime {
         this._logger.warn(`Could not settle simulation session ${session.id}: ${error.message}`);
       }
     }
+  }
+
+  private async _loadSnapshot(caseId: string): Promise<ClinicalCaseSnapshot> {
+    const snapshot: ClinicalCaseSnapshot | undefined = await this._clinicalCasesFacade.getCaseById(caseId);
+
+    if (!snapshot) {
+      throw new SimulationCaseNotFoundError();
+    }
+
+    return snapshot;
+  }
+
+  private static _toDefinition(snapshot: ClinicalCaseSnapshot): SimulationCaseDefinition {
+    const definition: SimulationCaseDefinition | undefined = SimulationCaseMapper.toDefinition(snapshot);
+
+    if (!definition) {
+      throw new SimulationCaseNotReadyError();
+    }
+
+    return definition;
   }
 
   public async lockSession(sessionId: string, transaction: unknown): Promise<SimulationSession> {

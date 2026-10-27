@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad SimulationSession
- * Descripción: Sesión de simulación con eventos (modo libre o examen) sobre el motor fisiológico determinista: semilla y versión del motor fijadas por el servidor, multiplicador de tiempo, último tiempo simulado aceptado, estado ACTIVE/ENDED/ABANDONED y resumen calculado al terminar
- * Versión: 1.0
+ * Descripción: Sesión de simulación con eventos (modo libre o examen) sobre el motor fisiológico determinista: semilla y versión del motor fijadas por el servidor, multiplicador de tiempo, último tiempo simulado aceptado, estado ACTIVE/ENDED/ABANDONED y resumen calculado al terminar, y el paciente propio (formulario, ajustes resueltos y versión del mapeo) de una sesión libre
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { generateId } from "@/common/domain/utils/generate-id";
 import { type TimeMultiplier } from "@/features/simulation/domain/engine";
+import { type SimulationPatientProfile } from "@/features/simulation/domain/patient/patient-overrides";
 import { type SimulationSessionSummary } from "@/features/simulation/domain/read-models/simulation-session.read-model";
 import {
   ABANDONED_SIMULATION_STATUS,
@@ -36,6 +37,7 @@ export interface SimulationSessionProps {
   readonly lastEventAt: Date;
   readonly lastSimTimeMs: number;
   readonly summary?: SimulationSessionSummary;
+  readonly patientProfile?: SimulationPatientProfile;
 }
 
 export class SimulationSession {
@@ -105,6 +107,10 @@ export class SimulationSession {
     return this._props.summary;
   }
 
+  public get patientProfile(): SimulationPatientProfile | undefined {
+    return this._props.patientProfile;
+  }
+
   public get isActive(): boolean {
     return this._props.status === ACTIVE_SIMULATION_STATUS;
   }
@@ -122,6 +128,7 @@ export class SimulationSession {
     seed,
     engineVersion,
     timeMultiplier,
+    patientProfile,
     now,
   }: {
     userId: string;
@@ -132,6 +139,7 @@ export class SimulationSession {
     seed: number;
     engineVersion: string;
     timeMultiplier: TimeMultiplier;
+    patientProfile?: SimulationPatientProfile;
     now: Date;
   }): SimulationSession {
     return new SimulationSession({
@@ -148,6 +156,7 @@ export class SimulationSession {
       startedAt: now,
       lastEventAt: now,
       lastSimTimeMs: 0,
+      patientProfile,
     });
   }
 

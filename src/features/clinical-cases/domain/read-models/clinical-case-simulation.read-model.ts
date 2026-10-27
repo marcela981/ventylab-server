@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Definición simulable de un caso clínico
- * Descripción: Tipos de los bloques JSON del caso clínico (historia, mecánica respiratoria, ajustes iniciales del ventilador, estado inicial, eventos programados, objetivos y rúbrica) y las vistas que expone la fachada (instantánea del caso y caso listo para simular) con nombres y unidades alineados al motor fisiológico, sin depender de la feature de simulación
- * Versión: 1.1
+ * Descripción: Tipos de los bloques JSON del caso clínico (historia, mecánica respiratoria, ajustes iniciales del ventilador, estado inicial, eventos programados, objetivos y rúbrica) y las vistas que expone la fachada (instantánea del caso y caso listo para simular) con nombres y unidades alineados al motor fisiológico, sin depender de la feature de simulación; antecedentes con alergias y signos vitales iniciales del paciente, solo para mostrar
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,6 +25,23 @@ import { type PathologyValue } from "@/features/clinical-cases/domain/value-obje
 export interface ClinicalCaseHistory {
   readonly presentIllness: string;
   readonly relevantHistory: readonly string[];
+  readonly allergies?: readonly string[];
+}
+
+export const BREATHING_PATTERN_VALUES: readonly BreathingPatternValue[] = ["normal", "tachypneic", "bradypneic", "irregular", "paradoxical"] as const;
+
+export type BreathingPatternValue = "normal" | "tachypneic" | "bradypneic" | "irregular" | "paradoxical";
+
+/** Bedside vital signs of the patient at the start; shown to the student, not simulated by the engine */
+export interface ClinicalCaseInitialVitals {
+  readonly heartRateBpm?: number;
+  readonly respiratoryRateBpm?: number;
+  readonly spo2Percent?: number;
+  readonly temperatureC?: number;
+  readonly systolicMmHg?: number;
+  readonly diastolicMmHg?: number;
+  readonly glasgow?: number;
+  readonly breathingPattern?: BreathingPatternValue;
 }
 
 export interface RecruitmentCurvePoint {

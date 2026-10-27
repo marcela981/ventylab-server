@@ -1,14 +1,17 @@
 /*
  * Funcionalidad: DTOs de respuesta de casos clínicos
- * Descripción: Serialización de casos clínicos (listado con resumen de intentos, detalle con últimos intentos) y del historial de intentos con estadísticas
- * Versión: 1.0
+ * Descripción: Serialización de casos clínicos (listado con resumen de intentos, detalle con últimos intentos) y del historial de intentos con estadísticas; el detalle incluye los datos del paciente para mostrar (sexo, talla, antecedentes, alergias y signos vitales iniciales)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+
+import { BREATHING_PATTERN_VALUES } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
+import { PATIENT_SEX_VALUES } from "@/features/clinical-cases/domain/value-objects/clinical-case-simulation-values";
 
 export class CaseUserAttemptsDTO {
   @ApiProperty({ description: "Whether the user attempted the case", example: true })
@@ -198,15 +201,74 @@ export class CaseRecentAttemptsDTO {
   }
 }
 
+export class ClinicalCaseVitalsDTO {
+  @ApiPropertyOptional({ description: "Heart rate (beats/min)", example: 105 })
+  public heartRateBpm?: number;
+
+  @ApiPropertyOptional({ description: "Respiratory rate (breaths/min)", example: 24 })
+  public respiratoryRateBpm?: number;
+
+  @ApiPropertyOptional({ description: "Pulse oximetry saturation (%)", example: 84 })
+  public spo2Percent?: number;
+
+  @ApiPropertyOptional({ description: "Body temperature (°C)", example: 39.1 })
+  public temperatureC?: number;
+
+  @ApiPropertyOptional({ description: "Systolic blood pressure (mmHg)", example: 150 })
+  public systolicMmHg?: number;
+
+  @ApiPropertyOptional({ description: "Diastolic blood pressure (mmHg)", example: 90 })
+  public diastolicMmHg?: number;
+
+  @ApiPropertyOptional({ description: "Glasgow coma scale (3-15)", example: 15 })
+  public glasgow?: number;
+
+  @ApiPropertyOptional({ description: "Breathing pattern", enum: BREATHING_PATTERN_VALUES, example: "tachypneic" })
+  public breathingPattern?: string;
+
+  public constructor(init: ClinicalCaseVitalsDTO) {
+    Object.assign(this, init);
+  }
+}
+
+export class ClinicalCasePatientDTO {
+  @ApiProperty({ description: "Patient sex, null when the case has no simulation profile", enum: PATIENT_SEX_VALUES, example: "MALE", nullable: true, type: String })
+  public sex: string | null;
+
+  @ApiProperty({ description: "Patient height (cm), null when the case has no simulation profile", example: 175, nullable: true, type: Number })
+  public heightCm: number | null;
+
+  @ApiProperty({ description: "Relevant medical history", example: ["Hipertensión arterial"], type: [String] })
+  public history: string[];
+
+  @ApiProperty({ description: "Known allergies", example: [], type: [String] })
+  public allergies: string[];
+
+  @ApiProperty({ description: "Bedside vital signs at the start (shown only, not simulated), null when the case has none", type: ClinicalCaseVitalsDTO, nullable: true })
+  public initialVitals: ClinicalCaseVitalsDTO | null;
+
+  public constructor(init: ClinicalCasePatientDTO) {
+    this.sex = init.sex;
+    this.heightCm = init.heightCm;
+    this.history = init.history;
+    this.allergies = init.allergies;
+    this.initialVitals = init.initialVitals;
+  }
+}
+
 export class ClinicalCaseDetailDTO {
   @ApiProperty({ description: "Clinical case without the expert configuration", type: ClinicalCaseDTO })
   public clinicalCase: ClinicalCaseDTO;
 
+  @ApiProperty({ description: "Patient data shown before choosing the case (readable without clinical-cases:manage)", type: ClinicalCasePatientDTO })
+  public patient: ClinicalCasePatientDTO;
+
   @ApiProperty({ description: "Recent attempts of the authenticated user", type: CaseRecentAttemptsDTO })
   public userAttempts: CaseRecentAttemptsDTO;
 
-  public constructor({ clinicalCase, userAttempts }: { clinicalCase: ClinicalCaseDTO; userAttempts: CaseRecentAttemptsDTO }) {
+  public constructor({ clinicalCase, patient, userAttempts }: { clinicalCase: ClinicalCaseDTO; patient: ClinicalCasePatientDTO; userAttempts: CaseRecentAttemptsDTO }) {
     this.clinicalCase = clinicalCase;
+    this.patient = patient;
     this.userAttempts = userAttempts;
   }
 }

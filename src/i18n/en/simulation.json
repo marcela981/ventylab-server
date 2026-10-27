@@ -65,6 +65,7 @@
     "seed_invalid": "seed must be a non-negative integer",
     "assist_question_string": "question must be a string",
     "assist_question_too_long": "question must be at most 1000 characters",
-    "assist_language_invalid": "language must be es or en"
+    "assist_language_invalid": "language must be es or en",
+    "patient_value_out_of_range": "{property} is outside the allowed range"
   }
 }

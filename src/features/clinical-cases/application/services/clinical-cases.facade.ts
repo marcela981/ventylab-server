@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada ClinicalCasesFacade
- * Descripción: API pública de la feature de casos clínicos para otras features: instantánea de un caso por id, títulos de varios casos en una lectura y caso publicado listo para simular (mecánica, ajustes iniciales, estado inicial, sexo y talla presentes) con errores tipados
- * Versión: 1.1
+ * Descripción: API pública de la feature de casos clínicos para otras features: instantánea de un caso por id, títulos de varios casos en una lectura y caso publicado listo para simular (mecánica, ajustes iniciales, estado inicial, sexo y talla presentes) con errores tipados y validación de una instantánea con las reglas de edición de casos (rangos fisiológicos y consistencia)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -26,6 +26,7 @@ import {
   CLINICAL_CASES_REPOSITORY_TOKEN,
   type IClinicalCasesRepository,
 } from "@/features/clinical-cases/domain/repositories/clinical-cases.repository";
+import { assertValidClinicalCaseDefinition } from "@/features/clinical-cases/domain/services/clinical-case-definition-validator";
 
 @Injectable()
 export class ClinicalCasesFacade {
@@ -53,6 +54,14 @@ export class ClinicalCasesFacade {
       simulationReady: clinicalCase.isSimulationReady,
       simulation: clinicalCase.content.simulation,
     };
+  }
+
+  /**
+   * @throws {ClinicalCasePhysiologicalRangeError} If a value is outside its physiological range
+   * @throws {InvalidClinicalCaseDefinitionError} If events, targets, settings or the rubric are inconsistent
+   */
+  public assertValidSnapshot(snapshot: ClinicalCaseSnapshot): void {
+    assertValidClinicalCaseDefinition({ patientAge: snapshot.patientAge, patientWeight: snapshot.patientWeightKg, simulation: snapshot.simulation });
   }
 
   public async getCaseTitles(caseIds: readonly string[]): Promise<ClinicalCaseTitleView[]> {

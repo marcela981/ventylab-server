@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de persistencia de casos clínicos
- * Descripción: Convierte filas Prisma de ClinicalCase, ExpertConfiguration y EvaluationAttempt a modelos de lectura y a la entidad ClinicalCase, y las entidades ClinicalCase y EvaluationAttempt a datos de persistencia con las columnas JSON serializadas como JSON estándar; isActive se deriva siempre del estado
- * Versión: 1.1
+ * Descripción: Convierte filas Prisma de ClinicalCase, ExpertConfiguration y EvaluationAttempt a modelos de lectura y a la entidad ClinicalCase, y las entidades ClinicalCase y EvaluationAttempt a datos de persistencia con las columnas JSON serializadas como JSON estándar; isActive se deriva siempre del estado; el detalle lleva los datos del paciente para mostrar y los signos vitales iniciales se leen y guardan en initial_vitals
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,7 @@ import {
   type ClinicalCaseEvent,
   type ClinicalCaseHistory,
   type ClinicalCaseInitialState,
+  type ClinicalCaseInitialVitals,
   type ClinicalCaseMechanics,
   type ClinicalCaseRubric,
   type ClinicalCaseSimulationProfile,
@@ -29,6 +30,7 @@ import {
 import {
   type CaseAttemptRecord,
   type ClinicalCaseDetail,
+  type ClinicalCasePatientView,
   type ClinicalCaseSummary,
 } from "@/features/clinical-cases/domain/read-models/clinical-case.read-model";
 import {
@@ -83,6 +85,7 @@ export class ClinicalCasesMapper {
       labData: row.labData ?? undefined,
       isActive: row.isActive,
       status: row.status,
+      patient: ClinicalCasesMapper._toPatientView(row),
     };
   }
 
@@ -103,6 +106,7 @@ export class ClinicalCasesMapper {
         pathology: row.pathology,
         educationalGoal: row.educationalGoal,
         simulation: ClinicalCasesMapper._toSimulationProfile(row),
+        initialVitals: ClinicalCasesMapper._fromJson<ClinicalCaseInitialVitals>(row.initialVitals),
       },
       status: row.status,
       validatedByExpert: row.validatedByExpert,
@@ -140,6 +144,7 @@ export class ClinicalCasesMapper {
       events: ClinicalCasesMapper._toNullableJson(simulation.events),
       targets: ClinicalCasesMapper._toNullableJson(simulation.targets),
       defaultRubric: ClinicalCasesMapper._toNullableJson(simulation.defaultRubric),
+      initialVitals: ClinicalCasesMapper._toNullableJson(content.initialVitals),
       status: clinicalCase.status,
       validatedByExpert: clinicalCase.validatedByExpert,
       validatedById: clinicalCase.validatedById ?? null,
@@ -190,6 +195,18 @@ export class ClinicalCasesMapper {
       isSuccessful: attempt.isSuccessful,
       startedAt: attempt.startedAt,
       completedAt: attempt.completedAt ?? null,
+    };
+  }
+
+  private static _toPatientView(row: ClinicalCaseModel): ClinicalCasePatientView {
+    const history: ClinicalCaseHistory | undefined = ClinicalCasesMapper._fromJson<ClinicalCaseHistory>(row.history);
+
+    return {
+      sex: (row.patientSex as PatientSexValue | null) ?? undefined,
+      heightCm: row.patientHeightCm ?? undefined,
+      history: history?.relevantHistory ?? [],
+      allergies: history?.allergies ?? [],
+      initialVitals: ClinicalCasesMapper._fromJson<ClinicalCaseInitialVitals>(row.initialVitals),
     };
   }
 
