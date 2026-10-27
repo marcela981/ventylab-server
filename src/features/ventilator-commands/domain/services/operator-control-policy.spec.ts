@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la política de control exclusivo del ventilador
- * Descripción: Verifica quién toma el control libre, quién puede arrebatarlo (líder del grupo titular, docente o administrador), cuándo queda bloqueado y quién puede liberarlo
- * Versión: 1.0
+ * Descripción: Verifica quién toma el control libre, quién puede arrebatarlo (líder del grupo titular, docente o administrador), cuándo queda bloqueado y quién puede liberarlo; en una reserva de grupo solo el líder toma o arrebata el control y los demás miembros observan
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,9 @@ import {
   decideControlRequest,
 } from "@/features/ventilator-commands/domain/services/operator-control-policy";
 
-const HOLDER: ControlRequestFacts = { actorUserId: "s1", actorRole: "STUDENT", isHolder: true, leadsHolderGroup: false, currentOperatorUserId: undefined };
+const HOLDER: ControlRequestFacts = { actorUserId: "s1", actorRole: "STUDENT", isHolder: true, isGroupReservation: false, leadsHolderGroup: false, currentOperatorUserId: undefined };
+const GROUP_MEMBER: ControlRequestFacts = { ...HOLDER, isGroupReservation: true };
+const GROUP_LEADER: ControlRequestFacts = { ...GROUP_MEMBER, leadsHolderGroup: true };
 
 describe("decideControlRequest", () => {
   it("lets a holder, a teacher or an administrator take free control", () => {
@@ -57,6 +59,20 @@ describe("decideControlRequest", () => {
     ];
 
     expect(decisions).toEqual(["locked", "takeover", "takeover", "takeover"]);
+  });
+
+  it("lets only the leader of a holder group take control; the other members observe", () => {
+    const decisions: string[] = [
+      decideControlRequest("take", GROUP_LEADER),
+      decideControlRequest("take", GROUP_MEMBER),
+      decideControlRequest("takeover", GROUP_MEMBER),
+      decideControlRequest("take", { ...GROUP_MEMBER, currentOperatorUserId: "l1" }),
+      decideControlRequest("takeover", { ...GROUP_MEMBER, currentOperatorUserId: "t1" }),
+      decideControlRequest("takeover", { ...GROUP_LEADER, currentOperatorUserId: "t1" }),
+      decideControlRequest("take", { ...GROUP_MEMBER, actorUserId: "t1", actorRole: "TEACHER", isHolder: false }),
+    ];
+
+    expect(decisions).toEqual(["take", "observer", "observer", "observer", "observer", "takeover", "take"]);
   });
 
   it("treats a takeover of free control as a plain take", () => {

@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Dobles de prueba de los comandos del ventilador
- * Descripción: Publicador en tiempo real, fachada de reservas, conexión MQTT, fachada de telemetría, repositorio en memoria y registrador de auditoría falsos, y un arnés que arma los servicios y casos de uso reales de la feature con ajustes leídos como en NODE_ENV=test (tópicos con prefijo de pruebas), para que ninguna prueba publique en el tópico real; fachada de usuarios falsa con nombres para proyectar el nombre del operador
+ * Descripción: Publicador en tiempo real, fachada de reservas, conexión MQTT, fachada de telemetría, repositorio en memoria y registrador de auditoría falsos, y un arnés que arma los servicios y casos de uso reales de la feature con ajustes leídos como en NODE_ENV=test (tópicos con prefijo de pruebas), para que ninguna prueba publique en el tópico real; fachada de usuarios falsa con nombres para proyectar el nombre del operador; reserva personal además de la de grupo
  * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -337,6 +337,15 @@ export const RESERVATION: ActiveReservationSummary = {
   holderType: "GROUP",
   groupId: "group-1",
   createdById: "leader-1",
+  startsAt: new Date("2026-10-10T12:00:00Z"),
+  endsAt: new Date("2026-10-10T13:00:00Z"),
+};
+
+export const PERSONAL_RESERVATION: ActiveReservationSummary = {
+  id: "res-1",
+  holderType: "USER",
+  userId: "student-1",
+  createdById: "student-1",
   startsAt: new Date("2026-10-10T12:00:00Z"),
   endsAt: new Date("2026-10-10T13:00:00Z"),
 };

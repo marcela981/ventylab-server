@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Flujo e2e de reserva de grupo, control del ventilador y desocupación
- * Descripción: El líder reserva el ventilador para su grupo, otro integrante toma el control y envía un comando que llega por MQTT al tópico de prueba y queda APPLIED con la telemetría simulada publicada en el Mosquitto de prueba; un docente intenta reservar (409 desocupable), desocupa con confirmación, el operador pierde el control, su siguiente comando recibe 403, recibe la notificación por Socket.io y existe la entrada de auditoría, validando cada respuesta JSON contra el contrato OpenAPI
- * Versión: 1.0
+ * Descripción: El líder reserva el ventilador para su grupo, otro integrante solo observa (403 al tomar el control), el líder toma el control y envía un comando que llega por MQTT al tópico de prueba y queda APPLIED con la telemetría simulada publicada en el Mosquitto de prueba; un docente intenta reservar (409 desocupable), desocupa con confirmación, el operador pierde el control, su siguiente comando recibe 403, recibe la notificación por Socket.io y existe la entrada de auditoría, validando cada respuesta JSON contra el contrato OpenAPI
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -78,7 +78,7 @@ describe("flow: group reservation, ventilator command and teacher preemption", (
     await e2e?.close();
   });
 
-  it("should apply a member's command over MQTT and revoke control when a teacher preempts", async () => {
+  it("should apply the group leader's command over MQTT and revoke control when a teacher preempts", async () => {
     const startsAt: Date = new Date(Math.floor(Date.now() / SLOT_MS) * SLOT_MS);
     const window: { startsAt: string; endsAt: string } = { startsAt: startsAt.toISOString(), endsAt: new Date(startsAt.getTime() + WINDOW_MS).toISOString() };
     const reserved: Response = await api("POST", "/api/reservations", tokens.leader, { holderType: "GROUP", groupId: group.id, ...window, purpose: "Práctica de grupo" });
@@ -90,15 +90,20 @@ describe("flow: group reservation, ventilator command and teacher preemption", (
 
     expectStatus(current, 200);
     expect(JSON.stringify(current.body.data)).toContain(reservationId);
-    const memberSocket: RecordingSocket = await connectRecordingSocket(e2e.baseUrl, tokens.member);
+    const memberTake: Response = await api("POST", "/api/ventilator/control", tokens.member);
 
-    socket = memberSocket;
-    expectStatus(await api("POST", "/api/ventilator/control", tokens.member), 200);
+    expect(memberTake.status).toBe(403);
+    expect(memberTake.body.code).toBe("ventilator-commands.group_member_observer");
+
+    const leaderSocket: RecordingSocket = await connectRecordingSocket(e2e.baseUrl, tokens.leader);
+
+    socket = leaderSocket;
+    expectStatus(await api("POST", "/api/ventilator/control", tokens.leader), 200);
 
     ventilator.applySettings("VCV", COMMAND);
 
     const sent: Response = await waitUntil(
-      (): Promise<Response> => api("POST", "/api/ventilator/commands", tokens.member, { mode: "VCV", ...COMMAND }),
+      (): Promise<Response> => api("POST", "/api/ventilator/commands", tokens.leader, { mode: "VCV", ...COMMAND }),
       (response: Response): boolean => response.status === 202,
       { description: "the device to be online and the command accepted", intervalMs: 500 },
     );
@@ -108,7 +113,7 @@ describe("flow: group reservation, ventilator command and teacher preemption", (
     expect(ventilator.commands.at(-1)).toMatchObject({ mode: "VCV", ...COMMAND, correlationId: commandId });
 
     const history: Response = await waitUntil(
-      (): Promise<Response> => api("GET", `/api/ventilator/commands?reservationId=${reservationId}`, tokens.member),
+      (): Promise<Response> => api("GET", `/api/ventilator/commands?reservationId=${reservationId}`, tokens.leader),
       (response: Response): boolean => (response.body.data as CommandRow[] | undefined)?.some((row: CommandRow): boolean => row.id === commandId && row.status === "APPLIED") ?? false,
       { description: "command APPLIED" },
     );
@@ -120,8 +125,8 @@ describe("flow: group reservation, ventilator command and teacher preemption", (
     expect(unconfirmed.status).toBe(409);
     expect(unconfirmed.body.code).toBe("reservations.conflict_preemptable");
 
-    const notification: Promise<NotificationPayload> = memberSocket.next<NotificationPayload>("notification:new", (payload: NotificationPayload): boolean => payload.type === "RESERVATION_PREEMPTED");
-    const controlLost: Promise<ControlChange> = memberSocket.next<ControlChange>("ventilator:control-changed", (payload: ControlChange): boolean => payload.operatorUserId === null);
+    const notification: Promise<NotificationPayload> = leaderSocket.next<NotificationPayload>("notification:new", (payload: NotificationPayload): boolean => payload.type === "RESERVATION_PREEMPTED");
+    const controlLost: Promise<ControlChange> = leaderSocket.next<ControlChange>("ventilator:control-changed", (payload: ControlChange): boolean => payload.operatorUserId === null);
     const preempted: Response = await api("POST", `/api/reservations/${reservationId}/preempt`, tokens.teacher, { reason: "Demostración clínica urgente", holderType: "USER" });
 
     expectStatus(preempted, 201);
@@ -129,7 +134,7 @@ describe("flow: group reservation, ventilator command and teacher preemption", (
     await expect(notification).resolves.toMatchObject({ type: "RESERVATION_PREEMPTED" });
     expect((await e2e.prisma.reservation.findUniqueOrThrow({ where: { id: reservationId } })).status).toBe("PREEMPTED");
 
-    const rejected: Response = await api("POST", "/api/ventilator/commands", tokens.member, { mode: "VCV", ...COMMAND });
+    const rejected: Response = await api("POST", "/api/ventilator/commands", tokens.leader, { mode: "VCV", ...COMMAND });
 
     expect(rejected.status).toBe(403);
 

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de los comandos del ventilador
- * Descripción: Errores de dominio del control exclusivo y de los comandos del ventilador físico: sin reserva activa, no titular, control bloqueado, no operador, límite de frecuencia con hora de reintento, comando inválido con la lista de violaciones, dispositivo fuera de línea, reserva no encontrada y transición del ciclo de vida no permitida
- * Versión: 1.0
+ * Descripción: Errores de dominio del control exclusivo y de los comandos del ventilador físico: sin reserva activa, no titular, control bloqueado, no operador, límite de frecuencia con hora de reintento, comando inválido con la lista de violaciones, dispositivo fuera de línea, reserva no encontrada y transición del ciclo de vida no permitida; un miembro no líder del grupo titular solo observa
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,12 @@ export class NoActiveVentilatorReservationError extends DomainError {
 export class NotReservationHolderError extends DomainError {
   public constructor() {
     super("Only the reservation holders, teachers and administrators can do this", "ventilator-commands.not_reservation_holder");
+  }
+}
+
+export class VentilatorControlObserverError extends DomainError {
+  public constructor() {
+    super("Only the leader of the holder group can control the ventilator; the other members observe", "ventilator-commands.group_member_observer");
   }
 }
 

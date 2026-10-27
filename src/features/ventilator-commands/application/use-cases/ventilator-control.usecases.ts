@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Casos de uso del control exclusivo del ventilador
- * Descripción: Consultar el estado del control para quien pregunta (sin identificadores para quien no es titular, docente ni administrador), tomar el control libre, arrebatarlo (ambos con comparación del estado leído para no pisar un cambio concurrente) (líder del grupo titular, docente o administrador, con registro de auditoría), liberarlo (operador, docente o administrador) y renovar la presencia del operador con un latido; el estado del control lleva el nombre del operador proyectado para quien consulta (oculto a estudiantes que no comparten la reserva con él) y la toma guarda la identidad del operador
- * Versión: 1.2
+ * Descripción: Consultar el estado del control para quien pregunta (sin identificadores para quien no es titular, docente ni administrador), tomar el control libre, arrebatarlo (ambos con comparación del estado leído para no pisar un cambio concurrente) (líder del grupo titular, docente o administrador, con registro de auditoría), liberarlo (operador, docente o administrador) y renovar la presencia del operador con un latido; el estado del control lleva el nombre del operador proyectado para quien consulta (oculto a estudiantes que no comparten la reserva con él) y la toma guarda la identidad del operador; en una reserva de grupo solo el líder toma o arrebata el control (los demás miembros observan, 403)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -32,7 +32,10 @@ import {
   NotReservationHolderError,
   NotVentilatorOperatorError,
   VentilatorControlLockedError,
+  VentilatorControlObserverError,
 } from "@/features/ventilator-commands/domain/ventilator-commands.errors";
+
+const GROUP_HOLDER: string = "GROUP";
 
 export const VENTILATOR_CONTROL_TAKEOVER_ACTION: string = "ventilator_control_taken_over";
 export const VENTILATOR_CONTROL_AUDIT_TARGET: string = "VentilatorControl";
@@ -75,6 +78,7 @@ export class GetVentilatorControlUseCase {
       actorUserId: command.userId,
       actorRole: command.role,
       isHolder,
+      isGroupReservation: active.holderType === GROUP_HOLDER,
       leadsHolderGroup,
       currentOperatorUserId: operator?.operatorUserId,
     };
@@ -109,6 +113,7 @@ export class GetVentilatorControlUseCase {
 /**
  * @throws {NoActiveVentilatorReservationError} If no reservation is active now
  * @throws {NotReservationHolderError} If the caller is neither a holder of the active reservation nor a teacher or administrator
+ * @throws {VentilatorControlObserverError} If the caller is a member, not the leader, of the group holding the active reservation
  * @throws {VentilatorControlLockedError} If another operator holds the control and the caller may not take it over, or the control changed while the request was being checked
  */
 @Injectable()
@@ -132,13 +137,16 @@ export class TakeVentilatorControlUseCase {
 
     // Staff skip the holder check: they may take control anyway, and students see a staff operator with the generic teacher label
     const isHolder: boolean = isPrivilegedVentilatorRole(command.role) ? false : await this._reservationsFacade.isHolder(command.userId, active);
-    const needsLeadership: boolean = kind === "takeover" && operator !== undefined && operator.operatorUserId !== command.userId;
+    const isGroupReservation: boolean = active.holderType === GROUP_HOLDER;
+    // Leadership matters for any take of a group reservation by a member, and for a takeover from another operator
+    const needsLeadership: boolean = (isHolder && isGroupReservation) || (kind === "takeover" && operator !== undefined && operator.operatorUserId !== command.userId);
     const leadsHolderGroup: boolean = needsLeadership ? await this._reservationsFacade.isGroupLeaderOfHolder(command.userId, active) : false;
 
     const decision: ControlDecision = decideControlRequest(kind, {
       actorUserId: command.userId,
       actorRole: command.role,
       isHolder,
+      isGroupReservation,
       leadsHolderGroup,
       currentOperatorUserId: operator?.operatorUserId,
     });
@@ -146,6 +154,8 @@ export class TakeVentilatorControlUseCase {
     switch (decision) {
       case "not_holder":
         throw new NotReservationHolderError();
+      case "observer":
+        throw new VentilatorControlObserverError();
       case "locked":
         throw new VentilatorControlLockedError();
       case "already_operator":

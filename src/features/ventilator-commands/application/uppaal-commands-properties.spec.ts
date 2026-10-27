@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Propiedades UPPAAL del camino de comandos
- * Descripción: Contrasta la implementación con las consultas del modelo ventilab-commands-uppaal.xml (S2/SM1, S6/P1, S7/P2, L1, L2, S3, R1, R2, R3) mediante pruebas ejecutables sobre los servicios reales con dobles en memoria; las propiedades de seguridad usan un generador pseudoaleatorio con semilla sobre miles de comandos y actores, y S2/SM1 contrasta cada publicación con un oráculo independiente de límites numéricos escritos como literales en la prueba. No sustituye a verifyta: es evidencia de prueba, no una verificación de modelos
- * Versión: 1.1
+ * Descripción: Contrasta la implementación con las consultas del modelo ventilab-commands-uppaal.xml (S2/SM1, S6/P1, S7/P2, L1, L2, S3, R1, R2, R3) mediante pruebas ejecutables sobre los servicios reales con dobles en memoria; las propiedades de seguridad usan un generador pseudoaleatorio con semilla sobre miles de comandos y actores, y S2/SM1 contrasta cada publicación con un oráculo independiente de límites numéricos escritos como literales en la prueba. No sustituye a verifyta: es evidencia de prueba, no una verificación de modelos; el operador de la reserva de grupo es su líder
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -180,7 +180,8 @@ function isSafeByIndependentOracle(payload: Record<string, unknown>): boolean {
 async function operatorHarness(overrides: Parameters<typeof createVentilatorCommandsHarness>[0] = {}): Promise<VentilatorCommandsHarness> {
   const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness(overrides);
 
-  harness.reservations.activate(RESERVATION, ["student-1", "leader-1"], ["leader-1"]);
+  // Only the leader of the holder group operates; student-1 leads it here
+  harness.reservations.activate(RESERVATION, ["student-1", "leader-1"], ["student-1"]);
   await harness.takeControl.execute(new VentilatorControlCommand({ userId: "student-1", role: "STUDENT" }), "take");
 
   return harness;

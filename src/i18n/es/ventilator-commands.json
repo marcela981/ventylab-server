@@ -7,6 +7,7 @@
   "commands_retrieved": "Comandos del ventilador obtenidos correctamente",
   "no_active_reservation": "No hay una reserva activa del ventilador",
   "not_reservation_holder": "Solo los titulares de la reserva, los docentes y los administradores pueden hacer esto",
+  "group_member_observer": "Solo el líder del grupo puede controlar el ventilador; los demás miembros observan",
   "control_locked": "El ventilador está controlado por otro operador",
   "not_operator": "Solo el operador actual del ventilador puede hacer esto",
   "rate_limited": "Demasiados comandos al ventilador, inténtalo más tarde",

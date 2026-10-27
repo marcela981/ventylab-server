@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Política del control exclusivo del ventilador
- * Descripción: Decide sin efectos secundarios si quien lo pide toma el control libre, ya es el operador, lo arrebata (solo el líder del grupo titular, un docente o un administrador) o queda bloqueado, y quién puede liberar el control
- * Versión: 1.0
+ * Descripción: Decide sin efectos secundarios si quien lo pide toma el control libre, ya es el operador, lo arrebata (solo el líder del grupo titular, un docente o un administrador) o queda bloqueado, y quién puede liberar el control; en una reserva de grupo solo el líder del grupo titular (además de docentes y administradores) toma o arrebata el control y los demás miembros observan
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,12 +10,14 @@
  */
 export type ControlRequestKind = "take" | "takeover";
 
-export type ControlDecision = "not_holder" | "already_operator" | "take" | "takeover" | "locked";
+export type ControlDecision = "not_holder" | "observer" | "already_operator" | "take" | "takeover" | "locked";
 
 export interface ControlRequestFacts {
   readonly actorUserId: string;
   readonly actorRole: string;
   readonly isHolder: boolean;
+  /** The active reservation is held by a group: only its leader controls the ventilator, the other members observe */
+  readonly isGroupReservation: boolean;
   readonly leadsHolderGroup: boolean;
   readonly currentOperatorUserId: string | undefined;
 }
@@ -31,6 +33,10 @@ export function decideControlRequest(kind: ControlRequestKind, facts: ControlReq
 
   if (!facts.isHolder && !privileged) {
     return "not_holder";
+  }
+
+  if (!privileged && facts.isGroupReservation && !facts.leadsHolderGroup) {
+    return "observer";
   }
 
   if (facts.currentOperatorUserId === undefined) {

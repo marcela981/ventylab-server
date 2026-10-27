@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de reservas
  * Descripción: Forma limitada de una reserva ajena para estudiantes (ventana, estado y etiqueta sin datos de otras personas), forma completa con titular, grupo y creador, y la reserva actual con si se puede controlar el ventilador y la relación de quien consulta con ella; el código de estudiante de cada persona solo en la proyección de docentes y administradores
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -142,7 +142,7 @@ export class CurrentReservationDTO {
   @ApiProperty({ description: "Active reservation in the caller's projection, or null when the ventilator is free", nullable: true, type: ReservationDetailDTO })
   public reservation: ReservationDTO | null;
 
-  @ApiProperty({ description: "Whether the caller may control the ventilator now (holder, member of the holder group, teacher or admin)", example: true })
+  @ApiProperty({ description: "Whether the caller may control the ventilator now (holder user, leader of the holder group, teacher or admin; the other group members observe)", example: true })
   public canControl: boolean;
 
   @ApiProperty({

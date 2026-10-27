@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de acceso a reservas
- * Descripción: Resuelve con GroupsFacade los hechos de grupo que necesita la política (liderazgo, supervisión, tipo de grupo), los hechos para filtrar el calendario por grupo (gestión o supervisión de un profesor, pertenencia de un estudiante), el grupo de estudiantes de quien consulta, si un usuario es titular de una reserva (usuario titular o miembro del grupo titular), los usuarios a avisar, si puede controlar el ventilador y la relación de quien consulta con una reserva
- * Versión: 1.2
+ * Descripción: Resuelve con GroupsFacade los hechos de grupo que necesita la política (liderazgo, supervisión, tipo de grupo), los hechos para filtrar el calendario por grupo (gestión o supervisión de un profesor, pertenencia de un estudiante), el grupo de estudiantes de quien consulta, si un usuario es titular de una reserva (usuario titular o miembro del grupo titular), los usuarios a avisar y la relación de quien consulta con una reserva
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,7 +18,6 @@ import {
   ADMIN_ACTOR_ROLE,
   type CalendarGroupFacts,
   type HolderGroupFacts,
-  isPrivilegedActor,
   type ReservationActor,
   resolveReservationRelation,
   TEACHER_ACTOR_ROLE,
@@ -76,10 +75,6 @@ export class ReservationAccessService {
     }
 
     return holder.groupId !== undefined && (await this._groupsFacade.isMemberOf(userId, holder.groupId));
-  }
-
-  public async canControl(actor: ReservationActor, holder: ReservationHolderSnapshot): Promise<boolean> {
-    return isPrivilegedActor(actor) || (await this.isHolder(actor.userId, holder));
   }
 
   public async resolveRelation(userId: string, reservation: Reservation): Promise<ReservationRelation> {

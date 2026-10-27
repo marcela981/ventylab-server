@@ -7,6 +7,7 @@
   "commands_retrieved": "Ventilator commands retrieved successfully",
   "no_active_reservation": "There is no active ventilator reservation",
   "not_reservation_holder": "Only the reservation holders, teachers and administrators can do this",
+  "group_member_observer": "Only the leader of the group can control the ventilator; the other members observe",
   "control_locked": "The ventilator is controlled by another operator",
   "not_operator": "Only the current ventilator operator can do this",
   "rate_limited": "Too many ventilator commands, retry later",
