@@ -1,7 +1,7 @@
 <!--
  * Funcionalidad: Contexto del backend para asistentes de IA
- * Descripción: Estado real del backend NestJS de VentyLab: stack, arquitectura, familias de rutas, roles y permisos, contrato OpenAPI compartido con ventilab-web, contrato Socket.io (incluido el lote ventilator:telemetry), MQTT, variables de entorno, migraciones versionadas, despliegue en un contenedor persistente de una sola réplica sobre Dokploy y comandos. v1.2: sin el puente de NextAuth (ruta nextauth-token, NEXTAUTH_SECRET y NEXTAUTH_BRIDGE_SECRET)
- * Versión: 1.2
+ * Descripción: Estado real del backend NestJS de VentyLab: stack, arquitectura, familias de rutas, roles y permisos, contrato OpenAPI compartido con ventilab-web, contrato Socket.io (incluido el lote ventilator:telemetry), MQTT, variables de entorno, migraciones versionadas, despliegue en un contenedor persistente de una sola réplica sobre Dokploy y comandos. v1.2: sin el puente de NextAuth (ruta nextauth-token, NEXTAUTH_SECRET y NEXTAUTH_BRIDGE_SECRET). v1.3 (Bloque 1): reserva inmediata, paciente propio en sesiones FREE, sembrador de arranque de casos clínicos y limitaciones conocidas (operador y sala en memoria, vencimiento por sondeo)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -99,8 +99,9 @@ Validated at startup by `src/common/infrastructure/config/env.validation.ts` (10
 
 ## Database and migrations
 
-- `prisma/migrations/` **is tracked by git** (27 migrations, latest `20261017120000_user_student_code`). `.gitignore` keeps `*.sql` backups ignored but re-includes `prisma/migrations/**/migration.sql`.
+- `prisma/migrations/` **is tracked by git** (29 migrations, latest `20261026120100_simulation_session_patient_profile`). `.gitignore` keeps `*.sql` backups ignored but re-includes `prisma/migrations/**/migration.sql`.
 - The container entrypoint runs `prisma migrate deploy` (through `DIRECT_URL`) on every start and refuses to start if it fails.
+- Clinical cases: `ClinicalCasesBootstrapService` inserts the July cases and the `engine-*` base cases on startup when they are missing (insert-only, never updates, so cases with sessions keep their replay). `prisma/seed-clinical-cases.ts` is insert-only as well.
 - Target database: PostgreSQL hosted on Dokploy (the optional `postgres` profile of `docker-compose.yml`, or a Dokploy-managed Postgres).
 
 ## Deployment
@@ -122,3 +123,9 @@ Validated at startup by `src/common/infrastructure/config/env.validation.ts` (10
 - `test/`: e2e, integration, contract and load suites with their support code. `scripts/`: OpenAPI generation, verification, load tests, thesis audit scripts (`audit-output/`), `simulate-ventilator.ts`.
 - `contracts/`: legacy shared contracts, not imported by `src`. `__deferred_tests__/`: legacy tests outside the build.
 - `docs/`: ADRs, ERD, runbook, operations, security, verification reports, ventilator protocol.
+
+## Known limitations
+
+- **Single replica only.** The exclusive ventilator operator (`OperatorControlService`) and the ventilator room membership (`VentilatorRoomAccessService`) live in process memory. A restart drops the current operator (users reconnect and take control again), and a second replica would see a different operator and room. Scaling out needs a distributed operator lock and a Socket.io Redis adapter (see Deployment).
+- **Reservation expiry is detected by polling.** There is no domain event when a reservation ends naturally: the room refresh (every `VENTILATOR_ROOM_REFRESH_MS`, 1000 ms by default) notices it and then emits `ventilator:availability` and `ventilator:control-changed` with reason `reservation_ended`. Clients may see the end up to about one second late. Preemption does emit `reservation:preempted` immediately.
+- **Immediate reservations** (`POST /api/reservations` with `durationMinutes` and no `startsAt`) start at the current minute and are not aligned to `slotMinutes`, so the calendar can show gaps shorter than one slot.

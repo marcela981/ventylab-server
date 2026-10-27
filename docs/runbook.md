@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Manual de operación (runbook)
-  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos. v1.2: la base de producción es PostgreSQL en Dokploy (VPS), no Supabase
-  Versión: 1.2
+  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos. v1.2: la base de producción es PostgreSQL en Dokploy (VPS), no Supabase. v1.3 (Bloque 1): migraciones al desplegar
+  Versión: 1.3
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -153,3 +153,11 @@ All secrets are environment variables read at boot through `ConfigService`; **ev
 | `GOOGLE_CLIENT_SECRET`, `SMTP_PASS`, `INFLUXDB_TOKEN` | Google sign-in, e-mail, optional InfluxDB sink | Only that integration. | Rotate at the provider, update, restart. |
 
 After any rotation: `GET /health/ready`, `GET /api/system/status`, a sign-in, and a check that no new `Exception occurred` entries appear.
+
+## 7. Database migrations on deploy
+
+Migrations are applied automatically: `deploy/docker-entrypoint.sh` runs `prisma migrate deploy` (through `DIRECT_URL`) every time the container starts, before `node dist/main`, and refuses to start the application if it fails. Dokploy needs no extra step.
+
+- **Symptom:** the container restarts in a loop and the log shows `[entrypoint] prisma migrate deploy failed; refusing to start the application`.
+- **Diagnosis:** read the Prisma error above that line (connectivity through `DIRECT_URL`, a failed migration recorded in `_prisma_migrations`, or a lock held by another process).
+- **Action:** fix the cause (database reachable, `DIRECT_URL` correct), and for a migration marked as failed resolve it with `prisma migrate resolve` after checking the database state, then redeploy. Never edit an already applied `migration.sql`.
