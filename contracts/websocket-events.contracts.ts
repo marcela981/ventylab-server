@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Contrato TypeScript de los eventos Socket.io
  * Descripción: Tipos de los mensajes que el cliente envía (authenticate y los ventilator:* reenviados), de los eventos que emite el servidor con su carga (la notificación como unión discriminada por type con el data de cada tipo) y de las salas a las que llegan; reflejan openapi/asyncapi.yaml, que es la fuente de verdad, y test/openapi/asyncapi-events.spec.ts verifica que todo evento emitido en src/ aparezca en ambos
- * Versión: 2.1
+ * Versión: 2.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -216,6 +216,10 @@ export interface VentilatorCommandStatusPayload {
 export interface VentilatorControlChangedPayload {
   reservationId: string;
   operatorUserId: string | null;
+  /** Projected per room: null for students who do not share the reservation with the operator, and when the control is released */
+  operatorName: string | null;
+  /** Generic label shown instead of a hidden operatorName */
+  operatorLabelKey: "ventilator-commands.operator_labels.teacher" | "ventilator-commands.operator_labels.student" | null;
   reason: "taken" | "takeover" | "released" | "presence_timeout" | "reservation_ended" | "reservation_preempted";
 }
 

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de los comandos del ventilador
- * Descripción: Publicador en tiempo real, fachada de reservas, conexión MQTT, fachada de telemetría, repositorio en memoria y registrador de auditoría falsos, y un arnés que arma los servicios y casos de uso reales de la feature con ajustes leídos como en NODE_ENV=test (tópicos con prefijo de pruebas), para que ninguna prueba publique en el tópico real
- * Versión: 1.1
+ * Descripción: Publicador en tiempo real, fachada de reservas, conexión MQTT, fachada de telemetría, repositorio en memoria y registrador de auditoría falsos, y un arnés que arma los servicios y casos de uso reales de la feature con ajustes leídos como en NODE_ENV=test (tópicos con prefijo de pruebas), para que ninguna prueba publique en el tópico real; fachada de usuarios falsa con nombres para proyectar el nombre del operador
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,8 @@ import { Paginated } from "@/common/domain/utils/paginated";
 import { Environment, type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
 import { type ActiveReservationSummary } from "@/features/reservations/application/results/active-reservation-summary.result";
 import { type ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
+import { type UsersFacade } from "@/features/users/application/services/users.facade";
+import { type UserAccount } from "@/features/users/domain/read-models/user-account.read-model";
 import { CommandLifecycleService } from "@/features/ventilator-commands/application/services/command-lifecycle.service";
 import { CommandRateLimiterService } from "@/features/ventilator-commands/application/services/command-rate-limiter.service";
 import { OperatorControlService } from "@/features/ventilator-commands/application/services/operator-control.service";
@@ -140,6 +142,27 @@ export class FakeReservationsFacade {
 
   public asFacade(): ReservationsFacade {
     return this as unknown as ReservationsFacade;
+  }
+}
+
+export class FakeUsersFacade {
+  public readonly names: Map<string, string> = new Map<string, string>([
+    ["student-1", "Ana Student"],
+    ["leader-1", "Lucia Leader"],
+    ["member-1", "Mario Member"],
+    ["teacher-1", "Tomas Teacher"],
+  ]);
+
+  public async getUserById(id: string): Promise<UserAccount | undefined> {
+    const name: string | undefined = this.names.get(id);
+
+    return await Promise.resolve(
+      name === undefined ? undefined : { id, email: `${id}@example.com`, name, role: "STUDENT", isActive: true, hasPassword: true, createdAt: new Date(0) },
+    );
+  }
+
+  public asFacade(): UsersFacade {
+    return this as unknown as UsersFacade;
   }
 }
 
@@ -333,6 +356,7 @@ export interface VentilatorCommandsHarness {
   readonly settings: VentilatorCommandsSettings;
   readonly realtime: FakeRealtimePublisher;
   readonly reservations: FakeReservationsFacade;
+  readonly users: FakeUsersFacade;
   readonly telemetry: FakeTelemetryFacade;
   readonly mqtt: FakeMqttConnection;
   readonly repository: InMemoryVentilatorCommandsRepository;
@@ -352,6 +376,7 @@ export function createVentilatorCommandsHarness(overrides: TestEnvironmentOverri
   const settings: VentilatorCommandsSettings = testCommandsSettings(overrides);
   const realtime: FakeRealtimePublisher = new FakeRealtimePublisher();
   const reservations: FakeReservationsFacade = new FakeReservationsFacade();
+  const users: FakeUsersFacade = new FakeUsersFacade();
   const telemetry: FakeTelemetryFacade = new FakeTelemetryFacade();
   const repository: InMemoryVentilatorCommandsRepository = new InMemoryVentilatorCommandsRepository();
   const audit: FakeAuditRecorder = new FakeAuditRecorder();
@@ -366,6 +391,7 @@ export function createVentilatorCommandsHarness(overrides: TestEnvironmentOverri
     settings,
     realtime,
     reservations,
+    users,
     telemetry,
     mqtt: telemetry.connection,
     repository,
@@ -375,7 +401,7 @@ export function createVentilatorCommandsHarness(overrides: TestEnvironmentOverri
     lifecycle,
     send: new SendVentilatorCommandUseCase(settings, createCommandEncoder(settings.encoding), reservations.asFacade(), telemetry.asFacade(), control, rateLimiter, lifecycle),
     getControl: new GetVentilatorControlUseCase(reservations.asFacade(), control),
-    takeControl: new TakeVentilatorControlUseCase(reservations.asFacade(), control, audit),
+    takeControl: new TakeVentilatorControlUseCase(reservations.asFacade(), control, audit, users.asFacade()),
     releaseControl: new ReleaseVentilatorControlUseCase(control),
     heartbeat: new VentilatorControlHeartbeatUseCase(control),
     handlers: new VentilatorCommandsEventsHandlers(control),

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo VentilatorCommandsModule
- * Descripción: Registra el control exclusivo del operador, la validación, el limitador de frecuencia, el codificador configurable, el ciclo de vida con acuses o parámetros aplicados, la persistencia en ventilator_commands y los endpoints /api/ventilator (los ajustes VENTILATOR_COMMANDS_SETTINGS_TOKEN los enlaza la raíz de composición); exporta VentilatorCommandsFacade y depende solo de las fachadas de reservas y de telemetría del ventilador
- * Versión: 1.1
+ * Descripción: Registra el control exclusivo del operador, la validación, el limitador de frecuencia, el codificador configurable, el ciclo de vida con acuses o parámetros aplicados, la persistencia en ventilator_commands y los endpoints /api/ventilator (los ajustes VENTILATOR_COMMANDS_SETTINGS_TOKEN los enlaza la raíz de composición); exporta VentilatorCommandsFacade y depende de las fachadas de reservas, de usuarios (nombre del operador) y de telemetría del ventilador
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { Module } from "@nestjs/common";
 
 import { ReservationsModule } from "@/features/reservations/reservations.module";
+import { UsersModule } from "@/features/users/users.module";
 import { CommandLifecycleService } from "@/features/ventilator-commands/application/services/command-lifecycle.service";
 import { CommandRateLimiterService } from "@/features/ventilator-commands/application/services/command-rate-limiter.service";
 import { OperatorControlService } from "@/features/ventilator-commands/application/services/operator-control.service";
@@ -42,7 +43,7 @@ function createEncoder(settings: VentilatorCommandsSettings): CommandEncoder {
 }
 
 @Module({
-  imports: [ReservationsModule, VentilatorTelemetryModule],
+  imports: [ReservationsModule, UsersModule, VentilatorTelemetryModule],
   controllers: [VentilatorCommandsController],
   providers: [
     { provide: VENTILATOR_COMMAND_ENCODER_TOKEN, useFactory: createEncoder, inject: [VENTILATOR_COMMANDS_SETTINGS_TOKEN] },

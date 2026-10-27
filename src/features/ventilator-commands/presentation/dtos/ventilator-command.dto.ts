@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de los comandos del ventilador
- * Descripción: Comando aceptado (identificador para seguir ventilator:command-status, estado real y hora de envío solo cuando el broker confirmó la publicación), estado del control exclusivo para quien consulta (sin identificadores para quien no es titular de la reserva activa ni docente o administrador) y elemento del historial de comandos de una reserva
- * Versión: 1.2
+ * Descripción: Comando aceptado (identificador para seguir ventilator:command-status, estado real y hora de envío solo cuando el broker confirmó la publicación), estado del control exclusivo para quien consulta (sin identificadores para quien no es titular de la reserva activa ni docente o administrador) y elemento del historial de comandos de una reserva; el estado del control incluye el nombre del operador proyectado por rol o la clave de su etiqueta genérica
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,6 +37,8 @@ export class SentVentilatorCommandDTO {
 export interface VentilatorControlStateDetails {
   readonly reservationId: string | null;
   readonly operatorUserId: string | null;
+  readonly operatorName: string | null;
+  readonly operatorLabelKey: string | null;
   readonly since: string | null;
   readonly lastSeenAt: string | null;
   readonly presenceExpiresAt: string | null;
@@ -48,6 +50,23 @@ export class VentilatorControlStateDTO {
 
   @ApiPropertyOptional({ description: "Current operator, null when nobody controls the ventilator; omitted for students who are not holders of the active reservation", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e71", nullable: true, type: String })
   public operatorUserId?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Operator name; null when nobody controls the ventilator or when the caller is a student who does not share the reservation with the operator (operatorLabelKey then names a generic label); omitted for students who are not holders of the active reservation",
+    example: "Ana Gómez",
+    nullable: true,
+    type: String,
+  })
+  public operatorName?: string | null;
+
+  @ApiPropertyOptional({
+    description: "i18n key of the generic label (a teacher, a student) shown instead of a hidden operatorName, null otherwise; omitted for students who are not holders of the active reservation",
+    example: "ventilator-commands.operator_labels.teacher",
+    nullable: true,
+    type: String,
+  })
+  public operatorLabelKey?: string | null;
 
   @ApiPropertyOptional({ description: "When the operator took control (ISO 8601); omitted for students who are not holders of the active reservation", example: "2026-10-10T12:00:00.000Z", nullable: true, type: String })
   public since?: string | null;
@@ -74,6 +93,8 @@ export class VentilatorControlStateDTO {
     if (init.details) {
       this.reservationId = init.details.reservationId;
       this.operatorUserId = init.details.operatorUserId;
+      this.operatorName = init.details.operatorName;
+      this.operatorLabelKey = init.details.operatorLabelKey;
       this.since = init.details.since;
       this.lastSeenAt = init.details.lastSeenAt;
       this.presenceExpiresAt = init.details.presenceExpiresAt;

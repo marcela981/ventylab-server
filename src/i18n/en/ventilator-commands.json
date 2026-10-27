@@ -18,5 +18,9 @@
     "mode_invalid": "mode must be one of VCV, PCV, SIMV or PSV",
     "number": "{property} must be a finite number",
     "reservation_id_required": "reservationId is required"
+  },
+  "operator_labels": {
+    "teacher": "A teacher",
+    "student": "A student"
   }
 }

@@ -18,5 +18,9 @@
     "mode_invalid": "mode debe ser VCV, PCV, SIMV o PSV",
     "number": "{property} debe ser un número finito",
     "reservation_id_required": "reservationId es obligatorio"
+  },
+  "operator_labels": {
+    "teacher": "Un docente",
+    "student": "Un estudiante"
   }
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de las lecturas de reservas
- * Descripción: Verifica la reserva vigente (sin reserva activa no hay control; controla el titular, un miembro del grupo titular o un docente o administrador, no otro estudiante), las reservas propias (como titular, creador o por el grupo del usuario, solo las que no terminaron) y el calendario (rango vacío, invertido, inválido o mayor a 31 días rechazado; incluye las reservas que tocan el rango y el observador con su grupo; el filtro por grupo titular solo para el administrador, el docente que lo supervisa o un miembro, 403 para los demás)
- * Versión: 1.1
+ * Descripción: Verifica la reserva vigente (sin reserva activa no hay control; controla el titular, un miembro del grupo titular o un docente o administrador, no otro estudiante), las reservas propias (como titular, creador o por el grupo del usuario, solo las que no terminaron) y el calendario (rango vacío, invertido, inválido o mayor a 31 días rechazado; incluye las reservas que tocan el rango y el observador con su grupo; el filtro por grupo titular solo para el administrador, el docente que lo supervisa o un miembro, 403 para los demás); la relación de quien consulta con la reserva activa
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,16 +35,16 @@ describe("GetCurrentReservationUseCase", () => {
 
     const result: CurrentReservationResult = await build(context).execute("student-1", "STUDENT");
 
-    expect(result).toEqual({ canControl: false, viewer: { userId: "student-1", role: "STUDENT", groupIds: [] } });
+    expect(result).toEqual({ canControl: false, relation: "none", viewer: { userId: "student-1", role: "STUDENT", groupIds: [] } });
   });
 
-  it.each<[string, string, string, boolean]>([
-    ["a member of the holder group", "student-2", "STUDENT", true],
-    ["the group leader", "leader-1", "STUDENT", true],
-    ["a student outside the group", "student-1", "STUDENT", false],
-    ["a teacher", "teacher-2", "TEACHER", true],
-    ["an admin", "admin-1", "ADMIN", true],
-  ])("lets %s control the active group reservation: %s", async (_label: string, actorId: string, actorRole: string, expected: boolean) => {
+  it.each<[string, string, string, boolean, string]>([
+    ["a member of the holder group", "student-2", "STUDENT", true, "group_member"],
+    ["the group leader", "leader-1", "STUDENT", true, "group_leader"],
+    ["a student outside the group", "student-1", "STUDENT", false, "none"],
+    ["a teacher", "teacher-2", "TEACHER", true, "none"],
+    ["an admin", "admin-1", "ADMIN", true, "none"],
+  ])("lets %s control the active group reservation: %s", async (_label: string, actorId: string, actorRole: string, expected: boolean, relation: string) => {
     const context: ReservationsTestContext = buildContext();
     const active: Reservation = await seedReservation(context.repository, {
       holder: ReservationHolder.forGroup("group-1"),
@@ -57,6 +57,16 @@ describe("GetCurrentReservationUseCase", () => {
 
     expect(result.view?.reservation.id).toBe(active.id);
     expect(result.canControl).toBe(expected);
+    expect(result.relation).toBe(relation);
+  });
+
+  it("tells the holder and the creator of a personal reservation apart", async () => {
+    const context: ReservationsTestContext = buildContext();
+
+    await seedReservation(context.repository, { holder: ReservationHolder.forUser("student-1"), createdById: "admin-1", startsAt: at("10:00"), endsAt: at("10:30") });
+
+    expect((await build(context).execute("student-1", "STUDENT")).relation).toBe("holder");
+    expect((await build(context).execute("admin-1", "ADMIN")).relation).toBe("creator");
   });
 
   it("lets only the holder student control an active personal reservation", async () => {

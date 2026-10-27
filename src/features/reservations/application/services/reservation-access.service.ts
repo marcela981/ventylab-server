@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de acceso a reservas
- * Descripción: Resuelve con GroupsFacade los hechos de grupo que necesita la política (liderazgo, supervisión, tipo de grupo), los hechos para filtrar el calendario por grupo (gestión o supervisión de un profesor, pertenencia de un estudiante), el grupo de estudiantes de quien consulta, si un usuario es titular de una reserva (usuario titular o miembro del grupo titular), los usuarios a avisar y si puede controlar el ventilador
- * Versión: 1.1
+ * Descripción: Resuelve con GroupsFacade los hechos de grupo que necesita la política (liderazgo, supervisión, tipo de grupo), los hechos para filtrar el calendario por grupo (gestión o supervisión de un profesor, pertenencia de un estudiante), el grupo de estudiantes de quien consulta, si un usuario es titular de una reserva (usuario titular o miembro del grupo titular), los usuarios a avisar, si puede controlar el ventilador y la relación de quien consulta con una reserva
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,13 +12,15 @@ import { Injectable } from "@nestjs/common";
 
 import { type GroupMemberSummary, type GroupSummary, GroupsFacade } from "@/features/groups/application/services/groups.facade";
 import { type StudentGroupSummaryView } from "@/features/groups/domain/read-models/group.read-model";
-import { type ReservationViewer } from "@/features/reservations/domain/read-models/reservation.read-model";
+import { type Reservation } from "@/features/reservations/domain/entities/reservation.entity";
+import { type ReservationRelation, type ReservationViewer } from "@/features/reservations/domain/read-models/reservation.read-model";
 import {
   ADMIN_ACTOR_ROLE,
   type CalendarGroupFacts,
   type HolderGroupFacts,
   isPrivilegedActor,
   type ReservationActor,
+  resolveReservationRelation,
   TEACHER_ACTOR_ROLE,
 } from "@/features/reservations/domain/services/reservation-access-policy";
 import { type ReservationHolderSnapshot } from "@/features/reservations/domain/value-objects/reservation-holder";
@@ -78,6 +80,18 @@ export class ReservationAccessService {
 
   public async canControl(actor: ReservationActor, holder: ReservationHolderSnapshot): Promise<boolean> {
     return isPrivilegedActor(actor) || (await this.isHolder(actor.userId, holder));
+  }
+
+  public async resolveRelation(userId: string, reservation: Reservation): Promise<ReservationRelation> {
+    const groupId: string | undefined = reservation.holder.groupId;
+
+    if (groupId === undefined || reservation.holder.userId === userId) {
+      return resolveReservationRelation(userId, reservation, { leadsGroup: false, isMember: false });
+    }
+
+    const [leadsGroup, isMember]: [boolean, boolean] = await Promise.all([this._groupsFacade.isGroupLeader(userId, groupId), this._groupsFacade.isMemberOf(userId, groupId)]);
+
+    return resolveReservationRelation(userId, reservation, { leadsGroup, isMember });
   }
 
   public async resolveViewer(actor: ReservationActor): Promise<ReservationViewer> {

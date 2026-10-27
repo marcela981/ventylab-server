@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de reservas
- * Descripción: Endpoints /api/reservations: calendario por rango (opcionalmente de un grupo titular), mis reservas, reserva actual con permiso de control, creación programada o inmediata con desplazamiento confirmado (devuelve la reserva creada), cancelación y desplazamiento explícito; las respuestas se proyectan por rol en el servidor; el calendario se documenta como lista de reservas completas o resumidas (las ajenas que ve un estudiante)
- * Versión: 1.3
+ * Descripción: Endpoints /api/reservations: calendario por rango (opcionalmente de un grupo titular), mis reservas, reserva actual con permiso de control y relación de quien consulta, creación programada o inmediata con desplazamiento confirmado (devuelve la reserva creada), cancelación y desplazamiento explícito; las respuestas se proyectan por rol en el servidor; el calendario se documenta como lista de reservas completas o resumidas (las ajenas que ve un estudiante)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -107,7 +107,7 @@ export class ReservationsController {
   @Get("current")
   @RequirePermissions("reservations:read")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Current reservation", description: "Reservation active right now in the caller's projection and whether the caller may control the ventilator" })
+  @ApiOperation({ summary: "Current reservation", description: "Reservation active right now in the caller's projection, whether the caller may control the ventilator and how the caller relates to it" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Current reservation retrieved successfully", type: CurrentReservationDTO })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
@@ -115,7 +115,7 @@ export class ReservationsController {
     const result: CurrentReservationResult = await this._getCurrentReservationUseCase.execute(currentUser.sub, currentUser.role);
 
     return new APIResponseBuilder<CurrentReservationDTO>()
-      .setData(ReservationsPresentationMapper.toCurrentDTO(result.view, result.canControl, result.viewer, ReservationsController._translator(i18n)))
+      .setData(ReservationsPresentationMapper.toCurrentDTO(result.view, result.canControl, result.relation, result.viewer, ReservationsController._translator(i18n)))
       .setMessage(await i18n.t("reservations.current_reservation_retrieved"))
       .build();
   }
@@ -155,7 +155,7 @@ export class ReservationsController {
     );
 
     return new APIResponseBuilder<ReservationDetailDTO>()
-      .setData(ReservationsPresentationMapper.toCreatedDTO(result.view))
+      .setData(ReservationsPresentationMapper.toCreatedDTO(result.view, result.viewer))
       .setMessage(await i18n.t("reservations.reservation_created"))
       .build();
   }

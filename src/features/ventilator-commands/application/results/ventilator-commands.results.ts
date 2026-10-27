@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados de la feature de comandos del ventilador
- * Descripción: Comando aceptado (identificador de correlación, reserva, estado real y hora de envío solo si el broker confirmó la publicación) y estado del control exclusivo para quien consulta (reserva activa, operador, desde cuándo, última presencia, si es el operador, si puede tomar o arrebatar el control, si hay una reserva activa y si la vista se restringe por no ser titular, docente ni administrador)
- * Versión: 1.2
+ * Descripción: Comando aceptado (identificador de correlación, reserva, estado real y hora de envío solo si el broker confirmó la publicación) y estado del control exclusivo para quien consulta (reserva activa, operador, desde cuándo, última presencia, si es el operador, si puede tomar o arrebatar el control, si hay una reserva activa y si la vista se restringe por no ser titular, docente ni administrador); el estado del control incluye el nombre proyectado del operador o la clave de su etiqueta genérica
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,6 +27,8 @@ export class SentVentilatorCommandResult {
 export class VentilatorControlStateResult {
   public readonly reservationId?: string;
   public readonly operatorUserId?: string;
+  public readonly operatorName?: string;
+  public readonly operatorLabelKey?: string;
   public readonly since?: Date;
   public readonly lastSeenAt?: Date;
   public readonly presenceExpiresAt?: Date;
@@ -39,6 +41,8 @@ export class VentilatorControlStateResult {
   public constructor({
     reservationId,
     operatorUserId,
+    operatorName,
+    operatorLabelKey,
     since,
     lastSeenAt,
     presenceExpiresAt,
@@ -50,6 +54,8 @@ export class VentilatorControlStateResult {
   }: {
     reservationId?: string;
     operatorUserId?: string;
+    operatorName?: string;
+    operatorLabelKey?: string;
     since?: Date;
     lastSeenAt?: Date;
     presenceExpiresAt?: Date;
@@ -61,6 +67,8 @@ export class VentilatorControlStateResult {
   }) {
     this.reservationId = reservationId;
     this.operatorUserId = operatorUserId;
+    this.operatorName = operatorName;
+    this.operatorLabelKey = operatorLabelKey;
     this.since = since;
     this.lastSeenAt = lastSeenAt;
     this.presenceExpiresAt = presenceExpiresAt;

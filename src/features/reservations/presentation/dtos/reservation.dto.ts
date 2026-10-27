@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de reservas
- * Descripción: Forma limitada de una reserva ajena para estudiantes (ventana, estado y etiqueta sin datos de otras personas), forma completa con titular, grupo y creador, y la reserva actual con si se puede controlar el ventilador
- * Versión: 1.0
+ * Descripción: Forma limitada de una reserva ajena para estudiantes (ventana, estado y etiqueta sin datos de otras personas), forma completa con titular, grupo y creador, y la reserva actual con si se puede controlar el ventilador y la relación de quien consulta con ella; el código de estudiante de cada persona solo en la proyección de docentes y administradores
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,8 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+
+import { RESERVATION_RELATION_VALUES, type ReservationRelation } from "@/features/reservations/domain/read-models/reservation.read-model";
 
 export class ReservationSummaryDTO {
   @ApiProperty({ description: "Projection: limited for other people's reservations seen by a student", example: "limited" })
@@ -56,11 +58,15 @@ export class ReservationPartyDTO {
   @ApiProperty({ description: "User role", example: "STUDENT" })
   public role: string;
 
+  @ApiProperty({ description: "Student code; only teachers and admins see it (null otherwise or when the user has none)", example: "2024123456", nullable: true, type: String })
+  public code: string | null;
+
   public constructor(init: ReservationPartyDTO) {
     this.id = init.id;
     this.name = init.name;
     this.identifier = init.identifier;
     this.role = init.role;
+    this.code = init.code;
   }
 }
 
@@ -139,8 +145,16 @@ export class CurrentReservationDTO {
   @ApiProperty({ description: "Whether the caller may control the ventilator now (holder, member of the holder group, teacher or admin)", example: true })
   public canControl: boolean;
 
+  @ApiProperty({
+    description: "How the caller relates to the active reservation: its holder user, the leader or a member of its holder group, its creator, or none (also when the ventilator is free)",
+    enum: RESERVATION_RELATION_VALUES,
+    example: "group_leader",
+  })
+  public relation: ReservationRelation;
+
   public constructor(init: CurrentReservationDTO) {
     this.reservation = init.reservation;
     this.canControl = init.canControl;
+    this.relation = init.relation;
   }
 }

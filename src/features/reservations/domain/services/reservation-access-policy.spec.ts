@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la política de acceso a reservas
- * Descripción: Verifica quién puede reservar para un titular, quién puede cancelar y quién puede desplazar la reserva de otro titular
- * Versión: 1.0
+ * Descripción: Verifica quién puede reservar para un titular, quién puede cancelar quién puede desplazar la reserva de otro titular y la relación de un usuario con una reserva
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import {
   canReserveFor,
   type HolderGroupFacts,
   type ReservationActor,
+  resolveReservationRelation,
 } from "@/features/reservations/domain/services/reservation-access-policy";
 import { ReservationHolder } from "@/features/reservations/domain/value-objects/reservation-holder";
 import { ReservationWindow } from "@/features/reservations/domain/value-objects/reservation-window";
@@ -80,5 +81,24 @@ describe("reservation access policy", () => {
     ];
 
     expect(decisions).toEqual([true, false, false, true, true, false]);
+  });
+
+  it("resolves the strongest relation of a user with a reservation", () => {
+    const group: Reservation = groupReservation("teacher-1");
+    const personal: Reservation = Reservation.schedule({
+      holder: ReservationHolder.forUser("student-1"),
+      window: ReservationWindow.create(new Date("2026-10-12T11:00:00Z"), new Date("2026-10-12T12:00:00Z")),
+      createdById: "admin-1",
+      now: new Date("2026-10-12T10:00:00Z"),
+    });
+
+    expect([
+      resolveReservationRelation("student-1", personal, { leadsGroup: false, isMember: false }),
+      resolveReservationRelation("admin-1", personal, { leadsGroup: false, isMember: false }),
+      resolveReservationRelation("leader-1", group, { leadsGroup: true, isMember: true }),
+      resolveReservationRelation("student-2", group, { leadsGroup: false, isMember: true }),
+      resolveReservationRelation("teacher-1", group, { leadsGroup: false, isMember: false }),
+      resolveReservationRelation("student-9", group, { leadsGroup: false, isMember: false }),
+    ]).toEqual(["holder", "creator", "group_leader", "group_member", "creator", "none"]);
   });
 });

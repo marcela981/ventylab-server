@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del control exclusivo del ventilador
- * Descripción: Verifica tomar, bloquear (423), arrebatar con auditoría, liberar, el latido, la gracia de presencia al cerrar el último socket (expira o se cancela al reconectar o con ventilator:heartbeat), la revocación por reserva desplazada, cancelada, completada o vencida en el refresco periódico, los eventos ventilator:control-changed y que ninguno de esos caminos publique un comando
- * Versión: 1.1
+ * Descripción: Verifica tomar, bloquear (423), arrebatar con auditoría, liberar, el latido, la gracia de presencia al cerrar el último socket (expira o se cancela al reconectar o con ventilator:heartbeat), la revocación por reserva desplazada, cancelada, completada o vencida en el refresco periódico, los eventos ventilator:control-changed y que ninguno de esos caminos publique un comando y el nombre del operador proyectado por sala y para quien consulta el estado (los estudiantes no ven el nombre de un operador que no comparte su reserva)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -250,7 +250,7 @@ describe("exclusive ventilator control", () => {
     expect(harness.control.state).toBeUndefined();
     expect(controlChanges(harness)).toEqual(["taken:student-1"]);
     expect(harness.realtime.payloadsOf<VentilatorControlChangedPayload>(VENTILATOR_CONTROL_CHANGED_EVENT, "user:student-1")).toEqual([
-      { reservationId: RESERVATION.id, operatorUserId: null, reason: "reservation_ended" },
+      { reservationId: RESERVATION.id, operatorUserId: null, operatorName: null, operatorLabelKey: null, reason: "reservation_ended" },
     ]);
     expect(harness.mqtt.publishes).toHaveLength(0);
   });
@@ -352,6 +352,48 @@ describe("exclusive ventilator control", () => {
       const result: VentilatorControlStateResult = await harness.getControl.execute(actor(userId, role));
 
       expect(VentilatorCommandsMapper.toControlStateDTO(result)).toMatchObject({ reservationId: RESERVATION.id, operatorUserId: "student-1", occupied: true });
+    });
+  });
+
+  describe("operator name", () => {
+    function lastPayload(harness: VentilatorCommandsHarness, room: string): VentilatorControlChangedPayload | undefined {
+      return harness.realtime.payloadsOf<VentilatorControlChangedPayload>(VENTILATOR_CONTROL_CHANGED_EVENT, room).at(-1);
+    }
+
+    it("names a holder operator to the holders in the ventilator room and to staff", async () => {
+      const harness: VentilatorCommandsHarness = await heldBy("student-1");
+
+      expect(lastPayload(harness, "ventilator")).toMatchObject({ operatorUserId: "student-1", operatorName: "Ana Student", operatorLabelKey: null });
+      expect(lastPayload(harness, "role:TEACHER")).toMatchObject({ operatorName: "Ana Student", operatorLabelKey: null });
+    });
+
+    it("hides a teacher operator's name from the students of the ventilator room but not from staff", async () => {
+      const harness: VentilatorCommandsHarness = await heldBy("student-1");
+
+      await harness.takeControl.execute(actor("teacher-1", "TEACHER"), "takeover");
+
+      expect(lastPayload(harness, "ventilator")).toMatchObject({ operatorUserId: "teacher-1", operatorName: null, operatorLabelKey: "ventilator-commands.operator_labels.teacher" });
+      expect(lastPayload(harness, "role:ADMIN")).toMatchObject({ operatorName: "Tomas Teacher", operatorLabelKey: null });
+    });
+
+    it.each<[string, string, string, string | null, string | null]>([
+      ["a holder student", "student-2", "STUDENT", null, "ventilator-commands.operator_labels.teacher"],
+      ["the operator", "teacher-1", "TEACHER", "Tomas Teacher", null],
+      ["an administrator", "admin-1", "ADMIN", "Tomas Teacher", null],
+    ])("projects a teacher operator's name in the control state for %s", async (_label: string, userId: string, role: string, name: string | null, labelKey: string | null) => {
+      const harness: VentilatorCommandsHarness = await heldBy("teacher-1", "TEACHER");
+
+      const result: VentilatorControlStateResult = await harness.getControl.execute(actor(userId, role));
+
+      expect(VentilatorCommandsMapper.toControlStateDTO(result)).toMatchObject({ operatorUserId: "teacher-1", operatorName: name, operatorLabelKey: labelKey });
+    });
+
+    it("names a holder operator in the control state of another holder", async () => {
+      const harness: VentilatorCommandsHarness = await heldBy("student-1");
+
+      const result: VentilatorControlStateResult = await harness.getControl.execute(actor("student-2"));
+
+      expect(VentilatorCommandsMapper.toControlStateDTO(result)).toMatchObject({ operatorName: "Ana Student", operatorLabelKey: null });
     });
   });
 
