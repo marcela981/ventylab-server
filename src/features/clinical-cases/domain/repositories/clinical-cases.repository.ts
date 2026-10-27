@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio de casos clínicos
- * Descripción: Contrato y token del repositorio de casos clínicos (lectura filtrada por estado, escritura del agregado ClinicalCase, bloqueo de fila y conteo de uso), configuraciones expertas e intentos de evaluación
- * Versión: 1.2
+ * Descripción: Contrato y token del repositorio de casos clínicos (lectura filtrada por estado, escritura del agregado ClinicalCase, bloqueo de fila y conteo de uso), configuraciones expertas e intentos de evaluación; inserción de un caso solo si no existe
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -40,6 +40,8 @@ export interface IClinicalCasesRepository {
   lockCase(caseId: string, transaction: unknown): Promise<void>;
   getUsage(caseId: string, transaction?: unknown): Promise<ClinicalCaseUsage>;
   saveCase(clinicalCase: ClinicalCase, transaction?: unknown): Promise<void>;
+  /** Inserts the case unless one with its id exists, which is never touched; true when it was inserted */
+  insertCaseIfMissing(clinicalCase: ClinicalCase): Promise<boolean>;
   deleteCase(caseId: string, transaction?: unknown): Promise<void>;
   getExpertConfiguration(caseId: string): Promise<ExpertConfigurationData | undefined>;
   getUserAttempts(userId: string, caseId: string, limit?: number): Promise<CaseAttemptRecord[]>;

@@ -47,10 +47,15 @@
  *                 grave) desde `engine-ready-clinical-cases.data.ts`, donde
  *                 cada valor numérico cita su fuente bibliográfica y cae
  *                 dentro de `clinical-case-physiological-ranges.ts`.
+ *                 y los 3 casos de julio (`july-clinical-cases.data.ts`).
  *                 Todos quedan PUBLISHED y sin validación por experto.
+ *                 v1.2: los casos se insertan solo si no existen
+ *                 (`update: {}`): re-ejecutar nunca reescribe un caso que
+ *                 ya tiene sesiones (su repetición y nota dependen de él)
+ *                 ni lo que un docente haya editado.
  *                 `isActive` se mantiene igual a (status === PUBLISHED).
  *
- * Versión       : 1.1
+ * Versión       : 1.2
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Desarrollo de una aplicación web para la enseñanza de
@@ -64,6 +69,7 @@
 import { PrismaClient, CaseDifficulty, ClinicalCaseStatus, Pathology } from '@prisma/client';
 import { SIMULATION_CLINICAL_CASES as CLINICAL_CASES, type SimulationClinicalCase as ClinicalCase } from '../src/features/simulation/domain/services/simulation-case-catalog';
 import { ENGINE_READY_CLINICAL_CASES, type EngineReadySeedCase } from '../src/features/clinical-cases/infrastructure/persistence/seed/engine-ready-clinical-cases.data';
+import { JULY_CLINICAL_CASES } from '../src/features/clinical-cases/infrastructure/persistence/seed/july-clinical-cases.data';
 
 const prisma = new PrismaClient();
 
@@ -294,7 +300,7 @@ async function seedCase(c: ClinicalCase): Promise<void> {
 
   await prisma.clinicalCase.upsert({
     where: { id: caseId },
-    update: caseFields,
+    update: {},
     create: { id: caseId, ...caseFields },
   });
 
@@ -355,6 +361,7 @@ async function seedEngineReadyCase(seedCase: EngineReadySeedCase): Promise<void>
     events: toJson(sim.events),
     targets: toJson(sim.targets),
     defaultRubric: toJson(sim.defaultRubric),
+    initialVitals: toJson(content.initialVitals),
     status: ClinicalCaseStatus.PUBLISHED,
     isActive: true,
     validatedByExpert: false,
@@ -363,7 +370,7 @@ async function seedEngineReadyCase(seedCase: EngineReadySeedCase): Promise<void>
 
   await prisma.clinicalCase.upsert({
     where: { id: seedCase.id },
-    update: caseFields,
+    update: {},
     create: { id: seedCase.id, ...caseFields },
   });
 
@@ -385,7 +392,7 @@ async function main() {
     seeded++;
   }
 
-  for (const engineCase of ENGINE_READY_CLINICAL_CASES) {
+  for (const engineCase of [...ENGINE_READY_CLINICAL_CASES, ...JULY_CLINICAL_CASES]) {
     await seedEngineReadyCase(engineCase);
     seeded++;
   }
