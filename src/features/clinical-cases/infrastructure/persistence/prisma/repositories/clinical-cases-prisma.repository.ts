@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de casos clínicos
- * Descripción: Implementa IClinicalCasesRepository sobre las tablas clinical_cases, expert_configurations y evaluation_attempts con PrismaService: listado filtrado por estado, lectura y escritura del agregado ClinicalCase, bloqueo FOR UPDATE de la fila del caso, conteo de uso (sesiones de simulación, sesiones heredadas, intentos y preguntas) y auditoría del intento
- * Versión: 1.2
+ * Descripción: Implementa IClinicalCasesRepository sobre las tablas clinical_cases, expert_configurations y evaluation_attempts con PrismaService: listado filtrado por estado, lectura y escritura del agregado ClinicalCase, bloqueo FOR UPDATE de la fila del caso, conteo de uso (sesiones de simulación, sesiones heredadas, intentos y preguntas) y auditoría del intento; inserción solo si no existe (createMany con skipDuplicates) para los casos de siembra
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -152,6 +152,15 @@ export class ClinicalCasesPrismaRepository implements IClinicalCasesRepository {
       create: data,
       update: data,
     });
+  }
+
+  public async insertCaseIfMissing(clinicalCase: ClinicalCase): Promise<boolean> {
+    const { count }: Prisma.BatchPayload = await this._prisma.clinicalCase.createMany({
+      data: [ClinicalCasesMapper.toCasePersistence(clinicalCase)],
+      skipDuplicates: true,
+    });
+
+    return count > 0;
   }
 
   public async deleteCase(caseId: string, transaction?: unknown): Promise<void> {

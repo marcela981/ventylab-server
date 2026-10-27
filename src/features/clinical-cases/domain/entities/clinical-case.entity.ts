@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad ClinicalCase
- * Descripción: Caso clínico editable por docentes: contenido clínico, definición simulable validada contra rangos fisiológicos, estado (DRAFT, PUBLISHED, ARCHIVED) como fuente de verdad de la visibilidad, duplicado como borrador y validación por experto
- * Versión: 1.0
+ * Descripción: Caso clínico editable por docentes: contenido clínico, definición simulable validada contra rangos fisiológicos, estado (DRAFT, PUBLISHED, ARCHIVED) como fuente de verdad de la visibilidad, duplicado como borrador y validación por experto; signos vitales iniciales para mostrar, que una edición sin ellos (y sin alergias en los antecedentes) conserva
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { generateId } from "@/common/domain/utils/generate-id";
 import {
   type ClinicalCaseHistory,
+  type ClinicalCaseInitialVitals,
   type ClinicalCaseSimulationProfile,
 } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
 import { assertValidClinicalCaseDefinition } from "@/features/clinical-cases/domain/services/clinical-case-definition-validator";
@@ -39,6 +40,7 @@ export interface ClinicalCaseContent {
   readonly pathology: PathologyValue;
   readonly educationalGoal: string;
   readonly simulation: ClinicalCaseSimulationProfile;
+  readonly initialVitals?: ClinicalCaseInitialVitals;
 }
 
 export interface ClinicalCaseProps {
@@ -149,10 +151,21 @@ export class ClinicalCase {
   public update(content: ClinicalCaseContent): void {
     assertValidClinicalCaseDefinition(content);
 
-    this._content = content;
+    this._content = this._keepDisplayOnlyData(content);
     this._validatedByExpert = false;
     this._validatedById = undefined;
     this._updatedAt = new Date();
+  }
+
+  // The management form does not edit the initial vitals or the allergies yet, so an update without them keeps the current ones
+  private _keepDisplayOnlyData(content: ClinicalCaseContent): ClinicalCaseContent {
+    const allergies: readonly string[] | undefined = content.history?.allergies ?? this._content.history?.allergies;
+
+    return {
+      ...content,
+      history: content.history && allergies !== undefined ? { ...content.history, allergies } : content.history,
+      initialVitals: content.initialVitals ?? this._content.initialVitals,
+    };
   }
 
   public changeStatus(status: ClinicalCaseStatusValue): boolean {

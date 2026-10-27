@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Política de acceso a reservas
- * Descripción: Decisiones puras sobre quién puede reservar para un titular, cancelar una reserva, desplazar la reserva de otro titular y controlar el ventilador durante la reserva activa y filtrar el calendario por un grupo (ADMIN cualquiera, TEACHER los que gestiona o supervisa, STUDENT los suyos), a partir del actor y de hechos ya resueltos sobre grupos
- * Versión: 1.1
+ * Descripción: Decisiones puras sobre quién puede reservar para un titular, cancelar una reserva, desplazar la reserva de otro titular y controlar el ventilador durante la reserva activa y filtrar el calendario por un grupo (ADMIN cualquiera, TEACHER los que gestiona o supervisa, STUDENT los suyos), y la relación de un usuario con una reserva (titular, líder o miembro del grupo titular, creador o ninguna); controlan el ventilador el usuario titular, el líder del grupo titular, docentes y administradores, a partir del actor y de hechos ya resueltos sobre grupos
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type Reservation } from "@/features/reservations/domain/entities/reservation.entity";
-import { type ReservationPartyRole } from "@/features/reservations/domain/read-models/reservation.read-model";
+import { type ReservationPartyRole, type ReservationRelation } from "@/features/reservations/domain/read-models/reservation.read-model";
 import { type ReservationHolder } from "@/features/reservations/domain/value-objects/reservation-holder";
 
 export const STUDENT_ACTOR_ROLE: ReservationPartyRole = "STUDENT";
@@ -86,6 +86,33 @@ export function canFilterCalendarByGroup(actor: ReservationActor, facts: Calenda
   }
 
   return facts.isMember;
+}
+
+export interface RelationGroupFacts {
+  readonly leadsGroup: boolean;
+  readonly isMember: boolean;
+}
+
+/** Strongest relation first: holder user, leader of the holder group, member of the holder group, creator */
+export function resolveReservationRelation(userId: string, reservation: Reservation, facts: RelationGroupFacts): ReservationRelation {
+  if (reservation.holder.userId === userId) {
+    return "holder";
+  }
+
+  if (reservation.holder.isGroup() && facts.leadsGroup) {
+    return "group_leader";
+  }
+
+  if (reservation.holder.isGroup() && facts.isMember) {
+    return "group_member";
+  }
+
+  return reservation.createdById === userId ? "creator" : "none";
+}
+
+/** The holder user, the leader of the holder group, teachers and admins control the ventilator; the other group members observe */
+export function canControlVentilator(actor: ReservationActor, relation: ReservationRelation): boolean {
+  return isPrivilegedActor(actor) || relation === "holder" || relation === "group_leader";
 }
 
 export function toReservationPartyRole(role: string): ReservationPartyRole {

@@ -29,6 +29,7 @@
     "date_invalid": "{property} must be a valid ISO 8601 date",
     "holder_type_invalid": "The holder type must be USER or GROUP",
     "text_too_long": "{property} must be at most {constraints.0} characters long",
-    "reason_required": "The reason is required"
+    "reason_required": "The reason is required",
+    "duration_invalid": "The duration must be 15, 30, 45 or 60 minutes"
   }
 }

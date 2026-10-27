@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de las reglas de programación de reservas
- * Descripción: Verifica alineación a la franja, duración máxima, inicio pasado (admitiendo la franja en curso), antelación máxima, límite de reservas futuras y la ventana inválida
- * Versión: 1.0
+ * Descripción: Verifica alineación a la franja, duración máxima, inicio pasado (admitiendo la franja en curso), antelación máxima, límite de reservas futuras y la ventana inválida, y la ventana de la reserva inmediata truncada al minuto
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import {
 import {
   assertBelowUpcomingLimit,
   assertScheduledWindowRules,
+  immediateReservationWindow,
   type ReservationSchedulingLimits,
 } from "@/features/reservations/domain/services/reservation-scheduling-rules";
 import { ReservationWindow } from "@/features/reservations/domain/value-objects/reservation-window";
@@ -61,5 +62,11 @@ describe("reservation scheduling rules", () => {
 
     expect(below).not.toThrow();
     expect(reached).toThrow(ReservationLimitReachedError);
+  });
+
+  it("starts an immediate reservation at the current minute and never aligns it to the slot", () => {
+    const immediate: ReservationWindow = immediateReservationWindow(new Date("2026-10-12T10:07:42.500Z"), 30);
+
+    expect([immediate.startsAt.toISOString(), immediate.endsAt.toISOString()]).toEqual(["2026-10-12T10:07:00.000Z", "2026-10-12T10:37:00.000Z"]);
   });
 });

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Casos clínicos listos para el motor fisiológico
- * Descripción: Datos de siembra de cuatro casos simulables (pulmón normal, SDRA en paciente obeso, exacerbación de EPOC y crisis asmática) con cada valor numérico dentro de CLINICAL_CASE_PHYSIOLOGICAL_RANGES y su fuente bibliográfica; los consume prisma/seed-clinical-cases.ts
- * Versión: 1.0
+ * Descripción: Datos de siembra de cuatro casos simulables (pulmón normal, SDRA en paciente obeso, exacerbación de EPOC y crisis asmática) con cada valor numérico dentro de CLINICAL_CASE_PHYSIOLOGICAL_RANGES y su fuente bibliográfica; los consumen prisma/seed-clinical-cases.ts y el sembrador de arranque, que también reutiliza su rúbrica por defecto
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,7 +18,7 @@ export interface EngineReadySeedCase {
 
 // Pedagogical scoring parameters chosen by the author (not physiological measurements); safety thresholds follow
 // ARDSNet 2000 (Pplat <= 30 cmH2O, Vt <= 8 mL/kg PBW) and Amato 2015 NEJM (driving pressure <= 15 cmH2O).
-function buildDefaultRubric(autoPeepMaxCmH2O: number): ClinicalCaseRubric {
+export function buildDefaultRubric(autoPeepMaxCmH2O: number): ClinicalCaseRubric {
   return {
     assistancePolicy: "DISABLED",
     passingScore: 70,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de reservas
- * Descripción: Repositorio en memoria con bloqueo del dispositivo como mutex asíncrono real, gestor de transacciones que libera el bloqueo al terminar, fachadas de usuarios y grupos simuladas (incluida la gestión de un grupo por el docente que lo supervisa), reloj fijo, bus de eventos y grabador de auditoría espías, y fábricas de los casos de uso; incluye un repositorio de analítica vacío para construir ReservationsFacade
- * Versión: 1.2
+ * Descripción: Repositorio en memoria con bloqueo del dispositivo como mutex asíncrono real, gestor de transacciones que libera el bloqueo al terminar, fachadas de usuarios y grupos simuladas (incluida la gestión de un grupo por el docente que lo supervisa), reloj fijo, bus de eventos y grabador de auditoría espías, y fábricas de los casos de uso; incluye un repositorio de analítica vacío para construir ReservationsFacade; el contexto admite otra configuración de reservas; usuarios con código de estudiante
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -164,12 +164,13 @@ export interface TestUser {
   name: string;
   email: string;
   role: UserRoleValue;
+  studentCode?: string;
 }
 
 export const USERS: readonly TestUser[] = [
-  { id: "student-1", name: "Ana Student", email: "ana@example.com", role: "STUDENT" },
+  { id: "student-1", name: "Ana Student", email: "ana@example.com", role: "STUDENT", studentCode: "2024000001" },
   { id: "student-2", name: "Bruno Member", email: "bruno@example.com", role: "STUDENT" },
-  { id: "leader-1", name: "Lucia Leader", email: "lucia@example.com", role: "STUDENT" },
+  { id: "leader-1", name: "Lucia Leader", email: "lucia@example.com", role: "STUDENT", studentCode: "2024000003" },
   { id: "teacher-1", name: "Tomas Teacher", email: "tomas@example.com", role: "TEACHER" },
   { id: "teacher-2", name: "Teresa Teacher", email: "teresa@example.com", role: "TEACHER" },
   { id: "admin-1", name: "Adriana Admin", email: "adriana@example.com", role: "ADMIN" },
@@ -195,7 +196,7 @@ const MEMBERS: readonly TestMember[] = [
 const SUPERVISED: Readonly<Record<string, string[]>> = { "teacher-1": ["group-1"] };
 
 function toAccount(user: TestUser): UserAccount {
-  return { id: user.id, email: user.email, name: user.name, role: user.role, isActive: true, hasPassword: true, createdAt: NOW };
+  return { id: user.id, email: user.email, name: user.name, role: user.role, isActive: true, hasPassword: true, createdAt: NOW, studentCode: user.studentCode };
 }
 
 export function buildUsersFacade(): UsersFacade {
@@ -295,7 +296,7 @@ export interface ReservationsTestContext {
   releaseUseCase: ReleaseActiveReservationUseCase;
 }
 
-export function buildContext(now: Date = NOW): ReservationsTestContext {
+export function buildContext(now: Date = NOW, settings: ReservationSettings = TEST_SETTINGS): ReservationsTestContext {
   const repository: InMemoryReservationsRepository = new InMemoryReservationsRepository();
   const transactionManager: InMemoryTransactionManager = new InMemoryTransactionManager();
   const eventBus: RecordingEventBus = new RecordingEventBus();
@@ -313,10 +314,10 @@ export function buildContext(now: Date = NOW): ReservationsTestContext {
     clock,
     accessService,
     viewsService,
-    createUseCase: new CreateReservationUseCase(repository, transactionManager, eventBus, auditRecorder, TEST_SETTINGS, clock, accessService, viewsService, usersFacade),
-    cancelUseCase: new CancelReservationUseCase(repository, transactionManager, eventBus, TEST_SETTINGS, clock, accessService),
-    reserveNowUseCase: new ReserveNowUseCase(repository, transactionManager, eventBus, TEST_SETTINGS, clock, accessService, usersFacade),
-    releaseUseCase: new ReleaseActiveReservationUseCase(repository, transactionManager, eventBus, TEST_SETTINGS, clock, accessService),
+    createUseCase: new CreateReservationUseCase(repository, transactionManager, eventBus, auditRecorder, settings, clock, accessService, viewsService, usersFacade),
+    cancelUseCase: new CancelReservationUseCase(repository, transactionManager, eventBus, settings, clock, accessService),
+    reserveNowUseCase: new ReserveNowUseCase(repository, transactionManager, eventBus, settings, clock, accessService, usersFacade),
+    releaseUseCase: new ReleaseActiveReservationUseCase(repository, transactionManager, eventBus, settings, clock, accessService),
   };
 }
 

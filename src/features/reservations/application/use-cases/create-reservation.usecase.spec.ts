@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de CreateReservationUseCase
- * Descripción: Verifica quién puede reservar para quién, los límites de reservas futuras, el solapamiento, el desplazamiento por docentes y administradores (detalles del conflicto, reserva desplazada, evento y auditoría) y que 20 creaciones concurrentes de la misma franja bajo el bloqueo produzcan exactamente una reserva
- * Versión: 1.0
+ * Descripción: Verifica quién puede reservar para quién, los límites de reservas futuras, el solapamiento, el desplazamiento por docentes y administradores (detalles del conflicto, reserva desplazada, evento y auditoría) y que 20 creaciones concurrentes de la misma franja bajo el bloqueo produzcan exactamente una reserva; la reserva inmediata (sin alineación, duración máxima, límites, desplazamiento con y sin confirmación, también de la reserva activa) y la vista devuelta a quien crea
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,20 +11,23 @@
 import { CreateReservationCommand } from "@/features/reservations/application/commands/create-reservation.command";
 import {
   at,
+  TEST_SETTINGS,
   buildContext,
   type ReservationsTestContext,
   seedReservation,
 } from "@/features/reservations/application/testing/reservations-test-doubles-spec";
-import { RESERVATION_PREEMPTED_AUDIT_ACTION } from "@/features/reservations/application/use-cases/create-reservation.usecase";
+import { type CreatedReservationResult, RESERVATION_PREEMPTED_AUDIT_ACTION } from "@/features/reservations/application/use-cases/create-reservation.usecase";
 import { type Reservation } from "@/features/reservations/domain/entities/reservation.entity";
 import { ReservationCreatedEvent, ReservationPreemptedEvent } from "@/features/reservations/domain/events/reservation.events";
 import {
+  InvalidReservationWindowError,
   ReservationConflictError,
   ReservationForbiddenError,
   ReservationHolderNotFoundError,
   ReservationInPastError,
   ReservationLimitReachedError,
   ReservationNotAlignedError,
+  ReservationTooLongError,
 } from "@/features/reservations/domain/reservations.errors";
 import { ReservationHolder } from "@/features/reservations/domain/value-objects/reservation-holder";
 
@@ -244,6 +247,134 @@ describe("CreateReservationUseCase", () => {
 
       expect(existing.status).toBe("PREEMPTED");
       expect(context.repository.rows.size).toBe(2);
+    });
+  });
+
+  describe("immediate reservations", () => {
+    const IMMEDIATE_NOW: Date = new Date("2026-10-12T10:07:42.500Z");
+
+    function immediate(overrides: Partial<ConstructorParameters<typeof CreateReservationCommand>[0]> = {}): CreateReservationCommand {
+      return command({ startsAt: undefined, endsAt: undefined, durationMinutes: 30, ...overrides });
+    }
+
+    it("starts now truncated to the minute, without slot alignment", async () => {
+      const context: ReservationsTestContext = buildContext(IMMEDIATE_NOW);
+
+      const reservation: Reservation = await context.createUseCase.execute(immediate());
+
+      expect(reservation.startsAt.toISOString()).toBe("2026-10-12T10:07:00.000Z");
+      expect(reservation.endsAt.toISOString()).toBe("2026-10-12T10:37:00.000Z");
+      expect(reservation.isActiveAt(IMMEDIATE_NOW)).toBe(true);
+      expect(context.eventBus.published.some((event: unknown): boolean => event instanceof ReservationCreatedEvent)).toBe(true);
+    });
+
+    it.each<[string, number | undefined]>([
+      ["a duration outside 15, 30, 45 and 60", 20],
+      ["a missing duration", undefined],
+    ])("rejects %s", async (_label: string, durationMinutes: number | undefined) => {
+      const context: ReservationsTestContext = buildContext(IMMEDIATE_NOW);
+
+      const error: unknown = await captureError(context.createUseCase.execute(immediate({ durationMinutes })));
+
+      expect(error).toBeInstanceOf(InvalidReservationWindowError);
+      expect(context.repository.rows.size).toBe(0);
+    });
+
+    it("still applies the maximum duration", async () => {
+      const context: ReservationsTestContext = buildContext(IMMEDIATE_NOW, { ...TEST_SETTINGS, maxDurationMinutes: 30 });
+
+      const error: unknown = await captureError(context.createUseCase.execute(immediate({ durationMinutes: 45 })));
+
+      expect(error).toBeInstanceOf(ReservationTooLongError);
+      expect(context.repository.lockedDevices).toEqual([]);
+    });
+
+    it("still applies the student limit of upcoming reservations", async () => {
+      const context: ReservationsTestContext = buildContext(IMMEDIATE_NOW);
+
+      for (const hour of ["11", "12", "13"]) {
+        await seedReservation(context.repository, { holder: ReservationHolder.forUser("student-1"), createdById: "student-1", startsAt: at(`${hour}:00`), endsAt: at(`${hour}:15`) });
+      }
+
+      const error: unknown = await captureError(context.createUseCase.execute(immediate()));
+
+      expect(error).toBeInstanceOf(ReservationLimitReachedError);
+    });
+
+    it("keeps the holder rules: a plain member cannot reserve for their group", async () => {
+      const context: ReservationsTestContext = buildContext(IMMEDIATE_NOW);
+
+      const error: unknown = await captureError(
+        context.createUseCase.execute(immediate({ actorId: "student-2", holderType: "GROUP", userId: undefined, groupId: "group-1" })),
+      );
+
+      expect(error).toBeInstanceOf(ReservationForbiddenError);
+    });
+
+    it("rejects a student when the ventilator is reserved right now", async () => {
+      const context: ReservationsTestContext = buildContext(IMMEDIATE_NOW);
+
+      await seedReservation(context.repository, { holder: ReservationHolder.forUser("student-2"), createdById: "student-2", startsAt: at("10:00"), endsAt: at("11:00") });
+
+      const error: unknown = await captureError(context.createUseCase.execute(immediate()));
+
+      expect(error).toBeInstanceOf(ReservationConflictError);
+      expect((error as ReservationConflictError).details.preemptable).toBe(false);
+    });
+
+    it("asks a teacher to confirm before preempting the active reservation", async () => {
+      const context: ReservationsTestContext = buildContext(IMMEDIATE_NOW);
+      const active: Reservation = await seedReservation(context.repository, {
+        holder: ReservationHolder.forUser("student-2"),
+        createdById: "student-2",
+        startsAt: at("10:00"),
+        endsAt: at("11:00"),
+      });
+
+      const error: unknown = await captureError(context.createUseCase.execute(immediate({ actorId: "teacher-1", actorRole: "TEACHER", userId: "teacher-1" })));
+
+      expect(error).toBeInstanceOf(ReservationConflictError);
+      expect((error as ReservationConflictError).code).toBe("reservations.conflict_preemptable");
+      expect((error as ReservationConflictError).details.preemptable).toBe(true);
+      expect(active.status).toBe("SCHEDULED");
+    });
+
+    it("preempts the active reservation when the teacher confirms", async () => {
+      const context: ReservationsTestContext = buildContext(IMMEDIATE_NOW);
+      const active: Reservation = await seedReservation(context.repository, {
+        holder: ReservationHolder.forUser("student-2"),
+        createdById: "student-2",
+        startsAt: at("10:00"),
+        endsAt: at("11:00"),
+      });
+
+      const created: Reservation = await context.createUseCase.execute(
+        immediate({ actorId: "teacher-1", actorRole: "TEACHER", userId: "teacher-1", durationMinutes: 15, confirmPreempt: true }),
+      );
+
+      const preemptedEvent: ReservationPreemptedEvent | undefined = context.eventBus.published.find(
+        (event: unknown): event is ReservationPreemptedEvent => event instanceof ReservationPreemptedEvent,
+      );
+
+      expect(active.status).toBe("PREEMPTED");
+      expect(active.replacedByReservationId).toBe(created.id);
+      expect(created.startsAt.toISOString()).toBe("2026-10-12T10:07:00.000Z");
+      expect(preemptedEvent?.wasActive).toBe(true);
+      expect(context.auditRecorder.entries).toHaveLength(1);
+      expect(context.auditRecorder.entries[0]).toMatchObject({ actorId: "teacher-1", action: RESERVATION_PREEMPTED_AUDIT_ACTION, targetId: active.id });
+    });
+
+    it("returns the created reservation enriched for its creator", async () => {
+      const context: ReservationsTestContext = buildContext(IMMEDIATE_NOW);
+
+      const result: CreatedReservationResult = await context.createUseCase.executeWithView(
+        immediate({ actorId: "leader-1", holderType: "GROUP", userId: undefined, groupId: "group-1" }),
+      );
+
+      expect(result.view.reservation.holder.groupId).toBe("group-1");
+      expect(result.view.holderGroup).toEqual({ id: "group-1", name: "Group A" });
+      expect(result.view.creator?.id).toBe("leader-1");
+      expect(result.viewer).toEqual({ userId: "leader-1", role: "STUDENT", groupIds: ["group-1"] });
     });
   });
 

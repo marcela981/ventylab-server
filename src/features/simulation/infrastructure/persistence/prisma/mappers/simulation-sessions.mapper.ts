@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de persistencia de sesiones de simulación
- * Descripción: Convierte filas de simulation_sessions y simulation_events en la entidad SimulationSession y en registros de evento, y viceversa; el resumen y los payloads se guardan como JSON
- * Versión: 1.0
+ * Descripción: Convierte filas de simulation_sessions y simulation_events en la entidad SimulationSession y en registros de evento, y viceversa; el resumen y los payloads se guardan como JSON; el paciente propio se guarda en patient_profile
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import {
 
 import { type TimeMultiplier } from "@/features/simulation/domain/engine";
 import { SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
+import { type SimulationPatientProfile } from "@/features/simulation/domain/patient/patient-overrides";
 import {
   type SimulationEventRecord,
   type SimulationSessionSummary,
@@ -42,6 +43,7 @@ export class SimulationSessionsMapper {
       lastEventAt: row.lastEventAt,
       lastSimTimeMs: row.lastSimTimeMs,
       summary: SimulationSessionsMapper._isRecord(row.summary) ? (row.summary as unknown as SimulationSessionSummary) : undefined,
+      patientProfile: SimulationSessionsMapper._isRecord(row.patientProfile) ? (row.patientProfile as unknown as SimulationPatientProfile) : undefined,
     });
   }
 
@@ -62,6 +64,7 @@ export class SimulationSessionsMapper {
       lastEventAt: session.lastEventAt,
       lastSimTimeMs: session.lastSimTimeMs,
       summary: session.summary ? (session.summary as unknown as Prisma.InputJsonValue) : undefined,
+      patientProfile: session.patientProfile ? (JSON.parse(JSON.stringify(session.patientProfile)) as Prisma.InputJsonValue) : undefined,
     };
   }
 

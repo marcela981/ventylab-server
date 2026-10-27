@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Comando StartSimulationSessionCommand
- * Descripción: Intención de iniciar una sesión de simulación con eventos: actor, modo FREE o EXAM, caso (solo modo libre), intento y pregunta de examen y multiplicador de tiempo
- * Versión: 1.0
+ * Descripción: Intención de iniciar una sesión de simulación con eventos: actor, modo FREE o EXAM, caso (solo modo libre), intento y pregunta de examen y multiplicador de tiempo, y el paciente propio opcional (solo modo libre)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type TimeMultiplier } from "@/features/simulation/domain/engine";
+import { type SimulatedPatient } from "@/features/simulation/domain/patient/simulated-patient";
 import { type SimulationModeValue } from "@/features/simulation/domain/value-objects/simulation-session-values";
 
 export class StartSimulationSessionCommand {
@@ -18,6 +19,8 @@ export class StartSimulationSessionCommand {
   public readonly attemptId?: string;
   public readonly questionId?: string;
   public readonly timeMultiplier: TimeMultiplier;
+  /** Own patient (FREE mode only): without caseId the base case follows its condition */
+  public readonly patient?: SimulatedPatient;
 
   public constructor({
     userId,
@@ -26,6 +29,7 @@ export class StartSimulationSessionCommand {
     attemptId,
     questionId,
     timeMultiplier,
+    patient,
   }: {
     userId: string;
     mode: SimulationModeValue;
@@ -33,6 +37,7 @@ export class StartSimulationSessionCommand {
     attemptId?: string;
     questionId?: string;
     timeMultiplier: TimeMultiplier;
+    patient?: SimulatedPatient;
   }) {
     this.userId = userId;
     this.mode = mode;
@@ -40,5 +45,6 @@ export class StartSimulationSessionCommand {
     this.attemptId = attemptId;
     this.questionId = questionId;
     this.timeMultiplier = timeMultiplier;
+    this.patient = patient;
   }
 }

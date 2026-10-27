@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetCurrentReservationUseCase
- * Descripción: Devuelve la reserva activa en este instante (programada y dentro de su ventana) enriquecida, si quien consulta puede controlar el ventilador (titular, miembro del grupo titular, docente o administrador) y quien consulta
- * Versión: 1.0
+ * Descripción: Devuelve la reserva activa en este instante (programada y dentro de su ventana) enriquecida, si quien consulta puede controlar el ventilador (usuario titular, líder del grupo titular, docente o administrador; los demás miembros del grupo observan), la relación de quien consulta con ella (titular, líder o miembro del grupo titular, creador o ninguna) y quien consulta
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,9 +15,9 @@ import { type CurrentReservationResult } from "@/features/reservations/applicati
 import { ReservationAccessService } from "@/features/reservations/application/services/reservation-access.service";
 import { ReservationViewsService } from "@/features/reservations/application/services/reservation-views.service";
 import { type Reservation } from "@/features/reservations/domain/entities/reservation.entity";
-import { type ReservationView, type ReservationViewer } from "@/features/reservations/domain/read-models/reservation.read-model";
+import { type ReservationRelation, type ReservationView, type ReservationViewer } from "@/features/reservations/domain/read-models/reservation.read-model";
 import { type IReservationsRepository, RESERVATIONS_REPOSITORY_TOKEN } from "@/features/reservations/domain/repositories/reservations.repository";
-import { type ReservationActor, toReservationPartyRole } from "@/features/reservations/domain/services/reservation-access-policy";
+import { canControlVentilator, type ReservationActor, toReservationPartyRole } from "@/features/reservations/domain/services/reservation-access-policy";
 
 @Injectable()
 export class GetCurrentReservationUseCase {
@@ -39,14 +39,11 @@ export class GetCurrentReservationUseCase {
     ]);
 
     if (!active) {
-      return { canControl: false, viewer };
+      return { canControl: false, relation: "none", viewer };
     }
 
-    const [view, canControl]: [ReservationView, boolean] = await Promise.all([
-      this._viewsService.toView(active),
-      this._accessService.canControl(actor, active.holder.toSnapshot()),
-    ]);
+    const [view, relation]: [ReservationView, ReservationRelation] = await Promise.all([this._viewsService.toView(active), this._accessService.resolveRelation(actor.userId, active)]);
 
-    return { view, canControl, viewer };
+    return { view, canControl: canControlVentilator(actor, relation), relation, viewer };
   }
 }

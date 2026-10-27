@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de casos clínicos
- * Descripción: Repositorio en memoria de casos clínicos con uso configurable, gestor de transacciones y registrador de auditoría simulados, y fábricas de contenido válido para las pruebas de los casos de uso de gestión, visibilidad y fachada
- * Versión: 1.1
+ * Descripción: Repositorio en memoria de casos clínicos con uso configurable, gestor de transacciones y registrador de auditoría simulados, y fábricas de contenido válido para las pruebas de los casos de uso de gestión, visibilidad y fachada; inserción solo si no existe sobre la lista de casos
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -57,6 +57,7 @@ export interface ClinicalCasesDoubles {
   readonly transactionManager: ITransactionManager;
   readonly auditRecorder: IAuditRecorder;
   readonly saveCase: jest.Mock;
+  readonly insertCaseIfMissing: jest.Mock;
   readonly deleteCase: jest.Mock;
   readonly lockCase: jest.Mock;
   readonly getCases: jest.Mock;
@@ -77,6 +78,13 @@ function toDetail(clinicalCase: ClinicalCase): ClinicalCaseDetail {
     educationalGoal: clinicalCase.content.educationalGoal,
     isActive: clinicalCase.isActive,
     status: clinicalCase.status,
+    patient: {
+      sex: clinicalCase.content.simulation.patientSex,
+      heightCm: clinicalCase.content.simulation.patientHeightCm,
+      history: [...(clinicalCase.content.history?.relevantHistory ?? [])],
+      allergies: [...(clinicalCase.content.history?.allergies ?? [])],
+      initialVitals: clinicalCase.content.initialVitals,
+    },
   };
 }
 
@@ -85,6 +93,15 @@ export function buildDoubles({ cases = [], usage = NO_USAGE }: { cases?: Clinica
   const deleteCase: jest.Mock = jest.fn().mockResolvedValue(undefined);
   const lockCase: jest.Mock = jest.fn().mockResolvedValue(undefined);
   const record: jest.Mock = jest.fn().mockResolvedValue(undefined);
+  const insertCaseIfMissing: jest.Mock = jest.fn((clinicalCase: ClinicalCase): Promise<boolean> => {
+    if (cases.some((existing: ClinicalCase): boolean => existing.id === clinicalCase.id)) {
+      return Promise.resolve(false);
+    }
+
+    cases.push(clinicalCase);
+
+    return Promise.resolve(true);
+  });
   const findCase = (caseId: string): ClinicalCase | undefined => cases.find((clinicalCase: ClinicalCase) => clinicalCase.id === caseId);
 
   const getCases: jest.Mock = jest.fn((query: GetClinicalCasesQuery): Promise<Paginated<ClinicalCaseSummary>> => {
@@ -112,6 +129,7 @@ export function buildDoubles({ cases = [], usage = NO_USAGE }: { cases?: Clinica
     lockCase,
     getUsage: jest.fn().mockResolvedValue(usage),
     saveCase,
+    insertCaseIfMissing,
     deleteCase,
     getExpertConfiguration: jest.fn().mockResolvedValue(undefined),
     getUserAttempts: jest.fn().mockResolvedValue([]),
@@ -124,7 +142,7 @@ export function buildDoubles({ cases = [], usage = NO_USAGE }: { cases?: Clinica
     run: async <T>(work: (transaction: unknown) => Promise<T>): Promise<T> => await work(TRANSACTION),
   };
 
-  return { repository, transactionManager, auditRecorder: { record }, saveCase, deleteCase, lockCase, getCases, record };
+  return { repository, transactionManager, auditRecorder: { record }, saveCase, insertCaseIfMissing, deleteCase, lockCase, getCases, record };
 }
 
 export function savedCase(doubles: ClinicalCasesDoubles): ClinicalCase {

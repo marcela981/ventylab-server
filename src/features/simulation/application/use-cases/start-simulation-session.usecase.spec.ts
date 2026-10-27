@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Pruebas de StartSimulationSessionUseCase
- * Descripción: Verifica el inicio de sesiones libres (caso publicado, semilla del servidor, versión del motor, evento START con la copia de los umbrales de la rúbrica por defecto) y de examen (intento propio en curso y vigente, pregunta SIMULATION de la misma evaluación, caso tomado de la pregunta, vencimiento en la fecha límite y rúbrica válida), con 403 cuando el intento o la pregunta no lo permiten
- * Versión: 1.2
+ * Descripción: Verifica el inicio de sesiones libres (caso publicado, semilla del servidor, versión del motor, evento START con la copia de los umbrales de la rúbrica por defecto) y de examen (intento propio en curso y vigente, pregunta SIMULATION de la misma evaluación, caso tomado de la pregunta, vencimiento en la fecha límite y rúbrica válida), con 403 cuando el intento o la pregunta no lo permiten; el paciente propio en modo libre (caso base por condición sin caseId, ajustes guardados en patient_profile y aplicados al caso devuelto, validación de rangos) y que el modo examen lo ignore
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ClinicalCaseUnavailableError } from "@/features/clinical-cases/domain/clinical-cases.errors";
+import { ClinicalCasePhysiologicalRangeError, ClinicalCaseUnavailableError } from "@/features/clinical-cases/domain/clinical-cases.errors";
 import { StartSimulationSessionCommand } from "@/features/simulation/application/commands/start-simulation-session.command";
 import { type StartSimulationSessionResult } from "@/features/simulation/application/results/simulation-session.results";
 import {
@@ -22,6 +22,8 @@ import {
 } from "@/features/simulation/application/testing/simulation-sessions-test-doubles-spec";
 import { StartSimulationSessionUseCase } from "@/features/simulation/application/use-cases/start-simulation-session.usecase";
 import { ENGINE_VERSION } from "@/features/simulation/domain/engine";
+import { PATIENT_MAPPING_VERSION } from "@/features/simulation/domain/patient/patient-overrides";
+import { type SimulatedPatient } from "@/features/simulation/domain/patient/simulated-patient";
 import { type SimulationEventRecord } from "@/features/simulation/domain/read-models/simulation-session.read-model";
 import {
   SimulationCaseRequiredError,
@@ -32,6 +34,19 @@ import {
 
 const NOW: Date = new Date("2026-10-08T12:00:00Z");
 const STUDENT_ID: string = "student-1";
+
+// 68-year-old woman with BMI 25.4 and normal lungs: July compliance 75 - (68 - 60) * 0.5 = 71
+const PATIENT: SimulatedPatient = {
+  displayName: "Carmen",
+  ageYears: 68,
+  sex: "FEMALE",
+  weightKg: 65,
+  heightCm: 160,
+  condition: "HEALTHY",
+  difficulty: "INTERMEDIATE",
+  allergies: ["Penicilina"],
+  vitals: { respiratoryRateBpm: 28, spo2Percent: 88, systolicMmHg: 135, diastolicMmHg: 85, heartRateBpm: 95, temperatureC: 37.5, glasgow: 14 },
+};
 
 function examCommand(overrides: Partial<ConstructorParameters<typeof StartSimulationSessionCommand>[0]> = {}): StartSimulationSessionCommand {
   return new StartSimulationSessionCommand({
@@ -186,5 +201,74 @@ describe("StartSimulationSessionUseCase", () => {
     });
 
     await expect(useCase.execute(examCommand())).rejects.toBeInstanceOf(SimulationRubricInvalidError);
+  });
+
+  describe("own patient", () => {
+    beforeEach(() => {
+      context.clinicalCases.cases.set("engine-normal-lung", normalLungSnapshot({ id: "engine-normal-lung" }));
+    });
+
+    it("starts a free session without caseId on the base case of the patient's condition and stores its profile", async () => {
+      const result: StartSimulationSessionResult = await useCase.execute(
+        new StartSimulationSessionCommand({ userId: STUDENT_ID, mode: "FREE", timeMultiplier: 1, patient: PATIENT }),
+      );
+
+      expect(result.session.caseId).toBe("engine-normal-lung");
+      expect(result.session.patientProfile?.form).toEqual(PATIENT);
+      expect(result.session.patientProfile?.mappingVersion).toBe(PATIENT_MAPPING_VERSION);
+      expect(result.session.patientProfile?.overrides).toMatchObject({ baseCaseId: "engine-normal-lung", complianceMlPerCmH2O: 71, respiratoryRateBpm: 28 });
+      expect(context.repository.sessions.get(result.session.id)?.patientProfile).toEqual(result.session.patientProfile);
+    });
+
+    it("returns the engine case with the patient already applied", async () => {
+      const result: StartSimulationSessionResult = await useCase.execute(
+        new StartSimulationSessionCommand({ userId: STUDENT_ID, mode: "FREE", timeMultiplier: 1, patient: PATIENT }),
+      );
+
+      expect(result.engineCase.patient).toEqual({ sex: "FEMALE", heightCm: 160 });
+      expect(result.engineCase.mechanics).toEqual({ complianceMlPerCmH2O: 71, resistanceCmH2OPerLps: 3 });
+      expect(result.engineCase.initialSettings.respiratoryRateBpm).toBe(28);
+      expect(result.engineCase.gasExchange.initialPao2MmHg).toBe(54.7);
+      expect(result.engineCase.hemodynamics.baselineMapMmHg).toBe(101.7);
+      // Base case values the form does not touch
+      expect(result.engineCase.initialSettings.tidalVolumeMl).toBe(500);
+      expect(result.engineCase.gasExchange.initialPaco2MmHg).toBe(40);
+    });
+
+    it("uses the given caseId as the base case", async () => {
+      const result: StartSimulationSessionResult = await useCase.execute(
+        new StartSimulationSessionCommand({ userId: STUDENT_ID, mode: "FREE", caseId: "case-normal", timeMultiplier: 1, patient: { ...PATIENT, condition: "PNEUMONIA" } }),
+      );
+
+      expect(result.session.caseId).toBe("case-normal");
+      expect(result.engineCase.mechanics.complianceMlPerCmH2O).toBe(31);
+    });
+
+    it("rejects a patient that leaves the base case outside its physiological ranges", async () => {
+      context.clinicalCases.cases.set("engine-normal-lung", normalLungSnapshot({ id: "engine-normal-lung", patientAge: 45 }));
+
+      const execution: Promise<StartSimulationSessionResult> = useCase.execute(
+        new StartSimulationSessionCommand({ userId: STUDENT_ID, mode: "FREE", timeMultiplier: 1, patient: { ...PATIENT, ageYears: 130 } }),
+      );
+
+      await expect(execution).rejects.toBeInstanceOf(ClinicalCasePhysiologicalRangeError);
+      expect(context.repository.sessions.size).toBe(0);
+    });
+
+    it("rejects a patient whose base case is not published", async () => {
+      context.clinicalCases.cases.set("engine-normal-lung", normalLungSnapshot({ id: "engine-normal-lung", status: "DRAFT" }));
+
+      await expect(
+        useCase.execute(new StartSimulationSessionCommand({ userId: STUDENT_ID, mode: "FREE", timeMultiplier: 1, patient: PATIENT })),
+      ).rejects.toBeInstanceOf(ClinicalCaseUnavailableError);
+    });
+
+    it("ignores the patient in EXAM mode", async () => {
+      const result: StartSimulationSessionResult = await useCase.execute(examCommand({ patient: PATIENT }));
+
+      expect(result.session.caseId).toBe("case-exam");
+      expect(result.session.patientProfile).toBeUndefined();
+      expect(result.engineCase.mechanics.complianceMlPerCmH2O).toBe(60);
+    });
   });
 });

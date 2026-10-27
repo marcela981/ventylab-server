@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Eventos en tiempo real de los comandos del ventilador
- * Descripción: Nombres y cargas de ventilator:control-changed y ventilator:command-status, el mensaje entrante ventilator:heartbeat y la audiencia (sala ventilator, docentes y administradores; solo el usuario afectado, docentes y administradores cuando la sala ya pertenece a otra reserva)
- * Versión: 1.1
+ * Descripción: Nombres y cargas de ventilator:control-changed y ventilator:command-status, el mensaje entrante ventilator:heartbeat y la audiencia (sala ventilator, docentes y administradores; solo el usuario afectado, docentes y administradores cuando la sala ya pertenece a otra reserva); quién mira el evento en cada sala para proyectar el nombre del operador
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { roleRoom, userRoom, VENTILATOR_ROOM } from "@/common/application/ports/realtime-publisher.interface";
 import { VENTILATOR_PRIVILEGED_ROLES } from "@/features/ventilator-commands/domain/services/operator-control-policy";
+import { type OperatorNameViewer } from "@/features/ventilator-commands/domain/services/operator-name-projection";
 import { type VentilatorCommandStatusValue } from "@/features/ventilator-commands/domain/value-objects/ventilator-command-status";
 
 export const VENTILATOR_CONTROL_CHANGED_EVENT: string = "ventilator:control-changed";
@@ -27,11 +28,28 @@ export function ventilatorCommandsAudience(reservationId: string, roomReservatio
   return [userRoom(userId), ...VENTILATOR_PRIVILEGED_ROLES.map(roleRoom)];
 }
 
+/** Who receives the event in a room of that audience: holders in the ventilator room, the affected user in their own room, staff in the role rooms */
+export function controlChangedRoomViewer(room: string, userId: string): OperatorNameViewer {
+  if (room === VENTILATOR_ROOM) {
+    return { role: "STUDENT", isHolder: true };
+  }
+
+  if (room === userRoom(userId)) {
+    return { userId, role: "STUDENT", isHolder: false };
+  }
+
+  return { role: VENTILATOR_PRIVILEGED_ROLES[0], isHolder: false };
+}
+
 export type VentilatorControlChangeReason = "taken" | "takeover" | "released" | "presence_timeout" | "reservation_ended" | "reservation_preempted";
 
 export interface VentilatorControlChangedPayload {
   readonly reservationId: string;
   readonly operatorUserId: string | null;
+  /** Operator name projected for the room: hidden (null) from students who do not share the reservation with the operator */
+  readonly operatorName: string | null;
+  /** i18n key of the generic label (a teacher, a student) when operatorName is hidden */
+  readonly operatorLabelKey: string | null;
   readonly reason: VentilatorControlChangeReason;
 }
 

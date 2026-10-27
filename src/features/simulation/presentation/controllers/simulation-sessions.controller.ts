@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de sesiones de simulación con eventos
- * Descripción: Endpoints /api/simulation/sessions: inicio de sesión FREE o EXAM, lote de eventos con idempotencia y anti-manipulación de tiempo, estado repetido en el servidor, fin con calificación del servidor, resumen, repetición e historial paginado (/history, porque GET /api/simulation/sessions conserva el contrato heredado); escrituras solo del dueño y lecturas del dueño o de docentes y administradores que gestionan o supervisan su grupo
- * Versión: 1.1
+ * Descripción: Endpoints /api/simulation/sessions: inicio de sesión FREE o EXAM, lote de eventos con idempotencia y anti-manipulación de tiempo, estado repetido en el servidor, fin con calificación del servidor, resumen, repetición e historial paginado (/history, porque GET /api/simulation/sessions conserva el contrato heredado); escrituras solo del dueño y lecturas del dueño o de docentes y administradores que gestionan o supervisan su grupo; el inicio acepta un paciente propio
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -39,8 +39,14 @@ import { GetSimulationSessionStateUseCase } from "@/features/simulation/applicat
 import { GetSimulationSessionSummaryUseCase } from "@/features/simulation/application/use-cases/get-simulation-session-summary.usecase";
 import { GetSimulationSessionsUseCase } from "@/features/simulation/application/use-cases/get-simulation-sessions.usecase";
 import { StartSimulationSessionUseCase } from "@/features/simulation/application/use-cases/start-simulation-session.usecase";
-import { type TimeMultiplier } from "@/features/simulation/domain/engine";
+import { type PatientSex, type TimeMultiplier } from "@/features/simulation/domain/engine";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
+import {
+  type PatientBreathingPatternValue,
+  type PatientConditionValue,
+  type PatientDifficultyValue,
+  type SimulatedPatient,
+} from "@/features/simulation/domain/patient/simulated-patient";
 import { type ClientSimulationEvent } from "@/features/simulation/domain/sessions/simulation-session-events";
 import {
   type ClientSimulationEventTypeValue,
@@ -51,6 +57,7 @@ import {
   AppendSimulationEventsDTO,
   EndSimulationSessionDTO,
   GetSimulationSessionsQueryDTO,
+  type SimulatedPatientDTO,
   type SimulationEventInputDTO,
   StartSimulationSessionDTO,
 } from "@/features/simulation/presentation/dtos/simulation-session-request.dto";
@@ -91,11 +98,12 @@ export class SimulationSessionsController {
       "FREE: published, simulation-ready case, no reservation needed. EXAM: own IN_PROGRESS attempt before its deadline and a SIMULATION question of the same evaluation; the case comes from the question. The server generates the seed and fixes the engine version",
   })
   @ApiResponseDoc({ status: HttpStatus.CREATED, description: "Session started", type: StartedSimulationSessionDTO })
-  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error or missing caseId in FREE mode" })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error or neither caseId nor patient in FREE mode" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Missing permission, unpublished case or invalid exam attempt or question" })
-  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Clinical case not found" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Clinical case (or the base case of the patient's condition) not found" })
   @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "Case not simulation-ready or invalid rubric" })
+  @ApiResponseDoc({ status: HttpStatus.UNPROCESSABLE_ENTITY, description: "The own patient leaves a value of the base case outside its physiological range" })
   public async startSimulationSession(
     @Body() dto: StartSimulationSessionDTO,
     @CurrentUser() currentUser: JwtPayload,
@@ -109,6 +117,7 @@ export class SimulationSessionsController {
         attemptId: dto.attemptId,
         questionId: dto.questionId,
         timeMultiplier: (dto.timeMultiplier as TimeMultiplier | undefined) ?? DEFAULT_TIME_MULTIPLIER,
+        patient: dto.patient === undefined ? undefined : SimulationSessionsController._toPatient(dto.patient),
       }),
     );
 
@@ -297,5 +306,21 @@ export class SimulationSessionsController {
 
   private _actor(currentUser: JwtPayload): SimulationActor {
     return { id: currentUser.sub, role: currentUser.role };
+  }
+
+  private static _toPatient(dto: SimulatedPatientDTO): SimulatedPatient {
+    return {
+      displayName: dto.displayName,
+      ageYears: dto.ageYears,
+      sex: dto.sex as PatientSex,
+      weightKg: dto.weightKg,
+      heightCm: dto.heightCm,
+      condition: dto.condition as PatientConditionValue,
+      difficulty: dto.difficulty as PatientDifficultyValue,
+      diagnosis: dto.diagnosis,
+      allergies: dto.allergies,
+      history: dto.history,
+      vitals: { ...dto.vitals, breathingPattern: dto.vitals.breathingPattern as PatientBreathingPatternValue | undefined },
+    };
   }
 }

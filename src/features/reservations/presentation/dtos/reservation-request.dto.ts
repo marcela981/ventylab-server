@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de petición de reservas
- * Descripción: Validación y documentación Swagger de la consulta del calendario (desde, hasta y grupo titular opcional), la creación de una reserva (titular, ventana, propósito y confirmación de desplazamiento) y el desplazamiento explícito (motivo y nueva reserva)
- * Versión: 1.1
+ * Descripción: Validación y documentación Swagger de la consulta del calendario (desde, hasta y grupo titular opcional), la creación de una reserva (titular, ventana programada o duración de la reserva inmediata, propósito y confirmación de desplazamiento) y el desplazamiento explícito (motivo y nueva reserva)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,9 +9,10 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsIn, IsISO8601, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
+import { IsBoolean, IsIn, IsISO8601, IsNotEmpty, IsOptional, IsString, MaxLength, ValidateIf } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
 
+import { IMMEDIATE_RESERVATION_DURATION_VALUES } from "@/features/reservations/domain/services/reservation-scheduling-rules";
 import { RESERVATION_HOLDER_TYPE_VALUES } from "@/features/reservations/domain/value-objects/reservation-holder";
 
 const MAX_TEXT_LENGTH: number = 500;
@@ -49,13 +50,27 @@ export class CreateReservationDTO {
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   public groupId?: string;
 
-  @ApiProperty({ description: "Start of the reservation, on a slot boundary (ISO 8601)", example: "2026-10-12T14:00:00.000Z" })
+  @ApiPropertyOptional({
+    description: "Start of a scheduled reservation, on a slot boundary (ISO 8601). Omit it for an immediate reservation that starts now (truncated to the minute)",
+    example: "2026-10-12T14:00:00.000Z",
+  })
+  @IsOptional()
   @IsISO8601({}, { message: i18nValidationMessage("reservations.validation.date_invalid") })
-  public startsAt: string;
+  public startsAt?: string;
 
-  @ApiProperty({ description: "End of the reservation, on a slot boundary (ISO 8601)", example: "2026-10-12T15:00:00.000Z" })
+  @ApiPropertyOptional({ description: "End of a scheduled reservation, on a slot boundary (ISO 8601); required with startsAt", example: "2026-10-12T15:00:00.000Z" })
+  @ValidateIf((dto: CreateReservationDTO): boolean => dto.startsAt !== undefined || dto.endsAt !== undefined)
   @IsISO8601({}, { message: i18nValidationMessage("reservations.validation.date_invalid") })
-  public endsAt: string;
+  public endsAt?: string;
+
+  @ApiPropertyOptional({
+    description: "Length in minutes of an immediate reservation; required when startsAt is omitted and ignored otherwise",
+    enum: IMMEDIATE_RESERVATION_DURATION_VALUES,
+    example: 30,
+  })
+  @ValidateIf((dto: CreateReservationDTO): boolean => dto.startsAt === undefined || dto.durationMinutes !== undefined)
+  @IsIn([...IMMEDIATE_RESERVATION_DURATION_VALUES], { message: i18nValidationMessage("reservations.validation.duration_invalid") })
+  public durationMinutes?: number;
 
   @ApiPropertyOptional({ description: "Purpose of the reservation", example: "Practice", maxLength: MAX_TEXT_LENGTH })
   @IsOptional()

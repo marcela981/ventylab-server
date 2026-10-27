@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de reservas
- * Descripción: Endpoints /api/reservations: calendario por rango (opcionalmente de un grupo titular), mis reservas, reserva actual con permiso de control, creación con desplazamiento confirmado, cancelación y desplazamiento explícito; las respuestas se proyectan por rol en el servidor; el calendario se documenta como lista de reservas completas o resumidas (las ajenas que ve un estudiante)
- * Versión: 1.2
+ * Descripción: Endpoints /api/reservations: calendario por rango (opcionalmente de un grupo titular), mis reservas, reserva actual con permiso de control y relación de quien consulta, creación programada o inmediata con desplazamiento confirmado (devuelve la reserva creada), cancelación y desplazamiento explícito; las respuestas se proyectan por rol en el servidor; el calendario se documenta como lista de reservas completas o resumidas (las ajenas que ve un estudiante)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,7 +24,7 @@ import { CreateReservationCommand } from "@/features/reservations/application/co
 import { type CurrentReservationResult } from "@/features/reservations/application/results/current-reservation.result";
 import { type ReservationViewsResult } from "@/features/reservations/application/results/reservation-views.result";
 import { CancelReservationUseCase } from "@/features/reservations/application/use-cases/cancel-reservation.usecase";
-import { CreateReservationUseCase } from "@/features/reservations/application/use-cases/create-reservation.usecase";
+import { type CreatedReservationResult, CreateReservationUseCase } from "@/features/reservations/application/use-cases/create-reservation.usecase";
 import { GetCurrentReservationUseCase } from "@/features/reservations/application/use-cases/get-current-reservation.usecase";
 import { GetMyReservationsUseCase } from "@/features/reservations/application/use-cases/get-my-reservations.usecase";
 import { GetReservationsCalendarUseCase } from "@/features/reservations/application/use-cases/get-reservations-calendar.usecase";
@@ -107,7 +107,7 @@ export class ReservationsController {
   @Get("current")
   @RequirePermissions("reservations:read")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Current reservation", description: "Reservation active right now in the caller's projection and whether the caller may control the ventilator" })
+  @ApiOperation({ summary: "Current reservation", description: "Reservation active right now in the caller's projection, whether the caller may control the ventilator and how the caller relates to it" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Current reservation retrieved successfully", type: CurrentReservationDTO })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
@@ -115,7 +115,7 @@ export class ReservationsController {
     const result: CurrentReservationResult = await this._getCurrentReservationUseCase.execute(currentUser.sub, currentUser.role);
 
     return new APIResponseBuilder<CurrentReservationDTO>()
-      .setData(ReservationsPresentationMapper.toCurrentDTO(result.view, result.canControl, result.viewer, ReservationsController._translator(i18n)))
+      .setData(ReservationsPresentationMapper.toCurrentDTO(result.view, result.canControl, result.relation, result.viewer, ReservationsController._translator(i18n)))
       .setMessage(await i18n.t("reservations.current_reservation_retrieved"))
       .build();
   }
@@ -126,9 +126,9 @@ export class ReservationsController {
   @ApiOperation({
     summary: "Create reservation",
     description:
-      "Schedules a slot for the caller, a user (admins) or a group (its student leader, a supervising teacher or an admin). An overlap returns 409; for teachers and admins the error data lists the conflicting reservations and whether confirmPreempt would preempt them",
+      "Schedules a slot for the caller, a user (admins) or a group (its student leader, a supervising teacher or an admin). Without startsAt it is an immediate reservation: it starts now (truncated to the minute) and lasts durationMinutes, with no slot alignment or advance checks. An overlap returns 409; for teachers and admins the error data lists the conflicting reservations and whether confirmPreempt would preempt them (also the reservation active right now)",
   })
-  @ApiResponseDoc({ status: HttpStatus.CREATED, description: "Reservation created" })
+  @ApiResponseDoc({ status: HttpStatus.CREATED, description: "Reservation created", type: ReservationDetailDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error, misaligned, too long, in the past or too far ahead" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Cannot reserve for this user or group" })
@@ -138,22 +138,26 @@ export class ReservationsController {
     @Body() dto: CreateReservationDTO,
     @CurrentUser() currentUser: JwtPayload,
     @I18n() i18n: I18nContext,
-  ): Promise<APIResponse<null>> {
-    await this._createReservationUseCase.execute(
+  ): Promise<APIResponse<ReservationDetailDTO>> {
+    const result: CreatedReservationResult = await this._createReservationUseCase.executeWithView(
       new CreateReservationCommand({
         actorId: currentUser.sub,
         actorRole: currentUser.role,
         holderType: dto.holderType,
         userId: dto.holderType === "USER" ? dto.userId ?? currentUser.sub : undefined,
         groupId: dto.groupId,
-        startsAt: new Date(dto.startsAt),
-        endsAt: new Date(dto.endsAt),
+        startsAt: dto.startsAt === undefined ? undefined : new Date(dto.startsAt),
+        endsAt: dto.endsAt === undefined ? undefined : new Date(dto.endsAt),
+        durationMinutes: dto.durationMinutes,
         purpose: dto.purpose,
         confirmPreempt: dto.confirmPreempt === true,
       }),
     );
 
-    return new APIResponseBuilder<null>().setMessage(await i18n.t("reservations.reservation_created")).build();
+    return new APIResponseBuilder<ReservationDetailDTO>()
+      .setData(ReservationsPresentationMapper.toCreatedDTO(result.view, result.viewer))
+      .setMessage(await i18n.t("reservations.reservation_created"))
+      .build();
   }
 
   @Post(":id/cancel")

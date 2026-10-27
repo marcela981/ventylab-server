@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de vistas de reservas
- * Descripción: Enriquece reservas con los usuarios (titular y creador) y grupos titulares a través de UsersFacade y GroupsFacade, en lote y sin duplicar lecturas, y deriva el rol efectivo del titular
- * Versión: 1.0
+ * Descripción: Enriquece reservas con los usuarios (titular y creador) y grupos titulares a través de UsersFacade y GroupsFacade, en lote y sin duplicar lecturas, y deriva el rol efectivo del titular; incluye el código de estudiante de cada usuario
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -63,7 +63,10 @@ export class ReservationViewsService {
     ]);
 
     const userMap: Map<string, ReservationUserView> = new Map<string, ReservationUserView>(
-      users.map((user: UserAccount): [string, ReservationUserView] => [user.id, { id: user.id, name: user.name, email: user.email, role: toReservationPartyRole(user.role) }]),
+      users.map((user: UserAccount): [string, ReservationUserView] => [
+        user.id,
+        { id: user.id, name: user.name, email: user.email, role: toReservationPartyRole(user.role), code: user.studentCode },
+      ]),
     );
 
     const groupMap: Map<string, GroupLookup> = new Map<string, GroupLookup>(

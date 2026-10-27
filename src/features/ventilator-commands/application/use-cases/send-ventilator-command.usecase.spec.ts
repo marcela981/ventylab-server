@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del envío de comandos al ventilador físico
- * Descripción: Verifica el orden de las guardas (403 sin reserva o no titular, 423 no operador, 429 frecuencia, 422 validación con violaciones, 503 dispositivo fuera de línea sin publicar), la publicación QoS 1 en el tópico con prefijo de pruebas con el JSON plano y el correlationId, el estado SENT emitido y persistido, el fallo de publicación registrado como REJECTED, el estado real sin hora de envío inventada cuando el servidor se apaga con la publicación en curso y la pérdida inmediata del control al desplazarse la reserva
- * Versión: 1.2
+ * Descripción: Verifica el orden de las guardas (403 sin reserva o no titular, 423 no operador, 429 frecuencia, 422 validación con violaciones, 503 dispositivo fuera de línea sin publicar), la publicación QoS 1 en el tópico con prefijo de pruebas con el JSON plano y el correlationId, el estado SENT emitido y persistido, el fallo de publicación registrado como REJECTED, el estado real sin hora de envío inventada cuando el servidor se apaga con la publicación en curso y la pérdida inmediata del control al desplazarse la reserva; el operador de la reserva de grupo es su líder
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -42,7 +42,8 @@ function commandStatuses(harness: VentilatorCommandsHarness): string[] {
 async function operatorHarness(overrides: Parameters<typeof createVentilatorCommandsHarness>[0] = {}): Promise<VentilatorCommandsHarness> {
   const harness: VentilatorCommandsHarness = createVentilatorCommandsHarness(overrides);
 
-  harness.reservations.activate(RESERVATION, ["student-1", "leader-1"], ["leader-1"]);
+  // Only the leader of the holder group operates; student-1 leads it here
+  harness.reservations.activate(RESERVATION, ["student-1", "leader-1"], ["student-1"]);
   await harness.takeControl.execute(new VentilatorControlCommand({ userId: "student-1", role: "STUDENT" }), "take");
 
   return harness;

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo ClinicalCasesModule
- * Descripción: Registra la feature de casos clínicos (controlador, casos de uso de consulta, evaluación y gestión docente, generador de retroalimentación sobre el gateway de IA de AiModule, repositorio Prisma) y exporta ClinicalCasesFacade
- * Versión: 1.2
+ * Descripción: Registra la feature de casos clínicos (controlador, casos de uso de consulta, evaluación y gestión docente, generador de retroalimentación sobre el gateway de IA de AiModule, repositorio Prisma) y exporta ClinicalCasesFacade; al arrancar inserta los casos de siembra que faltan (ClinicalCasesBootstrapService)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,6 +18,7 @@ import { ChangeClinicalCaseStatusUseCase } from "@/features/clinical-cases/appli
 import { CreateClinicalCaseUseCase } from "@/features/clinical-cases/application/use-cases/create-clinical-case.usecase";
 import { DeleteClinicalCaseUseCase } from "@/features/clinical-cases/application/use-cases/delete-clinical-case.usecase";
 import { DuplicateClinicalCaseUseCase } from "@/features/clinical-cases/application/use-cases/duplicate-clinical-case.usecase";
+import { EnsureSeedClinicalCasesUseCase } from "@/features/clinical-cases/application/use-cases/ensure-seed-clinical-cases.usecase";
 import { EvaluateClinicalCaseUseCase } from "@/features/clinical-cases/application/use-cases/evaluate-clinical-case.usecase";
 import { GetClinicalCaseAttemptsUseCase } from "@/features/clinical-cases/application/use-cases/get-clinical-case-attempts.usecase";
 import { GetClinicalCaseDefinitionUseCase } from "@/features/clinical-cases/application/use-cases/get-clinical-case-definition.usecase";
@@ -26,6 +27,7 @@ import { GetClinicalCasesUseCase } from "@/features/clinical-cases/application/u
 import { UpdateClinicalCaseUseCase } from "@/features/clinical-cases/application/use-cases/update-clinical-case.usecase";
 import { ValidateClinicalCaseUseCase } from "@/features/clinical-cases/application/use-cases/validate-clinical-case.usecase";
 import { CLINICAL_CASES_REPOSITORY_TOKEN } from "@/features/clinical-cases/domain/repositories/clinical-cases.repository";
+import { ClinicalCasesBootstrapService } from "@/features/clinical-cases/infrastructure/bootstrap/clinical-cases-bootstrap.service";
 import { ClinicalCasesPrismaRepository } from "@/features/clinical-cases/infrastructure/persistence/prisma/repositories/clinical-cases-prisma.repository";
 import { ClinicalCasesController } from "@/features/clinical-cases/presentation/controllers/clinical-cases.controller";
 
@@ -49,6 +51,8 @@ import { ClinicalCasesController } from "@/features/clinical-cases/presentation/
     DuplicateClinicalCaseUseCase,
     ValidateClinicalCaseUseCase,
     DeleteClinicalCaseUseCase,
+    EnsureSeedClinicalCasesUseCase,
+    ClinicalCasesBootstrapService,
     ClinicalCasesFacade,
   ],
   exports: [CLINICAL_CASES_REPOSITORY_TOKEN, EvaluationFeedbackGenerator, ClinicalCasesFacade],

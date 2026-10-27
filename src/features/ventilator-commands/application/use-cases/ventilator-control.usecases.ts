@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Casos de uso del control exclusivo del ventilador
- * Descripción: Consultar el estado del control para quien pregunta (sin identificadores para quien no es titular, docente ni administrador), tomar el control libre, arrebatarlo (ambos con comparación del estado leído para no pisar un cambio concurrente) (líder del grupo titular, docente o administrador, con registro de auditoría), liberarlo (operador, docente o administrador) y renovar la presencia del operador con un latido
- * Versión: 1.1
+ * Descripción: Consultar el estado del control para quien pregunta (sin identificadores para quien no es titular, docente ni administrador), tomar el control libre, arrebatarlo (ambos con comparación del estado leído para no pisar un cambio concurrente) (líder del grupo titular, docente o administrador, con registro de auditoría), liberarlo (operador, docente o administrador) y renovar la presencia del operador con un latido; el estado del control lleva el nombre del operador proyectado para quien consulta (oculto a estudiantes que no comparten la reserva con él) y la toma guarda la identidad del operador; en una reserva de grupo solo el líder toma o arrebata el control (los demás miembros observan, 403)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,8 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AUDIT_RECORDER_TOKEN, type IAuditRecorder } from "@/common/application/ports/audit-recorder.interface";
 import { type ActiveReservationSummary } from "@/features/reservations/application/results/active-reservation-summary.result";
 import { ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
+import { UsersFacade } from "@/features/users/application/services/users.facade";
+import { type UserAccount } from "@/features/users/domain/read-models/user-account.read-model";
 import { type VentilatorControlCommand } from "@/features/ventilator-commands/application/commands/ventilator-commands.commands";
 import { VentilatorControlStateResult } from "@/features/ventilator-commands/application/results/ventilator-commands.results";
 import { type ControlAssignReason, type OperatorControlSnapshot, OperatorControlService } from "@/features/ventilator-commands/application/services/operator-control.service";
@@ -24,12 +26,16 @@ import {
   decideControlRequest,
   isPrivilegedVentilatorRole,
 } from "@/features/ventilator-commands/domain/services/operator-control-policy";
+import { type OperatorIdentity, type OperatorNameProjection, projectOperatorName } from "@/features/ventilator-commands/domain/services/operator-name-projection";
 import {
   NoActiveVentilatorReservationError,
   NotReservationHolderError,
   NotVentilatorOperatorError,
   VentilatorControlLockedError,
+  VentilatorControlObserverError,
 } from "@/features/ventilator-commands/domain/ventilator-commands.errors";
+
+const GROUP_HOLDER: string = "GROUP";
 
 export const VENTILATOR_CONTROL_TAKEOVER_ACTION: string = "ventilator_control_taken_over";
 export const VENTILATOR_CONTROL_AUDIT_TARGET: string = "VentilatorControl";
@@ -72,6 +78,7 @@ export class GetVentilatorControlUseCase {
       actorUserId: command.userId,
       actorRole: command.role,
       isHolder,
+      isGroupReservation: active.holderType === GROUP_HOLDER,
       leadsHolderGroup,
       currentOperatorUserId: operator?.operatorUserId,
     };
@@ -84,9 +91,13 @@ export class GetVentilatorControlUseCase {
       return new VentilatorControlStateResult({ isOperator, canTake, canTakeover, occupied: true, restricted: true });
     }
 
+    const operatorName: OperatorNameProjection = projectOperatorName(operator?.operator, { userId: command.userId, role: command.role, isHolder });
+
     return new VentilatorControlStateResult({
       reservationId: active.id,
       operatorUserId: operator?.operatorUserId,
+      operatorName: operatorName.operatorName ?? undefined,
+      operatorLabelKey: operatorName.operatorLabelKey ?? undefined,
       since: operator?.since,
       lastSeenAt: operator?.lastSeenAt,
       presenceExpiresAt: operator?.presenceExpiresAt,
@@ -102,6 +113,7 @@ export class GetVentilatorControlUseCase {
 /**
  * @throws {NoActiveVentilatorReservationError} If no reservation is active now
  * @throws {NotReservationHolderError} If the caller is neither a holder of the active reservation nor a teacher or administrator
+ * @throws {VentilatorControlObserverError} If the caller is a member, not the leader, of the group holding the active reservation
  * @throws {VentilatorControlLockedError} If another operator holds the control and the caller may not take it over, or the control changed while the request was being checked
  */
 @Injectable()
@@ -113,6 +125,7 @@ export class TakeVentilatorControlUseCase {
     private readonly _operatorControl: OperatorControlService,
     @Inject(AUDIT_RECORDER_TOKEN)
     private readonly _auditRecorder: IAuditRecorder,
+    private readonly _usersFacade: UsersFacade,
   ) {}
 
   public async execute(command: VentilatorControlCommand, kind: ControlRequestKind): Promise<void> {
@@ -122,14 +135,18 @@ export class TakeVentilatorControlUseCase {
       throw new NoActiveVentilatorReservationError();
     }
 
+    // Staff skip the holder check: they may take control anyway, and students see a staff operator with the generic teacher label
     const isHolder: boolean = isPrivilegedVentilatorRole(command.role) ? false : await this._reservationsFacade.isHolder(command.userId, active);
-    const needsLeadership: boolean = kind === "takeover" && operator !== undefined && operator.operatorUserId !== command.userId;
+    const isGroupReservation: boolean = active.holderType === GROUP_HOLDER;
+    // Leadership matters for any take of a group reservation by a member, and for a takeover from another operator
+    const needsLeadership: boolean = (isHolder && isGroupReservation) || (kind === "takeover" && operator !== undefined && operator.operatorUserId !== command.userId);
     const leadsHolderGroup: boolean = needsLeadership ? await this._reservationsFacade.isGroupLeaderOfHolder(command.userId, active) : false;
 
     const decision: ControlDecision = decideControlRequest(kind, {
       actorUserId: command.userId,
       actorRole: command.role,
       isHolder,
+      isGroupReservation,
       leadsHolderGroup,
       currentOperatorUserId: operator?.operatorUserId,
     });
@@ -137,6 +154,8 @@ export class TakeVentilatorControlUseCase {
     switch (decision) {
       case "not_holder":
         throw new NotReservationHolderError();
+      case "observer":
+        throw new VentilatorControlObserverError();
       case "locked":
         throw new VentilatorControlLockedError();
       case "already_operator":
@@ -144,20 +163,26 @@ export class TakeVentilatorControlUseCase {
 
         return;
       case "take":
-        this._assignOrLock(active.id, command.userId, "taken", operator);
+        this._assignOrLock(active.id, await this._identity(command, isHolder), "taken", operator);
 
         return;
       case "takeover":
-        this._assignOrLock(active.id, command.userId, "takeover", operator);
+        this._assignOrLock(active.id, await this._identity(command, isHolder), "takeover", operator);
         await this._auditTakeover(command.userId, active.id, operator?.operatorUserId);
     }
   }
 
   // The holder checks above are awaited, so another take may have changed the control meanwhile
-  private _assignOrLock(reservationId: string, userId: string, reason: ControlAssignReason, expected: OperatorControlSnapshot | undefined): void {
-    if (!this._operatorControl.assign(reservationId, userId, reason, expected)) {
+  private _assignOrLock(reservationId: string, operator: OperatorIdentity, reason: ControlAssignReason, expected: OperatorControlSnapshot | undefined): void {
+    if (!this._operatorControl.assign(reservationId, operator, reason, expected)) {
       throw new VentilatorControlLockedError();
     }
+  }
+
+  private async _identity(command: VentilatorControlCommand, isHolder: boolean): Promise<OperatorIdentity> {
+    const user: UserAccount | undefined = await this._usersFacade.getUserById(command.userId);
+
+    return { userId: command.userId, displayName: user?.name ?? user?.email ?? command.userId, role: command.role, isHolder };
   }
 
   private async _auditTakeover(actorId: string, reservationId: string, previousOperatorUserId: string | undefined): Promise<void> {
