@@ -18926,6 +18926,8 @@ export interface components {
              * @example FREE
              */
             mode: string;
+            /** @description Own patient form of a FREE session started with one (shown after a reload, in the list and in the replay); null otherwise */
+            patient: components["schemas"]["SimulatedPatientDTO"] | null;
             /**
              * @description Exam question ID
              * @example null
@@ -18987,6 +18989,8 @@ export interface components {
              * @example 0192f1c2-7c1e-7a8b-9c0d-1e2f3a4b5c6d
              */
             id: string;
+            /** @description Own patient form of a FREE session started with one (shown after a reload, in the list and in the replay); null otherwise */
+            patient: components["schemas"]["SimulatedPatientDTO"] | null;
             /**
              * @description Engine seed
              * @example 123456789
@@ -19026,6 +19030,8 @@ export interface components {
              *     }
              */
             metrics: Record<string, never>;
+            /** @description Own patient form of a FREE session started with one (shown after a reload, in the list and in the replay); null otherwise */
+            patient: components["schemas"]["SimulatedPatientDTO"] | null;
             /**
              * @description Current ventilator settings
              * @example {

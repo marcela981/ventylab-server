@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de sesiones de simulación
- * Descripción: Convierte los resultados de los casos de uso de sesiones con eventos (inicio, lote de eventos, estado, resumen, repetición, listado y prueba de caso) en sus DTOs de respuesta con fechas ISO y null para valores ausentes
- * Versión: 1.1
+ * Descripción: Convierte los resultados de los casos de uso de sesiones con eventos (inicio, lote de eventos, estado, resumen, repetición, listado y prueba de caso) en sus DTOs de respuesta con fechas ISO y null para valores ausentes; el formulario guardado del paciente propio (no sus ajustes internos) en el estado, la repetición y el listado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,10 +18,12 @@ import {
 } from "@/features/simulation/application/results/simulation-session.results";
 import { SimulationFacade } from "@/features/simulation/application/services/simulation.facade";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
+import { type SimulatedPatient } from "@/features/simulation/domain/patient/simulated-patient";
 import {
   type SimulationEventRecord,
   type SimulationSessionView,
 } from "@/features/simulation/domain/read-models/simulation-session.read-model";
+import { SimulatedPatientDTO, SimulatedPatientVitalsDTO } from "@/features/simulation/presentation/dtos/simulation-session-request.dto";
 import {
   AppendedSimulationEventsDTO,
   ClinicalCaseTestRunDTO,
@@ -60,6 +62,7 @@ export class SimulationSessionsResponseMapper {
       metrics: result.metrics,
       alarms: [...result.alarms],
       targets: [...result.targets],
+      patient: SimulationSessionsResponseMapper.toPatientDTO(result.session),
     });
   }
 
@@ -98,6 +101,7 @@ export class SimulationSessionsResponseMapper {
       currentEngineVersion: result.currentEngineVersion,
       engineVersionMismatch: result.engineVersionMismatch,
       warning,
+      patient: SimulationSessionsResponseMapper.toPatientDTO(result.session),
     });
   }
 
@@ -120,6 +124,23 @@ export class SimulationSessionsResponseMapper {
       lastEventAt: view.lastEventAt.toISOString(),
       lastSimTimeMs: view.lastSimTimeMs,
       score: view.score ?? null,
+      patient: SimulationSessionsResponseMapper.toPatientDTO(session),
+    });
+  }
+
+  /** The stored form only: the resolved engine overrides stay internal */
+  public static toPatientDTO(session: SimulationSession): SimulatedPatientDTO | null {
+    const form: SimulatedPatient | undefined = session.patientProfile?.form;
+
+    if (!form) {
+      return null;
+    }
+
+    return Object.assign(new SimulatedPatientDTO(), {
+      ...form,
+      allergies: form.allergies === undefined ? undefined : [...form.allergies],
+      history: form.history === undefined ? undefined : [...form.history],
+      vitals: Object.assign(new SimulatedPatientVitalsDTO(), form.vitals),
     });
   }
 

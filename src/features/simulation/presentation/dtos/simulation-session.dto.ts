@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de sesiones de simulación
- * Descripción: Serialización de las sesiones con eventos: sesión iniciada con el caso del motor, resultado de un lote de eventos, estado actual, resumen calificado, repetición con aviso de versión del motor, vista de sesión del listado y línea de tiempo de la prueba de caso
- * Versión: 1.1
+ * Descripción: Serialización de las sesiones con eventos: sesión iniciada con el caso del motor, resultado de un lote de eventos, estado actual, resumen calificado, repetición con aviso de versión del motor, vista de sesión del listado y línea de tiempo de la prueba de caso; el estado, la repetición y la vista del listado llevan el formulario del paciente propio
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,8 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { ApiProperty } from "@nestjs/swagger";
+
+import { SimulatedPatientDTO } from "@/features/simulation/presentation/dtos/simulation-session-request.dto";
 
 export class StartedSimulationSessionDTO {
   @ApiProperty({ description: "Session ID", example: "0192f1c2-7c1e-7a8b-9c0d-1e2f3a4b5c6d" })
@@ -76,6 +78,13 @@ export class SimulationSessionStateDTO {
 
   @ApiProperty({ description: "Clinical target status", type: Object, isArray: true, example: [{ id: "SPO2", status: "MET" }] })
   public targets: object[];
+
+  @ApiProperty({
+    description: "Own patient form of a FREE session started with one (shown after a reload, in the list and in the replay); null otherwise",
+    type: SimulatedPatientDTO,
+    nullable: true,
+  })
+  public patient: SimulatedPatientDTO | null;
 
   public constructor(props: SimulationSessionStateDTO) {
     Object.assign(this, props);
@@ -167,6 +176,13 @@ export class SimulationSessionReplayDTO {
   @ApiProperty({ description: "Warning when the engine versions differ", example: null, nullable: true, type: String })
   public warning: string | null;
 
+  @ApiProperty({
+    description: "Own patient form of a FREE session started with one (shown after a reload, in the list and in the replay); null otherwise",
+    type: SimulatedPatientDTO,
+    nullable: true,
+  })
+  public patient: SimulatedPatientDTO | null;
+
   public constructor(props: SimulationSessionReplayDTO) {
     Object.assign(this, props);
   }
@@ -217,6 +233,13 @@ export class SimulationSessionDTO {
 
   @ApiProperty({ description: "Stored server-computed score, null until the session ends", example: null, nullable: true, type: Number })
   public score: number | null;
+
+  @ApiProperty({
+    description: "Own patient form of a FREE session started with one (shown after a reload, in the list and in the replay); null otherwise",
+    type: SimulatedPatientDTO,
+    nullable: true,
+  })
+  public patient: SimulatedPatientDTO | null;
 
   public constructor(props: SimulationSessionDTO) {
     Object.assign(this, props);
