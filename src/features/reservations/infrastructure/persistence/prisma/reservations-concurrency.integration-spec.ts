@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba de integración de concurrencia de reservas
- * Descripción: Suite de integración (npm run test:integration, PostgreSQL de Testcontainers con las migraciones aplicadas): lanza 20 creaciones concurrentes de la misma franja con el bloqueo pg_advisory_xact_lock real y comprueba que solo una se cree; restablece la base de datos antes y crea el estudiante con la fábrica de pruebas
- * Versión: 1.1
+ * Descripción: Suite de integración (npm run test:integration, PostgreSQL de Testcontainers con las migraciones aplicadas): lanza 20 creaciones concurrentes de la misma franja con el bloqueo pg_advisory_xact_lock real y 20 reservas inmediatas concurrentes, y comprueba que solo una se cree en cada caso; restablece la base de datos antes y crea el estudiante con la fábrica de pruebas
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -45,7 +45,6 @@ const SLOT_MS: number = 15 * 60_000;
 describe("reservations concurrency against PostgreSQL", () => {
   const config: ConfigService<EnvironmentVariables, true> = { get: (): string | undefined => process.env.DATABASE_URL } as unknown as ConfigService<EnvironmentVariables, true>;
   const db: PrismaService = new PrismaService(config);
-  const createdIds: string[] = [];
 
   beforeAll(async () => {
     await resetDatabase(db);
@@ -55,9 +54,7 @@ describe("reservations concurrency against PostgreSQL", () => {
     await db.$disconnect();
   });
 
-  it("creates exactly one of 20 concurrent reservations for the same slot", async () => {
-    const user: { id: string } = await createStudent(db);
-
+  function buildUseCase(): CreateReservationUseCase {
     const auditLogRepository: IAuditLogRepository = { save: (): Promise<void> => Promise.resolve() };
     const auditRecorder: IAuditRecorder = { record: (): Promise<void> => Promise.resolve() };
     const usersFacade: UsersFacade = {
@@ -65,7 +62,7 @@ describe("reservations concurrency against PostgreSQL", () => {
       getUsersByIds: (): Promise<UserAccount[]> => Promise.resolve([]),
     } as unknown as UsersFacade;
 
-    const useCase: CreateReservationUseCase = new CreateReservationUseCase(
+    return new CreateReservationUseCase(
       new ReservationsPrismaRepository(db, auditLogRepository),
       new PrismaTransactionManager(db),
       new RecordingEventBus(),
@@ -76,29 +73,42 @@ describe("reservations concurrency against PostgreSQL", () => {
       new ReservationViewsService(usersFacade, buildGroupsFacade()),
       usersFacade,
     );
+  }
 
-    const startsAt: Date = new Date(Math.floor((Date.now() + 13 * MS_PER_DAY) / SLOT_MS) * SLOT_MS + 3 * SLOT_MS);
-    const endsAt: Date = new Date(startsAt.getTime() + SLOT_MS);
-
-    const results: PromiseSettledResult<Reservation>[] = await Promise.allSettled(
-      Array.from({ length: 20 }, (): Promise<Reservation> =>
-        useCase.execute(
-          new CreateReservationCommand({ actorId: user.id, actorRole: "STUDENT", holderType: "USER", userId: user.id, startsAt, endsAt, confirmPreempt: false }),
-        ),
-      ),
-    );
-
-    results.forEach((result: PromiseSettledResult<Reservation>): void => {
-      if (result.status === "fulfilled") {
-        createdIds.push(result.value.id);
-      }
-    });
-
+  async function runConcurrently(build: () => CreateReservationCommand): Promise<{ created: string[]; conflicts: number }> {
+    const useCase: CreateReservationUseCase = buildUseCase();
+    const results: PromiseSettledResult<Reservation>[] = await Promise.allSettled(Array.from({ length: 20 }, (): Promise<Reservation> => useCase.execute(build())));
+    const created: string[] = results.flatMap((result: PromiseSettledResult<Reservation>): string[] => (result.status === "fulfilled" ? [result.value.id] : []));
     const conflicts: number = results.filter(
       (result: PromiseSettledResult<Reservation>): boolean => result.status === "rejected" && result.reason instanceof ReservationConflictError,
     ).length;
 
-    expect(createdIds).toHaveLength(1);
+    return { created, conflicts };
+  }
+
+  it("creates exactly one of 20 concurrent reservations for the same slot", async () => {
+    const user: { id: string } = await createStudent(db);
+    const startsAt: Date = new Date(Math.floor((Date.now() + 13 * MS_PER_DAY) / SLOT_MS) * SLOT_MS + 3 * SLOT_MS);
+    const endsAt: Date = new Date(startsAt.getTime() + SLOT_MS);
+
+    const { created, conflicts }: { created: string[]; conflicts: number } = await runConcurrently(
+      (): CreateReservationCommand =>
+        new CreateReservationCommand({ actorId: user.id, actorRole: "STUDENT", holderType: "USER", userId: user.id, startsAt, endsAt, confirmPreempt: false }),
+    );
+
+    expect(created).toHaveLength(1);
+    expect(conflicts).toBe(19);
+  }, 60_000);
+
+  it("creates exactly one of 20 concurrent immediate reservations", async () => {
+    const user: { id: string } = await createStudent(db);
+
+    const { created, conflicts }: { created: string[]; conflicts: number } = await runConcurrently(
+      (): CreateReservationCommand =>
+        new CreateReservationCommand({ actorId: user.id, actorRole: "STUDENT", holderType: "USER", userId: user.id, durationMinutes: 15, confirmPreempt: false }),
+    );
+
+    expect(created).toHaveLength(1);
     expect(conflicts).toBe(19);
   }, 60_000);
 });

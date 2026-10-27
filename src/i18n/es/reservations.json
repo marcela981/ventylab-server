@@ -29,6 +29,7 @@
     "date_invalid": "{property} debe ser una fecha ISO 8601 válida",
     "holder_type_invalid": "El tipo de titular debe ser USER o GROUP",
     "text_too_long": "{property} debe tener como máximo {constraints.0} caracteres",
-    "reason_required": "El motivo es obligatorio"
+    "reason_required": "El motivo es obligatorio",
+    "duration_invalid": "La duración debe ser de 15, 30, 45 o 60 minutos"
   }
 }

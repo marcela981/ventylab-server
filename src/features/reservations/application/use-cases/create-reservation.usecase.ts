@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso CreateReservationUseCase
- * Descripción: Programa una reserva del ventilador: valida titular, permisos, franja, duración, antelación y límites (compartidos con la reserva inmediata heredada); bajo pg_advisory_xact_lock del dispositivo comprueba solapamientos y, si un docente o administrador lo confirma, desplaza las reservas de estudiantes (o de cualquiera, si es administrador) en la misma transacción con auditoría, y publica los eventos tras el commit
- * Versión: 1.1
+ * Descripción: Programa una reserva del ventilador: valida titular, permisos, franja, duración, antelación y límites (compartidos con la reserva inmediata heredada); bajo pg_advisory_xact_lock del dispositivo comprueba solapamientos y, si un docente o administrador lo confirma, desplaza las reservas de estudiantes (o de cualquiera, si es administrador) en la misma transacción con auditoría, y publica los eventos tras el commit. Sin inicio crea una reserva inmediata (desde ahora truncado al minuto, sin alinear a la franja ni comprobar la antelación, solo la duración máxima) con las mismas reglas de titular, límites, desplazamiento, auditoría y eventos; también devuelve la reserva creada enriquecida para quien la creó
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,9 +21,10 @@ import { ReservationViewsService } from "@/features/reservations/application/ser
 import { assertWithinUpcomingReservationLimits } from "@/features/reservations/application/services/upcoming-reservation-limits";
 import { RESERVATION_SETTINGS_TOKEN, type ReservationSettings } from "@/features/reservations/application/tokens/reservation-settings.token";
 import { RESERVATION_ENTITY_TYPE, Reservation } from "@/features/reservations/domain/entities/reservation.entity";
-import { type ReservationView } from "@/features/reservations/domain/read-models/reservation.read-model";
+import { type ReservationView, type ReservationViewer } from "@/features/reservations/domain/read-models/reservation.read-model";
 import { type IReservationsRepository, RESERVATIONS_REPOSITORY_TOKEN } from "@/features/reservations/domain/repositories/reservations.repository";
 import {
+  InvalidReservationWindowError,
   type ReservationConflictDetail,
   ReservationConflictError,
   ReservationForbiddenError,
@@ -36,13 +37,23 @@ import {
   type ReservationActor,
   toReservationPartyRole,
 } from "@/features/reservations/domain/services/reservation-access-policy";
-import { assertScheduledWindowRules } from "@/features/reservations/domain/services/reservation-scheduling-rules";
+import {
+  assertScheduledWindowRules,
+  assertWithinMaxDuration,
+  IMMEDIATE_RESERVATION_DURATION_VALUES,
+  immediateReservationWindow,
+} from "@/features/reservations/domain/services/reservation-scheduling-rules";
 import { ReservationHolder } from "@/features/reservations/domain/value-objects/reservation-holder";
 import { ReservationWindow } from "@/features/reservations/domain/value-objects/reservation-window";
 import { UsersFacade } from "@/features/users/application/services/users.facade";
 import { type UserAccount } from "@/features/users/domain/read-models/user-account.read-model";
 
 export const RESERVATION_PREEMPTED_AUDIT_ACTION: string = "reservation.preempted";
+
+export interface CreatedReservationResult {
+  readonly view: ReservationView;
+  readonly viewer: ReservationViewer;
+}
 
 interface CreationOutcome {
   readonly reservation: Reservation;
@@ -84,10 +95,8 @@ export class CreateReservationUseCase {
   public async execute(command: CreateReservationCommand): Promise<Reservation> {
     const actor: ReservationActor = { userId: command.actorId, role: toReservationPartyRole(command.actorRole) };
     const holder: ReservationHolder = ReservationHolder.create({ type: command.holderType, userId: command.userId, groupId: command.groupId });
-    const window: ReservationWindow = ReservationWindow.create(command.startsAt, command.endsAt);
     const now: Date = this._clock.now();
-
-    assertScheduledWindowRules(window, now, this._settings);
+    const window: ReservationWindow = this._resolveWindow(command, now);
 
     await this._assertCanReserveFor(actor, holder);
 
@@ -118,6 +127,40 @@ export class CreateReservationUseCase {
     this._eventBus.publish(outcome.events);
 
     return outcome.reservation;
+  }
+
+  /** Creates the reservation and returns it enriched, with the creator as viewer, for the response projection */
+  public async executeWithView(command: CreateReservationCommand): Promise<CreatedReservationResult> {
+    const reservation: Reservation = await this.execute(command);
+    const actor: ReservationActor = { userId: command.actorId, role: toReservationPartyRole(command.actorRole) };
+
+    const [view, viewer]: [ReservationView, ReservationViewer] = await Promise.all([this._viewsService.toView(reservation), this._accessService.resolveViewer(actor)]);
+
+    return { view, viewer };
+  }
+
+  private _resolveWindow(command: CreateReservationCommand, now: Date): ReservationWindow {
+    if (command.startsAt === undefined) {
+      if (command.durationMinutes === undefined || !IMMEDIATE_RESERVATION_DURATION_VALUES.includes(command.durationMinutes)) {
+        throw new InvalidReservationWindowError();
+      }
+
+      const immediate: ReservationWindow = immediateReservationWindow(now, command.durationMinutes);
+
+      assertWithinMaxDuration(immediate, this._settings.maxDurationMinutes);
+
+      return immediate;
+    }
+
+    if (command.endsAt === undefined) {
+      throw new InvalidReservationWindowError();
+    }
+
+    const scheduled: ReservationWindow = ReservationWindow.create(command.startsAt, command.endsAt);
+
+    assertScheduledWindowRules(scheduled, now, this._settings);
+
+    return scheduled;
   }
 
   private async _assertCanReserveFor(actor: ReservationActor, holder: ReservationHolder): Promise<void> {

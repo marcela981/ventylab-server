@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Presentador de reservas por rol
- * Descripción: Proyecta cada reserva según quien consulta: completa para docentes, administradores y las reservas propias o del grupo del estudiante; limitada (ventana, estado y etiqueta traducida, sin nombres, correos ni identificadores de otras personas) para las reservas ajenas que ve un estudiante
- * Versión: 1.0
+ * Descripción: Proyecta cada reserva según quien consulta: completa para docentes, administradores y las reservas propias o del grupo del estudiante; limitada (ventana, estado y etiqueta traducida, sin nombres, correos ni identificadores de otras personas) para las reservas ajenas que ve un estudiante; la reserva recién creada siempre en forma completa para quien la creó
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -45,6 +45,11 @@ export class ReservationsPresentationMapper {
 
   public static toDTOList(views: readonly ReservationView[], viewer: ReservationViewer, translate: ReservationLabelTranslator): ReservationDTO[] {
     return views.map((view: ReservationView): ReservationDTO => ReservationsPresentationMapper.toDTO(view, viewer, translate));
+  }
+
+  /** A reservation the viewer just created is always their own, so it is projected in full */
+  public static toCreatedDTO(view: ReservationView): ReservationDetailDTO {
+    return ReservationsPresentationMapper._toDetail(view);
   }
 
   public static toCurrentDTO(
