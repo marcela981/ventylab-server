@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetMySummaryUseCase
- * Descripción: Resumen del propio usuario autenticado compuesto en paralelo desde las fachadas públicas: progreso por sección, notas publicadas, evaluaciones activas y próximas, últimas notas, últimas conversaciones con el tutor de IA, últimas sesiones de simulación, próximas reservas del ventilador y número de notificaciones sin leer (puerto enlazado por la raíz de composición)
- * Versión: 1.0
+ * Descripción: Resumen del propio usuario autenticado compuesto en paralelo desde las fachadas públicas: progreso por sección, notas publicadas, evaluaciones activas y próximas, últimas notas, últimas conversaciones con el tutor de IA, últimas sesiones de simulación, próximas reservas del ventilador y número de notificaciones sin leer (puerto enlazado por la raíz de composición). v1.1: continueLearning (LearningProgressFacade.getContinueLearning; null si no hay lección publicada a la que volver)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,7 +44,7 @@ export class GetMySummaryUseCase {
   public async execute(actor: AnalyticsActor): Promise<MySummary> {
     const now: Date = new Date();
 
-    const [report, grades, assignments, latestNotes, latestConversations, sessions, upcomingReservations, unreadNotifications] = await Promise.all([
+    const [report, grades, assignments, latestNotes, latestConversations, sessions, upcomingReservations, unreadNotifications, continueLearning] = await Promise.all([
       this._progressFacade.getSummary(actor.id),
       this._evaluationFacade.getUserGrades(actor.id),
       this._evaluationFacade.getOpenAssignmentsOfStudent(actor.id),
@@ -53,6 +53,7 @@ export class GetMySummaryUseCase {
       this._simulationFacade.getUserSessions(actor.id, { page: 1, limit: MY_SUMMARY_LATEST_LIMIT, sortOrder: "desc" }),
       this._reservationsFacade.getUpcomingReservationsOfUser(actor.id, actor.role, now, MY_SUMMARY_LATEST_LIMIT),
       this._unreadNotifications.countUnread(actor.id),
+      this._progressFacade.getContinueLearning(actor.id),
     ]);
 
     return {
@@ -65,6 +66,7 @@ export class GetMySummaryUseCase {
       latestSimulationSessions: sessions.data,
       upcomingReservations,
       unreadNotifications,
+      continueLearning: continueLearning ?? null,
     };
   }
 }

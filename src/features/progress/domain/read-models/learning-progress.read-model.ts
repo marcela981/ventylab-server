@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura del progreso por páginas
- * Descripción: Define el alcance (módulo, nivel, sección o todo), la estructura publicada, el progreso ponderado por lecciones de lecciones, módulos, niveles y secciones, el resumen del usuario y los datos de registro de vistas de página. v1.2: SavedPageView (vista guardada e indicador de fila creada) y moduleCompleted en PageViewResult
- * Versión: 1.2
+ * Descripción: Define el alcance (módulo, nivel, sección o todo), la estructura publicada, el progreso ponderado por lecciones de lecciones, módulos, niveles y secciones, el resumen del usuario y los datos de registro de vistas de página. v1.2: SavedPageView (vista guardada e indicador de fila creada) y moduleCompleted en PageViewResult. v1.3: ContinueLearningTarget (última lección a la que accedió el usuario con el porcentaje del módulo)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -121,6 +121,15 @@ export interface PageViewResult {
   readonly moduleCompleted: boolean;
   readonly viewedPages: number;
   readonly totalPages: number;
+}
+
+export interface ContinueLearningTarget {
+  readonly moduleId: string;
+  readonly moduleTitle: string;
+  readonly lessonId: string;
+  readonly lessonTitle: string;
+  // Lesson-weighted completion percentage of the module (0-100).
+  readonly percent: number;
 }
 
 export type ContentUnlockTargetType = "level" | "module";

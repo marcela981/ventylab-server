@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo ProgressModule
- * Descripción: Registra la feature de progreso (controladores de /api/progress y de progresión en /api/teaching, casos de uso, repositorios Prisma y manejadores de eventos de logros); registra el progreso por páginas (vistas de página, progreso ponderado por lecciones, LearningProgressFacade, con el repositorio de lecturas por lotes para analítica) y el controlador de progreso de estudiantes; importa ModulesModule (GetModuleResumeUseCase), CurriculumModule (ComputeCurriculumUnlockUseCase) y UsersModule (GetUserByIdUseCase)
- * Versión: 1.3
+ * Descripción: Registra la feature de progreso (controladores de /api/progress y de progresión en /api/teaching, casos de uso, repositorios Prisma y manejadores de eventos de logros); registra el progreso por páginas (vistas de página, progreso ponderado por lecciones, LearningProgressFacade, con el repositorio de lecturas por lotes para analítica) y el controlador de progreso de estudiantes; importa ModulesModule (GetModuleResumeUseCase), CurriculumModule (ComputeCurriculumUnlockUseCase) y UsersModule (GetUserByIdUseCase). v1.4: registra GetContinueLearningUseCase (continueLearning del resumen del usuario a través de LearningProgressFacade)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { LearningProgressFacade } from "@/features/progress/application/services
 import { CheckContentUnlockedUseCase } from "@/features/progress/application/use-cases/check-content-unlocked.usecase";
 import { CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
 import { CheckModuleAccessUseCase } from "@/features/progress/application/use-cases/check-module-access.usecase";
+import { GetContinueLearningUseCase } from "@/features/progress/application/use-cases/get-continue-learning.usecase";
 import { GetLearningProgressSummaryUseCase } from "@/features/progress/application/use-cases/get-learning-progress-summary.usecase";
 import { GetLessonProgressDetailsUseCase } from "@/features/progress/application/use-cases/get-lesson-progress-details.usecase";
 import { GetLessonProgressUseCase } from "@/features/progress/application/use-cases/get-lesson-progress.usecase";
@@ -93,6 +94,7 @@ import { UsersModule } from "@/features/users/users.module";
     GetSectionLearningProgressUseCase,
     GetLearningProgressSummaryUseCase,
     CheckContentUnlockedUseCase,
+    GetContinueLearningUseCase,
     LearningProgressFacade,
   ],
   exports: [

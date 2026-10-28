@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada LearningProgressFacade
- * Descripción: API pública de progreso por páginas que exporta ProgressModule para otras features: getModuleProgress, getLevelProgress, getSectionProgress, getSummary e isUnlocked, delegando en sus casos de uso; y lecturas por lotes para analítica: getProgressForUsers (informe por sección, nivel y módulo de varios usuarios con un número fijo de lecturas), getLessonCompletionsOfUser (lecciones completadas en un rango) y getLastActivityForUsers (última actividad de aprendizaje de varios usuarios en una sola consulta). v1.3: getLessonAccess y assertLessonAccessible (orden obligatorio de lecciones con bypass de staff, para otras features como pages)
- * Versión: 1.3
+ * Descripción: API pública de progreso por páginas que exporta ProgressModule para otras features: getModuleProgress, getLevelProgress, getSectionProgress, getSummary e isUnlocked, delegando en sus casos de uso; y lecturas por lotes para analítica: getProgressForUsers (informe por sección, nivel y módulo de varios usuarios con un número fijo de lecturas), getLessonCompletionsOfUser (lecciones completadas en un rango) y getLastActivityForUsers (última actividad de aprendizaje de varios usuarios en una sola consulta). v1.3: getLessonAccess y assertLessonAccessible (orden obligatorio de lecciones con bypass de staff, para otras features como pages). v1.4: getContinueLearning (dónde retomar el estudio, para el resumen del usuario)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { type LessonCompletionFact } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
 import { CheckContentUnlockedUseCase } from "@/features/progress/application/use-cases/check-content-unlocked.usecase";
 import { CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
+import { GetContinueLearningUseCase } from "@/features/progress/application/use-cases/get-continue-learning.usecase";
 import { GetLearningProgressSummaryUseCase } from "@/features/progress/application/use-cases/get-learning-progress-summary.usecase";
 import { GetLevelLearningProgressUseCase } from "@/features/progress/application/use-cases/get-level-learning-progress.usecase";
 import { GetModuleLearningProgressUseCase } from "@/features/progress/application/use-cases/get-module-learning-progress.usecase";
@@ -20,6 +21,7 @@ import { GetSectionLearningProgressUseCase } from "@/features/progress/applicati
 import { LessonLockedError } from "@/features/progress/domain/progress.errors";
 import {
   type ContentUnlockTarget,
+  type ContinueLearningTarget,
   type LearningProgressReport,
   type LevelLearningProgress,
   type ModuleLearningProgress,
@@ -54,6 +56,7 @@ export class LearningProgressFacade {
     private readonly _getLearningProgressSummaryUseCase: GetLearningProgressSummaryUseCase,
     private readonly _checkContentUnlockedUseCase: CheckContentUnlockedUseCase,
     private readonly _checkLessonAccessUseCase: CheckLessonAccessUseCase,
+    private readonly _getContinueLearningUseCase: GetContinueLearningUseCase,
     @Inject(PROGRESS_ANALYTICS_REPOSITORY_TOKEN)
     private readonly _analyticsRepository: IProgressAnalyticsRepository,
   ) {}
@@ -92,6 +95,11 @@ export class LearningProgressFacade {
 
   public async isUnlocked(userId: string, target: ContentUnlockTarget): Promise<boolean> {
     return await this._checkContentUnlockedUseCase.execute(userId, target);
+  }
+
+  // The most recently accessed published lesson across modules, or undefined.
+  public async getContinueLearning(userId: string): Promise<ContinueLearningTarget | undefined> {
+    return await this._getContinueLearningUseCase.execute(userId);
   }
 
   // Undefined when the lesson does not exist or is not visible to the caller; staff (canManage) are always allowed.

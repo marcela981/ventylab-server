@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Puerto de repositorio PROGRESS_ANALYTICS_REPOSITORY_TOKEN
- * Descripción: Define la interfaz IProgressAnalyticsRepository de lecturas por lotes para analítica (estructura publicada con los hechos de completitud de varios usuarios a la vez , lecciones completadas por un usuario en un rango y última actividad de varios usuarios), sus modelos de lectura y su token de inyección
- * Versión: 1.1
+ * Descripción: Define la interfaz IProgressAnalyticsRepository de lecturas por lotes para analítica (estructura publicada con los hechos de completitud de varios usuarios a la vez , lecciones completadas por un usuario en un rango y última actividad de varios usuarios), sus modelos de lectura y su token de inyección. v1.2: getLastAccessedLesson (última lección publicada a la que accedió un usuario, entre todos sus módulos)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,8 +30,17 @@ export interface UserProgressLastActivity {
   readonly lastActivityAt: Date;
 }
 
+export interface LastAccessedLesson {
+  readonly moduleId: string;
+  readonly moduleTitle: string;
+  readonly lessonId: string;
+  readonly lessonTitle: string;
+}
+
 export interface IProgressAnalyticsRepository {
   getProgressSourceForUsers(userIds: readonly string[]): Promise<UsersProgressSource>;
   getLessonCompletionsOfUser(userId: string, from: Date, to: Date, limit: number): Promise<LessonCompletionActivity[]>;
   getLastActivityForUsers(userIds: readonly string[]): Promise<UserProgressLastActivity[]>;
+  // Most recent UserProgress.lastAccessedLessonId (by lastAccessedAt) whose lesson and module are still published.
+  getLastAccessedLesson(userId: string): Promise<LastAccessedLesson | undefined>;
 }

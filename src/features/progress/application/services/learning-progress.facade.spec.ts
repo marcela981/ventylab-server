@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de LearningProgressFacade (lecturas por lotes)
- * Descripción: Verifica que el progreso de varios usuarios sale de una sola llamada al repositorio de analítica y se calcula por usuario con el mismo motor de progreso ponderado por lecciones, que las lecciones completadas en un rango se piden con sus límites y que la última actividad de varios usuarios sale de una sola llamada al repositorio. v1.2: assertLessonAccessible lanza LessonLockedError solo para una lección existente y bloqueada
- * Versión: 1.2
+ * Descripción: Verifica que el progreso de varios usuarios sale de una sola llamada al repositorio de analítica y se calcula por usuario con el mismo motor de progreso ponderado por lecciones, que las lecciones completadas en un rango se piden con sus límites y que la última actividad de varios usuarios sale de una sola llamada al repositorio. v1.2: assertLessonAccessible lanza LessonLockedError solo para una lección existente y bloqueada; v1.3: fachada con GetContinueLearningUseCase
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { LearningProgressFacade, type UserLearningProgress } from "@/features/progress/application/services/learning-progress.facade";
 import { type CheckContentUnlockedUseCase } from "@/features/progress/application/use-cases/check-content-unlocked.usecase";
 import { type CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
+import { type GetContinueLearningUseCase } from "@/features/progress/application/use-cases/get-continue-learning.usecase";
 import { type GetLearningProgressSummaryUseCase } from "@/features/progress/application/use-cases/get-learning-progress-summary.usecase";
 import { type GetLevelLearningProgressUseCase } from "@/features/progress/application/use-cases/get-level-learning-progress.usecase";
 import { type GetModuleLearningProgressUseCase } from "@/features/progress/application/use-cases/get-module-learning-progress.usecase";
@@ -31,6 +32,7 @@ describe("LearningProgressFacade batch reads", () => {
       }),
       getLessonCompletionsOfUser: jest.fn().mockResolvedValue([]),
       getLastActivityForUsers: jest.fn().mockResolvedValue([]),
+      getLastAccessedLesson: jest.fn().mockResolvedValue(undefined),
     };
     const facade: LearningProgressFacade = new LearningProgressFacade(
       {} as GetModuleLearningProgressUseCase,
@@ -39,6 +41,7 @@ describe("LearningProgressFacade batch reads", () => {
       {} as GetLearningProgressSummaryUseCase,
       {} as CheckContentUnlockedUseCase,
       {} as CheckLessonAccessUseCase,
+      {} as GetContinueLearningUseCase,
       repository,
     );
     const range: { from: Date; to: Date } = { from: new Date("2026-10-01T00:00:00Z"), to: new Date("2026-10-11T00:00:00Z") };
@@ -60,6 +63,7 @@ describe("LearningProgressFacade batch reads", () => {
       getProgressSourceForUsers: jest.fn(),
       getLessonCompletionsOfUser: jest.fn(),
       getLastActivityForUsers: jest.fn().mockResolvedValue(lastActivity),
+      getLastAccessedLesson: jest.fn().mockResolvedValue(undefined),
     };
     const facade: LearningProgressFacade = new LearningProgressFacade(
       {} as GetModuleLearningProgressUseCase,
@@ -68,6 +72,7 @@ describe("LearningProgressFacade batch reads", () => {
       {} as GetLearningProgressSummaryUseCase,
       {} as CheckContentUnlockedUseCase,
       {} as CheckLessonAccessUseCase,
+      {} as GetContinueLearningUseCase,
       repository,
     );
 
@@ -89,6 +94,7 @@ describe("LearningProgressFacade lesson access", () => {
       {} as GetLearningProgressSummaryUseCase,
       {} as CheckContentUnlockedUseCase,
       { execute } as unknown as CheckLessonAccessUseCase,
+      {} as GetContinueLearningUseCase,
       {} as IProgressAnalyticsRepository,
     );
 
