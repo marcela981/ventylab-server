@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de LearningProgressFacade (lecturas por lotes)
- * Descripción: Verifica que el progreso de varios usuarios sale de una sola llamada al repositorio de analítica y se calcula por usuario con el mismo motor de progreso ponderado por lecciones, que las lecciones completadas en un rango se piden con sus límites y que la última actividad de varios usuarios sale de una sola llamada al repositorio
- * Versión: 1.1
+ * Descripción: Verifica que el progreso de varios usuarios sale de una sola llamada al repositorio de analítica y se calcula por usuario con el mismo motor de progreso ponderado por lecciones, que las lecciones completadas en un rango se piden con sus límites y que la última actividad de varios usuarios sale de una sola llamada al repositorio. v1.2: assertLessonAccessible lanza LessonLockedError solo para una lección existente y bloqueada
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,10 +10,13 @@
  */
 import { LearningProgressFacade, type UserLearningProgress } from "@/features/progress/application/services/learning-progress.facade";
 import { type CheckContentUnlockedUseCase } from "@/features/progress/application/use-cases/check-content-unlocked.usecase";
+import { type CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
 import { type GetLearningProgressSummaryUseCase } from "@/features/progress/application/use-cases/get-learning-progress-summary.usecase";
 import { type GetLevelLearningProgressUseCase } from "@/features/progress/application/use-cases/get-level-learning-progress.usecase";
 import { type GetModuleLearningProgressUseCase } from "@/features/progress/application/use-cases/get-module-learning-progress.usecase";
 import { type GetSectionLearningProgressUseCase } from "@/features/progress/application/use-cases/get-section-learning-progress.usecase";
+import { LessonLockedError } from "@/features/progress/domain/progress.errors";
+import { type LessonAccessDecision } from "@/features/progress/domain/read-models/lesson-access.read-model";
 import { type IProgressAnalyticsRepository, type UserProgressLastActivity } from "@/features/progress/domain/repositories/progress-analytics.repository";
 
 describe("LearningProgressFacade batch reads", () => {
@@ -35,6 +38,7 @@ describe("LearningProgressFacade batch reads", () => {
       {} as GetSectionLearningProgressUseCase,
       {} as GetLearningProgressSummaryUseCase,
       {} as CheckContentUnlockedUseCase,
+      {} as CheckLessonAccessUseCase,
       repository,
     );
     const range: { from: Date; to: Date } = { from: new Date("2026-10-01T00:00:00Z"), to: new Date("2026-10-11T00:00:00Z") };
@@ -63,6 +67,7 @@ describe("LearningProgressFacade batch reads", () => {
       {} as GetSectionLearningProgressUseCase,
       {} as GetLearningProgressSummaryUseCase,
       {} as CheckContentUnlockedUseCase,
+      {} as CheckLessonAccessUseCase,
       repository,
     );
 
@@ -71,5 +76,37 @@ describe("LearningProgressFacade batch reads", () => {
     expect(repository.getLastActivityForUsers).toHaveBeenCalledTimes(1);
     expect(repository.getLastActivityForUsers).toHaveBeenCalledWith(["student-1", "student-2"]);
     expect(activity).toEqual(lastActivity);
+  });
+});
+
+describe("LearningProgressFacade lesson access", () => {
+  function facadeWith(decision: LessonAccessDecision | undefined): { facade: LearningProgressFacade; execute: jest.Mock } {
+    const execute: jest.Mock = jest.fn().mockResolvedValue(decision);
+    const facade: LearningProgressFacade = new LearningProgressFacade(
+      {} as GetModuleLearningProgressUseCase,
+      {} as GetLevelLearningProgressUseCase,
+      {} as GetSectionLearningProgressUseCase,
+      {} as GetLearningProgressSummaryUseCase,
+      {} as CheckContentUnlockedUseCase,
+      { execute } as unknown as CheckLessonAccessUseCase,
+      {} as IProgressAnalyticsRepository,
+    );
+
+    return { facade, execute };
+  }
+
+  it("throws LessonLockedError with the missing lessons when the lesson is locked", async () => {
+    const { facade, execute } = facadeWith({ allowed: false, reason: "previous_lesson_incomplete", missing: [{ lessonId: "L1", title: "Intro" }] });
+
+    const error: unknown = await facade.assertLessonAccessible("U1", "L2", false).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(LessonLockedError);
+    expect((error as LessonLockedError).details).toEqual({ reason: "previous_lesson_incomplete", missing: [{ lessonId: "L1", title: "Intro" }] });
+    expect(execute).toHaveBeenCalledWith("U1", "L2", false);
+  });
+
+  it("does not throw when the lesson is allowed or does not exist", async () => {
+    await expect(facadeWith({ allowed: true, missing: [] }).facade.assertLessonAccessible("U1", "L2", false)).resolves.toBeUndefined();
+    await expect(facadeWith(undefined).facade.assertLessonAccessible("U1", "missing", false)).resolves.toBeUndefined();
   });
 });

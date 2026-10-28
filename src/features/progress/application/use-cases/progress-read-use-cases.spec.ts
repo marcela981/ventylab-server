@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los casos de uso de lectura del progreso
- * Descripción: Verifica el acceso a módulos, contenidos y lecciones según el estado de desbloqueo del currículo y la lección anterior, la lista de módulos desbloqueados, el progreso y el detalle de una lección (con y sin registro, módulo inexistente), el resumen general, los reportes de progreso por página de sección, nivel y módulo (404 cuando no existen) y los catálogos fijos de habilidades e hitos
- * Versión: 1.0
+ * Descripción: Verifica el acceso a módulos, contenidos y lecciones (motivo, lecciones faltantes en orden, lecciones vacías saltadas y bypass de staff) según el estado de desbloqueo del currículo y las lecciones anteriores, la lista de módulos desbloqueados, el progreso y el detalle de una lección (con y sin registro, módulo inexistente), el resumen general, los reportes de progreso por página de sección, nivel y módulo (404 cuando no existen) y los catálogos fijos de habilidades e hitos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -33,6 +33,7 @@ import { GetSectionLearningProgressUseCase } from "@/features/progress/applicati
 import { GetSkillsUseCase } from "@/features/progress/application/use-cases/get-skills.usecase";
 import { GetUnlockedModulesUseCase } from "@/features/progress/application/use-cases/get-unlocked-modules.usecase";
 import { type LearningProgressReport, type ProgressSource } from "@/features/progress/domain/read-models/learning-progress.read-model";
+import { type LessonSequence } from "@/features/progress/domain/read-models/lesson-access.read-model";
 import { type ProgressOverview } from "@/features/progress/domain/read-models/progress-views.read-model";
 import { type ILearningProgressRepository } from "@/features/progress/domain/repositories/learning-progress.repository";
 import { type IProgressQueriesRepository } from "@/features/progress/domain/repositories/progress-queries.repository";
@@ -86,50 +87,77 @@ describe("curriculum unlock queries", () => {
 });
 
 describe("CheckLessonAccessUseCase", () => {
+  const SEQUENCE: LessonSequence = {
+    lessonId: "L3",
+    moduleId: "M1",
+    previousLessons: [
+      { lessonId: "L1", title: "Lesson 1" },
+      { lessonId: "L2", title: "Lesson 2" },
+    ],
+  };
+
   function build(modules: Record<string, UnlockState>): { useCase: CheckLessonAccessUseCase; learning: jest.Mocked<ILearningProgressRepository>; queries: jest.Mocked<IProgressQueriesRepository> } {
     const learning: jest.Mocked<ILearningProgressRepository> = buildLearningProgressRepository();
     const queries: jest.Mocked<IProgressQueriesRepository> = buildProgressQueriesRepository();
 
-    queries.getLessonGate.mockResolvedValue({ lessonId: "L2", moduleId: "M1", order: 2, moduleIsActive: true });
+    queries.getLessonSequence.mockResolvedValue(SEQUENCE);
 
-    return { learning, queries, useCase: new CheckLessonAccessUseCase(learning, queries, new CheckModuleAccessUseCase(unlockUseCase(modules))) };
+    return { learning, queries, useCase: new CheckLessonAccessUseCase(learning, queries, new CheckContentUnlockedUseCase(unlockUseCase(modules))) };
   }
 
-  it("denies a missing lesson, an inactive module or a locked module", async () => {
-    const { useCase, queries } = build({ M1: LOCKED });
+  it("returns undefined for a missing or invisible lesson", async () => {
+    const { useCase, queries } = build({ M1: UNLOCKED });
 
-    expect(await useCase.execute("U1", "L2")).toBe(false);
+    queries.getLessonSequence.mockResolvedValueOnce(undefined);
 
-    queries.getLessonGate.mockResolvedValueOnce(undefined);
-    expect(await useCase.execute("U1", "L2")).toBe(false);
+    expect(await useCase.execute("U1", "L3", false)).toBeUndefined();
+    expect(queries.getLessonSequence).toHaveBeenCalledWith("L3", false);
+  });
 
-    queries.getLessonGate.mockResolvedValueOnce({ lessonId: "L2", moduleId: "M1", order: 2, moduleIsActive: false });
-    expect(await useCase.execute("U1", "L2")).toBe(false);
+  it("allows staff without checking the module or the previous lessons", async () => {
+    const { useCase, learning, queries } = build({ M1: LOCKED });
+
+    expect(await useCase.execute("U1", "L3", true)).toEqual({ allowed: true, missing: [] });
+    expect(queries.getLessonSequence).toHaveBeenCalledWith("L3", true);
+    expect(learning.getLessonFacts).not.toHaveBeenCalled();
+  });
+
+  it("denies a lesson of a locked module with reason module_locked", async () => {
+    const { useCase } = build({ M1: LOCKED });
+
+    expect(await useCase.execute("U1", "L3", false)).toEqual({ allowed: false, reason: "module_locked", missing: [] });
   });
 
   it("allows the first lesson of an unlocked module", async () => {
-    const { useCase } = build({ M1: UNLOCKED });
-
-    expect(await useCase.execute("U1", "L2")).toBe(true);
-  });
-
-  it("requires the previous lesson to be completed", async () => {
-    const { useCase, queries, learning } = build({ M1: UNLOCKED });
-
-    queries.getPreviousActiveLessonId.mockResolvedValue("L1");
-    learning.getLessonFacts.mockResolvedValueOnce([fact("L1", "M1", { viewedPageCount: 1 })]).mockResolvedValueOnce([fact("L1", "M1", { hasCompletionRecord: true })]);
-
-    expect(await useCase.execute("U1", "L2")).toBe(false);
-    expect(await useCase.execute("U1", "L2")).toBe(true);
-    expect(learning.getLessonFacts).toHaveBeenCalledWith("U1", ["L1"]);
-  });
-
-  it("allows the lesson when the previous lesson has no facts", async () => {
     const { useCase, queries } = build({ M1: UNLOCKED });
 
-    queries.getPreviousActiveLessonId.mockResolvedValue("L1");
+    queries.getLessonSequence.mockResolvedValueOnce({ lessonId: "L1", moduleId: "M1", previousLessons: [] });
 
-    expect(await useCase.execute("U1", "L2")).toBe(true);
+    expect(await useCase.execute("U1", "L1", false)).toEqual({ allowed: true, missing: [] });
+  });
+
+  it("lists every incomplete previous lesson in order", async () => {
+    const { useCase, learning } = build({ M1: UNLOCKED });
+
+    learning.getLessonFacts.mockResolvedValueOnce([fact("L1", "M1", { viewedPageCount: 1 }), fact("L2", "M1")]);
+
+    expect(await useCase.execute("U1", "L3", false)).toEqual({
+      allowed: false,
+      reason: "previous_lesson_incomplete",
+      missing: [
+        { lessonId: "L1", title: "Lesson 1" },
+        { lessonId: "L2", title: "Lesson 2" },
+      ],
+    });
+    expect(learning.getLessonFacts).toHaveBeenCalledWith("U1", ["L1", "L2"]);
+  });
+
+  it("skips previous lessons without published pages and accepts recorded completions", async () => {
+    const { useCase, learning } = build({ M1: UNLOCKED });
+
+    learning.getLessonFacts.mockResolvedValueOnce([fact("L1", "M1", { publishedPageCount: 0 }), fact("L2", "M1", { publishedPageCount: 3, hasCompletionRecord: true })]);
+
+    expect(await useCase.execute("U1", "L3", false)).toEqual({ allowed: true, missing: [] });
   });
 });
 

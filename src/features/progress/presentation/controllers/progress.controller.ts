@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de progreso
- * Descripción: Expone las rutas autenticadas de /api/progress (resumen general, vistas de página, progreso por páginas de módulo, nivel, sección y resumen, progreso heredado de módulo y lección, pasos, reanudación, detalle, hitos, logros y habilidades) y delega en los casos de uso de progreso y en GetModuleResumeUseCase. Las rutas por ID de lección heredado (GET y PUT lesson/:lessonId) están deprecadas en favor de lesson/:lessonId/details y de las vistas de página.
- * Versión: 1.3
+ * Descripción: Expone las rutas autenticadas de /api/progress (resumen general, vistas de página, progreso por páginas de módulo, nivel, sección y resumen, progreso heredado de módulo y lección, pasos, reanudación, detalle, hitos, logros y habilidades) y delega en los casos de uso de progreso y en GetModuleResumeUseCase. Las rutas por ID de lección heredado (GET y PUT lesson/:lessonId) están deprecadas en favor de lesson/:lessonId/details y de las vistas de página. v1.4: la vista de página documenta el 403 progress.lesson_locked del orden de lecciones.
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -314,11 +314,11 @@ export class ProgressController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Record a page view",
-    description: "Idempotently records that the current user viewed a page; viewing every published page of a lesson completes it. Students only reach published pages with published ancestors",
+    description: "Idempotently records that the current user viewed a page; viewing every published page of a lesson completes it. Students only reach published pages with published ancestors, and only in lesson order: a page of a locked lesson answers 403 progress.lesson_locked (data.missing lists the previous lessons to complete)",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Page view recorded successfully", type: PageViewResultDTO })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Missing permission, or the lesson is locked for the current student (progress.lesson_locked)" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Page not found" })
   public async recordPageView(
     @Param("pageId") pageId: string,

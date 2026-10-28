@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de presentación LessonsMapper
- * Descripción: Convierte los modelos de lectura y entidades de la feature de lecciones en DTOs de respuesta
- * Versión: 1.1
+ * Descripción: Convierte los modelos de lectura y entidades de la feature de lecciones en DTOs de respuesta. v1.2: toLessonAccessDTO (acceso secuencial a una lección)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import {
   type LessonStepItem,
   type LessonSummary,
 } from "@/features/lessons/domain/read-models/lesson-views.read-model";
+import { LessonAccessDTO, MissingLessonDTO } from "@/features/lessons/presentation/dtos/lesson-access.dto";
 import {
   LessonContentDTO,
   LessonDetailDTO,
@@ -26,8 +27,17 @@ import {
   LessonQuizDTO,
   LessonStepDTO,
 } from "@/features/lessons/presentation/dtos/lesson.dto";
+import { type LessonAccessDecision, type SequenceLesson } from "@/features/progress/domain/read-models/lesson-access.read-model";
 
 export class LessonsMapper {
+  public static toLessonAccessDTO(decision: LessonAccessDecision): LessonAccessDTO {
+    return {
+      allowed: decision.allowed,
+      reason: decision.reason ?? null,
+      missing: decision.missing.map((lesson: SequenceLesson): MissingLessonDTO => ({ lessonId: lesson.lessonId, title: lesson.title })),
+    };
+  }
+
   public static toDTO(lesson: LessonSummary): LessonDTO {
     return new LessonDTO({
       id: lesson.id,

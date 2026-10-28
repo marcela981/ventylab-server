@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada LearningProgressFacade
- * Descripción: API pública de progreso por páginas que exporta ProgressModule para otras features: getModuleProgress, getLevelProgress, getSectionProgress, getSummary e isUnlocked, delegando en sus casos de uso; y lecturas por lotes para analítica: getProgressForUsers (informe por sección, nivel y módulo de varios usuarios con un número fijo de lecturas), getLessonCompletionsOfUser (lecciones completadas en un rango) y getLastActivityForUsers (última actividad de aprendizaje de varios usuarios en una sola consulta)
- * Versión: 1.2
+ * Descripción: API pública de progreso por páginas que exporta ProgressModule para otras features: getModuleProgress, getLevelProgress, getSectionProgress, getSummary e isUnlocked, delegando en sus casos de uso; y lecturas por lotes para analítica: getProgressForUsers (informe por sección, nivel y módulo de varios usuarios con un número fijo de lecturas), getLessonCompletionsOfUser (lecciones completadas en un rango) y getLastActivityForUsers (última actividad de aprendizaje de varios usuarios en una sola consulta). v1.3: getLessonAccess y assertLessonAccessible (orden obligatorio de lecciones con bypass de staff, para otras features como pages)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,10 +12,12 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { type LessonCompletionFact } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
 import { CheckContentUnlockedUseCase } from "@/features/progress/application/use-cases/check-content-unlocked.usecase";
+import { CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
 import { GetLearningProgressSummaryUseCase } from "@/features/progress/application/use-cases/get-learning-progress-summary.usecase";
 import { GetLevelLearningProgressUseCase } from "@/features/progress/application/use-cases/get-level-learning-progress.usecase";
 import { GetModuleLearningProgressUseCase } from "@/features/progress/application/use-cases/get-module-learning-progress.usecase";
 import { GetSectionLearningProgressUseCase } from "@/features/progress/application/use-cases/get-section-learning-progress.usecase";
+import { LessonLockedError } from "@/features/progress/domain/progress.errors";
 import {
   type ContentUnlockTarget,
   type LearningProgressReport,
@@ -23,6 +25,7 @@ import {
   type ModuleLearningProgress,
   type SectionLearningProgress,
 } from "@/features/progress/domain/read-models/learning-progress.read-model";
+import { type LessonAccessDecision } from "@/features/progress/domain/read-models/lesson-access.read-model";
 import {
   type IProgressAnalyticsRepository,
   type LessonCompletionActivity,
@@ -50,6 +53,7 @@ export class LearningProgressFacade {
     private readonly _getSectionLearningProgressUseCase: GetSectionLearningProgressUseCase,
     private readonly _getLearningProgressSummaryUseCase: GetLearningProgressSummaryUseCase,
     private readonly _checkContentUnlockedUseCase: CheckContentUnlockedUseCase,
+    private readonly _checkLessonAccessUseCase: CheckLessonAccessUseCase,
     @Inject(PROGRESS_ANALYTICS_REPOSITORY_TOKEN)
     private readonly _analyticsRepository: IProgressAnalyticsRepository,
   ) {}
@@ -88,5 +92,21 @@ export class LearningProgressFacade {
 
   public async isUnlocked(userId: string, target: ContentUnlockTarget): Promise<boolean> {
     return await this._checkContentUnlockedUseCase.execute(userId, target);
+  }
+
+  // Undefined when the lesson does not exist or is not visible to the caller; staff (canManage) are always allowed.
+  public async getLessonAccess(userId: string, lessonId: string, canManage: boolean): Promise<LessonAccessDecision | undefined> {
+    return await this._checkLessonAccessUseCase.execute(userId, lessonId, canManage);
+  }
+
+  /**
+   * @throws {LessonLockedError} If the lesson exists and the user may not open it yet
+   */
+  public async assertLessonAccessible(userId: string, lessonId: string, canManage: boolean): Promise<void> {
+    const decision: LessonAccessDecision | undefined = await this.getLessonAccess(userId, lessonId, canManage);
+
+    if (decision && !decision.allowed) {
+      throw new LessonLockedError(decision);
+    }
   }
 }

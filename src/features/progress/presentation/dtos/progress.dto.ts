@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: DTOs de respuesta de progreso
- * Descripción: Define las respuestas de progreso de lección, progreso agregado de módulo, detalle por pasos, punto de reanudación, módulos desbloqueados y verificación de acceso
- * Versión: 1.0
+ * Descripción: Define las respuestas de progreso de lección, progreso agregado de módulo, detalle por pasos, punto de reanudación, módulos desbloqueados y verificación de acceso. v1.1: el acceso heredado a lección se publica como TeachingLessonAccessDTO (LessonAccessDTO es el de /api/lessons/:id/access)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiSchema } from "@nestjs/swagger";
 
 export class LessonProgressDTO {
   @ApiProperty({ description: "Lesson ID as requested", example: "lesson-inversion-fisiologica" })
@@ -209,6 +209,7 @@ export class ModuleAccessDTO {
   }
 }
 
+@ApiSchema({ name: "TeachingLessonAccessDTO" })
 export class LessonAccessDTO {
   @ApiProperty({ description: "Lesson ID", example: "lesson-ecuacion-movimiento" })
   public lessonId: string;

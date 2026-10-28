@@ -1,5 +1,6 @@
 {
   "lesson_access_denied": "Todavía no puede acceder a esta lección",
+  "lesson_locked": "Esta lección está bloqueada: primero desbloquee su módulo y complete las lecciones anteriores",
   "quiz_score_required": "Se requiere el puntaje del quiz para completar esta lección",
   "overview_retrieved": "Resumen de progreso obtenido correctamente",
   "module_progress_retrieved": "Progreso del módulo obtenido correctamente",

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de RecordPageViewUseCase
- * Descripción: Verifica que la vista de la última página completa la lección una sola vez (LessonCompletion y LessonCompletedEvent), que repetir la vista es idempotente, que no se degrada una completitud previa y que el contenido no visible responde 404
- * Versión: 1.0
+ * Descripción: Verifica que la vista de la última página completa la lección una sola vez (LessonCompletion y LessonCompletedEvent), que repetir la vista es idempotente, que no se degrada una completitud previa y que el contenido no visible responde 404. v1.1: un estudiante en una lección bloqueada recibe LessonLockedError sin registrar nada y staff no se valida
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,9 +13,12 @@ import { type ITransactionManager } from "@/common/application/persistence/trans
 import { type LessonCompletionFact } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
 import { PageNotFoundError } from "@/features/pages/domain/pages.errors";
 import { RecordPageViewCommand } from "@/features/progress/application/commands/record-page-view.command";
+import { type CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
 import { RecordPageViewUseCase } from "@/features/progress/application/use-cases/record-page-view.usecase";
 import { LessonCompletedEvent } from "@/features/progress/domain/events/lesson-completed.event";
+import { LessonLockedError } from "@/features/progress/domain/progress.errors";
 import { type PageViewResult, type PageViewSnapshot } from "@/features/progress/domain/read-models/learning-progress.read-model";
+import { type LessonAccessDecision } from "@/features/progress/domain/read-models/lesson-access.read-model";
 import { type ILearningProgressRepository } from "@/features/progress/domain/repositories/learning-progress.repository";
 import { type IProgressRepository } from "@/features/progress/domain/repositories/progress.repository";
 
@@ -25,9 +28,15 @@ interface Harness {
   useCase: RecordPageViewUseCase;
   learning: jest.Mocked<ILearningProgressRepository>;
   publish: jest.Mock;
+  checkAccess: jest.Mock;
 }
 
-function buildHarness(fact: LessonCompletionFact | undefined, existing?: PageViewSnapshot, chainStatus: "PUBLISHED" | "DRAFT" = "PUBLISHED"): Harness {
+function buildHarness(
+  fact: LessonCompletionFact | undefined,
+  existing?: PageViewSnapshot,
+  chainStatus: "PUBLISHED" | "DRAFT" = "PUBLISHED",
+  access: LessonAccessDecision = { allowed: true, missing: [] },
+): Harness {
   const learning: jest.Mocked<ILearningProgressRepository> = {
     getProgressSource: jest.fn(),
     getPageViewTarget: jest.fn().mockResolvedValue({ target: { pageId: "P3", moduleId: "M1", lessonId: "L1" }, chain: ["PUBLISHED", "PUBLISHED", "PUBLISHED", "PUBLISHED", chainStatus] }),
@@ -42,8 +51,14 @@ function buildHarness(fact: LessonCompletionFact | undefined, existing?: PageVie
   const transactionManager: ITransactionManager = { run: async <T>(work: (transaction: unknown) => Promise<T>): Promise<T> => await work("tx") };
   const publish: jest.Mock = jest.fn();
   const eventBus: IEventBus = { publish };
+  const checkAccess: jest.Mock = jest.fn().mockResolvedValue(access);
 
-  return { useCase: new RecordPageViewUseCase(learning, progress, transactionManager, eventBus), learning, publish };
+  return {
+    useCase: new RecordPageViewUseCase(learning, progress, transactionManager, eventBus, { execute: checkAccess } as unknown as CheckLessonAccessUseCase),
+    learning,
+    publish,
+    checkAccess,
+  };
 }
 
 function lessonFact(overrides: Partial<LessonCompletionFact>): LessonCompletionFact {
@@ -102,5 +117,26 @@ describe("RecordPageViewUseCase", () => {
 
     await expect(action).rejects.toBeInstanceOf(PageNotFoundError);
     expect(learning.savePageView).not.toHaveBeenCalled();
+  });
+
+  it("rejects a student view of a locked lesson with the missing lessons and records nothing", async () => {
+    const locked: LessonAccessDecision = { allowed: false, reason: "previous_lesson_incomplete", missing: [{ lessonId: "L0", title: "Intro" }] };
+    const { useCase, learning, checkAccess } = buildHarness(lessonFact({}), undefined, "PUBLISHED", locked);
+
+    const error: unknown = await useCase.execute(COMMAND).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(LessonLockedError);
+    expect((error as LessonLockedError).details.missing).toEqual([{ lessonId: "L0", title: "Intro" }]);
+    expect(checkAccess).toHaveBeenCalledWith("U1", "L1", false);
+    expect(learning.savePageView).not.toHaveBeenCalled();
+  });
+
+  it("does not check the lesson order for staff", async () => {
+    const locked: LessonAccessDecision = { allowed: false, reason: "module_locked", missing: [] };
+    const { useCase, checkAccess } = buildHarness(lessonFact({}), undefined, "PUBLISHED", locked);
+
+    await useCase.execute(new RecordPageViewCommand({ userId: "U1", pageId: "P3", canManage: true }));
+
+    expect(checkAccess).not.toHaveBeenCalled();
   });
 });

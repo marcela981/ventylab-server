@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo PagesModule
- * Descripción: Registra el controlador, los casos de uso de lectura y escritura de páginas y bloques, los repositorios Prisma y el saneador HTML; importa CurriculumModule, LessonsModule y ModulesModule y exporta las lecturas de páginas que reutilizan las features de progreso y del tutor de IA
- * Versión: 1.2
+ * Descripción: Registra el controlador, los casos de uso de lectura y escritura de páginas y bloques, los repositorios Prisma y el saneador HTML; importa CurriculumModule, LessonsModule y ModulesModule y exporta las lecturas de páginas que reutilizan las features de progreso y del tutor de IA. v1.3: importa ProgressModule (orden de lecciones en GET /api/pages/:id)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,9 +36,10 @@ import { PageQueriesPrismaRepository } from "@/features/pages/infrastructure/per
 import { PagesPrismaRepository } from "@/features/pages/infrastructure/persistence/prisma/repositories/pages-prisma.repository";
 import { SanitizeHtmlSanitizer } from "@/features/pages/infrastructure/security/sanitize-html.sanitizer";
 import { PagesController } from "@/features/pages/presentation/controllers/pages.controller";
+import { ProgressModule } from "@/features/progress/progress.module";
 
 @Module({
-  imports: [AuthModule, CurriculumModule, LessonsModule, ModulesModule],
+  imports: [AuthModule, CurriculumModule, LessonsModule, ModulesModule, ProgressModule],
   controllers: [PagesController],
   providers: [
     {

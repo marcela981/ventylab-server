@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso RecordPageViewUseCase
- * Descripción: Registra de forma idempotente la vista de una página visible para el usuario (upsert de PageProgress sin reiniciar completedAt); en la misma transacción completa la lección cuando todas sus páginas publicadas están vistas (LessonCompletion), sincroniza UserProgress y publica LessonCompletedEvent
- * Versión: 1.0
+ * Descripción: Registra de forma idempotente la vista de una página visible para el usuario (upsert de PageProgress sin reiniciar completedAt); en la misma transacción completa la lección cuando todas sus páginas publicadas están vistas (LessonCompletion), sincroniza UserProgress y publica LessonCompletedEvent. v1.1: un estudiante no registra vistas de una lección bloqueada (CheckLessonAccessUseCase, 403 LessonLockedError); staff sin restricción
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,8 +17,11 @@ import { type ContentStatusChain, isContentVisible } from "@/features/curriculum
 import { isLessonCompleted } from "@/features/curriculum/domain/services/lesson-completion-rules";
 import { PageNotFoundError } from "@/features/pages/domain/pages.errors";
 import { RecordPageViewCommand } from "@/features/progress/application/commands/record-page-view.command";
+import { CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
 import { LessonCompletedEvent } from "@/features/progress/domain/events/lesson-completed.event";
+import { LessonLockedError } from "@/features/progress/domain/progress.errors";
 import { type PageViewResult, type PageViewSnapshot, type PageViewTarget } from "@/features/progress/domain/read-models/learning-progress.read-model";
+import { type LessonAccessDecision } from "@/features/progress/domain/read-models/lesson-access.read-model";
 import { type ModuleCounters } from "@/features/progress/domain/read-models/progress-records.read-model";
 import { type ILearningProgressRepository, LEARNING_PROGRESS_REPOSITORY_TOKEN } from "@/features/progress/domain/repositories/learning-progress.repository";
 import { type IProgressRepository, PROGRESS_REPOSITORY_TOKEN } from "@/features/progress/domain/repositories/progress.repository";
@@ -31,6 +34,7 @@ interface PageViewOutcome {
 
 /**
  * @throws {PageNotFoundError} If the page does not exist or is not visible to the user
+ * @throws {LessonLockedError} If a student views a page of a lesson that is still locked for them
  */
 @Injectable()
 export class RecordPageViewUseCase {
@@ -43,6 +47,7 @@ export class RecordPageViewUseCase {
     private readonly _transactionManager: ITransactionManager,
     @Inject(EVENT_BUS_TOKEN)
     private readonly _eventBus: IEventBus,
+    private readonly _checkLessonAccessUseCase: CheckLessonAccessUseCase,
   ) {}
 
   public async execute(command: RecordPageViewCommand): Promise<PageViewResult> {
@@ -51,6 +56,8 @@ export class RecordPageViewUseCase {
     if (!found || !isContentVisible(command.canManage, found.chain)) {
       throw new PageNotFoundError();
     }
+
+    await this._assertLessonAccessible(command, found.target);
 
     const outcome: PageViewOutcome = await this._transactionManager.run(
       async (transaction: unknown): Promise<PageViewOutcome> => await this._record(command.userId, found.target, new Date(), transaction),
@@ -61,6 +68,18 @@ export class RecordPageViewUseCase {
     }
 
     return outcome.result;
+  }
+
+  private async _assertLessonAccessible(command: RecordPageViewCommand, target: PageViewTarget): Promise<void> {
+    if (command.canManage || !target.lessonId) {
+      return;
+    }
+
+    const decision: LessonAccessDecision | undefined = await this._checkLessonAccessUseCase.execute(command.userId, target.lessonId, false);
+
+    if (decision && !decision.allowed) {
+      throw new LessonLockedError(decision);
+    }
   }
 
   private async _record(userId: string, target: PageViewTarget, now: Date, transaction: unknown): Promise<PageViewOutcome> {

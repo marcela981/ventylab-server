@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba del progreso de aprendizaje
- * Descripción: Construye repositorios simulados con jest (progreso, consultas de progreso, progreso por páginas y logros), un gestor de transacciones que ejecuta el trabajo con una transacción ficticia, un bus de eventos que registra lo publicado y registros de lección de ejemplo, compartidos por las pruebas de los casos de uso del progreso
- * Versión: 1.0
+ * Descripción: Construye repositorios simulados con jest (progreso, consultas de progreso, progreso por páginas y logros), un gestor de transacciones que ejecuta el trabajo con una transacción ficticia, un bus de eventos que registra lo publicado y registros de lección de ejemplo, compartidos por las pruebas de los casos de uso del progreso. v1.1: getLessonSequence en el repositorio de consultas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -43,8 +43,7 @@ export function buildProgressQueriesRepository(): jest.Mocked<IProgressQueriesRe
     moduleExists: jest.fn().mockResolvedValue(true),
     getActiveLessonIds: jest.fn().mockResolvedValue([]),
     getActiveLessonsByModules: jest.fn().mockResolvedValue([]),
-    getLessonGate: jest.fn().mockResolvedValue(undefined),
-    getPreviousActiveLessonId: jest.fn().mockResolvedValue(undefined),
+    getLessonSequence: jest.fn().mockResolvedValue(undefined),
     countActiveSteps: jest.fn().mockResolvedValue(undefined),
     getOverviewModules: jest.fn().mockResolvedValue([]),
   };
