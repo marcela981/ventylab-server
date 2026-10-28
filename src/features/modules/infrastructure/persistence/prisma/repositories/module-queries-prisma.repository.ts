@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma ModuleQueriesPrismaRepository
- * Descripción: Implementa IModuleQueriesRepository sobre PrismaService y resolveClient para la feature de módulos; el conteo de quizzes por lección cuenta las evaluaciones QUIZ del alcance de quizzes (la tabla quizzes queda congelada)
- * Versión: 1.2
+ * Descripción: Implementa IModuleQueriesRepository sobre PrismaService y resolveClient para la feature de módulos; el conteo de quizzes por lección cuenta las evaluaciones QUIZ del alcance de quizzes (la tabla quizzes queda congelada). v1.3: pageCount de la lista de lecciones del módulo cuenta las páginas PUBLISHED de cada lección (antes se derivaba del JSON heredado Lesson.content y daba 0)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,8 +14,8 @@ import { type Module as ModuleModel, type Prisma } from "@prisma/client";
 import { Paginated } from "@/common/domain/utils/paginated";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { type ContentStatusChain } from "@/features/curriculum/domain/services/content-visibility";
+import { PUBLISHED_CONTENT_STATUS } from "@/features/curriculum/domain/value-objects/content-status";
 import { publishedModuleWhere } from "@/features/curriculum/infrastructure/persistence/prisma/published-content-filters";
-import { calculatePageCount } from "@/features/lessons/domain/services/lesson-content";
 import { getColorForDifficulty } from "@/features/levels/domain/services/difficulty-colors";
 import {
   type ModuleDetail,
@@ -50,7 +50,7 @@ type ModuleDetailRow = Prisma.ModuleGetPayload<{
   };
 }>;
 
-type ModuleLessonRow = Prisma.LessonGetPayload<{ include: { _count: { select: { evaluations: true } } } }>;
+type ModuleLessonRow = Prisma.LessonGetPayload<{ include: { _count: { select: { evaluations: true; pages: true } } } }>;
 
 const FULL_BLOCK_SELECT: {
   id: true;
@@ -202,7 +202,7 @@ export class ModuleQueriesPrismaRepository implements IModuleQueriesRepository {
     const rows: ModuleLessonRow[] = await this._prisma.lesson.findMany({
       where: canManage ? { moduleId } : { moduleId, status: "PUBLISHED" },
       orderBy: { order: "asc" },
-      include: { _count: { select: { evaluations: { where: QUIZ_EVALUATION_SCOPE } } } },
+      include: { _count: { select: { evaluations: { where: QUIZ_EVALUATION_SCOPE }, pages: { where: { status: PUBLISHED_CONTENT_STATUS } } } } },
     });
 
     return rows.map(
@@ -223,7 +223,8 @@ export class ModuleQueriesPrismaRepository implements IModuleQueriesRepository {
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
         quizCount: lesson._count.evaluations,
-        pageCount: calculatePageCount(lesson.content),
+        // Published pages only, the same rule the viewer and lessonCount use; 0 means the viewer skips the lesson.
+        pageCount: lesson._count.pages,
       }),
     );
   }
