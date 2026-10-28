@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura del progreso por páginas
- * Descripción: Define el alcance (módulo, nivel, sección o todo), la estructura publicada, el progreso ponderado por lecciones de lecciones, módulos, niveles y secciones, el resumen del usuario y los datos de registro de vistas de página
- * Versión: 1.1
+ * Descripción: Define el alcance (módulo, nivel, sección o todo), la estructura publicada, el progreso ponderado por lecciones de lecciones, módulos, niveles y secciones, el resumen del usuario y los datos de registro de vistas de página. v1.2: SavedPageView (vista guardada e indicador de fila creada) y moduleCompleted en PageViewResult
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -100,6 +100,12 @@ export interface PageViewSnapshot {
   readonly lastVisitedAt?: Date;
 }
 
+export interface SavedPageView {
+  readonly view: PageViewSnapshot;
+  // True when this call inserted the PageProgress row (the first view of the page by the user).
+  readonly created: boolean;
+}
+
 export interface PageViewWrite {
   readonly lastVisitedAt: Date;
   readonly completedAt?: Date;
@@ -112,6 +118,7 @@ export interface PageViewResult {
   readonly lastVisitedAt: Date;
   readonly lessonCompleted: boolean;
   readonly lessonJustCompleted: boolean;
+  readonly moduleCompleted: boolean;
   readonly viewedPages: number;
   readonly totalPages: number;
 }

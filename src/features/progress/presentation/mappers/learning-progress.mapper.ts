@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de progreso por páginas
- * Descripción: Convierte los modelos de lectura del progreso ponderado por lecciones y el resultado de una vista de página en sus DTOs de respuesta
- * Versión: 1.0
+ * Descripción: Convierte los modelos de lectura del progreso ponderado por lecciones y el resultado de una vista de página en sus DTOs de respuesta. v1.1: moduleCompleted en el resultado de la vista
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,6 +37,7 @@ export class LearningProgressMapper {
       lastVisitedAt: result.lastVisitedAt,
       lessonCompleted: result.lessonCompleted,
       lessonJustCompleted: result.lessonJustCompleted,
+      moduleCompleted: result.moduleCompleted,
       viewedPages: result.viewedPages,
       totalPages: result.totalPages,
     });

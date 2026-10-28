@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de RecordPageViewUseCase
- * Descripción: Verifica que la vista de la última página completa la lección una sola vez (LessonCompletion y LessonCompletedEvent), que repetir la vista es idempotente, que no se degrada una completitud previa y que el contenido no visible responde 404. v1.1: un estudiante en una lección bloqueada recibe LessonLockedError sin registrar nada y staff no se valida
- * Versión: 1.1
+ * Descripción: Verifica que la vista de la última página completa la lección una sola vez (LessonCompletion y LessonCompletedEvent, también cuando una vista concurrente gana la escritura condicional), que se publica PageViewedEvent con firstView y que la respuesta trae moduleCompleted, que repetir la vista es idempotente, que no se degrada una completitud previa y que el contenido no visible responde 404. v1.1: un estudiante en una lección bloqueada recibe LessonLockedError sin registrar nada y staff no se valida. v1.2: moduleCompleted, PageViewedEvent y la carrera de completitud
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import { RecordPageViewCommand } from "@/features/progress/application/commands/
 import { type CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
 import { RecordPageViewUseCase } from "@/features/progress/application/use-cases/record-page-view.usecase";
 import { LessonCompletedEvent } from "@/features/progress/domain/events/lesson-completed.event";
+import { PageViewedEvent } from "@/features/progress/domain/events/page-viewed.event";
 import { LessonLockedError } from "@/features/progress/domain/progress.errors";
 import { type PageViewResult, type PageViewSnapshot } from "@/features/progress/domain/read-models/learning-progress.read-model";
 import { type LessonAccessDecision } from "@/features/progress/domain/read-models/lesson-access.read-model";
@@ -41,9 +42,12 @@ function buildHarness(
     getProgressSource: jest.fn(),
     getPageViewTarget: jest.fn().mockResolvedValue({ target: { pageId: "P3", moduleId: "M1", lessonId: "L1" }, chain: ["PUBLISHED", "PUBLISHED", "PUBLISHED", "PUBLISHED", chainStatus] }),
     getPageView: jest.fn().mockResolvedValue(existing),
-    savePageView: jest.fn().mockResolvedValue({ pageId: "P3", completed: true, firstViewedAt: existing?.firstViewedAt ?? FIRST_VIEW, lastVisitedAt: FIRST_VIEW }),
+    savePageView: jest.fn().mockResolvedValue({
+      created: existing === undefined,
+      view: { pageId: "P3", completed: true, firstViewedAt: existing?.firstViewedAt ?? FIRST_VIEW, lastVisitedAt: FIRST_VIEW },
+    }),
     getLessonFacts: jest.fn().mockResolvedValue(fact ? [fact] : []),
-    markLessonCompleted: jest.fn().mockResolvedValue(undefined),
+    markLessonCompleted: jest.fn().mockResolvedValue(true),
   };
   const progress: IProgressRepository = {
     refreshModuleCounters: jest.fn().mockResolvedValue({ status: "COMPLETED", isModuleCompleted: true, completedLessonsCount: 1, totalLessons: 1, progressPercentage: 100 }),
@@ -74,9 +78,9 @@ describe("RecordPageViewUseCase", () => {
     const result: PageViewResult = await useCase.execute(COMMAND);
 
     expect(learning.markLessonCompleted).toHaveBeenCalledWith("U1", "L1", expect.any(Date), "tx");
-    expect(result).toMatchObject({ lessonCompleted: true, lessonJustCompleted: true, viewedPages: 3, totalPages: 3 });
-    expect(publish).toHaveBeenCalledWith([expect.any(LessonCompletedEvent)]);
-    expect((publish.mock.calls[0] as [LessonCompletedEvent[]])[0][0]).toMatchObject({ userId: "U1", lessonId: "L1", moduleId: "M1", moduleCompleted: true });
+    expect(result).toMatchObject({ lessonCompleted: true, lessonJustCompleted: true, moduleCompleted: true, viewedPages: 3, totalPages: 3 });
+    expect(publish).toHaveBeenCalledWith([expect.any(PageViewedEvent), expect.any(LessonCompletedEvent)]);
+    expect((publish.mock.calls[0] as [LessonCompletedEvent[]])[0][1]).toMatchObject({ userId: "U1", lessonId: "L1", moduleId: "M1", moduleCompleted: true });
   });
 
   it("is idempotent when the page is viewed again", async () => {
@@ -87,7 +91,8 @@ describe("RecordPageViewUseCase", () => {
 
     expect(learning.savePageView).toHaveBeenCalledWith("U1", "P3", { lastVisitedAt: expect.any(Date) }, "tx");
     expect(learning.markLessonCompleted).not.toHaveBeenCalled();
-    expect(publish).not.toHaveBeenCalled();
+    expect(publish).toHaveBeenCalledWith([expect.any(PageViewedEvent)]);
+    expect((publish.mock.calls[0] as [PageViewedEvent[]])[0][0]).toMatchObject({ userId: "U1", pageId: "P3", lessonId: "L1", moduleId: "M1", firstView: false });
     expect(result).toMatchObject({ firstViewedAt: FIRST_VIEW, lessonCompleted: true, lessonJustCompleted: false });
   });
 
@@ -106,7 +111,7 @@ describe("RecordPageViewUseCase", () => {
     const result: PageViewResult = await useCase.execute(COMMAND);
 
     expect(learning.markLessonCompleted).not.toHaveBeenCalled();
-    expect(publish).not.toHaveBeenCalled();
+    expect(publish).toHaveBeenCalledWith([expect.any(PageViewedEvent)]);
     expect(result.lessonCompleted).toBe(false);
   });
 
@@ -138,5 +143,27 @@ describe("RecordPageViewUseCase", () => {
     await useCase.execute(new RecordPageViewCommand({ userId: "U1", pageId: "P3", canManage: true }));
 
     expect(checkAccess).not.toHaveBeenCalled();
+  });
+
+  it("publishes a first-view PageViewedEvent after commit", async () => {
+    const { useCase, publish } = buildHarness(lessonFact({ viewedPageCount: 1 }));
+
+    await useCase.execute(COMMAND);
+
+    const [event]: PageViewedEvent[] = (publish.mock.calls[0] as [PageViewedEvent[]])[0];
+
+    expect(event).toBeInstanceOf(PageViewedEvent);
+    expect(event).toMatchObject({ userId: "U1", pageId: "P3", lessonId: "L1", moduleId: "M1", firstView: true, occurredAt: expect.any(Date) });
+  });
+
+  it("emits no LessonCompletedEvent when a concurrent view already completed the lesson", async () => {
+    const { useCase, learning, publish } = buildHarness(lessonFact({}));
+
+    learning.markLessonCompleted.mockResolvedValueOnce(false);
+
+    const result: PageViewResult = await useCase.execute(COMMAND);
+
+    expect(result).toMatchObject({ lessonCompleted: true, lessonJustCompleted: false });
+    expect(publish).toHaveBeenCalledWith([expect.any(PageViewedEvent)]);
   });
 });

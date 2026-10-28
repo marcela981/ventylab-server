@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso RecordPageViewUseCase
- * Descripción: Registra de forma idempotente la vista de una página visible para el usuario (upsert de PageProgress sin reiniciar completedAt); en la misma transacción completa la lección cuando todas sus páginas publicadas están vistas (LessonCompletion), sincroniza UserProgress y publica LessonCompletedEvent. v1.1: un estudiante no registra vistas de una lección bloqueada (CheckLessonAccessUseCase, 403 LessonLockedError); staff sin restricción
- * Versión: 1.1
+ * Descripción: Registra de forma idempotente la vista de una página visible para el usuario (upsert de PageProgress sin reiniciar completedAt); en la misma transacción completa la lección cuando todas sus páginas publicadas están vistas (LessonCompletion), sincroniza UserProgress y publica LessonCompletedEvent. v1.1: un estudiante no registra vistas de una lección bloqueada (CheckLessonAccessUseCase, 403 LessonLockedError); staff sin restricción. v1.2: la respuesta incluye moduleCompleted; la completitud se decide con la escritura condicional de LessonCompletion (un solo LessonCompletedEvent ante primeras vistas concurrentes) y tras confirmar se publica PageViewedEvent (firstView = la fila de PageProgress se creó con esta vista)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { EVENT_BUS_TOKEN, type IEventBus } from "@/common/application/events/event-bus.interface";
 import { type ITransactionManager, TRANSACTION_MANAGER_TOKEN } from "@/common/application/persistence/transaction-manager.interface";
+import { type DomainEvent } from "@/common/domain/events/domain-event";
 import { type LessonCompletionFact } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
 import { type ContentStatusChain, isContentVisible } from "@/features/curriculum/domain/services/content-visibility";
 import { isLessonCompleted } from "@/features/curriculum/domain/services/lesson-completion-rules";
@@ -19,8 +20,9 @@ import { PageNotFoundError } from "@/features/pages/domain/pages.errors";
 import { RecordPageViewCommand } from "@/features/progress/application/commands/record-page-view.command";
 import { CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
 import { LessonCompletedEvent } from "@/features/progress/domain/events/lesson-completed.event";
+import { PageViewedEvent } from "@/features/progress/domain/events/page-viewed.event";
 import { LessonLockedError } from "@/features/progress/domain/progress.errors";
-import { type PageViewResult, type PageViewSnapshot, type PageViewTarget } from "@/features/progress/domain/read-models/learning-progress.read-model";
+import { type PageViewResult, type PageViewSnapshot, type PageViewTarget, type SavedPageView } from "@/features/progress/domain/read-models/learning-progress.read-model";
 import { type LessonAccessDecision } from "@/features/progress/domain/read-models/lesson-access.read-model";
 import { type ModuleCounters } from "@/features/progress/domain/read-models/progress-records.read-model";
 import { type ILearningProgressRepository, LEARNING_PROGRESS_REPOSITORY_TOKEN } from "@/features/progress/domain/repositories/learning-progress.repository";
@@ -29,7 +31,7 @@ import { decidePageView, shouldRecordLessonCompletion } from "@/features/progres
 
 interface PageViewOutcome {
   readonly result: PageViewResult;
-  readonly event?: LessonCompletedEvent;
+  readonly events: DomainEvent[];
 }
 
 /**
@@ -63,9 +65,7 @@ export class RecordPageViewUseCase {
       async (transaction: unknown): Promise<PageViewOutcome> => await this._record(command.userId, found.target, new Date(), transaction),
     );
 
-    if (outcome.event) {
-      this._eventBus.publish([outcome.event]);
-    }
+    this._eventBus.publish(outcome.events);
 
     return outcome.result;
   }
@@ -84,7 +84,15 @@ export class RecordPageViewUseCase {
 
   private async _record(userId: string, target: PageViewTarget, now: Date, transaction: unknown): Promise<PageViewOutcome> {
     const existing: PageViewSnapshot | undefined = await this._learningProgressRepository.getPageView(userId, target.pageId, transaction);
-    const view: PageViewSnapshot = await this._learningProgressRepository.savePageView(userId, target.pageId, decidePageView(existing, now), transaction);
+    const saved: SavedPageView = await this._learningProgressRepository.savePageView(userId, target.pageId, decidePageView(existing, now), transaction);
+    const view: PageViewSnapshot = saved.view;
+    const pageViewed: PageViewedEvent = new PageViewedEvent({
+      userId,
+      pageId: target.pageId,
+      lessonId: target.lessonId ?? null,
+      moduleId: target.moduleId,
+      firstView: saved.created,
+    });
     const baseResult: PageViewResult = {
       pageId: target.pageId,
       lessonId: target.lessonId,
@@ -92,41 +100,42 @@ export class RecordPageViewUseCase {
       lastVisitedAt: view.lastVisitedAt ?? now,
       lessonCompleted: false,
       lessonJustCompleted: false,
+      moduleCompleted: false,
       viewedPages: 0,
       totalPages: 0,
     };
 
     if (!target.lessonId) {
-      return { result: baseResult };
+      return { result: baseResult, events: [pageViewed] };
     }
 
     const [fact]: LessonCompletionFact[] = await this._learningProgressRepository.getLessonFacts(userId, [target.lessonId], transaction);
 
     if (!fact) {
-      return { result: baseResult };
+      return { result: baseResult, events: [pageViewed] };
     }
 
-    const lessonJustCompleted: boolean = shouldRecordLessonCompletion(fact);
-
-    if (lessonJustCompleted) {
-      await this._learningProgressRepository.markLessonCompleted(userId, fact.lessonId, now, transaction);
-    }
+    // The conditional write decides: a concurrent view that also saw every page gets false and emits no LessonCompletedEvent.
+    const lessonJustCompleted: boolean =
+      shouldRecordLessonCompletion(fact) && (await this._learningProgressRepository.markLessonCompleted(userId, fact.lessonId, now, transaction));
 
     const counters: ModuleCounters | undefined = await this._progressRepository.refreshModuleCounters(
       { userId, moduleId: fact.moduleId, lastAccessedLessonId: fact.lessonId },
       transaction,
     );
 
+    const moduleCompleted: boolean = counters?.isModuleCompleted === true;
     const result: PageViewResult = {
       ...baseResult,
       lessonCompleted: isLessonCompleted(fact),
       lessonJustCompleted,
+      moduleCompleted,
       viewedPages: Math.min(fact.viewedPageCount, fact.publishedPageCount),
       totalPages: fact.publishedPageCount,
     };
 
     return lessonJustCompleted
-      ? { result, event: new LessonCompletedEvent({ userId, lessonId: fact.lessonId, moduleId: fact.moduleId, moduleCompleted: counters?.isModuleCompleted === true }) }
-      : { result };
+      ? { result, events: [pageViewed, new LessonCompletedEvent({ userId, lessonId: fact.lessonId, moduleId: fact.moduleId, moduleCompleted })] }
+      : { result, events: [pageViewed] };
   }
 }
