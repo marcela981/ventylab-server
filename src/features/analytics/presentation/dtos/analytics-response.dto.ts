@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de analítica
- * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (nota aprobatoria y umbrales de riesgo vigentes, progreso agregado por módulo y fila por estudiante con progreso, notas, simulación, uso de IA, horas de ventilador, última actividad y riesgo), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación (opcionalmente de un grupo) con dificultad por pregunta del resumen del propio estudiante y de cada columna del diccionario de datos de la exportación de investigación; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO)
- * Versión: 1.5
+ * Descripción: Contratos HTTP documentados con Swagger del panel de un grupo (nota aprobatoria y umbrales de riesgo vigentes, progreso agregado por módulo y fila por estudiante con progreso, notas, simulación, uso de IA, horas de ventilador, última actividad y riesgo), de la línea de tiempo de un estudiante, de las estadísticas de una evaluación (opcionalmente de un grupo) con dificultad por pregunta del resumen del propio estudiante y de cada columna del diccionario de datos de la exportación de investigación; fechas en ISO 8601 y valores ausentes como null; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (MyEvaluationDTO como AnalyticsEvaluationDTO, StudentProgressDTO como AnalyticsStudentProgressDTO). v1.6: MySummaryDTO.continueLearning (MyContinueLearningDTO o null)
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -491,6 +491,23 @@ export class MyReservationDTO {
   public purpose: string | null;
 }
 
+export class MyContinueLearningDTO {
+  @ApiProperty({ description: "Module of the lesson to continue", example: "cm1module00001" })
+  public moduleId: string;
+
+  @ApiProperty({ description: "Module title", example: "Inversión fisiológica" })
+  public moduleTitle: string;
+
+  @ApiProperty({ description: "Most recently accessed published lesson across all modules", example: "cm1lesson00001" })
+  public lessonId: string;
+
+  @ApiProperty({ description: "Lesson title", example: "Ecuación del movimiento" })
+  public lessonTitle: string;
+
+  @ApiProperty({ description: "Lesson-weighted completion percentage of the module (0-100)", example: 40 })
+  public percent: number;
+}
+
 export class MySummaryDTO {
   @ApiProperty({ description: "Learning progress", type: MyProgressDTO })
   public progress: MyProgressDTO;
@@ -518,6 +535,13 @@ export class MySummaryDTO {
 
   @ApiProperty({ description: "Unread notifications", example: 3 })
   public unreadNotifications: number;
+
+  @ApiProperty({
+    description: "Where to resume studying: the most recently accessed lesson (UserProgress.lastAccessedAt) whose lesson and module are still published; null when there is none",
+    type: MyContinueLearningDTO,
+    nullable: true,
+  })
+  public continueLearning: MyContinueLearningDTO | null;
 }
 
 export class ResearchExportColumnDTO {

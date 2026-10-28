@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de dominio de las valoraciones de IA
- * Descripción: Errores de la feature ai-ratings: escala Likert fuera de rango, comentario demasiado largo, objetivo inexistente, usuario que no es el destinatario de la salida, aiCallId incoherente con el objetivo y rango de fechas inválido para estadísticas y exportación
- * Versión: 1.0
+ * Descripción: Errores de la feature ai-ratings: escala Likert fuera de rango, comentario demasiado largo, objetivo inexistente, usuario que no es el destinatario de la salida, aiCallId incoherente con el objetivo y rango de fechas inválido para estadísticas y exportación; alcance enviado distinto del alcance de la respuesta valorada
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -43,5 +43,11 @@ export class AiRatingCallMismatchError extends DomainError {
 export class InvalidAiRatingsRangeError extends DomainError {
   public constructor() {
     super("The date range must start before it ends and span at most 366 days", "ai-ratings.invalid_range");
+  }
+}
+
+export class AiRatingScopeMismatchError extends DomainError {
+  public constructor() {
+    super("The scope does not match the content scope of the rated output", "ai-ratings.scope_mismatch");
   }
 }

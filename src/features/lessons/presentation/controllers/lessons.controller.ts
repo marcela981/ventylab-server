@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador LessonsController
- * Descripción: Expone las rutas HTTP api/lessons de la feature de lecciones, aplica guardias y permisos y responde con APIResponseBuilder; depende de CompleteLessonUseCase, CreateLessonUseCase, DeleteLessonUseCase, GetAdjacentLessonUseCase, GetLessonByIdUseCase, GetLessonStepsUseCase y otros; las respuestas cuyo data puede ser null se documentan con ApiNullableResponse
- * Versión: 1.2
+ * Descripción: Expone las rutas HTTP api/lessons de la feature de lecciones, aplica guardias y permisos y responde con APIResponseBuilder; depende de CompleteLessonUseCase, CreateLessonUseCase, DeleteLessonUseCase, GetAdjacentLessonUseCase, GetLessonByIdUseCase, GetLessonStepsUseCase y otros; las respuestas cuyo data puede ser null se documentan con ApiNullableResponse. v1.3: GET :id/access (orden obligatorio de lecciones con motivo y lecciones faltantes; bypass de staff)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,12 +31,14 @@ import { CompleteLessonUseCase } from "@/features/lessons/application/use-cases/
 import { CreateLessonUseCase } from "@/features/lessons/application/use-cases/create-lesson.usecase";
 import { DeleteLessonUseCase } from "@/features/lessons/application/use-cases/delete-lesson.usecase";
 import { GetAdjacentLessonUseCase } from "@/features/lessons/application/use-cases/get-adjacent-lesson.usecase";
+import { GetLessonAccessUseCase } from "@/features/lessons/application/use-cases/get-lesson-access.usecase";
 import { GetLessonByIdUseCase } from "@/features/lessons/application/use-cases/get-lesson-by-id.usecase";
 import { GetLessonStepsUseCase } from "@/features/lessons/application/use-cases/get-lesson-steps.usecase";
 import { RecordLessonAccessUseCase } from "@/features/lessons/application/use-cases/record-lesson-access.usecase";
 import { ReorderLessonsUseCase } from "@/features/lessons/application/use-cases/reorder-lessons.usecase";
 import { UpdateLessonUseCase } from "@/features/lessons/application/use-cases/update-lesson.usecase";
 import { type LessonDetail, type LessonNeighbor, type LessonStepItem } from "@/features/lessons/domain/read-models/lesson-views.read-model";
+import { LessonAccessDTO } from "@/features/lessons/presentation/dtos/lesson-access.dto";
 import {
   CompleteLessonDTO,
   CreateLessonDTO,
@@ -46,6 +48,7 @@ import {
 } from "@/features/lessons/presentation/dtos/lesson-request.dto";
 import { LessonDetailDTO, LessonNeighborDTO, LessonStepDTO } from "@/features/lessons/presentation/dtos/lesson.dto";
 import { LessonsMapper } from "@/features/lessons/presentation/mappers/lessons.mapper";
+import { type LessonAccessDecision } from "@/features/progress/domain/read-models/lesson-access.read-model";
 
 const LESSONS_MANAGE_PERMISSION: string = "lessons:update";
 
@@ -58,6 +61,7 @@ export class LessonsController {
     private readonly _getLessonStepsUseCase: GetLessonStepsUseCase,
     private readonly _completeLessonUseCase: CompleteLessonUseCase,
     private readonly _recordLessonAccessUseCase: RecordLessonAccessUseCase,
+    private readonly _getLessonAccessUseCase: GetLessonAccessUseCase,
     private readonly _createLessonUseCase: CreateLessonUseCase,
     private readonly _updateLessonUseCase: UpdateLessonUseCase,
     private readonly _deleteLessonUseCase: DeleteLessonUseCase,
@@ -243,6 +247,28 @@ export class LessonsController {
 
     return new APIResponseBuilder<null>()
       .setMessage(await i18n.t("lessons.access_recorded"))
+      .build();
+  }
+
+  @Get(":id/access")
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions("progress:read_own")
+  @ApiBearerAuth("JWT-auth")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Check lesson access",
+    description:
+      "Tells whether the current user can open the lesson: its module must be unlocked and every previous published lesson with published pages must be completed (lessons without published pages never block). Content managers are always allowed",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Lesson access retrieved successfully", type: LessonAccessDTO })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Lesson not found" })
+  public async getLessonAccess(@Param("id") id: string, @CurrentUser() currentUser: JwtPayload, @I18n() i18n: I18nContext): Promise<APIResponse<LessonAccessDTO>> {
+    const decision: LessonAccessDecision = await this._getLessonAccessUseCase.execute(currentUser.sub, id, canManageContent(currentUser.permissions, LESSONS_MANAGE_PERMISSION));
+
+    return new APIResponseBuilder<LessonAccessDTO>()
+      .setData(LessonsMapper.toLessonAccessDTO(decision))
+      .setMessage(await i18n.t("lessons.access_retrieved"))
       .build();
   }
 

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registro de plantillas de prompt de IA
- * Descripción: Define una plantilla versionada (semver) por caso de uso de IA con su entrada tipada; GRADE_FEEDBACK y NOTES_ANALYSIS reciben el prompt ya construido por el consumidor y solo le anteponen el prompt de sistema común, el resto delimita el contenido externo; SIM_ASSIST guía al estudiante (qué va bien, qué revisar y por qué) sin dictar valores y, sin pregunta, analiza el estado actual
- * Versión: 1.1
+ * Descripción: Define una plantilla versionada (semver) por caso de uso de IA con su entrada tipada (LESSON_QA y MODULE_QA comparten la plantilla de preguntas sobre contenido); GRADE_FEEDBACK y NOTES_ANALYSIS reciben el prompt ya construido por el consumidor y solo le anteponen el prompt de sistema común, el resto delimita el contenido externo; SIM_ASSIST guía al estudiante (qué va bien, qué revisar y por qué) sin dictar valores y, sin pregunta, analiza el estado actual
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -65,6 +65,7 @@ export interface AiPromptInputs {
   NOTES_ANALYSIS: ConsumerPromptInput;
   PAGE_DEEPEN: PageDeepenPromptInput;
   LESSON_QA: ConversationPromptInput;
+  MODULE_QA: ConversationPromptInput;
   FREE_CHAT: ConversationPromptInput;
   TOPIC_CHECK: TopicCheckPromptInput;
   SIM_ASSIST: SimAssistPromptInput;
@@ -74,6 +75,23 @@ export type AiPromptTemplates = { [K in AiUseCaseValue]: PromptTemplate<AiPrompt
 
 function conversationMessages(input: ConversationPromptInput): AiMessage[] {
   return [...input.history, { role: "user", content: input.question }];
+}
+
+// LESSON_QA and MODULE_QA share the template; separate use cases let telemetry and ratings tell lesson and module questions apart.
+function contentQuestionPrompt(input: ConversationPromptInput): BuiltPrompt {
+  return {
+    system: withCommonSystemPrompt(
+      [
+        "Responde preguntas del estudiante sobre la lección o el módulo indicado usando el contenido de referencia.",
+        "Si la respuesta no está en el contenido de referencia, dilo y responde con conocimiento general de ventilación mecánica.",
+        delimit("titulo_contenido", input.contextTitle ?? "", 300),
+        delimit("contenido", input.context ?? ""),
+      ].join("\n"),
+      input.language,
+    ),
+    messages: conversationMessages(input),
+    responseFormat: "text",
+  };
 }
 
 export const AI_PROMPT_TEMPLATES: AiPromptTemplates = {
@@ -122,19 +140,12 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplates = {
   LESSON_QA: {
     id: "LESSON_QA",
     version: "1.0.0",
-    build: (input: ConversationPromptInput): BuiltPrompt => ({
-      system: withCommonSystemPrompt(
-        [
-          "Responde preguntas del estudiante sobre la lección o el módulo indicado usando el contenido de referencia.",
-          "Si la respuesta no está en el contenido de referencia, dilo y responde con conocimiento general de ventilación mecánica.",
-          delimit("titulo_contenido", input.contextTitle ?? "", 300),
-          delimit("contenido", input.context ?? ""),
-        ].join("\n"),
-        input.language,
-      ),
-      messages: conversationMessages(input),
-      responseFormat: "text",
-    }),
+    build: contentQuestionPrompt,
+  },
+  MODULE_QA: {
+    id: "MODULE_QA",
+    version: "1.0.0",
+    build: contentQuestionPrompt,
   },
   FREE_CHAT: {
     id: "FREE_CHAT",

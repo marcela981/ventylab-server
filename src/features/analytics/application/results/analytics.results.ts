@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados de analítica
- * Descripción: Tipos de salida de los casos de uso de analítica: panel de un grupo con una fila por estudiante (progreso por sección, nivel y módulo, notas por evaluación y promedio, sesiones de simulación, uso de IA por caso de uso con porcentaje de útiles, horas de ventilador y última actividad), línea de tiempo de un estudiante, estadísticas de una evaluación con dificultad por pregunta, resumen del propio estudiante y filas anonimizadas del conjunto de datos de investigación; el panel incluye la nota aprobatoria y los umbrales de riesgo vigentes, el riesgo de cada fila (motivos y evaluaciones reprobadas) y el progreso agregado por módulo, y las estadísticas pueden acotarse a un grupo
- * Versión: 1.3
+ * Descripción: Tipos de salida de los casos de uso de analítica: panel de un grupo con una fila por estudiante (progreso por sección, nivel y módulo, notas por evaluación y promedio, sesiones de simulación, uso de IA por caso de uso con porcentaje de útiles, horas de ventilador y última actividad), línea de tiempo de un estudiante, estadísticas de una evaluación con dificultad por pregunta, resumen del propio estudiante y filas anonimizadas del conjunto de datos de investigación; el panel incluye la nota aprobatoria y los umbrales de riesgo vigentes, el riesgo de cada fila (motivos y evaluaciones reprobadas) y el progreso agregado por módulo, y las estadísticas pueden acotarse a un grupo. v1.4: continueLearning en el resumen del propio estudiante
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { type EvaluationGradeStats, type EvaluationUserGrade } from "@/features/
 import { type EvaluationQuestionStats } from "@/features/evaluation/domain/services/evaluation-analytics";
 import { type EvaluationTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-type";
 import { type NoteSummary } from "@/features/notes/application/services/notes.facade";
+import { type ContinueLearningTarget } from "@/features/progress/domain/read-models/learning-progress.read-model";
 import { type UpcomingReservationSummary } from "@/features/reservations/application/services/reservations.facade";
 import { type SimulationSessionView } from "@/features/simulation/domain/read-models/simulation-session.read-model";
 
@@ -125,6 +126,7 @@ export interface MySummary {
   readonly latestSimulationSessions: SimulationSessionView[];
   readonly upcomingReservations: UpcomingReservationSummary[];
   readonly unreadNotifications: number;
+  readonly continueLearning: ContinueLearningTarget | null;
 }
 
 export type ResearchDomainValue = "progress" | "grades" | "simulation" | "ai_ratings" | "ai_telemetry";

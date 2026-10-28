@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de progresión de enseñanza
- * Descripción: Expone las rutas autenticadas de progresión bajo /api/teaching (módulos desbloqueados y verificación de acceso a módulo y lección) y delega en los casos de uso de progreso
- * Versión: 1.2
+ * Descripción: Expone las rutas autenticadas de progresión bajo /api/teaching (módulos desbloqueados y verificación de acceso a módulo y lección) y delega en los casos de uso de progreso. v1.3: GET lessons/:lessonId/access queda deprecada en favor de GET /api/lessons/:id/access (aplica el bypass de staff). v1.4: fecha de deprecación del Bloque 2
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,18 +13,24 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { DeprecatedRoute } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
+import { BLOCK2_ROUTES_DEPRECATED_AT } from "@/common/presentation/utils/deprecation.util";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
 import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard";
 import { PermissionsGuard } from "@/features/auth/presentation/guards/permissions.guard";
+import { canManageContent } from "@/features/curriculum/domain/services/content-visibility";
 import { CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
 import { CheckModuleAccessUseCase } from "@/features/progress/application/use-cases/check-module-access.usecase";
 import { GetUnlockedModulesUseCase } from "@/features/progress/application/use-cases/get-unlocked-modules.usecase";
+import { type LessonAccessDecision } from "@/features/progress/domain/read-models/lesson-access.read-model";
 import { type UnlockedModules } from "@/features/progress/domain/read-models/progress-views.read-model";
 import { LessonAccessDTO, ModuleAccessDTO, UnlockedModulesDTO } from "@/features/progress/presentation/dtos/progress.dto";
 import { ProgressMapper } from "@/features/progress/presentation/mappers/progress.mapper";
+
+const LESSONS_MANAGE_PERMISSION: string = "lessons:update";
 
 @ApiTags("Teaching progression")
 @ApiBearerAuth("JWT-auth")
@@ -74,6 +80,7 @@ export class TeachingProgressController {
   }
 
   @Get("lessons/:lessonId/access")
+  @DeprecatedRoute({ successor: "/api/lessons/:id/access", successorParams: { id: "lessonId" }, since: BLOCK2_ROUTES_DEPRECATED_AT })
   @RequirePermissions("progress:read_own")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Check lesson access", description: "Tells whether the current user can open the lesson in sequence" })
@@ -85,10 +92,14 @@ export class TeachingProgressController {
     @CurrentUser() currentUser: JwtPayload,
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<LessonAccessDTO>> {
-    const hasAccess: boolean = await this._checkLessonAccessUseCase.execute(currentUser.sub, lessonId);
+    const decision: LessonAccessDecision | undefined = await this._checkLessonAccessUseCase.execute(
+      currentUser.sub,
+      lessonId,
+      canManageContent(currentUser.permissions, LESSONS_MANAGE_PERMISSION),
+    );
 
     return new APIResponseBuilder<LessonAccessDTO>()
-      .setData(ProgressMapper.toLessonAccessDTO(lessonId, hasAccess))
+      .setData(ProgressMapper.toLessonAccessDTO(lessonId, decision?.allowed === true))
       .setMessage(await i18n.t("progress.access_retrieved"))
       .build();
   }

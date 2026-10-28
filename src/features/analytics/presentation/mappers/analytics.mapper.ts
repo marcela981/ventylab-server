@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador AnalyticsMapper
- * Descripción: Convierte los resultados de analítica (panel de grupo con nota aprobatoria, umbrales de riesgo, resumen por módulo, última actividad y riesgo por fila, línea de tiempo, estadísticas de evaluación resumen del estudiante y columnas del diccionario de datos de investigación) en sus DTOs de respuesta, con fechas ISO 8601, valores ausentes como null y el porcentaje de valoraciones útiles por caso de uso
- * Versión: 1.4
+ * Descripción: Convierte los resultados de analítica (panel de grupo con nota aprobatoria, umbrales de riesgo, resumen por módulo, última actividad y riesgo por fila, línea de tiempo, estadísticas de evaluación resumen del estudiante y columnas del diccionario de datos de investigación) en sus DTOs de respuesta, con fechas ISO 8601, valores ausentes como null y el porcentaje de valoraciones útiles por caso de uso. v1.5: continueLearning del resumen del estudiante
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -229,6 +229,15 @@ export class AnalyticsMapper {
         purpose: reservation.purpose ?? null,
       })),
       unreadNotifications: summary.unreadNotifications,
+      continueLearning: summary.continueLearning
+        ? {
+          moduleId: summary.continueLearning.moduleId,
+          moduleTitle: summary.continueLearning.moduleTitle,
+          lessonId: summary.continueLearning.lessonId,
+          lessonTitle: summary.continueLearning.lessonTitle,
+          percent: summary.continueLearning.percent,
+        }
+        : null,
     };
   }
 }

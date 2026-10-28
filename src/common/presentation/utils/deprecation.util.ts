@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Reglas de rutas heredadas
- * Descripción: Tipos de las reglas de deprecación (ruta concreta o alias de controlador), lectura de los metadatos de DeprecatedRoute/DeprecatedAlias, resolución de la ruta sucesora a partir de la ruta Express registrada, valor de la cabecera Deprecation (RFC 9745) y llenado de los parámetros de la ruta sucesora
- * Versión: 1.0
+ * Descripción: Tipos de las reglas de deprecación (ruta concreta o alias de controlador), lectura de los metadatos de DeprecatedRoute/DeprecatedAlias, resolución de la ruta sucesora a partir de la ruta Express registrada, valor de la cabecera Deprecation (RFC 9745) y llenado de los parámetros de la ruta sucesora. v1.1: BLOCK2_ROUTES_DEPRECATED_AT (rutas deprecadas en el Bloque 2)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,9 @@ export const DEPRECATED_ROUTE_KEY: string = "deprecatedRoute";
 
 // RFC 9745 date (structured field) shared by every legacy route marked in the same review.
 export const LEGACY_ROUTES_DEPRECATED_AT: string = "2026-10-12T00:00:00Z";
+
+// Routes deprecated by Block 2 (teaching): lesson access, resume, skills and milestones.
+export const BLOCK2_ROUTES_DEPRECATED_AT: string = "2026-10-28T00:00:00Z";
 
 export interface DeprecatedRouteOptions {
   readonly successor: string;

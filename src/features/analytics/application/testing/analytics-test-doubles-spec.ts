@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba de analítica
- * Descripción: Fachadas falsas (grupos con dos grupos STUDENT gestionados por profesores distintos, progreso, evaluaciones, simulación, telemetría y valoraciones de IA, reservas, notas y tutor, con última actividad de progreso y simulación) con métodos jest.fn que responden datos deterministas para N estudiantes, ajustes de analítica mutables (nota aprobatoria y umbrales de riesgo) y el arnés que construye el servicio de alcance, la caché, el lector por lotes y los casos de uso de analítica sobre ellas
- * Versión: 1.3
+ * Descripción: Fachadas falsas (grupos con dos grupos STUDENT gestionados por profesores distintos, progreso, evaluaciones, simulación, telemetría y valoraciones de IA, reservas, notas y tutor, con última actividad de progreso y simulación) con métodos jest.fn que responden datos deterministas para N estudiantes, ajustes de analítica mutables (nota aprobatoria y umbrales de riesgo) y el arnés que construye el servicio de alcance, la caché, el lector por lotes y los casos de uso de analítica sobre ellas. v1.4: getContinueLearning en la fachada de progreso simulada
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -81,7 +81,7 @@ function progressOf(userIds: readonly string[]): UserLearningProgress[] {
 
 export interface FakeFacades {
   groups: { [K in "getGroupSummary" | "getManageableStudentGroupIds" | "isStudentMemberOfAny" | "getGroupMembers" | "getStudentMemberships"]: jest.Mock };
-  progress: { getProgressForUsers: jest.Mock; getLessonCompletionsOfUser: jest.Mock; getSummary: jest.Mock; getLastActivityForUsers: jest.Mock };
+  progress: { getProgressForUsers: jest.Mock; getLessonCompletionsOfUser: jest.Mock; getSummary: jest.Mock; getLastActivityForUsers: jest.Mock; getContinueLearning: jest.Mock };
   evaluation: {
     [K in
       | "getGradesForUsers"
@@ -124,6 +124,7 @@ export function buildFakeFacades(students: GroupMemberSummary[]): FakeFacades {
       getProgressForUsers: jest.fn().mockImplementation((userIds: string[]) => Promise.resolve(progressOf(userIds))),
       getLessonCompletionsOfUser: jest.fn().mockResolvedValue([]),
       getSummary: jest.fn().mockImplementation(() => Promise.resolve(progressOf(["self"])[0].report)),
+      getContinueLearning: jest.fn().mockResolvedValue(undefined),
       getLastActivityForUsers: jest.fn().mockResolvedValue([]),
     },
     evaluation: {

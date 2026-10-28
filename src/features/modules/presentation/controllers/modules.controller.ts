@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador ModulesController
- * Descripción: Expone las rutas HTTP api/modules de la feature de módulos, aplica guardias y permisos y responde con APIResponseBuilder; depende de AddModulePrerequisiteUseCase, CreateModuleUseCase, DeleteModuleUseCase, GetModuleByIdUseCase, GetModuleLessonsCountUseCase, GetModuleLessonsUseCase y otros
- * Versión: 1.1
+ * Descripción: Expone las rutas HTTP api/modules de la feature de módulos, aplica guardias y permisos y responde con APIResponseBuilder; depende de AddModulePrerequisiteUseCase, CreateModuleUseCase, DeleteModuleUseCase, GetModuleByIdUseCase, GetModuleLessonsCountUseCase, GetModuleLessonsUseCase y otros. v1.2: GET :id/resume queda deprecada (sin consumidor y basada en pasos heredados; el cliente calcula dónde continuar con GET /api/progress/modules/:moduleId)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,9 @@ import { I18n, I18nContext } from "nestjs-i18n";
 
 import { type Paginated } from "@/common/domain/utils/paginated";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { DeprecatedRoute } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
+import { BLOCK2_ROUTES_DEPRECATED_AT } from "@/common/presentation/utils/deprecation.util";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
@@ -271,6 +273,7 @@ export class ModulesController {
   }
 
   @Get(":id/resume")
+  @DeprecatedRoute({ successor: "/api/progress/modules/:moduleId", successorParams: { moduleId: "id" }, since: BLOCK2_ROUTES_DEPRECATED_AT })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions("progress:read_own")
   @ApiBearerAuth("JWT-auth")

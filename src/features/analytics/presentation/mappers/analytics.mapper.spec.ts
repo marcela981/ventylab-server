@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AnalyticsMapper
- * Descripción: Verifica que el resumen del estudiante expone el título de cada sección de progreso, el intento y el módulo de cada nota publicada, el módulo, la lección y la página tituladas de cada apunte y el título del caso de cada sesión de simulación, con null cuando falta el dato; y que la fila del panel de grupo expone la última actividad en ISO 8601 o null
- * Versión: 1.1
+ * Descripción: Verifica que el resumen del estudiante expone el título de cada sección de progreso, el intento y el módulo de cada nota publicada, el módulo, la lección y la página tituladas de cada apunte y el título del caso de cada sesión de simulación, con null cuando falta el dato; y que la fila del panel de grupo expone la última actividad en ISO 8601 o null. v1.2: continueLearning se expone tal cual o null
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -61,6 +61,7 @@ const SUMMARY: MySummary = {
   ],
   upcomingReservations: [],
   unreadNotifications: 0,
+  continueLearning: { moduleId: "module-1", moduleTitle: "PEEP", lessonId: "lesson-1", lessonTitle: "PEEP basics", percent: 40 },
 };
 
 describe("AnalyticsMapper.toMySummaryDTO", () => {
@@ -78,6 +79,8 @@ describe("AnalyticsMapper.toMySummaryDTO", () => {
       [null, null, null],
     ]);
     expect(dto.latestSimulationSessions[0].caseTitle).toBe("Normal lung");
+    expect(dto.continueLearning).toEqual({ moduleId: "module-1", moduleTitle: "PEEP", lessonId: "lesson-1", lessonTitle: "PEEP basics", percent: 40 });
+    expect(AnalyticsMapper.toMySummaryDTO({ ...SUMMARY, continueLearning: null }).continueLearning).toBeNull();
   });
 });
 

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo LessonsModule
- * Descripción: Registra controladores, casos de uso, repositorios y manejadores de eventos de la feature de lecciones y declara sus importaciones y exportaciones de NestJS
- * Versión: 1.2
+ * Descripción: Registra controladores, casos de uso, repositorios y manejadores de eventos de la feature de lecciones y declara sus importaciones y exportaciones de NestJS. v1.3: importa ProgressModule para GetLessonAccessUseCase (LearningProgressFacade)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { CompleteLessonUseCase } from "@/features/lessons/application/use-cases/
 import { CreateLessonUseCase } from "@/features/lessons/application/use-cases/create-lesson.usecase";
 import { DeleteLessonUseCase } from "@/features/lessons/application/use-cases/delete-lesson.usecase";
 import { GetAdjacentLessonUseCase } from "@/features/lessons/application/use-cases/get-adjacent-lesson.usecase";
+import { GetLessonAccessUseCase } from "@/features/lessons/application/use-cases/get-lesson-access.usecase";
 import { GetLessonByIdUseCase } from "@/features/lessons/application/use-cases/get-lesson-by-id.usecase";
 import { GetLessonContentUseCase } from "@/features/lessons/application/use-cases/get-lesson-content.usecase";
 import { GetLessonStepsUseCase } from "@/features/lessons/application/use-cases/get-lesson-steps.usecase";
@@ -33,10 +34,11 @@ import { LessonQueriesPrismaRepository } from "@/features/lessons/infrastructure
 import { LessonsPrismaRepository } from "@/features/lessons/infrastructure/persistence/prisma/repositories/lessons-prisma.repository";
 import { LessonsController } from "@/features/lessons/presentation/controllers/lessons.controller";
 import { ModulesModule } from "@/features/modules/modules.module";
+import { ProgressModule } from "@/features/progress/progress.module";
 import { UsersModule } from "@/features/users/users.module";
 
 @Module({
-  imports: [AuthModule, ChangeLogModule, CurriculumModule, ModulesModule, UsersModule],
+  imports: [AuthModule, ChangeLogModule, CurriculumModule, ModulesModule, ProgressModule, UsersModule],
   controllers: [LessonsController],
   providers: [
     LessonsChangeLogHandlers,
@@ -63,6 +65,7 @@ import { UsersModule } from "@/features/users/users.module";
     CompleteLessonUseCase,
     RecordLessonAccessUseCase,
     ReorderLessonsUseCase,
+    GetLessonAccessUseCase,
   ],
   exports: [
     LESSONS_REPOSITORY_TOKEN,

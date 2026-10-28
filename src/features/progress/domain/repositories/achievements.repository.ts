@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio de logros
- * Descripción: Contrato de persistencia de los logros (tabla Achievement) y de las métricas de actividad que evalúan sus condiciones de desbloqueo
- * Versión: 1.0
+ * Descripción: Contrato de persistencia de los logros (tabla Achievement) y de las métricas de actividad que evalúan sus condiciones de desbloqueo; el guardado de un logro nuevo omite en conflicto por (usuario, código) e indica si lo insertó
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,5 +16,6 @@ export const ACHIEVEMENTS_REPOSITORY_TOKEN: unique symbol = Symbol("ACHIEVEMENTS
 export interface IAchievementsRepository {
   getByUserId(userId: string, transaction?: unknown): Promise<Achievement[]>;
   getMetrics(userId: string): Promise<AchievementMetrics>;
-  save(achievement: Achievement, transaction?: unknown): Promise<void>;
+  /** Inserts the unlock unless the user already has that code (concurrent unlocks); returns true only when it was inserted. */
+  insertIfAbsent(achievement: Achievement, transaction?: unknown): Promise<boolean>;
 }

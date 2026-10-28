@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de consultas de contenido para progreso
- * Descripción: Implementa IProgressQueriesRepository con consultas de solo lectura sobre Lesson, Page, Step y Module (resolución de identificadores, lección publicada anterior y módulos publicados del resumen general); depende de PrismaService
- * Versión: 1.2
+ * Descripción: Implementa IProgressQueriesRepository con consultas de solo lectura sobre Lesson, Page, Step y Module (resolución de identificadores, secuencia de una lección con sus lecciones publicadas anteriores y módulos publicados del resumen general); depende de PrismaService. v1.3: getLessonSequence reemplaza getLessonGate y getPreviousActiveLessonId
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,9 +12,9 @@ import { Injectable } from "@nestjs/common";
 
 import { type PrismaExecutor, resolveClient } from "@/common/infrastructure/persistence/prisma/prisma-client";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
-import { publishedLessonWhere, publishedModuleWhere } from "@/features/curriculum/infrastructure/persistence/prisma/published-content-filters";
+import { publishedLessonWhere, publishedModuleWhere, visibleLessonWhere } from "@/features/curriculum/infrastructure/persistence/prisma/published-content-filters";
+import { type LessonSequence, type SequenceLesson } from "@/features/progress/domain/read-models/lesson-access.read-model";
 import {
-  type LessonGate,
   type LessonReference,
   type ModuleLessonSource,
   type OverviewModuleSource,
@@ -109,42 +109,30 @@ export class ProgressQueriesPrismaRepository implements IProgressQueriesReposito
     });
   }
 
-  public async getLessonGate(lessonId: string): Promise<LessonGate | undefined> {
-    const row: {
-      id: string;
-      moduleId: string;
-      order: number;
-      module: { isActive: boolean };
-    } | null = await this._prisma.lesson.findFirst({
-      where: { id: lessonId, isActive: true },
-      select: {
-        id: true,
-        moduleId: true,
-        order: true,
-        module: { select: { isActive: true } },
-      },
+  public async getLessonSequence(lessonId: string, canManage: boolean): Promise<LessonSequence | undefined> {
+    const lesson: { id: string; moduleId: string; order: number } | null = await this._prisma.lesson.findFirst({
+      where: { AND: [{ id: lessonId }, visibleLessonWhere(canManage)] },
+      select: { id: true, moduleId: true, order: true },
     });
 
-    if (!row) {
+    if (!lesson) {
       return undefined;
     }
 
-    return {
-      lessonId: row.id,
-      moduleId: row.moduleId,
-      order: row.order,
-      moduleIsActive: row.module.isActive,
-    };
-  }
-
-  public async getPreviousActiveLessonId(moduleId: string, order: number): Promise<string | undefined> {
-    const row: { id: string } | null = await this._prisma.lesson.findFirst({
-      where: { AND: [{ moduleId, order: { lt: order } }, publishedLessonWhere()] },
-      orderBy: { order: "desc" },
-      select: { id: true },
+    // Same ordering as the module lesson list: by order, ties broken by id.
+    const previous: { id: string; title: string }[] = await this._prisma.lesson.findMany({
+      where: {
+        AND: [{ moduleId: lesson.moduleId }, { OR: [{ order: { lt: lesson.order } }, { order: lesson.order, id: { lt: lesson.id } }] }, publishedLessonWhere()],
+      },
+      orderBy: [{ order: "asc" }, { id: "asc" }],
+      select: { id: true, title: true },
     });
 
-    return row?.id;
+    return {
+      lessonId: lesson.id,
+      moduleId: lesson.moduleId,
+      previousLessons: previous.map((row: { id: string; title: string }): SequenceLesson => ({ lessonId: row.id, title: row.title })),
+    };
   }
 
   public async countActiveSteps(lessonId: string): Promise<number | undefined> {

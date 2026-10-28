@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma CurriculumQueriesPrismaRepository
- * Descripción: Implementa ICurriculumQueriesRepository sobre PrismaService y resolveClient para la feature de currículo; los módulos completados del desbloqueo se derivan de la regla de completitud por páginas (loadLessonCompletionFacts)
- * Versión: 1.2
+ * Descripción: Implementa ICurriculumQueriesRepository sobre PrismaService y resolveClient para la feature de currículo; los módulos completados del desbloqueo se derivan de la regla de completitud por páginas (loadLessonCompletionFacts). v1.3: lessonCount del árbol cuenta solo lecciones publicadas con al menos una página publicada (countableLessonWhere)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,6 +28,7 @@ import { type PrerequisiteEdge } from "@/features/curriculum/domain/services/pre
 import { type ContentStatusValue } from "@/features/curriculum/domain/value-objects/content-status";
 import { loadLessonCompletionFacts } from "@/features/curriculum/infrastructure/persistence/prisma/lesson-completion-facts";
 import {
+  countableLessonWhere,
   publishedModuleWhere,
   visibleLevelWhere,
   visibleModuleWhere,
@@ -188,7 +189,7 @@ export class CurriculumQueriesPrismaRepository implements ICurriculumQueriesRepo
           modules: {
             where: visibleModuleWhere(canManage),
             orderBy: { order: "asc" },
-            select: { id: true, title: true, description: true, order: true, status: true, _count: { select: { lessons: true } } },
+            select: { id: true, title: true, description: true, order: true, status: true, _count: { select: { lessons: { where: countableLessonWhere() } } } },
           },
         },
       }),

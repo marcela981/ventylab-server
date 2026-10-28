@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Value object AiUseCase
- * Descripción: Enumera los casos de uso del gateway de IA (retroalimentación de calificaciones, análisis de notas, profundización de páginas, preguntas de lección, chat libre, verificación de tema y asistencia en simulación) y valida sus valores
- * Versión: 1.0
+ * Descripción: Enumera los casos de uso del gateway de IA (retroalimentación de calificaciones, análisis de notas, profundización de páginas, preguntas de lección, preguntas de módulo, chat libre, verificación de tema y asistencia en simulación) y valida sus valores
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ export type AiUseCaseValue =
   | "NOTES_ANALYSIS"
   | "PAGE_DEEPEN"
   | "LESSON_QA"
+  | "MODULE_QA"
   | "FREE_CHAT"
   | "TOPIC_CHECK"
   | "SIM_ASSIST";
@@ -27,6 +28,8 @@ export const PAGE_DEEPEN_USE_CASE: AiUseCaseValue = "PAGE_DEEPEN";
 
 export const LESSON_QA_USE_CASE: AiUseCaseValue = "LESSON_QA";
 
+export const MODULE_QA_USE_CASE: AiUseCaseValue = "MODULE_QA";
+
 export const FREE_CHAT_USE_CASE: AiUseCaseValue = "FREE_CHAT";
 
 export const TOPIC_CHECK_USE_CASE: AiUseCaseValue = "TOPIC_CHECK";
@@ -38,6 +41,7 @@ export const AI_USE_CASE_VALUES: readonly AiUseCaseValue[] = [
   NOTES_ANALYSIS_USE_CASE,
   PAGE_DEEPEN_USE_CASE,
   LESSON_QA_USE_CASE,
+  MODULE_QA_USE_CASE,
   FREE_CHAT_USE_CASE,
   TOPIC_CHECK_USE_CASE,
   SIM_ASSIST_USE_CASE,

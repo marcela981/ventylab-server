@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma LearningProgressPrismaRepository
- * Descripción: Implementa ILearningProgressRepository sobre PrismaService y resolveClient: estructura publicada por alcance (lecturas acotadas de secciones, niveles y módulos; la completa con loadPublishedProgressStructure), hechos de completitud con loadLessonCompletionFacts, upsert idempotente de PageProgress por (userId, pageId) y completitud de LessonCompletion
- * Versión: 1.1
+ * Descripción: Implementa ILearningProgressRepository sobre PrismaService y resolveClient: estructura publicada por alcance (lecturas acotadas de secciones, niveles y módulos; la completa con loadPublishedProgressStructure), hechos de completitud con loadLessonCompletionFacts, upsert idempotente de PageProgress por (userId, pageId) y completitud de LessonCompletion. v1.2: la vista y la completitud usan inserciones condicionales (createMany skipDuplicates) y una actualización condicionada para saber si esta llamada creó la vista o completó la lección
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,6 +27,7 @@ import {
   type ProgressSource,
   type ProgressStructure,
   type ProgressStructureLevel,
+  type SavedPageView,
 } from "@/features/progress/domain/read-models/learning-progress.read-model";
 import { type ILearningProgressRepository } from "@/features/progress/domain/repositories/learning-progress.repository";
 import {
@@ -105,20 +106,23 @@ export class LearningProgressPrismaRepository implements ILearningProgressReposi
     return row ? this._toPageView(row) : undefined;
   }
 
-  public async savePageView(userId: string, pageId: string, write: PageViewWrite, transaction?: unknown): Promise<PageViewSnapshot> {
+  // INSERT ... ON CONFLICT DO NOTHING tells whether this call created the row; a concurrent first view waits for the other insert and then updates.
+  public async savePageView(userId: string, pageId: string, write: PageViewWrite, transaction?: unknown): Promise<SavedPageView> {
     const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+    const firstViewedAt: Date = write.completedAt ?? write.lastVisitedAt;
 
-    const row: PageViewRow = await client.pageProgress.upsert({
+    const inserted: { count: number } = await client.pageProgress.createMany({
+      data: [{ id: generateId(), userId, pageId, completed: true, lastVisitedAt: write.lastVisitedAt, completedAt: firstViewedAt }],
+      skipDuplicates: true,
+    });
+
+    if (inserted.count > 0) {
+      return { view: { pageId, completed: true, firstViewedAt, lastVisitedAt: write.lastVisitedAt }, created: true };
+    }
+
+    const row: PageViewRow = await client.pageProgress.update({
       where: { userId_pageId: { userId, pageId } },
-      create: {
-        id: generateId(),
-        userId,
-        pageId,
-        completed: true,
-        lastVisitedAt: write.lastVisitedAt,
-        completedAt: write.completedAt ?? write.lastVisitedAt,
-      },
-      update: {
+      data: {
         completed: true,
         lastVisitedAt: write.lastVisitedAt,
         ...(write.completedAt ? { completedAt: write.completedAt } : {}),
@@ -126,7 +130,7 @@ export class LearningProgressPrismaRepository implements ILearningProgressReposi
       select: PAGE_VIEW_SELECT,
     });
 
-    return this._toPageView(row);
+    return { view: this._toPageView(row), created: false };
   }
 
   public async getLessonFacts(userId: string, lessonIds: string[], transaction?: unknown): Promise<LessonCompletionFact[]> {
@@ -137,14 +141,26 @@ export class LearningProgressPrismaRepository implements ILearningProgressReposi
     return await loadLessonCompletionFacts(resolveClient(this._prisma, transaction), userId, { id: { in: lessonIds } });
   }
 
-  public async markLessonCompleted(userId: string, lessonId: string, completedAt: Date, transaction?: unknown): Promise<void> {
+  // Conditional writes decide the transition: the UPDATE only matches a not-yet-completed row and the INSERT skips an existing one,
+  // so under concurrent views (row lock / unique index wait) exactly one caller gets true.
+  public async markLessonCompleted(userId: string, lessonId: string, completedAt: Date, transaction?: unknown): Promise<boolean> {
     const client: PrismaExecutor = resolveClient(this._prisma, transaction);
 
-    await client.lessonCompletion.upsert({
-      where: { userId_lessonId: { userId, lessonId } },
-      create: { id: generateId(), userId, lessonId, isCompleted: true, completedAt, lastAccessed: completedAt },
-      update: { isCompleted: true, completedAt, lastAccessed: completedAt },
+    const updated: { count: number } = await client.lessonCompletion.updateMany({
+      where: { userId, lessonId, isCompleted: false },
+      data: { isCompleted: true, completedAt, lastAccessed: completedAt },
     });
+
+    if (updated.count > 0) {
+      return true;
+    }
+
+    const inserted: { count: number } = await client.lessonCompletion.createMany({
+      data: [{ id: generateId(), userId, lessonId, isCompleted: true, completedAt, lastAccessed: completedAt }],
+      skipDuplicates: true,
+    });
+
+    return inserted.count > 0;
   }
 
   private _lessonScope(scope: ProgressScope): Prisma.LessonWhereInput {

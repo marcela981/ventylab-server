@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Transporte SSE del tutor
- * Descripción: Escribe una respuesta del tutor como Server-Sent Events sobre la respuesta Express (eventos delta, done y error, comentarios de keep-alive), extrae el primer evento antes de abrir el stream para que los errores previos usen el sobre JSON normal y cancela la llamada al modelo cuando el cliente se desconecta
- * Versión: 1.0
+ * Descripción: Escribe una respuesta del tutor como Server-Sent Events sobre la respuesta Express (eventos start —conversación e id del mensaje antes del primer fragmento—, delta, done y error, comentarios de keep-alive), extrae el primer evento antes de abrir el stream para que los errores previos usen el sobre JSON normal y cancela la llamada al modelo cuando el cliente se desconecta
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,6 +35,12 @@ function writeEvent(res: Response, event: string, data: unknown): void {
 }
 
 function writeTutorEvent(res: Response, event: TutorStreamEvent): void {
+  if (event.type === "start") {
+    writeEvent(res, "start", { conversationId: event.conversationId, messageId: event.messageId });
+
+    return;
+  }
+
   if (event.type === "delta") {
     writeEvent(res, "delta", { text: event.text });
 

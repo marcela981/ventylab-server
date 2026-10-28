@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs module.dto
- * Descripción: Define los DTOs ModulePrerequisiteDTO, ModuleDTO, ModuleListItemDTO, ModuleDependentDTO, ModuleDetailDTO, ModuleLessonDTO y otros de la feature de módulos, documentados para Swagger y validados con class-validator cuando son de entrada
- * Versión: 1.1
+ * Descripción: Define los DTOs ModulePrerequisiteDTO, ModuleDTO, ModuleListItemDTO, ModuleDependentDTO, ModuleDetailDTO, ModuleLessonDTO y otros de la feature de módulos, documentados para Swagger y validados con class-validator cuando son de entrada. v1.2: ModuleLessonDTO.pageCount documenta que cuenta las páginas publicadas de la lección
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -206,7 +206,7 @@ export class ModuleLessonDTO {
   @ApiProperty({ description: "Number of quizzes", example: 1 })
   public quizCount: number;
 
-  @ApiProperty({ description: "Number of content pages in the legacy JSON content", example: 5 })
+  @ApiProperty({ description: "Number of published pages of the lesson; 0 means the lesson has nothing to show and the viewer skips it", example: 5 })
   public pageCount: number;
 
   public constructor({ id, moduleId, title, slug, content, order, estimatedTime, aiGenerated, isActive, status, color, tags, hasRequiredQuiz, createdAt, updatedAt, quizCount, pageCount }: ModuleLessonDTO) {

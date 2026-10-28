@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de presentación de valoraciones de IA
- * Descripción: Convierte el cuerpo HTTP en el comando de upsert, la consulta en filtros de estadísticas (rango por defecto: los 30 días previos a ahora) y la entidad y las estadísticas del dominio en DTOs de respuesta
- * Versión: 1.0
+ * Descripción: Convierte el cuerpo HTTP en el comando de upsert, la consulta en filtros de estadísticas (rango por defecto: los 30 días previos a ahora) y la entidad y las estadísticas del dominio en DTOs de respuesta; superficie y alcance
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,8 +12,10 @@ import { UpsertAiRatingCommand } from "@/features/ai-ratings/application/command
 import { type AiRating } from "@/features/ai-ratings/domain/entities/ai-rating.entity";
 import {
   type AiRatingStats,
+  type AiRatingScopeValue,
   type AiRatingStatsFilters,
   type AiRatingStatsGroup,
+  type AiRatingSurfaceValue,
   type AiRatingTargetTypeValue,
 } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { type GetAiRatingsStatsQueryDTO, type UpsertAiRatingDTO } from "@/features/ai-ratings/presentation/dtos/ai-rating-request.dto";
@@ -31,6 +33,8 @@ export class AiRatingsMapper {
       targetType: dto.targetType as AiRatingTargetTypeValue,
       targetId: dto.targetId,
       aiCallId: dto.aiCallId ?? undefined,
+      surface: dto.surface as AiRatingSurfaceValue | undefined,
+      scope: dto.scope as AiRatingScopeValue | undefined,
       helpful: dto.helpful,
       comment: dto.comment ?? undefined,
       quality: dto.quality ?? undefined,
@@ -49,6 +53,8 @@ export class AiRatingsMapper {
       from,
       to,
       targetType: query.targetType as AiRatingTargetTypeValue | undefined,
+      surface: query.surface as AiRatingSurfaceValue | undefined,
+      scope: query.scope as AiRatingScopeValue | undefined,
       useCase: query.useCase as AiTelemetryUseCaseValue | undefined,
       provider: query.provider,
       model: query.model,
@@ -61,6 +67,8 @@ export class AiRatingsMapper {
       id: rating.id,
       targetType: rating.targetType,
       targetId: rating.targetId,
+      surface: rating.surface,
+      scope: rating.scope,
       helpful: rating.answers.helpful,
       comment: rating.answers.comment,
       quality: rating.answers.quality,
@@ -79,6 +87,8 @@ export class AiRatingsMapper {
       to: stats.to.toISOString(),
       groups: stats.groups.map(
         (group: AiRatingStatsGroup): AiRatingStatsGroupDTO => ({
+          surface: group.surface,
+          scope: group.scope,
           useCase: group.useCase,
           provider: group.provider,
           model: group.model,

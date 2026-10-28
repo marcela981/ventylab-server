@@ -16,6 +16,7 @@
   "lesson_deactivated": "Lección desactivada exitosamente",
   "lesson_completed": "Lección completada exitosamente",
   "access_recorded": "Acceso a la lección registrado",
+  "access_retrieved": "Acceso a la lección obtenido correctamente",
   "invalid_lesson_reorder": "La lista debe contener cada lección del módulo exactamente una vez",
   "lessons_reordered": "Lecciones reordenadas exitosamente",
   "lesson_deleted": "Lección eliminada exitosamente",

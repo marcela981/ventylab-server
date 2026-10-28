@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de progreso
  * Descripción: Convierte las vistas de progreso del dominio (lección, módulo, detalle, reanudación, resumen general, logros, hitos, habilidades y accesos) en los DTOs de respuesta
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -140,6 +140,7 @@ export class ProgressMapper {
         (achievement: UnlockedAchievementView) =>
           new AchievementDTO({
             id: achievement.id,
+            code: achievement.code,
             title: achievement.title,
             description: achievement.description ?? null,
             icon: achievement.icon ?? null,

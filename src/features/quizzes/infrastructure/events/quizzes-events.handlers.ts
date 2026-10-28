@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Manejadores de eventos de quizzes
- * Descripción: Tras registrarse un intento de quiz dispara UnlockAchievementsUseCase (quizzes aprobados, puntaje perfecto y XP) de la feature de progreso; falla en silencio con registro en el logger
- * Versión: 1.0
+ * Descripción: Tras registrarse un intento de quiz dispara UnlockAchievementsUseCase (evaluaciones aprobadas, puntaje perfecto y nivel) de la feature de progreso; falla en silencio con registro en el logger
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,8 +15,8 @@ import { UnlockAchievementsCommand } from "@/features/progress/application/comma
 import { UnlockAchievementsUseCase } from "@/features/progress/application/use-cases/unlock-achievements.usecase";
 import {
   PERFECT_SCORE_CONDITION,
-  QUIZZES_PASSED_CONDITION,
-  XP_REACHED_CONDITION,
+  EVALUATIONS_PASSED_CONDITION,
+  LEVEL_REACHED_CONDITION,
 } from "@/features/progress/domain/services/achievement-catalog";
 import { QuizAttemptedEvent } from "@/features/quizzes/domain/events/quiz-attempt.events";
 
@@ -34,7 +34,7 @@ export class QuizzesEventsHandlers {
       await this._unlockAchievementsUseCase.execute(
         new UnlockAchievementsCommand({
           userId,
-          triggers: [QUIZZES_PASSED_CONDITION, PERFECT_SCORE_CONDITION, XP_REACHED_CONDITION],
+          triggers: [EVALUATIONS_PASSED_CONDITION, PERFECT_SCORE_CONDITION, LEVEL_REACHED_CONDITION],
         }),
       );
     } catch (error) {

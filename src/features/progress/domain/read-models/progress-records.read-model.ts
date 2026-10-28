@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registros de progreso
- * Descripción: Define las interfaces de lectura y escritura sobre UserProgress y LessonCompletion, y las fuentes de contenido (lecciones, módulos, niveles, prerrequisitos) que consultan los casos de uso de progreso
- * Versión: 1.2
+ * Descripción: Define las interfaces de lectura y escritura sobre UserProgress y LessonCompletion, y las fuentes de contenido (lecciones, módulos, niveles, prerrequisitos) que consultan los casos de uso de progreso. v1.3: sin LessonGate (la secuencia de lecciones vive en lesson-access.read-model)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -76,13 +76,6 @@ export interface ModuleCounters {
 export interface LessonReference {
   readonly moduleId: string;
   readonly lessonId: string;
-}
-
-export interface LessonGate {
-  readonly lessonId: string;
-  readonly moduleId: string;
-  readonly order: number;
-  readonly moduleIsActive: boolean;
 }
 
 export interface ModuleLessonSource {

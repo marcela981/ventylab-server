@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de valoraciones de IA
- * Descripción: Valoración propia de un usuario (para precargar el formulario) y estadísticas agregadas por caso de uso, proveedor, modelo y versión de prompt con tasa de utilidad y media con n por dimensión QUEST
- * Versión: 1.0
+ * Descripción: Valoración propia de un usuario (para precargar el formulario) y estadísticas agregadas por caso de uso, proveedor, modelo y versión de prompt con tasa de utilidad y media con n por dimensión QUEST; superficie y alcance en la valoración y en cada grupo de estadísticas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,7 @@
  */
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
-import { AI_RATING_TARGET_TYPE_VALUES } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
+import { AI_RATING_SCOPE_VALUES, AI_RATING_SURFACE_VALUES, AI_RATING_TARGET_TYPE_VALUES } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 
 export class AiRatingDTO {
   @ApiProperty({ description: "Rating id", example: "0192f0c4-7b1e-7a3d-9c2b-3f4e5d6a7b8c" })
@@ -21,6 +21,12 @@ export class AiRatingDTO {
 
   @ApiProperty({ description: "Rated output id", example: "cm1x2y3z40000abcd1234efgh" })
   public targetId: string;
+
+  @ApiPropertyOptional({ description: "Surface where the answer was rated", enum: AI_RATING_SURFACE_VALUES, example: "POPUP" })
+  public surface?: string;
+
+  @ApiPropertyOptional({ description: "Content scope of the rated answer", enum: AI_RATING_SCOPE_VALUES, example: "LESSON" })
+  public scope?: string;
 
   @ApiProperty({ description: "Whether the output was helpful", example: true })
   public helpful: boolean;
@@ -76,6 +82,12 @@ export class AiRatingDimensionsStatsDTO {
 }
 
 export class AiRatingStatsGroupDTO {
+  @ApiProperty({ description: "Surface of the ratings (POPUP, ACCORDION, ASSISTANT, NOTES_ANALYSIS), or \"unknown\" for ratings without one", example: "POPUP" })
+  public surface: string;
+
+  @ApiProperty({ description: "Content scope of the rated answers (LESSON, MODULE, PAGE, FREE), or \"unknown\"", example: "MODULE" })
+  public scope: string;
+
   @ApiProperty({ description: "Use case of the linked AI call, or \"unknown\"", example: "FREE_CHAT" })
   public useCase: string;
 

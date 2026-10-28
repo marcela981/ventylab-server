@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso UpsertAiRatingUseCase
- * Descripción: Crea o edita la valoración de un usuario sobre una salida de IA (una fila por usuario, tipo de objetivo y objetivo) dentro de una transacción; solo el destinatario de la salida puede valorarla y el aiCallId guardado es el del objetivo o, si el objetivo no lo conoce, uno enviado por el cliente que coincida con el usuario y el caso de uso (validado con AiTelemetryFacade)
- * Versión: 1.0
+ * Descripción: Crea o edita la valoración de un usuario sobre una salida de IA (una fila por usuario, tipo de objetivo y objetivo) dentro de una transacción; solo el destinatario de la salida puede valorarla y el aiCallId guardado es el del objetivo o, si el objetivo no lo conoce, uno enviado por el cliente que coincida con el usuario y el caso de uso (validado con AiTelemetryFacade); guarda la superficie y el alcance (derivado del destino cuando se puede, rechazando un alcance del cliente distinto)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,9 +17,9 @@ import {
   RATING_TARGET_RESOLVER_TOKEN,
   type RatingTarget,
 } from "@/features/ai-ratings/application/ports/rating-target-resolver.interface";
-import { AiRatingCallMismatchError, AiRatingNotRecipientError, AiRatingTargetNotFoundError } from "@/features/ai-ratings/domain/ai-ratings.errors";
+import { AiRatingCallMismatchError, AiRatingNotRecipientError, AiRatingScopeMismatchError, AiRatingTargetNotFoundError } from "@/features/ai-ratings/domain/ai-ratings.errors";
 import { AiRating } from "@/features/ai-ratings/domain/entities/ai-rating.entity";
-import { AI_RATING_TARGET_USE_CASES } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
+import { AI_RATING_TARGET_USE_CASES, type AiRatingScopeValue } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { AI_RATINGS_REPOSITORY_TOKEN, type IAiRatingsRepository } from "@/features/ai-ratings/domain/repositories/ai-ratings.repository";
 import { AiRatingAnswers } from "@/features/ai-ratings/domain/value-objects/ai-rating-answers";
 import { AiTelemetryFacade } from "@/features/ai-telemetry/application/ai-telemetry.facade";
@@ -31,6 +31,7 @@ import { type AiCallSummary } from "@/features/ai-telemetry/domain/read-models/a
  * @throws {AiRatingTargetNotFoundError} If the target does not exist or is not visible to its recipient yet
  * @throws {AiRatingNotRecipientError} If the caller is not the recipient of the AI output
  * @throws {AiRatingCallMismatchError} If the client aiCallId does not match the rated output
+ * @throws {AiRatingScopeMismatchError} If the client scope differs from the scope derived from the target
  */
 @Injectable()
 export class UpsertAiRatingUseCase {
@@ -66,6 +67,7 @@ export class UpsertAiRatingUseCase {
     }
 
     const aiCallId: string | undefined = await this._resolveAiCallId(command, target);
+    const scope: AiRatingScopeValue | undefined = this._resolveScope(command, target);
 
     await this._transactionManager.run(async (transaction: unknown): Promise<void> => {
       const existing: AiRating | undefined = await this._aiRatingsRepository.getByUserAndTarget(
@@ -76,15 +78,36 @@ export class UpsertAiRatingUseCase {
       );
 
       if (existing) {
-        existing.answer(answers, aiCallId);
+        existing.answer(answers, aiCallId, { surface: command.surface, scope });
       }
 
       const rating: AiRating =
         existing ??
-        AiRating.create({ userId: command.userId, targetType: command.targetType, targetId: command.targetId, aiCallId, answers });
+        AiRating.create({
+          userId: command.userId,
+          targetType: command.targetType,
+          targetId: command.targetId,
+          aiCallId,
+          surface: command.surface,
+          scope,
+          answers,
+        });
 
       await this._aiRatingsRepository.save(rating, transaction);
     });
+  }
+
+  // The scope derived from the target (a tutor conversation) wins; a client value is only stored when the target cannot tell.
+  private _resolveScope(command: UpsertAiRatingCommand, target: RatingTarget): AiRatingScopeValue | undefined {
+    if (target.scope === undefined) {
+      return command.scope;
+    }
+
+    if (command.scope !== undefined && command.scope !== target.scope) {
+      throw new AiRatingScopeMismatchError();
+    }
+
+    return target.scope;
   }
 
   private async _resolveAiCallId(command: UpsertAiRatingCommand, target: RatingTarget): Promise<string | undefined> {

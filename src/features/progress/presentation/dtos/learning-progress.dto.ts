@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de progreso por páginas
- * Descripción: Define las respuestas del registro de vista de página y del progreso ponderado por lecciones de módulos, niveles, secciones y el resumen del usuario
- * Versión: 1.0
+ * Descripción: Define las respuestas del registro de vista de página y del progreso ponderado por lecciones de módulos, niveles, secciones y el resumen del usuario. v1.1: PageViewResultDTO.moduleCompleted
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -29,19 +29,23 @@ export class PageViewResultDTO {
   @ApiProperty({ description: "Whether this view completed the lesson", example: false })
   public lessonJustCompleted: boolean;
 
+  @ApiProperty({ description: "Whether the module of the lesson is completed after this view (false for a page without a lesson)", example: false })
+  public moduleCompleted: boolean;
+
   @ApiProperty({ description: "Published pages of the lesson viewed by the user", example: 3 })
   public viewedPages: number;
 
   @ApiProperty({ description: "Published pages of the lesson", example: 5 })
   public totalPages: number;
 
-  public constructor({ pageId, lessonId, firstViewedAt, lastVisitedAt, lessonCompleted, lessonJustCompleted, viewedPages, totalPages }: PageViewResultDTO) {
+  public constructor({ pageId, lessonId, firstViewedAt, lastVisitedAt, lessonCompleted, lessonJustCompleted, moduleCompleted, viewedPages, totalPages }: PageViewResultDTO) {
     this.pageId = pageId;
     this.lessonId = lessonId;
     this.firstViewedAt = firstViewedAt;
     this.lastVisitedAt = lastVisitedAt;
     this.lessonCompleted = lessonCompleted;
     this.lessonJustCompleted = lessonJustCompleted;
+    this.moduleCompleted = moduleCompleted;
     this.viewedPages = viewedPages;
     this.totalPages = totalPages;
   }

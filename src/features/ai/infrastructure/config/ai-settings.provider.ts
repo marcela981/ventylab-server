@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Proveedor de configuración del gateway de IA
  * Descripción: Lectores puros de la configuración del gateway de IA desde ConfigService, usados como valores por defecto de los ajustes de la plataforma y como base de IAiSettingsProvider: valores por defecto de cadena de proveedores, modelos, tiempos límite, tokens y temperatura por caso de uso, sobrescrituras JSON (AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES) validadas al arrancar, cortocircuito, ajustes del tutor, modelos con precio por proveedor y resolución de la cuota por caso de uso antes del comodín
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -48,6 +48,7 @@ const DEFAULT_USE_CASE_SETTINGS: Readonly<Record<AiUseCaseValue, AiUseCaseSettin
   NOTES_ANALYSIS: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 30000, maxOutputTokens: 2048, temperature: 0.4 },
   PAGE_DEEPEN: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 30000, maxOutputTokens: 1536, temperature: 0.6 },
   LESSON_QA: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 30000, maxOutputTokens: 1024, temperature: 0.4 },
+  MODULE_QA: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 30000, maxOutputTokens: 1024, temperature: 0.4 },
   FREE_CHAT: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 30000, maxOutputTokens: 1024, temperature: 0.6 },
   TOPIC_CHECK: { providerChain: DEFAULT_PROVIDER_CHAIN, models: CHEAPEST_MODELS, timeoutMs: 8000, maxOutputTokens: 64, temperature: 0 },
   SIM_ASSIST: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 20000, maxOutputTokens: 768, temperature: 0.4 },

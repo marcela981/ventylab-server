@@ -1,5 +1,6 @@
 {
   "lesson_access_denied": "You cannot access this lesson yet",
+  "lesson_locked": "This lesson is locked: unlock its module and complete the previous lessons first",
   "quiz_score_required": "A quiz score is required to complete this lesson",
   "overview_retrieved": "Progress overview retrieved successfully",
   "module_progress_retrieved": "Module progress retrieved successfully",
@@ -10,6 +11,10 @@
   "lesson_details_retrieved": "Lesson progress details retrieved successfully",
   "milestones_retrieved": "Milestones retrieved successfully",
   "achievements_retrieved": "Achievements retrieved successfully",
+  "gamification_retrieved": "Gamification statistics retrieved successfully",
+  "activity_retrieved": "Activity calendar retrieved successfully",
+  "recent_activity_retrieved": "Recent activity retrieved successfully",
+  "invalid_activity_range": "The range needs valid dates (YYYY-MM-DD) with from not after to and at most {maxDays} days",
   "skills_retrieved": "Skills retrieved successfully",
   "unlocked_modules_retrieved": "Unlocked modules retrieved successfully",
   "access_retrieved": "Access status retrieved successfully",
@@ -23,6 +28,8 @@
     "time_spent_invalid": "The time spent must be a non-negative integer",
     "step_invalid": "The step must be a non-negative integer",
     "total_steps_invalid": "The total number of steps must be an integer of at least 1",
-    "score_invalid": "The score must be a number between 0 and 100"
+    "score_invalid": "The score must be a number between 0 and 100",
+    "activity_date_invalid": "The date must use the YYYY-MM-DD format",
+    "recent_limit_invalid": "The limit must be an integer between 1 and 50"
   }
 }

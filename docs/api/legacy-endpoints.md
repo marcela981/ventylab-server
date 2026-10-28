@@ -1,7 +1,7 @@
 <!--
 Funcionalidad: Inventario de endpoints heredados
-Descripción: Lista las rutas HTTP heredadas marcadas como deprecadas, su ruta sucesora, las cabeceras que envían y los consumidores actuales en el frontend (ventilab-web, rama master)
-Versión: 1.0
+Descripción: Lista las rutas HTTP heredadas marcadas como deprecadas, su ruta sucesora, las cabeceras que envían y los consumidores actuales en el frontend (ventilab-web, rama master). v1.1: rutas deprecadas en el Bloque 2 (acceso a lección, reanudación, hitos y habilidades)
+Versión: 1.1
 Autor: Marcela Mazo Castro
 Proyecto: VentyLab
 Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -52,8 +52,13 @@ Frontend consumers were found by searching `ventilab-web/src` (branch `master`, 
 | `GET /api/pages/by-legacy-json/:legacyJsonId` | `GET /api/pages/by-lesson/:lessonId` (accepts the legacy JSON ID) | yes | no consumer found (the frontend already uses `by-lesson`: `src/features/ensenanza/shared/data/helpers/lessonLoader.js:262`) |
 | `GET /api/progress/lesson/:lessonId` | `GET /api/progress/lesson/:lessonId/details?moduleId=` | yes | `src/features/ensenanza/shared/hooks/useProgress.ts:76`, `src/features/progress/services/progressService.ts:488` |
 | `PUT /api/progress/lesson/:lessonId` | `POST /api/progress/pages/:pageId/view` (lessons complete through page views) | no (the page ID is not in the legacy request) | `src/features/ensenanza/shared/hooks/useProgress.ts:114`, `src/features/progress/services/progressService.ts:339`, `src/features/progress/services/progressService.js:588` |
+| `GET /api/teaching/lessons/:lessonId/access` | `GET /api/lessons/:id/access` (reason and missing lessons, staff bypass) | yes | no consumer found |
+| `GET /api/modules/:id/resume` | `GET /api/progress/modules/:moduleId` (the client computes where to continue from the module lessons and their page progress) | yes | no consumer found |
+| `GET /api/progress/resume/:moduleId` | `GET /api/progress/modules/:moduleId` (same as above) | yes | no consumer found |
+| `GET /api/progress/milestones` | `GET /api/progress/summary` (milestones are derived on the client from real curriculum progress) | yes | static catalog |
+| `GET /api/progress/skills` | `GET /api/progress/summary` (skills are derived on the client from real curriculum progress) | yes | static catalog |
 
-28 operations in total. The frontend also calls `POST /api/progress/lesson/:lessonId/complete-unified` (`src/features/ensenanza/shared/progreso/api/progress.api.ts:108`), which the backend does not register.
+33 operations in total. The five Block 2 deprecations (the last five rows) send `Deprecation: @1793145600` (since 2026-10-28T00:00:00Z, `BLOCK2_ROUTES_DEPRECATED_AT`). The frontend also calls `POST /api/progress/lesson/:lessonId/complete-unified` (`src/features/ensenanza/shared/progreso/api/progress.api.ts:108`), which the backend does not register.
 
 ## Adding or retiring a legacy route
 

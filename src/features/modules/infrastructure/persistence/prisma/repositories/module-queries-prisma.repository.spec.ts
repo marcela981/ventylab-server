@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma ModuleQueriesPrismaRepository
- * Descripción: Verifica con un cliente Prisma simulado que el conteo de quizzes de cada lección de un módulo cuente las evaluaciones QUIZ del alcance de quizzes (nunca la relación congelada quizzes)
- * Versión: 1.0
+ * Descripción: Verifica con un cliente Prisma simulado que el conteo de quizzes de cada lección de un módulo cuente las evaluaciones QUIZ del alcance de quizzes (nunca la relación congelada quizzes) y que pageCount sea el conteo de páginas PUBLISHED de la lección. v1.1: pageCount desde las páginas publicadas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,7 @@ import { ModuleQueriesPrismaRepository } from "@/features/modules/infrastructure
 import { QUIZ_EVALUATION_SCOPE } from "@/features/quizzes/infrastructure/persistence/prisma/repositories/quizzes-prisma.repository";
 
 describe("ModuleQueriesPrismaRepository.getLessons", () => {
-  it("counts the QUIZ evaluations of the quizzes scope linked to each lesson", async () => {
+  it("counts the QUIZ evaluations of the quizzes scope and the published pages of each lesson", async () => {
     const date: Date = new Date(0);
     const findMany: jest.Mock = jest.fn().mockResolvedValue([
       {
@@ -33,7 +33,7 @@ describe("ModuleQueriesPrismaRepository.getLessons", () => {
         hasRequiredQuiz: true,
         createdAt: date,
         updatedAt: date,
-        _count: { evaluations: 2 },
+        _count: { evaluations: 2, pages: 3 },
       },
     ]);
     const repository: ModuleQueriesPrismaRepository = new ModuleQueriesPrismaRepository({ lesson: { findMany } } as unknown as PrismaService);
@@ -43,8 +43,9 @@ describe("ModuleQueriesPrismaRepository.getLessons", () => {
     expect(findMany).toHaveBeenCalledWith({
       where: { moduleId: "module-1" },
       orderBy: { order: "asc" },
-      include: { _count: { select: { evaluations: { where: QUIZ_EVALUATION_SCOPE } } } },
+      include: { _count: { select: { evaluations: { where: QUIZ_EVALUATION_SCOPE }, pages: { where: { status: "PUBLISHED" } } } } },
     });
     expect(lessons[0]?.quizCount).toBe(2);
+    expect(lessons[0]?.pageCount).toBe(3);
   });
 });

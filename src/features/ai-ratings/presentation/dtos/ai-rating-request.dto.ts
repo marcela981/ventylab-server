@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de solicitud de valoraciones de IA
- * Descripción: Cuerpo de PUT /api/ai-ratings (objetivo, aiCallId opcional, útil, comentario y escalas QUEST opcionales; el rango 1–5 y la longitud del comentario los valida el dominio con 422), consulta de la valoración propia y consulta de estadísticas y exportación (rango from/to ISO 8601, por defecto los últimos 30 días, y filtros opcionales)
- * Versión: 1.0
+ * Descripción: Cuerpo de PUT /api/ai-ratings (objetivo, aiCallId opcional, útil, comentario y escalas QUEST opcionales; el rango 1–5 y la longitud del comentario los valida el dominio con 422), consulta de la valoración propia y consulta de estadísticas y exportación (rango from/to ISO 8601, por defecto los últimos 30 días, y filtros opcionales); superficie y alcance opcionales en la valoración y como filtros de las estadísticas y la exportación
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,7 +12,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsBoolean, IsIn, IsISO8601, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
 
-import { AI_RATING_TARGET_TYPE_VALUES } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
+import { AI_RATING_SCOPE_VALUES, AI_RATING_SURFACE_VALUES, AI_RATING_TARGET_TYPE_VALUES } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { AI_TELEMETRY_USE_CASE_VALUES } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
 
 const MAX_ID_LENGTH: number = 100;
@@ -28,7 +28,7 @@ export class UpsertAiRatingDTO {
 
   @ApiProperty({
     description:
-      "Rated output: the grade feedback id (GRADE_FEEDBACK), the assistant message id (MESSAGE) or the AI call id of the analysis (NOTES_ANALYSIS)",
+      "Rated output: the grade feedback id (GRADE_FEEDBACK), the assistant message id (MESSAGE; announced by the SSE start event, so a stopped answer can be rated too) or the AI call id of the analysis (NOTES_ANALYSIS)",
     example: "cm1x2y3z40000abcd1234efgh",
   })
   @IsString({ message: i18nValidationMessage("common.validation.string") })
@@ -44,6 +44,24 @@ export class UpsertAiRatingDTO {
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   @MaxLength(MAX_ID_LENGTH, { message: i18nValidationMessage("ai-ratings.validation.ai_call_id_invalid") })
   public aiCallId?: string;
+
+  @ApiPropertyOptional({
+    description: "Where the answer was shown: tutor popup, deepen accordion, assistant page or notes analysis (thesis analytics)",
+    enum: AI_RATING_SURFACE_VALUES,
+    example: "POPUP",
+  })
+  @IsOptional()
+  @IsIn([...AI_RATING_SURFACE_VALUES], { message: i18nValidationMessage("ai-ratings.validation.surface_invalid") })
+  public surface?: string;
+
+  @ApiPropertyOptional({
+    description: "Content scope of the answer; for a tutor message it is derived from its conversation and a different value answers 422",
+    enum: AI_RATING_SCOPE_VALUES,
+    example: "LESSON",
+  })
+  @IsOptional()
+  @IsIn([...AI_RATING_SCOPE_VALUES], { message: i18nValidationMessage("ai-ratings.validation.scope_invalid") })
+  public scope?: string;
 
   @ApiProperty({ description: "Whether the output was helpful", example: true })
   @IsBoolean({ message: i18nValidationMessage("common.validation.boolean") })
@@ -107,6 +125,16 @@ export class GetAiRatingsStatsQueryDTO {
   @IsOptional()
   @IsIn([...AI_RATING_TARGET_TYPE_VALUES], { message: i18nValidationMessage("ai-ratings.validation.target_type_invalid") })
   public targetType?: string;
+
+  @ApiPropertyOptional({ description: "Only ratings given on this surface", enum: AI_RATING_SURFACE_VALUES, example: "POPUP" })
+  @IsOptional()
+  @IsIn([...AI_RATING_SURFACE_VALUES], { message: i18nValidationMessage("ai-ratings.validation.surface_invalid") })
+  public surface?: string;
+
+  @ApiPropertyOptional({ description: "Only ratings of answers with this content scope", enum: AI_RATING_SCOPE_VALUES, example: "MODULE" })
+  @IsOptional()
+  @IsIn([...AI_RATING_SCOPE_VALUES], { message: i18nValidationMessage("ai-ratings.validation.scope_invalid") })
+  public scope?: string;
 
   @ApiPropertyOptional({ description: "Only ratings linked to calls of this use case", enum: AI_TELEMETRY_USE_CASE_VALUES, example: "FREE_CHAT" })
   @IsOptional()

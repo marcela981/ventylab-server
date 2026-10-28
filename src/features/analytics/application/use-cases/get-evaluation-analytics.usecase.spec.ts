@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GetEvaluationAnalyticsUseCase y GetMySummaryUseCase
- * Descripción: Verifica que las estadísticas de una evaluación solo se entregan al administrador, a un profesor que gestiona un grupo asignado o al creador de una evaluación sin asignaciones (403 si no, 404 si no existe), que un profesor solo agrega intentos de sus grupos (el de un grupo A no ve los del grupo B) mientras el administrador ve la evaluación completa, que con un grupo solo cuentan los intentos de sus asignaciones para quien lo gestiona o administra (403 si no lo gestiona, 404 si no existe), que combinan notas y dificultad por pregunta con caché por solicitante y alcance, y que el resumen propio compone las fachadas para el usuario autenticado con el conteo de notificaciones sin leer del puerto y las evaluaciones separadas en activas y próximas
- * Versión: 1.2
+ * Descripción: Verifica que las estadísticas de una evaluación solo se entregan al administrador, a un profesor que gestiona un grupo asignado o al creador de una evaluación sin asignaciones (403 si no, 404 si no existe), que un profesor solo agrega intentos de sus grupos (el de un grupo A no ve los del grupo B) mientras el administrador ve la evaluación completa, que con un grupo solo cuentan los intentos de sus asignaciones para quien lo gestiona o administra (403 si no lo gestiona, 404 si no existe), que combinan notas y dificultad por pregunta con caché por solicitante y alcance, y que el resumen propio compone las fachadas para el usuario autenticado con el conteo de notificaciones sin leer del puerto y las evaluaciones separadas en activas y próximas. v1.3: continueLearning de la fachada de progreso (null si no hay)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -107,6 +107,8 @@ describe("GetMySummaryUseCase", () => {
     const summary: MySummary = await harness.summary.execute({ id: "student-01", role: "STUDENT" });
 
     expect(summary.unreadNotifications).toBe(4);
+    expect(summary.continueLearning).toBeNull();
+    expect(harness.facades.progress.getContinueLearning).toHaveBeenCalledWith("student-01");
     expect(summary.progress.sections).toHaveLength(1);
     expect(summary.activeEvaluations.map((item: { id: string }) => item.id)).toEqual(["assignment-1"]);
     expect(summary.upcomingEvaluations.map((item: { id: string }) => item.id)).toEqual(["assignment-2"]);
@@ -114,5 +116,20 @@ describe("GetMySummaryUseCase", () => {
     expect(harness.facades.notes.getLatestNotes).toHaveBeenCalledWith("student-01", MY_SUMMARY_LATEST_LIMIT);
     expect(harness.facades.simulation.getUserSessions).toHaveBeenCalledWith("student-01", { page: 1, limit: MY_SUMMARY_LATEST_LIMIT, sortOrder: "desc" });
     expect(harness.facades.reservations.getUpcomingReservationsOfUser).toHaveBeenCalledWith("student-01", "STUDENT", expect.any(Date), MY_SUMMARY_LATEST_LIMIT);
+  });
+
+  it("includes where to continue learning when the progress facade has a lesson", async () => {
+    const harness: AnalyticsHarness = buildAnalyticsHarness([]);
+    const target: { moduleId: string; moduleTitle: string; lessonId: string; lessonTitle: string; percent: number } = {
+      moduleId: "module-1",
+      moduleTitle: "PEEP",
+      lessonId: "lesson-2",
+      lessonTitle: "Recruitment",
+      percent: 50,
+    };
+
+    harness.facades.progress.getContinueLearning.mockResolvedValue(target);
+
+    expect((await harness.summary.execute({ id: "student-01", role: "STUDENT" })).continueLearning).toEqual(target);
   });
 });

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso CheckLessonAccessUseCase
- * Descripción: Indica si un usuario puede abrir una lección: su módulo debe estar desbloqueado (CheckModuleAccessUseCase) y la lección publicada anterior debe estar completada según la regla de completitud por páginas
- * Versión: 1.1
+ * Descripción: Decide si un usuario puede abrir una lección y por qué no: su módulo debe estar desbloqueado (CheckContentUnlockedUseCase, la misma regla de LearningProgressFacade.isUnlocked) y todas las lecciones publicadas anteriores con páginas publicadas deben estar completadas según la regla de completitud por páginas (las lecciones vacías se saltan). Quien gestiona contenido (staff) siempre puede abrirla. v2.0: devuelve la decisión con motivo y lecciones faltantes (undefined si la lección no existe o no es visible) en lugar de un booleano
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,14 +11,18 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { type LessonCompletionFact } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
-import { isLessonCompleted } from "@/features/curriculum/domain/services/lesson-completion-rules";
-import { CheckModuleAccessUseCase } from "@/features/progress/application/use-cases/check-module-access.usecase";
-import { type LessonGate } from "@/features/progress/domain/read-models/progress-records.read-model";
+import { CheckContentUnlockedUseCase } from "@/features/progress/application/use-cases/check-content-unlocked.usecase";
+import {
+  type LessonAccessDecision,
+  type LessonSequence,
+  type SequenceLesson,
+} from "@/features/progress/domain/read-models/lesson-access.read-model";
 import { type ILearningProgressRepository, LEARNING_PROGRESS_REPOSITORY_TOKEN } from "@/features/progress/domain/repositories/learning-progress.repository";
 import {
   type IProgressQueriesRepository,
   PROGRESS_QUERIES_REPOSITORY_TOKEN,
 } from "@/features/progress/domain/repositories/progress-queries.repository";
+import { ALLOWED_LESSON_ACCESS, decideLessonAccess, findMissingPreviousLessons } from "@/features/progress/domain/services/lesson-access-rules";
 
 @Injectable()
 export class CheckLessonAccessUseCase {
@@ -27,30 +31,32 @@ export class CheckLessonAccessUseCase {
     private readonly _learningProgressRepository: ILearningProgressRepository,
     @Inject(PROGRESS_QUERIES_REPOSITORY_TOKEN)
     private readonly _progressQueriesRepository: IProgressQueriesRepository,
-    private readonly _checkModuleAccessUseCase: CheckModuleAccessUseCase,
+    private readonly _checkContentUnlockedUseCase: CheckContentUnlockedUseCase,
   ) {}
 
-  public async execute(userId: string, lessonId: string): Promise<boolean> {
-    const gate: LessonGate | undefined = await this._progressQueriesRepository.getLessonGate(lessonId);
+  // Returns undefined when the lesson does not exist or is not visible to the caller.
+  public async execute(userId: string, lessonId: string, canManage: boolean): Promise<LessonAccessDecision | undefined> {
+    const sequence: LessonSequence | undefined = await this._progressQueriesRepository.getLessonSequence(lessonId, canManage);
 
-    if (!gate || !gate.moduleIsActive) {
-      return false;
+    if (!sequence) {
+      return undefined;
     }
 
-    const moduleAccessible: boolean = await this._checkModuleAccessUseCase.execute(userId, gate.moduleId);
-
-    if (!moduleAccessible) {
-      return false;
+    if (canManage) {
+      return ALLOWED_LESSON_ACCESS;
     }
 
-    const previousLessonId: string | undefined = await this._progressQueriesRepository.getPreviousActiveLessonId(gate.moduleId, gate.order);
+    const moduleUnlocked: boolean = await this._checkContentUnlockedUseCase.execute(userId, { type: "module", id: sequence.moduleId });
 
-    if (!previousLessonId) {
-      return true;
+    if (!moduleUnlocked) {
+      return decideLessonAccess(false, []);
     }
 
-    const [previousFact]: LessonCompletionFact[] = await this._learningProgressRepository.getLessonFacts(userId, [previousLessonId]);
+    const facts: LessonCompletionFact[] = await this._learningProgressRepository.getLessonFacts(
+      userId,
+      sequence.previousLessons.map((lesson: SequenceLesson) => lesson.lessonId),
+    );
 
-    return previousFact === undefined || isLessonCompleted(previousFact);
+    return decideLessonAccess(true, findMissingPreviousLessons(sequence.previousLessons, facts));
   }
 }

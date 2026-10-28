@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del caso de uso UpsertAiRatingUseCase
- * Descripción: Verifica que una valoración de IA se cree o actualice en la misma fila por (usuario, tipo de objetivo, objetivo) dentro de una transacción, que solo el destinatario de la salida pueda valorarla (403), que un objetivo desconocido dé 404 y que las escalas fuera de rango o un aiCallId incoherente den 422
- * Versión: 1.0
+ * Descripción: Verifica que una valoración de IA se cree o actualice en la misma fila por (usuario, tipo de objetivo, objetivo) dentro de una transacción, que solo el destinatario de la salida pueda valorarla (403), que un objetivo desconocido dé 404 y que las escalas fuera de rango o un aiCallId incoherente den 422; la superficie y el alcance (derivado del destino, 422 si el cliente envía otro, y conservados al editar sin enviarlos)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import { UpsertAiRatingUseCase } from "@/features/ai-ratings/application/use-cas
 import {
   AiRatingCallMismatchError,
   AiRatingNotRecipientError,
+  AiRatingScopeMismatchError,
   AiRatingTargetNotFoundError,
   InvalidAiRatingScoreError,
 } from "@/features/ai-ratings/domain/ai-ratings.errors";
@@ -96,6 +97,32 @@ describe("UpsertAiRatingUseCase", () => {
     expect(saved[0].answers.trust).toBe(2);
     expect(saved[0].answers.comment).toBe("Changed my mind");
     expect(saved[0].updatedAt.getTime()).toBeGreaterThanOrEqual(saved[0].createdAt.getTime());
+  });
+
+  it("stores the surface and the scope derived from the target", async () => {
+    resolver.resolve.mockResolvedValue({ recipientUserId: STUDENT_ID, aiCallId: "call-1", scope: "MODULE" } satisfies RatingTarget);
+
+    await useCase.execute(command({ surface: "POPUP" }));
+
+    expect(repository.all()[0]).toMatchObject({ surface: "POPUP", scope: "MODULE" });
+  });
+
+  it("rejects a client scope that differs from the scope of the target", async () => {
+    resolver.resolve.mockResolvedValue({ recipientUserId: STUDENT_ID, aiCallId: "call-1", scope: "LESSON" } satisfies RatingTarget);
+
+    await expect(useCase.execute(command({ scope: "MODULE" }))).rejects.toBeInstanceOf(AiRatingScopeMismatchError);
+    expect(repository.all()).toEqual([]);
+  });
+
+  it("keeps the client scope when the target has none and keeps surface and scope when an edit omits them", async () => {
+    resolver.resolve.mockResolvedValue({ recipientUserId: STUDENT_ID } satisfies RatingTarget);
+
+    await useCase.execute(command({ targetType: "NOTES_ANALYSIS", targetId: "call-notes", surface: "NOTES_ANALYSIS", scope: "LESSON" }));
+    await useCase.execute(command({ targetType: "NOTES_ANALYSIS", targetId: "call-notes", helpful: false }));
+
+    expect(repository.all()).toHaveLength(1);
+    expect(repository.all()[0]).toMatchObject({ surface: "NOTES_ANALYSIS", scope: "LESSON" });
+    expect(repository.all()[0].answers.helpful).toBe(false);
   });
 
   it("forbids rating an AI output that belongs to another user", async () => {

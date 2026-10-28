@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del resolvedor de objetivos de valoración de IA
- * Descripción: Verifica con un cliente Prisma y una fachada de telemetría simulados el destinatario y el aiCallId de cada tipo de objetivo: retroalimentación de calificación publicada (con la última llamada SUCCESS o FALLBACK enlazada al intento), mensaje del asistente, análisis de notas y asistencia de simulación (evento AI_HELP de la sesión, dueño de la sesión y aiCallId del payload)
- * Versión: 1.2
+ * Descripción: Verifica con un cliente Prisma y una fachada de telemetría simulados el destinatario y el aiCallId de cada tipo de objetivo: retroalimentación de calificación publicada (con la última llamada SUCCESS o FALLBACK enlazada al intento), mensaje del asistente, análisis de notas y asistencia de simulación (evento AI_HELP de la sesión, dueño de la sesión y aiCallId del payload); el mensaje del tutor informa el alcance de su conversación y uno incompleto (respuesta detenida) enlaza su llamada por la referencia ai_message
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -78,18 +78,27 @@ describe("RatingTargetPrismaResolver", () => {
   });
 
   describe("MESSAGE", () => {
-    it("resolves an assistant message to the conversation owner and its call", async () => {
-      prisma.aiMessage.findUnique.mockResolvedValue({ role: "ASSISTANT", aiCallId: "call-1", conversation: { userId: "student-1" } });
+    it("resolves an assistant message to the conversation owner, its call and the conversation scope", async () => {
+      prisma.aiMessage.findUnique.mockResolvedValue({ role: "ASSISTANT", aiCallId: "call-1", conversation: { userId: "student-1", scope: "MODULE" } });
 
       const target: RatingTarget | undefined = await resolver.resolve("MESSAGE", "message-1");
 
-      expect(target).toEqual({ recipientUserId: "student-1", aiCallId: "call-1" });
+      expect(target).toEqual({ recipientUserId: "student-1", aiCallId: "call-1", scope: "MODULE" });
+      expect(telemetry.getLatestCallByRef).not.toHaveBeenCalled();
     });
 
-    it("maps a missing call id to undefined", async () => {
-      prisma.aiMessage.findUnique.mockResolvedValue({ role: "ASSISTANT", aiCallId: null, conversation: { userId: "student-1" } });
+    it("links a stopped (incomplete) answer to its ABORTED call through the message reference", async () => {
+      prisma.aiMessage.findUnique.mockResolvedValue({ role: "ASSISTANT", aiCallId: null, conversation: { userId: "student-1", scope: "LESSON" } });
+      telemetry.getLatestCallByRef.mockResolvedValue(notesCall({ id: "call-aborted", useCase: "LESSON_QA", status: "ABORTED" }));
 
-      await expect(resolver.resolve("MESSAGE", "message-1")).resolves.toEqual({ recipientUserId: "student-1", aiCallId: undefined });
+      await expect(resolver.resolve("MESSAGE", "message-1")).resolves.toEqual({ recipientUserId: "student-1", aiCallId: "call-aborted", scope: "LESSON" });
+      expect(telemetry.getLatestCallByRef).toHaveBeenCalledWith("ai_message", "message-1", ["ABORTED", "SUCCESS", "FALLBACK"]);
+    });
+
+    it("maps a message without any linked call to an undefined call id", async () => {
+      prisma.aiMessage.findUnique.mockResolvedValue({ role: "ASSISTANT", aiCallId: null, conversation: { userId: "student-1", scope: "FREE" } });
+
+      await expect(resolver.resolve("MESSAGE", "message-1")).resolves.toEqual({ recipientUserId: "student-1", aiCallId: undefined, scope: "FREE" });
     });
 
     it.each([

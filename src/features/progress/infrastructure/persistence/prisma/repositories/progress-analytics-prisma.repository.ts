@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma ProgressAnalyticsPrismaRepository
- * Descripción: Implementa IProgressAnalyticsRepository sobre PrismaService con lecturas por lotes sin bucles por usuario: la estructura publicada (tres lecturas), las lecciones publicadas con su conteo filtrado de páginas publicadas, las vistas completadas de páginas publicadas de todos los usuarios con IN y sus registros de lecciones completadas con IN (seis lecturas en total, independientes del número de usuarios); las lecciones completadas por un usuario en un rango; y la última actividad de varios usuarios en una sola consulta $queryRaw con IN y GROUP BY (máximo entre la última visita o actualización de páginas y la última actualización o acceso de lecciones)
- * Versión: 1.1
+ * Descripción: Implementa IProgressAnalyticsRepository sobre PrismaService con lecturas por lotes sin bucles por usuario: la estructura publicada (tres lecturas), las lecciones publicadas con su conteo filtrado de páginas publicadas, las vistas completadas de páginas publicadas de todos los usuarios con IN y sus registros de lecciones completadas con IN (seis lecturas en total, independientes del número de usuarios); las lecciones completadas por un usuario en un rango; y la última actividad de varios usuarios en una sola consulta $queryRaw con IN y GROUP BY (máximo entre la última visita o actualización de páginas y la última actualización o acceso de lecciones). v1.2: getLastAccessedLesson (UserProgress más reciente con lección y módulo publicados)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,10 +13,11 @@ import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { type LessonCompletionFact } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
-import { publishedLessonWhere, publishedPageWhere } from "@/features/curriculum/infrastructure/persistence/prisma/published-content-filters";
+import { publishedLessonWhere, publishedModuleWhere, publishedPageWhere } from "@/features/curriculum/infrastructure/persistence/prisma/published-content-filters";
 import { type ProgressStructure } from "@/features/progress/domain/read-models/learning-progress.read-model";
 import {
   type IProgressAnalyticsRepository,
+  type LastAccessedLesson,
   type LessonCompletionActivity,
   type UserProgressLastActivity,
   type UsersProgressSource,
@@ -157,5 +158,19 @@ export class ProgressAnalyticsPrismaRepository implements IProgressAnalyticsRepo
     return rows.flatMap((row: LastActivityRow): UserProgressLastActivity[] =>
       row.last_activity_at === null ? [] : [{ userId: row.user_id, lastActivityAt: new Date(row.last_activity_at) }],
     );
+  }
+
+  public async getLastAccessedLesson(userId: string): Promise<LastAccessedLesson | undefined> {
+    const row: { module: { id: string; title: string }; lastAccessedLesson: { id: string; title: string } | null } | null = await this._prisma.userProgress.findFirst({
+      where: { userId, module: publishedModuleWhere(), lastAccessedLesson: publishedLessonWhere() },
+      orderBy: [{ lastAccessedAt: "desc" }, { id: "asc" }],
+      select: { module: { select: { id: true, title: true } }, lastAccessedLesson: { select: { id: true, title: true } } },
+    });
+
+    if (!row?.lastAccessedLesson) {
+      return undefined;
+    }
+
+    return { moduleId: row.module.id, moduleTitle: row.module.title, lessonId: row.lastAccessedLesson.id, lessonTitle: row.lastAccessedLesson.title };
   }
 }

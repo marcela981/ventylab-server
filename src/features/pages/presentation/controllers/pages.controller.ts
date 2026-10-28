@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador PagesController
- * Descripción: Expone las rutas HTTP api/pages: lecturas públicas con visibilidad por estado (los lectores sin pages:update se tratan como estudiantes), CRUD de páginas, CRUD de bloques y reordenamiento por lotes con permisos pages:*; responde con APIResponseBuilder. La búsqueda por ID JSON heredado está deprecada en favor de /api/pages/by-lesson/:lessonId.
- * Versión: 1.3
+ * Descripción: Expone las rutas HTTP api/pages: lecturas públicas con visibilidad por estado (los lectores sin pages:update se tratan como estudiantes), CRUD de páginas, CRUD de bloques y reordenamiento por lotes con permisos pages:*; responde con APIResponseBuilder. La búsqueda por ID JSON heredado está deprecada en favor de /api/pages/by-lesson/:lessonId.. v1.4: GET :id pasa el lector autenticado para validar el orden de lecciones (403 progress.lesson_locked)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -203,11 +203,12 @@ export class PagesController {
   @Get(":id")
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Get page by ID", description: "Retrieves a page with its active blocks and resolved media URLs; unpublished content answers 404 for students" })
+  @ApiOperation({ summary: "Get page by ID", description: "Retrieves a page with its active blocks and resolved media URLs; unpublished content answers 404 for students, and an authenticated student gets 403 progress.lesson_locked (data.missing lists the previous lessons to complete) when the lesson is still locked" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "The lesson is locked for the current student (progress.lesson_locked)" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Page retrieved successfully", type: PageDTO })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Page not found" })
   public async getPageById(@Param("id") id: string, @CurrentUser() currentUser: JwtPayload | undefined, @I18n() i18n: I18nContext): Promise<APIResponse<PageDTO>> {
-    const page: PageView = await this._getPageByIdUseCase.execute(id, this._canManage(currentUser));
+    const page: PageView = await this._getPageByIdUseCase.execute(id, this._canManage(currentUser), currentUser?.sub);
 
     return new APIResponseBuilder<PageDTO>()
       .setData(PagesMapper.toDTO(page))

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del lector de contenido del tutor
- * Descripción: Verifica con GetPageByIdUseCase real que una página en borrador responde 404 a un estudiante y es visible para quien gestiona contenido (chequeo 10), y que el texto de la página incluye descripción, objetivos y secciones activas con los títulos de lección y módulo
- * Versión: 1.0
+ * Descripción: Verifica con GetPageByIdUseCase real que una página en borrador responde 404 a un estudiante y es visible para quien gestiona contenido (chequeo 10), y que el texto de la página incluye descripción, objetivos y secciones activas con los títulos de lección y módulo. v1.1: GetPageByIdUseCase recibe LearningProgressFacade (no se usa sin lector autenticado)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,7 @@ import { GetPageByIdUseCase } from "@/features/pages/application/use-cases/get-p
 import { PageNotFoundError } from "@/features/pages/domain/pages.errors";
 import { type PageSectionView, type PageView } from "@/features/pages/domain/read-models/page-views.read-model";
 import { type IPageQueriesRepository } from "@/features/pages/domain/repositories/page-queries.repository";
+import { type LearningProgressFacade } from "@/features/progress/application/services/learning-progress.facade";
 
 function section(order: number, title: string, text: string, isActive: boolean = true): PageSectionView {
   return {
@@ -77,7 +78,7 @@ function buildReader(chain: ContentStatusChain): CurriculumTutorContentReader {
   };
 
   return new CurriculumTutorContentReader(
-    new GetPageByIdUseCase(queries),
+    new GetPageByIdUseCase(queries, {} as LearningProgressFacade),
     {} as GetLessonPagesUseCase,
     {} as GetModulePagesUseCase,
     getLessonById as GetLessonByIdUseCase,

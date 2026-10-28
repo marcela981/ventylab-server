@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de persistencia de progreso
- * Descripción: Convierte filas Prisma de UserProgress, LessonCompletion y Achievement en los registros y entidades del dominio de progreso
- * Versión: 1.1
+ * Descripción: Convierte filas Prisma de UserProgress, LessonCompletion y Achievement en los registros y entidades del dominio de progreso (logros con su código de catálogo y recompensa de XP)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -51,7 +51,9 @@ export class ProgressMapper {
     return Achievement.reconstitute({
       id: row.id,
       userId: row.userId,
+      code: row.code,
       title: row.title,
+      xpReward: row.xpReward,
       description: row.description ?? undefined,
       icon: row.icon ?? undefined,
       unlockedAt: row.unlockedAt,
@@ -63,7 +65,9 @@ export class ProgressMapper {
     return {
       id: achievement.id,
       userId: achievement.userId,
+      code: achievement.code,
       title: achievement.title,
+      xpReward: achievement.xpReward,
       description: achievement.description ?? null,
       icon: achievement.icon ?? null,
       unlockedAt: achievement.unlockedAt,
