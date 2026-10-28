@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso UnlockAchievementsUseCase
- * Descripción: Evalúa las definiciones de logros aún bloqueadas cuyos tipos de condición fueron disparados, desbloquea las que se cumplen con Achievement.unlock en una transacción y publica AchievementUnlockedEvent
- * Versión: 1.0
+ * Descripción: Evalúa las definiciones de logros aún bloqueadas cuyos tipos de condición fueron disparados, desbloquea las que se cumplen con Achievement.unlock con las lecturas fuera de la transacción y las inserciones en una transacción corta (por código de catálogo, omitiendo en conflicto) y publica AchievementUnlockedEvent solo de las insertadas, de modo que un desbloqueo concurrente no se duplica
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,39 +35,42 @@ export class UnlockAchievementsUseCase {
   ) {}
 
   public async execute(command: UnlockAchievementsCommand): Promise<void> {
+    // Reads run before the transaction so concurrent unlocks never hold a pooled connection while waiting for another one.
+    const unlocked: Achievement[] = await this._achievementsRepository.getByUserId(command.userId);
+    const unlockedCodes: Set<string> = new Set(unlocked.map((achievement: Achievement) => achievement.code));
+
+    const candidates: AchievementDefinition[] = ACHIEVEMENT_DEFINITIONS.filter(
+      (definition: AchievementDefinition) => !unlockedCodes.has(definition.code) && command.triggers.includes(definition.condition.type),
+    );
+
+    if (candidates.length === 0) {
+      return;
+    }
+
+    const metrics: AchievementMetrics = await this._achievementsRepository.getMetrics(command.userId);
+    const met: AchievementDefinition[] = candidates.filter((definition: AchievementDefinition) => meetsAchievementCondition(definition, metrics));
+
+    if (met.length === 0) {
+      return;
+    }
+
     const events: DomainEvent[] = await this._transactionManager.run(async (transaction: unknown): Promise<DomainEvent[]> => {
-      const unlocked: Achievement[] = await this._achievementsRepository.getByUserId(command.userId, transaction);
-      const unlockedTitles: Set<string> = new Set(unlocked.map((achievement: Achievement) => achievement.title));
-
-      const candidates: AchievementDefinition[] = ACHIEVEMENT_DEFINITIONS.filter(
-        (definition: AchievementDefinition) => !unlockedTitles.has(definition.title) && command.triggers.includes(definition.condition.type),
-      );
-
-      if (candidates.length === 0) {
-        return [];
-      }
-
-      const metrics: AchievementMetrics = await this._achievementsRepository.getMetrics(command.userId);
-      const today: Date = new Date();
       const pendingEvents: DomainEvent[] = [];
 
-      for (const definition of candidates) {
-        if (!meetsAchievementCondition(definition, metrics, unlockedTitles, today)) {
-          continue;
-        }
-
+      for (const definition of met) {
         const achievement: Achievement = Achievement.unlock({
           userId: command.userId,
+          code: definition.code,
           title: definition.title,
           description: definition.description,
           icon: definition.icon,
           xpReward: definition.xpReward,
         });
 
-        await this._achievementsRepository.save(achievement, transaction);
-
-        unlockedTitles.add(definition.title);
-        pendingEvents.push(...achievement.getEvents());
+        // A concurrent request may have inserted the same code first: then no event is published for this copy.
+        if (await this._achievementsRepository.insertIfAbsent(achievement, transaction)) {
+          pendingEvents.push(...achievement.getEvents());
+        }
       }
 
       return pendingEvents;

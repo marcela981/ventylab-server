@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Reglas de gamificación
-  Descripción: Fórmula única de XP, nivel y racha del servidor (Bloque 2): registro de actividad idempotente, tabla de XP por evento, nivel, días en America/Bogota, racha, calendario, endpoints y relleno histórico con sus límites conocidos
-  Versión: 0.1
+  Descripción: Fórmula única de XP, nivel y racha del servidor (Bloque 2): registro de actividad idempotente, tabla de XP por evento, nivel, días en America/Bogota, racha, calendario, endpoints y relleno histórico con sus límites conocidos. v0.2: logros con código estable, recompensa guardada y desbloqueo único por usuario y código
+  Versión: 0.2
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -80,8 +80,31 @@ Al arrancar, `LearningActivityBackfillService` ejecuta una pasada idempotente (u
 | `lesson_completions` completadas | `LESSON_COMPLETED` | `completedAt` |
 | `user_progress` con módulo completado | `MODULE_COMPLETED` | `completedAt` |
 | Intentos con nota publicada ≥ nota mínima | `EVALUATION_PASSED` | primera `grade_published_at` por evaluación |
-| `achievements` | `ACHIEVEMENT_UNLOCKED` | `unlockedAt` |
+| `achievements` | `ACHIEVEMENT_UNLOCKED` (referencia: `code`, XP: `xpReward`) | `unlockedAt` |
 
 **Por qué un servicio de arranque y no SQL en la migración:** la regla de aprobado depende de la nota mínima vigente (variable de entorno más el ajuste editable por un administrador), que una migración SQL no puede leer. El servicio sigue el patrón de `ClinicalCasesBootstrapService` (inserta sin actualizar, un fallo no impide el arranque) y cada pasada es segura de repetir. Para volver a ejecutarla, se borra la fila de `app_settings` o se sube `LEARNING_ACTIVITY_BACKFILL_VERSION`.
 
 **Límite conocido:** antes del Bloque 2 no había historia por día. Solo se conoce la primera vista de cada página y la fecha de cada completitud, no cada día en que el estudiante estudió. Por eso **la racha y el calendario históricos quedan subestimados**. Desde el despliegue, cada día con actividad queda registrado.
+
+## 7. Logros
+
+Catálogo en `src/features/progress/domain/services/achievement-catalog.ts`. Cada logro tiene un **código estable** (`achievements.code`) y su recompensa queda guardada en `achievements.xpReward`. `(userId, code)` es único y el desbloqueo inserta omitiendo en conflicto, así que dos desbloqueos simultáneos dejan una sola fila y un solo aviso `achievement:unlocked`.
+
+| Código | Título | Condición | XP |
+|---|---|---|---|
+| `first_lesson` | Primer Paso | 1 lección completada | 50 |
+| `ten_lessons` | Aprendiz Dedicado | 10 lecciones | 200 |
+| `fifty_lessons` | Estudiante Avanzado | 50 lecciones | 500 |
+| `first_module` | Módulo Completado | 1 módulo | 300 |
+| `perfect_quiz` | Puntuación Perfecta | 1 evaluación publicada con el puntaje máximo | 150 |
+| `quiz_master` | Maestro de Evaluaciones | 10 evaluaciones aprobadas | 400 |
+| `week_streak` | Racha Semanal | Racha actual de 7 días | 250 |
+| `month_streak` | Racha Mensual | Racha actual de 30 días | 1000 |
+| `level_10` | Nivel 10 | Nivel 10 (4500 XP) | 500 |
+| `level_25` | Nivel 25 | Nivel 25 (12 000 XP) | 1000 |
+
+- **Cuándo se evalúan:** al completar una lección o un módulo, al publicarse una evaluación aprobada (los antiguos logros de quiz pasan a evaluaciones), con cada día de actividad nuevo (primera vista de página: logros de racha y de nivel) y cuando un logro suma XP (puede cruzar un umbral de nivel).
+- **Nivel 10 y 25:** usan la fórmula de nivel de la sección 3. Antes se usaba √(xp/50), así que el umbral cambia respecto de la versión anterior.
+- **Aviso:** solo el evento en tiempo real `achievement:unlocked` (toast en el cliente). No se crea una notificación persistida.
+- **Migración:** `20261028120100_achievement_code_unique` deriva `code` y `xpReward` del título, borra los duplicados conservando el desbloqueo más antiguo (informa el conteo con `RAISE NOTICE`) y crea el índice único. Un título fuera del catálogo queda con el código `legacy:<id>`.
+

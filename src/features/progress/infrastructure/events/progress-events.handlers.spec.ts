@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los manejadores de eventos de progreso
  * Descripción: Verifica que cada evento alimente el registro de actividad con el tipo, la referencia y el instante correctos antes de evaluar los logros: solo la primera vista de página, lección y módulo completados, solo evaluaciones aprobadas (con la fecha de publicación) y logros con su recompensa; que un evento repetido no vuelva a evaluar logros por XP y que un fallo del registro no impida la evaluación ni propague el error
- * Versión: 0.1
+ * Versión: 0.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -51,7 +51,7 @@ describe("ProgressEventsHandlers", () => {
     await handlers.handlePageViewed(new PageViewedEvent({ userId: "U1", pageId: "P1", lessonId: "L1", moduleId: "M1", firstView: true, occurredAt: OCCURRED_AT }));
 
     expect(recorded()).toEqual([{ userId: "U1", kind: "PAGE_VIEWED", refId: "P1", occurredAt: OCCURRED_AT, achievementReward: 0 }]);
-    expect(triggers()).toEqual([["streak_days", "xp_reached"]]);
+    expect(triggers()).toEqual([["streak_days", "level_reached"]]);
   });
 
   it("ignores repeated views and does not evaluate achievements for a duplicate first view", async () => {
@@ -74,14 +74,14 @@ describe("ProgressEventsHandlers", () => {
       ["LESSON_COMPLETED", "L1"],
       ["MODULE_COMPLETED", "M1"],
     ]);
-    expect(triggers()).toEqual([["lessons_completed", "streak_days", "xp_reached", "modules_completed"]]);
+    expect(triggers()).toEqual([["lessons_completed", "streak_days", "level_reached", "modules_completed"]]);
   });
 
   it("still evaluates achievements when the ledger write fails", async () => {
     record.mockRejectedValue(new Error("db down"));
 
     await expect(handlers.handleLessonCompleted(new LessonCompletedEvent({ userId: "U1", lessonId: "L1", moduleId: "M1", moduleCompleted: false }))).resolves.toBeUndefined();
-    expect(triggers()).toEqual([["lessons_completed", "streak_days", "xp_reached"]]);
+    expect(triggers()).toEqual([["lessons_completed", "streak_days", "level_reached"]]);
   });
 
   it("records a passed evaluation on its publication date and ignores a failed one", async () => {
@@ -102,17 +102,17 @@ describe("ProgressEventsHandlers", () => {
     await handlers.handleEvaluationGradePublished(new EvaluationGradePublishedEvent({ ...base, passed: true }));
 
     expect(recorded()).toEqual([{ userId: "U1", kind: "EVALUATION_PASSED", refId: "E1", occurredAt: OCCURRED_AT, achievementReward: 0 }]);
-    expect(triggers()).toEqual([["quizzes_passed", "perfect_score", "streak_days", "xp_reached"]]);
+    expect(triggers()).toEqual([["evaluations_passed", "perfect_score", "streak_days", "level_reached"]]);
   });
 
   it("notifies the unlocked achievement, records its reward and evaluates XP achievements again", async () => {
-    const achievement: Achievement = Achievement.unlock({ userId: "U1", title: "Primer Paso", xpReward: 50 });
+    const achievement: Achievement = Achievement.unlock({ userId: "U1", code: "first_lesson", title: "Primer Paso", xpReward: 50 });
     const [event]: AchievementUnlockedEvent[] = achievement.getEvents() as AchievementUnlockedEvent[];
 
     await handlers.handleAchievementUnlocked(event);
 
-    expect(emitToUser).toHaveBeenCalledWith("U1", ACHIEVEMENT_UNLOCKED_REALTIME_EVENT, expect.objectContaining({ title: "Primer Paso", xpReward: 50 }));
-    expect(recorded()).toEqual([expect.objectContaining({ kind: "ACHIEVEMENT_UNLOCKED", achievementReward: 50 })]);
-    expect(triggers()).toEqual([["xp_reached"]]);
+    expect(emitToUser).toHaveBeenCalledWith("U1", ACHIEVEMENT_UNLOCKED_REALTIME_EVENT, expect.objectContaining({ code: "first_lesson", title: "Primer Paso", xpReward: 50 }));
+    expect(recorded()).toEqual([expect.objectContaining({ kind: "ACHIEVEMENT_UNLOCKED", refId: "first_lesson", achievementReward: 50 })]);
+    expect(triggers()).toEqual([["level_reached"]]);
   });
 });

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Dobles de prueba del progreso de aprendizaje
  * Descripción: Construye repositorios simulados con jest (progreso, consultas de progreso, progreso por páginas y logros), un gestor de transacciones que ejecuta el trabajo con una transacción ficticia, un bus de eventos que registra lo publicado y registros de lección de ejemplo, compartidos por las pruebas de los casos de uso del progreso
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -64,8 +64,8 @@ export function buildLearningProgressRepository(): jest.Mocked<ILearningProgress
 export function buildAchievementsRepository(): jest.Mocked<IAchievementsRepository> {
   return {
     getByUserId: jest.fn().mockResolvedValue([]),
-    getMetrics: jest.fn().mockResolvedValue({ completedLessons: 0, completedModules: 0, passedQuizzes: 0, perfectQuizzes: 0, activityDates: [] }),
-    save: jest.fn().mockResolvedValue(undefined),
+    getMetrics: jest.fn().mockResolvedValue({ completedLessons: 0, completedModules: 0, passedEvaluations: 0, perfectEvaluations: 0, currentStreak: 0, xpTotal: 0 }),
+    insertIfAbsent: jest.fn().mockResolvedValue(true),
   };
 }
 

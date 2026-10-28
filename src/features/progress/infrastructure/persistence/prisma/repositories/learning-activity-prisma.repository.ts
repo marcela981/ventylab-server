@@ -172,7 +172,7 @@ export class LearningActivityPrismaRepository implements ILearningActivityReposi
         WHERE grade_published_at IS NOT NULL AND grade IS NOT NULL AND grade >= ${passingGrade}::float8
         ORDER BY user_id, evaluation_id, grade_published_at ASC`,
       Prisma.sql`
-        SELECT "userId" AS user_id, ${ACHIEVEMENT_UNLOCKED_ACTIVITY}::text AS kind, id AS ref_id, 0 AS xp,
+        SELECT "userId" AS user_id, ${ACHIEVEMENT_UNLOCKED_ACTIVITY}::text AS kind, "code" AS ref_id, "xpReward" AS xp,
                ("unlockedAt" AT TIME ZONE 'UTC') AS occurred_at, ${bogotaDateOfUtcTimestamp(Prisma.sql`"unlockedAt"`)} AS local_date
         FROM achievements`,
     ];
@@ -202,6 +202,12 @@ export class LearningActivityPrismaRepository implements ILearningActivityReposi
     });
   }
 
+  private async _findAchievementTitles(userId: string, codes: string[]): Promise<TitledRow[]> {
+    const rows: { code: string; title: string }[] = await this._prisma.achievement.findMany({ where: { userId, code: { in: codes } }, select: { code: true, title: true } });
+
+    return rows.map((row: { code: string; title: string }): TitledRow => ({ id: row.code, title: row.title }));
+  }
+
   private async _loadTitles(userId: string, rows: { kind: LearningActivityKind; refId: string }[]): Promise<Map<string, string>> {
     const idsOf = (kind: LearningActivityKindValue): string[] => [...new Set(rows.filter((row: { kind: string }) => row.kind === kind).map((row: { refId: string }) => row.refId))];
     const lessonIds: string[] = idsOf(LESSON_COMPLETED_ACTIVITY);
@@ -216,7 +222,7 @@ export class LearningActivityPrismaRepository implements ILearningActivityReposi
       moduleIds.length > 0 ? this._prisma.module.findMany({ where: { id: { in: moduleIds } }, select: { id: true, title: true } }) : none,
       evaluationIds.length > 0 ? this._prisma.evaluation.findMany({ where: { id: { in: evaluationIds } }, select: { id: true, title: true } }) : none,
       pageIds.length > 0 ? this._prisma.page.findMany({ where: { id: { in: pageIds } }, select: { id: true, title: true } }) : none,
-      achievementRefs.length > 0 ? this._prisma.achievement.findMany({ where: { userId, id: { in: achievementRefs } }, select: { id: true, title: true } }) : none,
+      achievementRefs.length > 0 ? this._findAchievementTitles(userId, achievementRefs) : none,
     ]);
 
     const titles: Map<string, string> = new Map();

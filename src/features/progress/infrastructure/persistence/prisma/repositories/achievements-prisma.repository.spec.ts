@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma de logros
- * Descripción: Verifica con un cliente Prisma simulado que las métricas de quizzes aprobados y con puntaje perfecto se calculen sobre student_evaluation_attempts de evaluaciones QUIZ (nunca quiz_attempts), con el porcentaje heredado o round(score/maxScore*100) y el aprobado heredado o porcentaje ≥ nota mínima
- * Versión: 1.0
+ * Descripción: Verifica con un cliente Prisma simulado que las métricas de desbloqueo salgan del registro de actividad (evaluaciones aprobadas, XP total, racha) y de los intentos publicados con puntaje máximo, y que el guardado omita en conflicto por (usuario, código) y solo audite la fila insertada
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,76 +9,59 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
+import { Achievement } from "@/features/progress/domain/entities/achievement.entity";
 import { type AchievementMetrics } from "@/features/progress/domain/services/achievement-catalog";
-import { QUIZ_RESULT_ATTEMPT_SCOPE, QUIZ_RESULT_ATTEMPT_SELECT } from "@/features/progress/infrastructure/persistence/prisma/quiz-results";
+import { addDays, localDateToUtcMidnight, toBogotaLocalDate } from "@/features/progress/domain/services/activity-calendar";
 import { AchievementsPrismaRepository } from "@/features/progress/infrastructure/persistence/prisma/repositories/achievements-prisma.repository";
 
 interface PrismaMock {
-  lessonCompletion: { count: jest.Mock; findMany: jest.Mock };
+  lessonCompletion: { count: jest.Mock };
   userProgress: { count: jest.Mock };
-  studentEvaluationAttempt: { findMany: jest.Mock };
-  quizAttempt: { count: jest.Mock };
+  learningActivityEvent: { count: jest.Mock; aggregate: jest.Mock };
+  userActivityDay: { findMany: jest.Mock };
+  achievement: { createMany: jest.Mock };
+  $queryRaw: jest.Mock;
 }
 
-function attemptRow(
-  id: string,
-  legacySource: string | null,
-  score: number,
-  maxScore: number,
-  legacyPayload: Record<string, unknown> | null,
-  legacyPassingScore: number | null,
-): Record<string, unknown> {
-  return { id, evaluationId: `eval-${id}`, score, maxScore, submittedAt: null, legacySource, legacyPayload, evaluation: { legacyPassingScore } };
-}
-
-describe("AchievementsPrismaRepository.getMetrics", () => {
+describe("AchievementsPrismaRepository", () => {
   let prisma: PrismaMock;
+  let auditSave: jest.Mock;
   let repository: AchievementsPrismaRepository;
 
   beforeEach(() => {
+    const today: string = toBogotaLocalDate(new Date());
+
     prisma = {
-      lessonCompletion: { count: jest.fn().mockResolvedValue(4), findMany: jest.fn().mockResolvedValue([]) },
+      lessonCompletion: { count: jest.fn().mockResolvedValue(4) },
       userProgress: { count: jest.fn().mockResolvedValue(1) },
-      studentEvaluationAttempt: { findMany: jest.fn().mockResolvedValue([]) },
-      quizAttempt: { count: jest.fn() },
+      learningActivityEvent: { count: jest.fn().mockResolvedValue(3), aggregate: jest.fn().mockResolvedValue({ _sum: { xp: 1250 } }) },
+      userActivityDay: {
+        findMany: jest.fn().mockResolvedValue([{ localDate: localDateToUtcMidnight(addDays(today, -1)) }, { localDate: localDateToUtcMidnight(today) }]),
+      },
+      achievement: { createMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      $queryRaw: jest.fn().mockResolvedValue([{ evaluationId: "E1" }, { evaluationId: "E2" }]),
     };
-    repository = new AchievementsPrismaRepository(prisma as unknown as PrismaService, { save: jest.fn() });
+    auditSave = jest.fn().mockResolvedValue(undefined);
+    repository = new AchievementsPrismaRepository(prisma as unknown as PrismaService, { save: auditSave });
   });
 
-  afterEach(() => {
-    expect(prisma.quizAttempt.count).not.toHaveBeenCalled();
-  });
-
-  it("reads quiz attempts of the user from student_evaluation_attempts with the quiz result scope", async () => {
-    await repository.getMetrics("user-1");
-
-    expect(prisma.studentEvaluationAttempt.findMany).toHaveBeenCalledWith({
-      where: { AND: [QUIZ_RESULT_ATTEMPT_SCOPE, { userId: "user-1" }] },
-      select: QUIZ_RESULT_ATTEMPT_SELECT,
-    });
-  });
-
-  it("restricts the scope to QUIZ evaluations from quizzes or new ones, and to legacy or published graded attempts", () => {
-    expect(QUIZ_RESULT_ATTEMPT_SCOPE).toEqual({
-      evaluation: { type: "QUIZ", OR: [{ legacySource: "quiz" }, { legacySource: null }] },
-      OR: [{ legacySource: "quiz_attempt" }, { status: "GRADED", gradePublishedAt: { not: null } }],
-    });
-  });
-
-  it("counts passed and perfect quizzes with the legacy flags and the percent mapping of new attempts", async () => {
-    prisma.studentEvaluationAttempt.findMany.mockResolvedValue([
-      attemptRow("legacy-perfect", "quiz_attempt", 100, 100, { passed: true, score: 100 }, 70),
-      attemptRow("legacy-failed", "quiz_attempt", 65, 100, { passed: false, score: 65 }, 60),
-      attemptRow("new-passed", null, 3, 4, null, null),
-      attemptRow("new-perfect", null, 4, 4, null, null),
-      attemptRow("new-failed", null, 2, 4, null, null),
-    ]);
-
+  it("builds the metrics from the ledger and the published perfect attempts", async () => {
     const metrics: AchievementMetrics = await repository.getMetrics("user-1");
 
-    expect(metrics.passedQuizzes).toBe(3);
-    expect(metrics.perfectQuizzes).toBe(2);
-    expect(metrics.completedLessons).toBe(4);
-    expect(metrics.completedModules).toBe(1);
+    expect(metrics).toEqual({ completedLessons: 4, completedModules: 1, passedEvaluations: 3, perfectEvaluations: 2, currentStreak: 2, xpTotal: 1250 });
+    expect(prisma.learningActivityEvent.count).toHaveBeenCalledWith({ where: { userId: "user-1", kind: "EVALUATION_PASSED" } });
+  });
+
+  it("inserts with skipDuplicates and audits only an inserted unlock", async () => {
+    const achievement: Achievement = Achievement.unlock({ userId: "user-1", code: "first_lesson", title: "Primer Paso", xpReward: 50 });
+
+    await expect(repository.insertIfAbsent(achievement, prisma)).resolves.toBe(true);
+    expect(prisma.achievement.createMany).toHaveBeenCalledWith({ data: [expect.objectContaining({ code: "first_lesson", xpReward: 50 })], skipDuplicates: true });
+    expect(auditSave).toHaveBeenCalledTimes(1);
+
+    prisma.achievement.createMany.mockResolvedValue({ count: 0 });
+
+    await expect(repository.insertIfAbsent(achievement)).resolves.toBe(false);
+    expect(auditSave).toHaveBeenCalledTimes(1);
   });
 });

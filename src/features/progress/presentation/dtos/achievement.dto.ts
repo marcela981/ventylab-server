@@ -14,6 +14,9 @@ export class AchievementDTO {
   @ApiProperty({ description: "Achievement ID", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e6f" })
   public id: string;
 
+  @ApiProperty({ description: "Stable catalog key of the achievement (one unlock per user and code)", example: "first_lesson" })
+  public code: string;
+
   @ApiProperty({ description: "Achievement title", example: "Primer Paso" })
   public title: string;
 
@@ -29,8 +32,9 @@ export class AchievementDTO {
   @ApiProperty({ description: "Experience points rewarded by the achievement", example: 50 })
   public xpReward: number;
 
-  public constructor({ id, title, description, icon, unlockedAt, xpReward }: AchievementDTO) {
+  public constructor({ id, code, title, description, icon, unlockedAt, xpReward }: AchievementDTO) {
     this.id = id;
+    this.code = code;
     this.title = title;
     this.description = description;
     this.icon = icon;

@@ -1,6 +1,6 @@
 # Funcionalidad: Contrato de eventos en tiempo real (AsyncAPI 3.0)
-# Descripción: Documenta los eventos Socket.io que emite el servidor (sala, destinatarios y carga), los mensajes que acepta del cliente (authenticate y los ventilator:* reenviados) y los flujos de eventos SSE del tutor de IA y de la asistencia de simulación; test/openapi/asyncapi-events.spec.ts falla si un evento emitido en src/ no aparece aquí. v1.1: sin ventilator:reserved ni ventilator:released, y ventilator:data solo para la simulación de paciente (sala del usuario). v1.2: ventilator:control-changed lleva el nombre del operador proyectado por sala (oculto a los estudiantes que no comparten la reserva con él) y la clave de su etiqueta genérica
-# Versión: 1.2
+# Descripción: Documenta los eventos Socket.io que emite el servidor (sala, destinatarios y carga), los mensajes que acepta del cliente (authenticate y los ventilator:* reenviados) y los flujos de eventos SSE del tutor de IA y de la asistencia de simulación; test/openapi/asyncapi-events.spec.ts falla si un evento emitido en src/ no aparece aquí. v1.1: sin ventilator:reserved ni ventilator:released, y ventilator:data solo para la simulación de paciente (sala del usuario). v1.2: ventilator:control-changed lleva el nombre del operador proyectado por sala (oculto a los estudiantes que no comparten la reserva con él) y la clave de su etiqueta genérica. v1.3 (Bloque 2): achievement:unlocked lleva el código estable del logro (code, AchievementDTO)
+# Versión: 1.3
 # Autor: Marcela Mazo Castro
 # Proyecto: VentyLab
 # Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -362,7 +362,7 @@ components:
             format: date-time
     AchievementUnlocked:
       name: "achievement:unlocked"
-      summary: The user unlocked an achievement
+      summary: The user unlocked an achievement (one per user and catalog code; the payload carries the stable code)
       payload:
         $ref: "./openapi.json#/components/schemas/AchievementDTO"
     ReservationPreempted:

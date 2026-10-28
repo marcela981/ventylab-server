@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Manejadores de eventos de progreso
  * Descripción: Alimentan el registro de actividad de gamificación de forma idempotente (primera vista de página, lección completada y, si completó el módulo, módulo completado, evaluación con nota publicada aprobada y logro desbloqueado con su recompensa) y después disparan UnlockAchievementsUseCase con los tipos de condición afectados; al desbloquearse un logro lo notifican al usuario por IRealtimePublisher (achievement:unlocked); todos fallan en silencio con registro en el logger
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,9 +25,9 @@ import {
   LESSONS_COMPLETED_CONDITION,
   MODULES_COMPLETED_CONDITION,
   PERFECT_SCORE_CONDITION,
-  QUIZZES_PASSED_CONDITION,
+  EVALUATIONS_PASSED_CONDITION,
   STREAK_DAYS_CONDITION,
-  XP_REACHED_CONDITION,
+  LEVEL_REACHED_CONDITION,
 } from "@/features/progress/domain/services/achievement-catalog";
 import {
   ACHIEVEMENT_UNLOCKED_ACTIVITY,
@@ -66,7 +66,7 @@ export class ProgressEventsHandlers {
       );
 
       if (inserted) {
-        await this._unlock(event.userId, [STREAK_DAYS_CONDITION, XP_REACHED_CONDITION]);
+        await this._unlock(event.userId, [STREAK_DAYS_CONDITION, LEVEL_REACHED_CONDITION]);
       }
     } catch (error) {
       this._logger.warn(`Page view activity failed for user ${event.userId}: ${describeError(error)}`);
@@ -75,7 +75,7 @@ export class ProgressEventsHandlers {
 
   @OnEvent(LessonCompletedEvent.name)
   public async handleLessonCompleted(event: LessonCompletedEvent): Promise<void> {
-    const triggers: AchievementConditionType[] = [LESSONS_COMPLETED_CONDITION, STREAK_DAYS_CONDITION, XP_REACHED_CONDITION];
+    const triggers: AchievementConditionType[] = [LESSONS_COMPLETED_CONDITION, STREAK_DAYS_CONDITION, LEVEL_REACHED_CONDITION];
 
     try {
       await this._recordLearningActivityUseCase.execute(
@@ -109,7 +109,7 @@ export class ProgressEventsHandlers {
       this._logger.warn(`Evaluation activity failed for user ${event.userId}: ${describeError(error)}`);
     }
 
-    await this._unlock(event.userId, [QUIZZES_PASSED_CONDITION, PERFECT_SCORE_CONDITION, STREAK_DAYS_CONDITION, XP_REACHED_CONDITION]);
+    await this._unlock(event.userId, [EVALUATIONS_PASSED_CONDITION, PERFECT_SCORE_CONDITION, STREAK_DAYS_CONDITION, LEVEL_REACHED_CONDITION]);
   }
 
   @OnEvent(AchievementUnlockedEvent.name)
@@ -117,6 +117,7 @@ export class ProgressEventsHandlers {
     try {
       this._realtimePublisher.emitToUser(event.entity.userId, ACHIEVEMENT_UNLOCKED_REALTIME_EVENT, {
         id: event.entity.id,
+        code: event.entity.code,
         title: event.entity.title,
         description: event.entity.description ?? null,
         icon: event.entity.icon ?? null,
@@ -132,7 +133,7 @@ export class ProgressEventsHandlers {
         new RecordLearningActivityCommand({
           userId: event.entity.userId,
           kind: ACHIEVEMENT_UNLOCKED_ACTIVITY,
-          refId: event.entity.id,
+          refId: event.entity.code,
           occurredAt: event.entity.unlockedAt,
           achievementReward: event.xpReward,
         }),
@@ -140,7 +141,7 @@ export class ProgressEventsHandlers {
 
       // The reward may cross an XP threshold ("Level 10"): evaluate it again; the catalog is finite, so the chain ends.
       if (inserted && event.xpReward > 0) {
-        await this._unlock(event.entity.userId, [XP_REACHED_CONDITION]);
+        await this._unlock(event.entity.userId, [LEVEL_REACHED_CONDITION]);
       }
     } catch (error) {
       this._logger.warn(`Achievement activity failed for user ${event.entity.userId}: ${describeError(error)}`);
