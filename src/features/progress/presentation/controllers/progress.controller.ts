@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de progreso
- * Descripción: Expone las rutas autenticadas de /api/progress (resumen general, vistas de página, progreso por páginas de módulo, nivel, sección y resumen, progreso heredado de módulo y lección, pasos, reanudación, detalle, hitos, logros y habilidades) y delega en los casos de uso de progreso y en GetModuleResumeUseCase. Las rutas por ID de lección heredado (GET y PUT lesson/:lessonId) están deprecadas en favor de lesson/:lessonId/details y de las vistas de página. v1.4: la vista de página documenta el 403 progress.lesson_locked del orden de lecciones.
- * Versión: 1.4
+ * Descripción: Expone las rutas autenticadas de /api/progress (resumen general, vistas de página, progreso por páginas de módulo, nivel, sección y resumen, progreso heredado de módulo y lección, pasos, reanudación, detalle, hitos, logros y habilidades) y delega en los casos de uso de progreso y en GetModuleResumeUseCase. Las rutas por ID de lección heredado (GET y PUT lesson/:lessonId) están deprecadas en favor de lesson/:lessonId/details y de las vistas de página. v1.4: la vista de página documenta el 403 progress.lesson_locked del orden de lecciones. v1.5: resume/:moduleId, milestones y skills quedan deprecadas (Bloque 2: el cliente deriva hitos y habilidades del progreso real y calcula dónde continuar).
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import { I18n, I18nContext } from "nestjs-i18n";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
 import { DeprecatedRoute } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
+import { BLOCK2_ROUTES_DEPRECATED_AT } from "@/common/presentation/utils/deprecation.util";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
@@ -221,6 +222,7 @@ export class ProgressController {
   }
 
   @Get("resume/:moduleId")
+  @DeprecatedRoute({ successor: "/api/progress/modules/:moduleId", since: BLOCK2_ROUTES_DEPRECATED_AT })
   @RequirePermissions("progress:read_own")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get module resume state", description: "Returns the first incomplete active lesson of the module and the step to resume at" })
@@ -266,6 +268,7 @@ export class ProgressController {
   }
 
   @Get("milestones")
+  @DeprecatedRoute({ successor: "/api/progress/summary", since: BLOCK2_ROUTES_DEPRECATED_AT })
   @RequirePermissions("progress:read_own")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get progress milestones", description: "Returns the user milestones" })
@@ -296,6 +299,7 @@ export class ProgressController {
   }
 
   @Get("skills")
+  @DeprecatedRoute({ successor: "/api/progress/summary", since: BLOCK2_ROUTES_DEPRECATED_AT })
   @RequirePermissions("progress:read_own")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get progress skills", description: "Returns the user skills and competence categories" })

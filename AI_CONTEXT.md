@@ -1,7 +1,7 @@
 <!--
  * Funcionalidad: Contexto del backend para asistentes de IA
- * Descripción: Estado real del backend NestJS de VentyLab: stack, arquitectura, familias de rutas, roles y permisos, contrato OpenAPI compartido con ventilab-web, contrato Socket.io (incluido el lote ventilator:telemetry), MQTT, variables de entorno, migraciones versionadas, despliegue en un contenedor persistente de una sola réplica sobre Dokploy y comandos. v1.2: sin el puente de NextAuth (ruta nextauth-token, NEXTAUTH_SECRET y NEXTAUTH_BRIDGE_SECRET). v1.3 (Bloque 1): reserva inmediata, paciente propio en sesiones FREE, sembrador de arranque de casos clínicos y limitaciones conocidas (operador y sala en memoria, vencimiento por sondeo)
- * Versión: 1.3
+ * Descripción: Estado real del backend NestJS de VentyLab: stack, arquitectura, familias de rutas, roles y permisos, contrato OpenAPI compartido con ventilab-web, contrato Socket.io (incluido el lote ventilator:telemetry), MQTT, variables de entorno, migraciones versionadas, despliegue en un contenedor persistente de una sola réplica sobre Dokploy y comandos. v1.2: sin el puente de NextAuth (ruta nextauth-token, NEXTAUTH_SECRET y NEXTAUTH_BRIDGE_SECRET). v1.3 (Bloque 1): reserva inmediata, paciente propio en sesiones FREE, sembrador de arranque de casos clínicos y limitaciones conocidas (operador y sala en memoria, vencimiento por sondeo). v1.4 (Bloque 2): GET /api/lessons/:id/access y nuevas rutas deprecadas
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -47,11 +47,11 @@ Prisma schema: `prisma/schema.prisma`, **59 models**. `PrismaService` is the onl
 ## Routes
 
 - No global prefix; every controller declares `api/<resource>`. Health is the exception: `GET /`, `/health`, `/api/health`, `/health/ready`, `/api/health/ready` (public, no throttling).
-- 355 method + route combinations (53 controllers), exactly the operations of `openapi/openapi.json`. 24 of them are deprecated controller aliases (`api/cases`, `api/cards`, `api/evaluation/quizzes`) with `Deprecation`/`Link` headers.
+- 356 method + route combinations (53 controllers), exactly the operations of `openapi/openapi.json`. 24 of them are deprecated controller aliases (`api/cases`, `api/cards`, `api/evaluation/quizzes`) with `Deprecation`/`Link` headers.
 - Route families: `auth`, `authorization`, `users`, `me/summary`, `admin` (+ `admin/ai-ratings`, `admin/ai-telemetry`, `admin/ai/providers`), `levels`, `modules`, `lessons`, `steps`, `pages`, `sections`, `curriculum`, `teaching` (curriculum editor), `overrides`, `changelog`, `progress`, `quizzes`, `clinical-cases`, `activities`, `activity-assignments`, `activity-submissions`, `evaluations`, `evaluation-assignments`, `evaluation-attempts`, `evaluation-grading`, `my-evaluations`, `groups`, `scores`, `teacher-students`, `teachers`, `students`, `notes`, `notifications`, `media`, `tutor`, `ai-ratings`, `analytics`, `audit`, `platform-settings`, `system`, `reservations`, `ventilator` (telemetry, commands, control), `simulation` (legacy simulator plus `simulation/sessions/*` of the isomorphic engine, ADR 0005).
 - `api/auth`: `register`, `login`, `google`, `refresh`, `logout`, `me`. There is **no** `register/superuser` route, and the NextAuth bridge (`nextauth-token`) was retired.
 - Public routes: health, `POST api/auth/register|login|google|refresh`, `GET api/simulation/health`. Content reads use `OptionalJwtAuthGuard`. Everything else uses `JwtAuthGuard` + `PermissionsGuard` with `@RequirePermissions(...)` (method metadata replaces class metadata; all listed permissions are required).
-- Legacy routes deprecated with `@DeprecatedRoute`: `PATCH api/admin/users/:id/role`, `GET api/pages/by-legacy-json/:id`, `GET/PUT api/progress/lesson/:lessonId`. List in `docs/api/legacy-endpoints.md`.
+- Legacy routes deprecated with `@DeprecatedRoute`: `PATCH api/admin/users/:id/role`, `GET api/pages/by-legacy-json/:id`, `GET/PUT api/progress/lesson/:lessonId`, and since Block 2 `GET api/teaching/lessons/:lessonId/access` (successor `GET api/lessons/:id/access`), `GET api/modules/:id/resume`, `GET api/progress/resume/:moduleId`, `GET api/progress/milestones` and `GET api/progress/skills`. List in `docs/api/legacy-endpoints.md`.
 
 ## Roles and authorization
 

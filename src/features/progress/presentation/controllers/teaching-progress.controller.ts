@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de progresión de enseñanza
- * Descripción: Expone las rutas autenticadas de progresión bajo /api/teaching (módulos desbloqueados y verificación de acceso a módulo y lección) y delega en los casos de uso de progreso. v1.3: GET lessons/:lessonId/access queda deprecada en favor de GET /api/lessons/:id/access (aplica el bypass de staff)
- * Versión: 1.3
+ * Descripción: Expone las rutas autenticadas de progresión bajo /api/teaching (módulos desbloqueados y verificación de acceso a módulo y lección) y delega en los casos de uso de progreso. v1.3: GET lessons/:lessonId/access queda deprecada en favor de GET /api/lessons/:id/access (aplica el bypass de staff). v1.4: fecha de deprecación del Bloque 2
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import { I18n, I18nContext } from "nestjs-i18n";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
 import { DeprecatedRoute } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
+import { BLOCK2_ROUTES_DEPRECATED_AT } from "@/common/presentation/utils/deprecation.util";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
@@ -79,7 +80,7 @@ export class TeachingProgressController {
   }
 
   @Get("lessons/:lessonId/access")
-  @DeprecatedRoute({ successor: "/api/lessons/:id/access", successorParams: { id: "lessonId" } })
+  @DeprecatedRoute({ successor: "/api/lessons/:id/access", successorParams: { id: "lessonId" }, since: BLOCK2_ROUTES_DEPRECATED_AT })
   @RequirePermissions("progress:read_own")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Check lesson access", description: "Tells whether the current user can open the lesson in sequence" })
