@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de la telemetría de IA
  * Descripción: Tipos de la bitácora de llamadas de IA (entrada a registrar sin texto de prompt ni de respuesta, resumen de una llamada, fila exportable, consumo por usuario y estadísticas agregadas por día y por proveedor) y los valores de caso de uso y estado, incluida la referencia que marca las sondas de salud de los proveedores
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ export type AiTelemetryUseCaseValue =
   | "NOTES_ANALYSIS"
   | "PAGE_DEEPEN"
   | "LESSON_QA"
+  | "MODULE_QA"
   | "FREE_CHAT"
   | "TOPIC_CHECK"
   | "SIM_ASSIST";
@@ -22,6 +23,7 @@ export const AI_TELEMETRY_USE_CASE_VALUES: readonly AiTelemetryUseCaseValue[] = 
   "NOTES_ANALYSIS",
   "PAGE_DEEPEN",
   "LESSON_QA",
+  "MODULE_QA",
   "FREE_CHAT",
   "TOPIC_CHECK",
   "SIM_ASSIST",

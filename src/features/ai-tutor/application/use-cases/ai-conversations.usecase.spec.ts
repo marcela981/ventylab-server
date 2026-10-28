@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de las conversaciones del tutor
- * Descripción: Verifica el chat libre con verificación de tema (rechazo fijo persistido y BLOCKED_OFFTOPIC sin llamar a FREE_CHAT, chequeo 9; respaldo por lista de términos ante respuesta inválida), la cancelación a mitad del stream (ABORTED y respuesta parcial incompleta, chequeo 11), el aislamiento por dueño (404, chequeo 12), que el payload enviado al proveedor no lleve correo ni nombre (chequeo 13), el contexto de lección por prioridad y presupuesto, la ventana de historial y el CRUD de conversaciones
- * Versión: 1.1
+ * Descripción: Verifica el chat libre con verificación de tema (rechazo fijo persistido y BLOCKED_OFFTOPIC sin llamar a FREE_CHAT, chequeo 9; respaldo por lista de términos ante respuesta inválida), la cancelación a mitad del stream (ABORTED y respuesta parcial incompleta, chequeo 11, con el evento start que entrega el id del mensaje parcial antes del primer fragmento para poder valorarlo), el caso de uso MODULE_QA de las conversaciones de módulo, el aislamiento por dueño (404, chequeo 12), que el payload enviado al proveedor no lleve correo ni nombre (chequeo 13), el contexto de lección por prioridad y presupuesto, la ventana de historial y el CRUD de conversaciones
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -76,6 +76,7 @@ describe("AI tutor conversations", () => {
     expect(harness.recorder.records.map((record: AiCallRecord) => record.useCase)).toEqual(["TOPIC_CHECK", "FREE_CHAT"]);
     expect(blocked).toMatchObject({ useCase: "FREE_CHAT", attempts: 0, userId: STUDENT_CALLER.userId });
     expect(events).toEqual([
+      { type: "start", conversationId: result.conversationId, messageId: messages[1].id },
       { type: "delta", text: OFF_TOPIC_REPLY },
       { type: "done", aiCallId: blocked?.id, messageId: messages[1].id, conversationId: result.conversationId },
     ]);
@@ -125,9 +126,25 @@ describe("AI tutor conversations", () => {
       .messagesOf(conversation.id)
       .find((message: AiConversationMessage) => message.role === "ASSISTANT");
 
-    expect(received).toEqual([{ type: "delta", text: "Primera parte" }]);
+    expect(received).toEqual([
+      { type: "start", conversationId: conversation.id, messageId: assistant?.id },
+      { type: "delta", text: "Primera parte" },
+    ]);
     expect(harness.recorder.last).toMatchObject({ useCase: "LESSON_QA", status: "ABORTED", refType: "ai_message", refId: assistant?.id });
     expect(assistant).toMatchObject({ content: "Primera parte", isIncomplete: true });
+  });
+
+  it("should answer a module conversation with the MODULE_QA use case so lesson and module questions stay apart", async () => {
+    const provider: FakeLlmProvider = new FakeLlmProvider("fake", { kind: "stream", chunks: ["Respuesta del módulo"] });
+    const harness: TutorHarness = buildTutorHarness(provider);
+    const { start } = useCases(harness);
+
+    seedCurriculum(harness);
+
+    const result: TutorStreamResult = await start.execute(new StartAiConversationCommand({ caller: STUDENT_CALLER, scope: "MODULE", refId: "m-1", message: "Resume el módulo" }));
+    await collectEvents(result.events);
+
+    expect(harness.recorder.records.map((record: AiCallRecord) => record.useCase)).toEqual(["MODULE_QA"]);
   });
 
   it("should never send the user's email or name to the provider (check 13)", async () => {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.39
+ * Versión: 1.40
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -39,6 +39,7 @@ import {
 } from "@/features/ai/domain/ai.errors";
 import {
   AiRatingCallMismatchError,
+  AiRatingScopeMismatchError,
   AiRatingCommentTooLongError,
   AiRatingNotRecipientError,
   AiRatingTargetNotFoundError,
@@ -322,6 +323,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [AiRatingTargetNotFoundError, HttpStatus.NOT_FOUND],
   [AiRatingNotRecipientError, HttpStatus.FORBIDDEN],
   [AiRatingCallMismatchError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [AiRatingScopeMismatchError, HttpStatus.UNPROCESSABLE_ENTITY],
   [InvalidAiRatingsRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
   [InvalidAuditLogRangeError, HttpStatus.UNPROCESSABLE_ENTITY],
   [AuditLogEntryNotFoundError, HttpStatus.NOT_FOUND],

@@ -1,6 +1,6 @@
 # Funcionalidad: Contrato de eventos en tiempo real (AsyncAPI 3.0)
-# Descripción: Documenta los eventos Socket.io que emite el servidor (sala, destinatarios y carga), los mensajes que acepta del cliente (authenticate y los ventilator:* reenviados) y los flujos de eventos SSE del tutor de IA y de la asistencia de simulación; test/openapi/asyncapi-events.spec.ts falla si un evento emitido en src/ no aparece aquí. v1.1: sin ventilator:reserved ni ventilator:released, y ventilator:data solo para la simulación de paciente (sala del usuario). v1.2: ventilator:control-changed lleva el nombre del operador proyectado por sala (oculto a los estudiantes que no comparten la reserva con él) y la clave de su etiqueta genérica. v1.3 (Bloque 2): achievement:unlocked lleva el código estable del logro (code, AchievementDTO)
-# Versión: 1.3
+# Descripción: Documenta los eventos Socket.io que emite el servidor (sala, destinatarios y carga), los mensajes que acepta del cliente (authenticate y los ventilator:* reenviados) y los flujos de eventos SSE del tutor de IA y de la asistencia de simulación; test/openapi/asyncapi-events.spec.ts falla si un evento emitido en src/ no aparece aquí. v1.1: sin ventilator:reserved ni ventilator:released, y ventilator:data solo para la simulación de paciente (sala del usuario). v1.2: ventilator:control-changed lleva el nombre del operador proyectado por sala (oculto a los estudiantes que no comparten la reserva con él) y la clave de su etiqueta genérica. v1.3 (Bloque 2): achievement:unlocked lleva el código estable del logro (code, AchievementDTO). v1.4: los flujos del tutor empiezan con start (conversationId y messageId del asistente antes del primer fragmento) para poder valorar una respuesta detenida
+# Versión: 1.4
 # Autor: Marcela Mazo Castro
 # Proyecto: VentyLab
 # Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,7 +24,8 @@ info:
     **Server-sent events**: the AI tutor and simulation assistance routes answer `text/event-stream`.
     Errors detected before the stream opens keep the JSON error envelope and HTTP status documented in
     openapi.json; once open, the stream sends `delta` events, then one `done` event, or a final `error`
-    event, with a `: keep-alive` comment every 15 seconds.
+    event (tutor streams first send one `start` event with the conversation and assistant message ids, so a
+    client that stops the answer can still rate the persisted partial message), with a `: keep-alive` comment every 15 seconds.
 defaultContentType: application/json
 servers:
   socketio:
@@ -148,6 +149,8 @@ channels:
       pageId:
         description: Page identifier
     messages:
+      start:
+        $ref: "#/components/messages/TutorStart"
       delta:
         $ref: "#/components/messages/SseDelta"
       done:
@@ -160,6 +163,8 @@ channels:
     servers:
       - $ref: "#/servers/sse"
     messages:
+      start:
+        $ref: "#/components/messages/TutorStart"
       delta:
         $ref: "#/components/messages/SseDelta"
       done:
@@ -175,6 +180,8 @@ channels:
       conversationId:
         description: Conversation identifier
     messages:
+      start:
+        $ref: "#/components/messages/TutorStart"
       delta:
         $ref: "#/components/messages/SseDelta"
       done:
@@ -559,6 +566,18 @@ components:
           reason:
             type: string
             enum: [taken, takeover, released, presence_timeout, reservation_ended, reservation_preempted]
+    TutorStart:
+      name: "start"
+      summary: "First event of a tutor answer, sent before any text (SSE: event: start); the message id is ratable even if the client stops the answer"
+      contentType: text/event-stream
+      payload:
+        type: object
+        required: [conversationId, messageId]
+        properties:
+          conversationId:
+            type: string
+          messageId:
+            type: string
     SseDelta:
       name: "delta"
       summary: "Next text fragment (SSE: event: delta)"

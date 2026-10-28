@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad AiRating
- * Descripción: Valoración de un usuario sobre una salida de IA concreta (tipo de objetivo e identificador), única por (usuario, tipo de objetivo, objetivo) y editable: conserva su identidad y fecha de creación al responder de nuevo; enlaza opcionalmente la llamada de IA que produjo la salida
- * Versión: 1.0
+ * Descripción: Valoración de un usuario sobre una salida de IA concreta (tipo de objetivo e identificador), única por (usuario, tipo de objetivo, objetivo) y editable: conserva su identidad y fecha de creación al responder de nuevo; enlaza opcionalmente la llamada de IA que produjo la salida; guarda la superficie y el alcance de la respuesta valorada
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,7 @@
  */
 import { AggregateRoot } from "@/common/domain/aggregates/aggregate-root";
 import { generateId } from "@/common/domain/utils/generate-id";
-import { type AiRatingTargetTypeValue } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
+import { type AiRatingScopeValue, type AiRatingSurfaceValue, type AiRatingTargetTypeValue } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { type AiRatingAnswers } from "@/features/ai-ratings/domain/value-objects/ai-rating-answers";
 
 interface AiRatingProps {
@@ -19,6 +19,8 @@ interface AiRatingProps {
   targetType: AiRatingTargetTypeValue;
   targetId: string;
   aiCallId?: string;
+  surface?: AiRatingSurfaceValue;
+  scope?: AiRatingScopeValue;
   answers: AiRatingAnswers;
   createdAt: Date;
   updatedAt: Date;
@@ -30,6 +32,8 @@ export class AiRating extends AggregateRoot {
   private readonly _targetType: AiRatingTargetTypeValue;
   private readonly _targetId: string;
   private _aiCallId?: string;
+  private _surface?: AiRatingSurfaceValue;
+  private _scope?: AiRatingScopeValue;
   private _answers: AiRatingAnswers;
   private readonly _createdAt: Date;
   private _updatedAt: Date;
@@ -41,6 +45,8 @@ export class AiRating extends AggregateRoot {
     this._targetType = props.targetType;
     this._targetId = props.targetId;
     this._aiCallId = props.aiCallId;
+    this._surface = props.surface;
+    this._scope = props.scope;
     this._answers = props.answers;
     this._createdAt = props.createdAt;
     this._updatedAt = props.updatedAt;
@@ -51,17 +57,21 @@ export class AiRating extends AggregateRoot {
     targetType,
     targetId,
     aiCallId,
+    surface,
+    scope,
     answers,
   }: {
     userId: string;
     targetType: AiRatingTargetTypeValue;
     targetId: string;
     aiCallId?: string;
+    surface?: AiRatingSurfaceValue;
+    scope?: AiRatingScopeValue;
     answers: AiRatingAnswers;
   }): AiRating {
     const now: Date = new Date();
 
-    return new AiRating({ id: generateId(), userId, targetType, targetId, aiCallId, answers, createdAt: now, updatedAt: now });
+    return new AiRating({ id: generateId(), userId, targetType, targetId, aiCallId, surface, scope, answers, createdAt: now, updatedAt: now });
   }
 
   public static reconstitute(props: AiRatingProps): AiRating {
@@ -88,6 +98,14 @@ export class AiRating extends AggregateRoot {
     return this._aiCallId;
   }
 
+  public get surface(): AiRatingSurfaceValue | undefined {
+    return this._surface;
+  }
+
+  public get scope(): AiRatingScopeValue | undefined {
+    return this._scope;
+  }
+
   public get answers(): AiRatingAnswers {
     return this._answers;
   }
@@ -100,9 +118,12 @@ export class AiRating extends AggregateRoot {
     return this._updatedAt;
   }
 
-  public answer(answers: AiRatingAnswers, aiCallId: string | undefined): void {
+  /** Updates the answers; surface and scope keep their previous value when the new request omits them. */
+  public answer(answers: AiRatingAnswers, aiCallId: string | undefined, context: { surface?: AiRatingSurfaceValue; scope?: AiRatingScopeValue } = {}): void {
     this._answers = answers;
     this._aiCallId = aiCallId;
+    this._surface = context.surface ?? this._surface;
+    this._scope = context.scope ?? this._scope;
     this._updatedAt = new Date();
   }
 }

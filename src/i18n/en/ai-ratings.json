@@ -7,6 +7,7 @@
   "target_not_found": "The AI output to rate was not found",
   "not_recipient": "Only the recipient of an AI output can rate it",
   "ai_call_mismatch": "The AI call does not match the rated output",
+  "scope_mismatch": "The scope does not match the content of the rated answer",
   "invalid_range": "The date range must start before it ends and span at most 366 days",
   "validation": {
     "target_type_invalid": "The rating target type is not valid",
@@ -15,6 +16,8 @@
     "score_number": "Each rating dimension must be a number",
     "date_invalid": "The date must be a valid ISO 8601 date",
     "use_case_invalid": "The AI use case is not valid",
-    "filter_too_long": "The filter must have at most 100 characters"
+    "filter_too_long": "The filter must have at most 100 characters",
+    "surface_invalid": "The surface must be POPUP, ACCORDION, ASSISTANT or NOTES_ANALYSIS",
+    "scope_invalid": "The scope must be LESSON, MODULE, PAGE or FREE"
   }
 }

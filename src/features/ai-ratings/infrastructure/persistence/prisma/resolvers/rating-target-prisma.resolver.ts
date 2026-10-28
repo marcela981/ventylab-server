@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resolvedor Prisma de objetivos de valoración de IA
- * Descripción: Implementa IRatingTargetResolver. GRADE_FEEDBACK: el objetivo es el id de una fila de grade_feedbacks (general o por pregunta) en estado READY de un intento con calificación publicada; destinatario = dueño del intento y aiCallId = última llamada SUCCESS o FALLBACK enlazada al intento (refType evaluation_attempt) leída con AiTelemetryFacade. MESSAGE: id de un ai_messages con rol ASSISTANT; destinatario = dueño de la conversación y aiCallId del mensaje. NOTES_ANALYSIS: el análisis no se persiste, el objetivo es el aiCallId de la llamada (caso de uso NOTES_ANALYSIS) leído con AiTelemetryFacade. SIM_ASSIST: id de un simulation_events de tipo AI_HELP; destinatario = dueño de la sesión de simulación (simulation_sessions.user_id) y aiCallId = campo aiCallId del payload del evento cuando es texto
- * Versión: 1.2
+ * Descripción: Implementa IRatingTargetResolver. GRADE_FEEDBACK: el objetivo es el id de una fila de grade_feedbacks (general o por pregunta) en estado READY de un intento con calificación publicada; destinatario = dueño del intento y aiCallId = última llamada SUCCESS o FALLBACK enlazada al intento (refType evaluation_attempt) leída con AiTelemetryFacade. MESSAGE: id de un ai_messages con rol ASSISTANT; destinatario = dueño de la conversación y aiCallId del mensaje. NOTES_ANALYSIS: el análisis no se persiste, el objetivo es el aiCallId de la llamada (caso de uso NOTES_ANALYSIS) leído con AiTelemetryFacade. SIM_ASSIST: id de un simulation_events de tipo AI_HELP; destinatario = dueño de la sesión de simulación (simulation_sessions.user_id) y aiCallId = campo aiCallId del payload del evento cuando es texto; un mensaje del tutor informa el alcance de su conversación y, si quedó incompleto (respuesta detenida, sin aiCallId), enlaza su llamada ABORTED por la referencia ai_message
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,11 +13,16 @@ import { type Prisma } from "@prisma/client";
 
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { type IRatingTargetResolver, type RatingTarget } from "@/features/ai-ratings/application/ports/rating-target-resolver.interface";
-import { type AiRatingTargetTypeValue } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
+import { type AiRatingScopeValue, type AiRatingTargetTypeValue } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { AiTelemetryFacade } from "@/features/ai-telemetry/application/ai-telemetry.facade";
-import { type AiCallSummary } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
+import { type AiCallStatusValue, type AiCallSummary } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
 
 const GRADE_FEEDBACK_CALL_REF_TYPE: string = "evaluation_attempt";
+
+// Tutor calls are logged with refType ai_message and refId = the assistant message id (also for aborted, incomplete answers).
+const TUTOR_MESSAGE_CALL_REF_TYPE: string = "ai_message";
+
+const INCOMPLETE_MESSAGE_CALL_STATUSES: readonly AiCallStatusValue[] = ["ABORTED", "SUCCESS", "FALLBACK"] as const;
 
 interface GradeFeedbackTargetRow {
   readonly status: string;
@@ -34,7 +39,7 @@ interface SimAssistTargetRow {
 interface MessageTargetRow {
   readonly role: string;
   readonly aiCallId: string | null;
-  readonly conversation: { readonly userId: string };
+  readonly conversation: { readonly userId: string; readonly scope: AiRatingScopeValue };
 }
 
 // Technical debt: ai-ratings may only depend on ai-telemetry, so grade feedback, tutor messages and simulation assist events are read straight from their tables instead of through the evaluation, ai-tutor and simulation facades.
@@ -76,14 +81,17 @@ export class RatingTargetPrismaResolver implements IRatingTargetResolver {
   private async _resolveMessage(messageId: string): Promise<RatingTarget | undefined> {
     const row: MessageTargetRow | null = await this._prisma.aiMessage.findUnique({
       where: { id: messageId },
-      select: { role: true, aiCallId: true, conversation: { select: { userId: true } } },
+      select: { role: true, aiCallId: true, conversation: { select: { userId: true, scope: true } } },
     });
 
     if (!row || row.role !== "ASSISTANT") {
       return undefined;
     }
 
-    return { recipientUserId: row.conversation.userId, aiCallId: row.aiCallId ?? undefined };
+    // A stopped answer is persisted incomplete without aiCallId; its ABORTED call is still found through the message reference.
+    const aiCallId: string | undefined = row.aiCallId ?? (await this._aiTelemetryFacade.getLatestCallByRef(TUTOR_MESSAGE_CALL_REF_TYPE, messageId, INCOMPLETE_MESSAGE_CALL_STATUSES))?.id;
+
+    return { recipientUserId: row.conversation.userId, aiCallId, scope: row.conversation.scope };
   }
 
   private async _resolveSimAssist(eventId: string): Promise<RatingTarget | undefined> {

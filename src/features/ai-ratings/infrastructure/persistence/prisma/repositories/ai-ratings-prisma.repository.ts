@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de valoraciones de IA
- * Descripción: Implementa IAiRatingsRepository sobre ai_ratings con PrismaService: lectura por (usuario, tipo de objetivo, objetivo), upsert sobre esa clave única en la transacción activa, agregados con LEFT JOIN a ai_call_logs agrupados por caso de uso, proveedor, modelo y versión de prompt mediante $queryRaw parametrizado y filas de exportación sin identificador de usuario; exporta las columnas SQL de dimensiones y de grupo desconocido que reutiliza el repositorio de analítica
- * Versión: 1.1
+ * Descripción: Implementa IAiRatingsRepository sobre ai_ratings con PrismaService: lectura por (usuario, tipo de objetivo, objetivo), upsert sobre esa clave única en la transacción activa, agregados con LEFT JOIN a ai_call_logs agrupados por caso de uso, proveedor, modelo y versión de prompt mediante $queryRaw parametrizado y filas de exportación sin identificador de usuario; exporta las columnas SQL de dimensiones y de grupo desconocido que reutiliza el repositorio de analítica; filtra y agrupa también por superficie y alcance (unknown en valoraciones anteriores) y exporta el estado de la llamada
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -72,6 +72,8 @@ export class AiRatingsPrismaRepository implements IAiRatingsRepository {
   public async getStatsGroups(filters: AiRatingStatsFilters): Promise<AiRatingGroupAggregate[]> {
     const rows: RawAiRatingGroup[] = await this._prisma.$queryRaw<RawAiRatingGroup[]>(Prisma.sql`
       SELECT
+        coalesce(r.surface::text, ${UNKNOWN_SQL}) AS surface,
+        coalesce(r.scope::text, ${UNKNOWN_SQL}) AS scope,
         coalesce(l.use_case::text, ${UNKNOWN_SQL}) AS use_case,
         coalesce(l.provider, ${UNKNOWN_SQL}) AS provider,
         coalesce(l.model, ${UNKNOWN_SQL}) AS model,
@@ -82,8 +84,8 @@ export class AiRatingsPrismaRepository implements IAiRatingsRepository {
       FROM ai_ratings r
       LEFT JOIN ai_call_logs l ON l.id = r.ai_call_id
       WHERE ${this._whereSql(filters)}
-      GROUP BY 1, 2, 3, 4
-      ORDER BY 1, 2, 3, 4
+      GROUP BY 1, 2, 3, 4, 5, 6
+      ORDER BY 1, 2, 3, 4, 5, 6
     `);
 
     return rows.map((row: RawAiRatingGroup) => AiRatingsMapper.toGroupAggregate(row));
@@ -101,12 +103,16 @@ export class AiRatingsPrismaRepository implements IAiRatingsRepository {
       where: {
         createdAt: { gte: filters.from, lt: filters.to },
         ...(filters.targetType ? { targetType: filters.targetType } : {}),
+        ...(filters.surface ? { surface: filters.surface } : {}),
+        ...(filters.scope ? { scope: filters.scope } : {}),
         ...(Object.keys(callFilter).length > 0 ? { aiCall: callFilter } : {}),
       },
       select: {
         id: true,
         targetType: true,
         targetId: true,
+        surface: true,
+        scope: true,
         helpful: true,
         comment: true,
         quality: true,
@@ -115,7 +121,7 @@ export class AiRatingsPrismaRepository implements IAiRatingsRepository {
         safety: true,
         trust: true,
         createdAt: true,
-        aiCall: { select: { useCase: true, provider: true, model: true, promptVersion: true } },
+        aiCall: { select: { useCase: true, provider: true, model: true, promptVersion: true, status: true } },
       },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       take: limit,
@@ -129,6 +135,14 @@ export class AiRatingsPrismaRepository implements IAiRatingsRepository {
 
     if (filters.targetType) {
       conditions.push(Prisma.sql`r.target_type = ${filters.targetType}::"AiRatingTargetType"`);
+    }
+
+    if (filters.surface) {
+      conditions.push(Prisma.sql`r.surface = ${filters.surface}::"AiRatingSurface"`);
+    }
+
+    if (filters.scope) {
+      conditions.push(Prisma.sql`r.scope = ${filters.scope}::"AiRatingScope"`);
     }
 
     if (filters.useCase) {

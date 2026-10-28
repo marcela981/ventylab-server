@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del transporte SSE del tutor
- * Descripción: Verifica que un error antes del primer evento se propague sin abrir el stream (para que responda el sobre JSON de errores), el formato de los eventos delta, done y error, el cierre de la respuesta y la cancelación del AbortController cuando el cliente se desconecta antes de terminar
- * Versión: 1.0
+ * Descripción: Verifica que un error antes del primer evento se propague sin abrir el stream (para que responda el sobre JSON de errores), el formato de los eventos start, delta, done y error, el cierre de la respuesta y la cancelación del AbortController cuando el cliente se desconecta antes de terminar
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -90,12 +90,13 @@ describe("tutor SSE transport", () => {
     expect(response.chunks).toEqual([]);
   });
 
-  it("should write delta and done events as server-sent events and end the response", async () => {
+  it("should write start, delta and done events as server-sent events and end the response", async () => {
     const response: FakeResponse = new FakeResponse();
 
     await pipeTutorStreamToSse(
       asResponse(response),
       events([
+        { type: "start", conversationId: "conv-1", messageId: "msg-1" },
         { type: "delta", text: "Hola\nmundo" },
         { type: "done", aiCallId: "call-1", messageId: "msg-1", conversationId: "conv-1" },
       ]),
@@ -108,6 +109,7 @@ describe("tutor SSE transport", () => {
     expect(response.headers["x-accel-buffering"]).toBe("no");
     expect(response.headersFlushed).toBe(true);
     expect(response.chunks).toEqual([
+      "event: start\ndata: {\"conversationId\":\"conv-1\",\"messageId\":\"msg-1\"}\n\n",
       "event: delta\ndata: {\"text\":\"Hola\\nmundo\"}\n\n",
       "event: done\ndata: {\"aiCallId\":\"call-1\",\"messageId\":\"msg-1\",\"conversationId\":\"conv-1\"}\n\n",
     ]);

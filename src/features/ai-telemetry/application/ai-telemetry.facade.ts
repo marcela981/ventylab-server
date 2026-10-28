@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: AiTelemetryFacade
- * Descripción: API pública de la telemetría de IA para otras features: registrar una llamada sin bloquear ni lanzar (solo hash del prompt, costo estimado con la tabla de precios si no viene calculado), consumo de un usuario por caso de uso, estadísticas agregadas, p95 de latencia y tasa de error por proveedor desde un instante, resumen de una llamada y la última llamada SUCCESS o FALLBACK enlazada a una referencia, y el uso de IA por usuario y caso de uso de varios usuarios en una sola consulta para analítica
- * Versión: 1.4
+ * Descripción: API pública de la telemetría de IA para otras features: registrar una llamada sin bloquear ni lanzar (solo hash del prompt, costo estimado con la tabla de precios si no viene calculado), consumo de un usuario por caso de uso, estadísticas agregadas, p95 de latencia y tasa de error por proveedor desde un instante, resumen de una llamada y la última llamada SUCCESS o FALLBACK enlazada a una referencia, y el uso de IA por usuario y caso de uso de varios usuarios en una sola consulta para analítica; la última llamada por referencia admite otros estados (ABORTED para una respuesta detenida)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -78,7 +78,8 @@ export class AiTelemetryFacade {
     return this._aiCallLogsRepository.getById(id);
   }
 
-  public async getLatestCallByRef(refType: string, refId: string): Promise<AiCallSummary | undefined> {
-    return this._aiCallLogsRepository.getLatestByRef(refType, refId, ANSWERED_CALL_STATUSES);
+  /** Latest answered call linked to the reference; pass statuses to widen it (for example ABORTED for a stopped tutor answer). */
+  public async getLatestCallByRef(refType: string, refId: string, statuses: readonly AiCallStatusValue[] = ANSWERED_CALL_STATUSES): Promise<AiCallSummary | undefined> {
+    return this._aiCallLogsRepository.getLatestByRef(refType, refId, statuses);
   }
 }

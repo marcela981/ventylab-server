@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de persistencia de valoraciones de IA
- * Descripción: Convierte filas de ai_ratings en la entidad AiRating y viceversa (null ↔ undefined), las filas de agregados crudos de $queryRaw (bigint y nulos) en agregados de dominio y las filas de exportación con la llamada enlazada en filas sin identificador de usuario; mapea también los agregados por usuario y caso de uso de analítica
- * Versión: 1.1
+ * Descripción: Convierte filas de ai_ratings en la entidad AiRating y viceversa (null ↔ undefined), las filas de agregados crudos de $queryRaw (bigint y nulos) en agregados de dominio y las filas de exportación con la llamada enlazada en filas sin identificador de usuario; mapea también los agregados por usuario y caso de uso de analítica; superficie, alcance y estado de la llamada
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,8 @@ import { AiRatingAnswers } from "@/features/ai-ratings/domain/value-objects/ai-r
 export type RawAiRatingDimensionColumns = Readonly<Record<`${AiRatingDimension}_mean`, number | null>> & Readonly<Record<`${AiRatingDimension}_n`, bigint | number>>;
 
 export type RawAiRatingGroup = {
+  readonly surface: string;
+  readonly scope: string;
   readonly use_case: string;
   readonly provider: string;
   readonly model: string;
@@ -42,6 +44,8 @@ export interface AiRatingExportModel {
   readonly id: string;
   readonly targetType: AiRatingModel["targetType"];
   readonly targetId: string;
+  readonly surface: AiRatingModel["surface"];
+  readonly scope: AiRatingModel["scope"];
   readonly helpful: boolean;
   readonly comment: string | null;
   readonly quality: number | null;
@@ -50,7 +54,7 @@ export interface AiRatingExportModel {
   readonly safety: number | null;
   readonly trust: number | null;
   readonly createdAt: Date;
-  readonly aiCall: { useCase: string; provider: string; model: string | null; promptVersion: string } | null;
+  readonly aiCall: { useCase: string; provider: string; model: string | null; promptVersion: string; status: string } | null;
 }
 
 export type AiRatingWriteData = Omit<Prisma.AiRatingUncheckedCreateInput, "id" | "userId" | "targetType" | "targetId" | "createdAt">;
@@ -63,6 +67,8 @@ export class AiRatingsMapper {
       targetType: row.targetType,
       targetId: row.targetId,
       aiCallId: row.aiCallId ?? undefined,
+      surface: row.surface ?? undefined,
+      scope: row.scope ?? undefined,
       answers: AiRatingAnswers.create({
         helpful: row.helpful,
         comment: row.comment ?? undefined,
@@ -91,6 +97,8 @@ export class AiRatingsMapper {
   public static toUpdate(rating: AiRating): AiRatingWriteData {
     return {
       aiCallId: rating.aiCallId ?? null,
+      surface: rating.surface ?? null,
+      scope: rating.scope ?? null,
       helpful: rating.answers.helpful,
       comment: rating.answers.comment ?? null,
       quality: rating.answers.quality ?? null,
@@ -106,6 +114,8 @@ export class AiRatingsMapper {
     const dimensions: Record<AiRatingDimension, AiRatingDimensionStats> = AiRatingsMapper._toDimensions(row);
 
     return {
+      surface: row.surface,
+      scope: row.scope,
       useCase: row.use_case,
       provider: row.provider,
       model: row.model,
@@ -120,6 +130,8 @@ export class AiRatingsMapper {
     return {
       targetType: row.targetType,
       targetId: row.targetId,
+      surface: row.surface ?? undefined,
+      scope: row.scope ?? undefined,
       helpful: row.helpful,
       quality: row.quality ?? undefined,
       understanding: row.understanding ?? undefined,
@@ -132,6 +144,7 @@ export class AiRatingsMapper {
       provider: row.aiCall?.provider,
       model: row.aiCall?.model ?? undefined,
       promptVersion: row.aiCall?.promptVersion,
+      callStatus: row.aiCall?.status,
     };
   }
 

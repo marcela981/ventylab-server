@@ -1820,6 +1820,7 @@ enum AiUseCase {
   NOTES_ANALYSIS
   PAGE_DEEPEN
   LESSON_QA
+  MODULE_QA
   FREE_CHAT
   TOPIC_CHECK
   SIM_ASSIST
@@ -1844,6 +1845,22 @@ enum AiConversationScope {
 enum AiMessageRole {
   USER
   ASSISTANT
+}
+
+// Where the rated answer was shown in the web client (thesis analytics); null for ratings before Block 2.
+enum AiRatingSurface {
+  POPUP
+  ACCORDION
+  ASSISTANT
+  NOTES_ANALYSIS
+}
+
+// Content scope of the rated answer; derived from the conversation for MESSAGE targets.
+enum AiRatingScope {
+  LESSON
+  MODULE
+  PAGE
+  FREE
 }
 
 enum AiRatingTargetType {
@@ -1929,6 +1946,8 @@ model AiRating {
   expression    Int? // 1-5 (CHECK constraint in SQL)
   safety        Int? // 1-5 (CHECK constraint in SQL)
   trust         Int? // 1-5 (CHECK constraint in SQL)
+  surface       AiRatingSurface?
+  scope         AiRatingScope?
   createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
 
