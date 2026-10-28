@@ -3076,7 +3076,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Check lesson access
+         * @description Tells whether the current user can open the lesson: its module must be unlocked and every previous published lesson with published pages must be completed (lessons without published pages never block). Content managers are always allowed
+         *
+         *     **Required access:** bearer token holding `progress:read_own`; minimum role STUDENT.
+         */
+        get: operations["getLessonAccess"];
         put?: never;
         /**
          * Record lesson access
@@ -3760,9 +3766,12 @@ export interface paths {
         };
         /**
          * Get module resume point
+         * @deprecated
          * @description Finds the first incomplete active lesson and the step to resume at
          *
          *     **Required access:** bearer token holding `progress:read_own`; minimum role STUDENT.
+         *
+         *     **Deprecated:** use `GET /api/progress/modules/{moduleId}`. Responses carry the `Deprecation` header (RFC 9745) and, when the successor URL can be built from this request, `Link: <successor>; rel="successor-version"`.
          */
         get: operations["getModuleResume"];
         put?: never;
@@ -4263,7 +4272,7 @@ export interface paths {
         };
         /**
          * Get page by ID
-         * @description Retrieves a page with its active blocks and resolved media URLs; unpublished content answers 404 for students
+         * @description Retrieves a page with its active blocks and resolved media URLs; unpublished content answers 404 for students, and an authenticated student gets 403 progress.lesson_locked (data.missing lists the previous lessons to complete) when the lesson is still locked
          *
          *     **Required access:** public; an optional bearer token identifies the caller and may widen what is returned.
          */
@@ -4535,9 +4544,12 @@ export interface paths {
         };
         /**
          * Get progress milestones
+         * @deprecated
          * @description Returns the user milestones
          *
          *     **Required access:** bearer token holding `progress:read_own`; minimum role STUDENT.
+         *
+         *     **Deprecated:** use `GET /api/progress/summary`. Responses carry the `Deprecation` header (RFC 9745) and, when the successor URL can be built from this request, `Link: <successor>; rel="successor-version"`.
          */
         get: operations["getProgressMilestones"];
         put?: never;
@@ -4625,7 +4637,7 @@ export interface paths {
         put?: never;
         /**
          * Record a page view
-         * @description Idempotently records that the current user viewed a page; viewing every published page of a lesson completes it. Students only reach published pages with published ancestors
+         * @description Idempotently records that the current user viewed a page; viewing every published page of a lesson completes it. Students only reach published pages with published ancestors, and only in lesson order: a page of a locked lesson answers 403 progress.lesson_locked (data.missing lists the previous lessons to complete)
          *
          *     **Required access:** bearer token holding `progress:update_own`; minimum role STUDENT.
          */
@@ -4645,9 +4657,12 @@ export interface paths {
         };
         /**
          * Get module resume state
+         * @deprecated
          * @description Returns the first incomplete active lesson of the module and the step to resume at
          *
          *     **Required access:** bearer token holding `progress:read_own`; minimum role STUDENT.
+         *
+         *     **Deprecated:** use `GET /api/progress/modules/{moduleId}`. Responses carry the `Deprecation` header (RFC 9745) and, when the successor URL can be built from this request, `Link: <successor>; rel="successor-version"`.
          */
         get: operations["getProgressResume"];
         put?: never;
@@ -4689,9 +4704,12 @@ export interface paths {
         };
         /**
          * Get progress skills
+         * @deprecated
          * @description Returns the user skills and competence categories
          *
          *     **Required access:** bearer token holding `progress:read_own`; minimum role STUDENT.
+         *
+         *     **Deprecated:** use `GET /api/progress/summary`. Responses carry the `Deprecation` header (RFC 9745) and, when the successor URL can be built from this request, `Link: <successor>; rel="successor-version"`.
          */
         get: operations["getProgressSkills"];
         put?: never;
@@ -6053,9 +6071,12 @@ export interface paths {
         };
         /**
          * Check lesson access
+         * @deprecated
          * @description Tells whether the current user can open the lesson in sequence
          *
          *     **Required access:** bearer token holding `progress:read_own`; minimum role STUDENT.
+         *
+         *     **Deprecated:** use `GET /api/lessons/{id}/access`. Responses carry the `Deprecation` header (RFC 9745) and, when the successor URL can be built from this request, `Link: <successor>; rel="successor-version"`.
          */
         get: operations["checkTeachingLessonAccess"];
         put?: never;
@@ -13162,15 +13183,18 @@ export interface components {
         };
         LessonAccessDTO: {
             /**
-             * @description Whether the user can open the lesson
+             * @description Whether the current user can open the lesson (always true for content managers)
              * @example false
              */
-            hasAccess: boolean;
+            allowed: boolean;
+            /** @description Previous published lessons with published pages that are not completed yet, in lesson order; empty unless reason is previous_lesson_incomplete */
+            missing: components["schemas"]["MissingLessonDTO"][];
             /**
-             * @description Lesson ID
-             * @example lesson-ecuacion-movimiento
+             * @description Why the lesson is locked: module_locked (its module is still locked) or previous_lesson_incomplete (see missing); null when allowed
+             * @example previous_lesson_incomplete
+             * @enum {string|null}
              */
-            lessonId: string;
+            reason: "module_locked" | "previous_lesson_incomplete" | null;
         };
         LessonActivitySummaryDTO: {
             /**
@@ -14540,6 +14564,18 @@ export interface components {
              */
             totalCompleted: number;
         };
+        MissingLessonDTO: {
+            /**
+             * @description ID of a previous lesson that must be completed first
+             * @example cm1lesson00001
+             */
+            lessonId: string;
+            /**
+             * @description Title of that lesson
+             * @example Ecuación del movimiento
+             */
+            title: string;
+        };
         ModuleAccessDTO: {
             /**
              * @description Whether the user can open the module
@@ -14941,7 +14977,7 @@ export interface components {
              */
             order: number;
             /**
-             * @description Number of content pages in the legacy JSON content
+             * @description Number of published pages of the lesson; 0 means the lesson has nothing to show and the viewer skips it
              * @example 5
              */
             pageCount: number;
@@ -15445,6 +15481,33 @@ export interface components {
              */
             topic: string;
         };
+        MyContinueLearningDTO: {
+            /**
+             * @description Most recently accessed published lesson across all modules
+             * @example cm1lesson00001
+             */
+            lessonId: string;
+            /**
+             * @description Lesson title
+             * @example Ecuación del movimiento
+             */
+            lessonTitle: string;
+            /**
+             * @description Module of the lesson to continue
+             * @example cm1module00001
+             */
+            moduleId: string;
+            /**
+             * @description Module title
+             * @example Inversión fisiológica
+             */
+            moduleTitle: string;
+            /**
+             * @description Lesson-weighted completion percentage of the module (0-100)
+             * @example 40
+             */
+            percent: number;
+        };
         MyConversationDTO: {
             /**
              * @description Conversation identifier
@@ -15854,6 +15917,8 @@ export interface components {
         MySummaryDTO: {
             /** @description Evaluations open now */
             activeEvaluations: components["schemas"]["AnalyticsEvaluationDTO"][];
+            /** @description Where to resume studying: the most recently accessed lesson (UserProgress.lastAccessedAt) whose lesson and module are still published; null when there is none */
+            continueLearning: components["schemas"]["MyContinueLearningDTO"] | null;
             /** @description Published grades, newest first */
             grades: components["schemas"]["MyGradeDTO"][];
             /** @description Latest AI tutor conversations */
@@ -16658,6 +16723,11 @@ export interface components {
              * @example false
              */
             lessonJustCompleted: boolean;
+            /**
+             * @description Whether the module of the lesson is completed after this view (false for a page without a lesson)
+             * @example false
+             */
+            moduleCompleted: boolean;
             /**
              * @description Viewed page ID
              * @example cm1page000001
@@ -20318,7 +20388,7 @@ export interface components {
              */
             id: string;
             /**
-             * @description Number of lessons
+             * @description Number of published lessons with at least one published page; 0 means the module has nothing to study yet
              * @example 4
              */
             lessonCount: number;
@@ -20679,6 +20749,18 @@ export interface components {
              * @example Ana Pérez
              */
             name: string | null;
+        };
+        TeachingLessonAccessDTO: {
+            /**
+             * @description Whether the user can open the lesson
+             * @example false
+             */
+            hasAccess: boolean;
+            /**
+             * @description Lesson ID
+             * @example lesson-ecuacion-movimiento
+             */
+            lessonId: string;
         };
         TelemetryHealthDTO: {
             /**
@@ -34458,6 +34540,84 @@ export interface operations {
             };
         };
     };
+    getLessonAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lesson access retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["LessonAccessDTO"];
+                    };
+                };
+            };
+            /** @description Validation error or malformed request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The caller lacks the required permission or is not allowed to act on this resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Lesson not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     recordLessonAccess: {
         parameters: {
             query?: never;
@@ -39526,6 +39686,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description The lesson is locked for the current student (progress.lesson_locked) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Page not found */
             404: {
                 headers: {
@@ -41017,7 +41186,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Missing permission, or the lesson is locked for the current student (progress.lesson_locked) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -46514,7 +46683,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
-                        data: components["schemas"]["LessonAccessDTO"];
+                        data: components["schemas"]["TeachingLessonAccessDTO"];
                     };
                 };
             };
