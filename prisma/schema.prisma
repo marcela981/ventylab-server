@@ -111,6 +111,10 @@ model User {
   // Notifications feature
   notifications Notification[]
 
+  // Gamification feature (activity ledger)
+  learningActivityEvents LearningActivityEvent[]
+  activityDays           UserActivityDay[]
+
   @@index([role])
   @@index([isActive])
   @@map("users")
@@ -609,6 +613,49 @@ model Achievement {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("achievements")
+}
+
+// ============================================
+// GAMIFICATION: ACTIVITY LEDGER
+// ============================================
+// One row per rewarded learning fact; (userId, kind, refId) is unique so handlers insert and skip on conflict.
+// localDate is the America/Bogota calendar day of occurredAt (streak and activity calendar).
+enum LearningActivityKind {
+  PAGE_VIEWED
+  LESSON_COMPLETED
+  MODULE_COMPLETED
+  EVALUATION_PASSED
+  ACHIEVEMENT_UNLOCKED
+}
+
+model LearningActivityEvent {
+  id         String               @id @default(cuid())
+  userId     String               @map("user_id")
+  kind       LearningActivityKind
+  refId      String               @map("ref_id")
+  xp         Int
+  occurredAt DateTime             @map("occurred_at") @db.Timestamptz(6)
+  localDate  DateTime             @map("local_date") @db.Date
+  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, refId])
+  @@index([userId, occurredAt])
+  @@index([userId, localDate])
+  @@map("learning_activity_events")
+}
+
+// Per-user count of ledger events per America/Bogota day, maintained in the same statement as each ledger insert.
+model UserActivityDay {
+  userId     String   @map("user_id")
+  localDate  DateTime @map("local_date") @db.Date
+  eventCount Int      @default(0) @map("event_count")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, localDate])
+  @@map("user_activity_days")
 }
 
 enum UserRole {

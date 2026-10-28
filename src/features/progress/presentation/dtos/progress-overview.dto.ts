@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs del resumen general de progreso
- * Descripción: Define la respuesta del panel del estudiante (estadísticas, módulos, lecciones y niveles con su avance)
- * Versión: 1.0
+ * Descripción: Define la respuesta del panel del estudiante (estadísticas, con XP, nivel y racha del registro de actividad, módulos, lecciones y niveles con su avance)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,16 +23,16 @@ export class OverviewStatsDTO {
   @ApiProperty({ description: "Number of listed modules", example: 6 })
   public totalModules: number;
 
-  @ApiProperty({ description: "Experience points from completed lessons", example: 300 })
+  @ApiProperty({ description: "Total experience points from the activity ledger (same value as GET /api/progress/gamification)", example: 300 })
   public xpTotal: number;
 
-  @ApiProperty({ description: "Current level derived from the experience points", example: 1 })
+  @ApiProperty({ description: "Current level: floor(xpTotal / 500) + 1", example: 1 })
   public level: number;
 
-  @ApiProperty({ description: "Experience points needed for the next level", example: 500 })
+  @ApiProperty({ description: "Total experience points at which the next level starts (level × 500)", example: 500 })
   public nextLevelXp: number;
 
-  @ApiProperty({ description: "Consecutive study days", example: 0 })
+  @ApiProperty({ description: "Consecutive America/Bogota days with activity ending today or yesterday", example: 0 })
   public streakDays: number;
 
   public constructor({ completedLessons, totalLessons, modulesCompleted, totalModules, xpTotal, level, nextLevelXp, streakDays }: OverviewStatsDTO) {

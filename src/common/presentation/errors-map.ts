@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.38
+ * Versión: 1.39
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -219,6 +219,7 @@ import {
   PlatformSettingNotFoundError,
   PlatformSettingVersionConflictError,
 } from "@/features/platform-settings/domain/platform-settings.errors";
+import { InvalidActivityRangeError } from "@/features/progress/domain/gamification.errors";
 import {
   LessonAccessDeniedError,
   QuizScoreRequiredError,
@@ -430,6 +431,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [ContentOverrideAlreadyExistsError, HttpStatus.CONFLICT],
   [LessonAccessDeniedError, HttpStatus.FORBIDDEN],
   [QuizScoreRequiredError, HttpStatus.BAD_REQUEST],
+  [InvalidActivityRangeError, HttpStatus.BAD_REQUEST],
   [QuizNotFoundError, HttpStatus.NOT_FOUND],
   [QuizInactiveError, HttpStatus.FORBIDDEN],
   [QuizAlreadyAttemptedError, HttpStatus.CONFLICT],

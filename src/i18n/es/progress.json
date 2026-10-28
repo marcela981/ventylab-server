@@ -10,6 +10,10 @@
   "lesson_details_retrieved": "Detalle del progreso de la lección obtenido correctamente",
   "milestones_retrieved": "Hitos obtenidos correctamente",
   "achievements_retrieved": "Logros obtenidos correctamente",
+  "gamification_retrieved": "Estadísticas de gamificación obtenidas correctamente",
+  "activity_retrieved": "Calendario de actividad obtenido correctamente",
+  "recent_activity_retrieved": "Actividad reciente obtenida correctamente",
+  "invalid_activity_range": "El rango necesita fechas válidas (AAAA-MM-DD), con desde no posterior a hasta y como máximo {maxDays} días",
   "skills_retrieved": "Habilidades obtenidas correctamente",
   "unlocked_modules_retrieved": "Módulos desbloqueados obtenidos correctamente",
   "access_retrieved": "Estado de acceso obtenido correctamente",
@@ -23,6 +27,8 @@
     "time_spent_invalid": "El tiempo dedicado debe ser un entero no negativo",
     "step_invalid": "El paso debe ser un entero no negativo",
     "total_steps_invalid": "El número total de pasos debe ser un entero mayor o igual a 1",
-    "score_invalid": "El puntaje debe ser un número entre 0 y 100"
+    "score_invalid": "El puntaje debe ser un número entre 0 y 100",
+    "activity_date_invalid": "La fecha debe tener el formato AAAA-MM-DD",
+    "recent_limit_invalid": "El límite debe ser un entero entre 1 y 50"
   }
 }
