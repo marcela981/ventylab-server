@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Filtros Prisma de contenido publicado
- * Descripción: Construye los filtros Prisma que restringen niveles, módulos, lecciones y páginas a los publicados cuyos ancestros (Sección, Nivel, Módulo, Lección) también están publicados; los usan los repositorios de lectura de las features curriculares para los estudiantes
- * Versión: 1.0
+ * Descripción: Construye los filtros Prisma que restringen niveles, módulos, lecciones y páginas a los publicados cuyos ancestros (Sección, Nivel, Módulo, Lección) también están publicados; los usan los repositorios de lectura de las features curriculares para los estudiantes. v1.1: countableLessonWhere (lección publicada con al menos una página publicada, la que cuenta en lessonCount)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,6 +36,14 @@ export function publishedPageWhere(): Prisma.PageWhereInput {
     status: "PUBLISHED",
     module: publishedModuleWhere(),
     OR: [{ lessonId: null }, { lesson: { status: "PUBLISHED" } }],
+  };
+}
+
+// A lesson a student can actually open: published, with at least one published page (empty lessons are skipped by the viewer).
+export function countableLessonWhere(): Prisma.LessonWhereInput {
+  return {
+    status: "PUBLISHED",
+    pages: { some: { status: "PUBLISHED" } },
   };
 }
 

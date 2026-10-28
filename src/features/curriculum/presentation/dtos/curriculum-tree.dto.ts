@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs del árbol curricular del estudiante
- * Descripción: Define las respuestas HTTP del árbol Sección, Nivel, Módulo con locked, completed y missingPrerequisites, documentadas con Swagger
- * Versión: 1.0
+ * Descripción: Define las respuestas HTTP del árbol Sección, Nivel, Módulo con locked, completed y missingPrerequisites, documentadas con Swagger. v1.1: lessonCount documenta que cuenta solo lecciones publicadas con páginas publicadas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -39,7 +39,7 @@ export class StudentTreeModuleDTO {
   @ApiProperty({ description: "Publication status", example: "PUBLISHED", enum: ["DRAFT", "PUBLISHED", "ARCHIVED"] })
   public status: string;
 
-  @ApiProperty({ description: "Number of lessons", example: 4 })
+  @ApiProperty({ description: "Number of published lessons with at least one published page; 0 means the module has nothing to study yet", example: 4 })
   public lessonCount: number;
 
   @ApiProperty({ description: "Whether the module is locked for the current user", example: false })
