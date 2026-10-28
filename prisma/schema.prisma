@@ -111,6 +111,10 @@ model User {
   // Notifications feature
   notifications Notification[]
 
+  // Gamification feature (activity ledger)
+  learningActivityEvents LearningActivityEvent[]
+  activityDays           UserActivityDay[]
+
   @@index([role])
   @@index([isActive])
   @@map("users")
@@ -598,17 +602,64 @@ model QuizAttempt {
   @@map("quiz_attempts")
 }
 
+// code is the stable catalog key (achievement-catalog.ts); one unlock per user and code.
 model Achievement {
   id          String   @id @default(cuid())
   userId      String
+  code        String
   title       String
   description String?  @db.Text
   icon        String?
+  xpReward    Int      @default(0)
   unlockedAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, code])
   @@map("achievements")
+}
+
+// ============================================
+// GAMIFICATION: ACTIVITY LEDGER
+// ============================================
+// One row per rewarded learning fact; (userId, kind, refId) is unique so handlers insert and skip on conflict.
+// localDate is the America/Bogota calendar day of occurredAt (streak and activity calendar).
+enum LearningActivityKind {
+  PAGE_VIEWED
+  LESSON_COMPLETED
+  MODULE_COMPLETED
+  EVALUATION_PASSED
+  ACHIEVEMENT_UNLOCKED
+}
+
+model LearningActivityEvent {
+  id         String               @id @default(cuid())
+  userId     String               @map("user_id")
+  kind       LearningActivityKind
+  refId      String               @map("ref_id")
+  xp         Int
+  occurredAt DateTime             @map("occurred_at") @db.Timestamptz(6)
+  localDate  DateTime             @map("local_date") @db.Date
+  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, refId])
+  @@index([userId, occurredAt])
+  @@index([userId, localDate])
+  @@map("learning_activity_events")
+}
+
+// Per-user count of ledger events per America/Bogota day, maintained in the same statement as each ledger insert.
+model UserActivityDay {
+  userId     String   @map("user_id")
+  localDate  DateTime @map("local_date") @db.Date
+  eventCount Int      @default(0) @map("event_count")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, localDate])
+  @@map("user_activity_days")
 }
 
 enum UserRole {
@@ -1769,6 +1820,7 @@ enum AiUseCase {
   NOTES_ANALYSIS
   PAGE_DEEPEN
   LESSON_QA
+  MODULE_QA
   FREE_CHAT
   TOPIC_CHECK
   SIM_ASSIST
@@ -1793,6 +1845,22 @@ enum AiConversationScope {
 enum AiMessageRole {
   USER
   ASSISTANT
+}
+
+// Where the rated answer was shown in the web client (thesis analytics); null for ratings before Block 2.
+enum AiRatingSurface {
+  POPUP
+  ACCORDION
+  ASSISTANT
+  NOTES_ANALYSIS
+}
+
+// Content scope of the rated answer; derived from the conversation for MESSAGE targets.
+enum AiRatingScope {
+  LESSON
+  MODULE
+  PAGE
+  FREE
 }
 
 enum AiRatingTargetType {
@@ -1878,6 +1946,8 @@ model AiRating {
   expression    Int? // 1-5 (CHECK constraint in SQL)
   safety        Int? // 1-5 (CHECK constraint in SQL)
   trust         Int? // 1-5 (CHECK constraint in SQL)
+  surface       AiRatingSurface?
+  scope         AiRatingScope?
   createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
 

@@ -63,8 +63,8 @@ export function buildLearningProgressRepository(): jest.Mocked<ILearningProgress
 export function buildAchievementsRepository(): jest.Mocked<IAchievementsRepository> {
   return {
     getByUserId: jest.fn().mockResolvedValue([]),
-    getMetrics: jest.fn().mockResolvedValue({ completedLessons: 0, completedModules: 0, passedQuizzes: 0, perfectQuizzes: 0, activityDates: [] }),
-    save: jest.fn().mockResolvedValue(undefined),
+    getMetrics: jest.fn().mockResolvedValue({ completedLessons: 0, completedModules: 0, passedEvaluations: 0, perfectEvaluations: 0, currentStreak: 0, xpTotal: 0 }),
+    insertIfAbsent: jest.fn().mockResolvedValue(true),
   };
 }
 

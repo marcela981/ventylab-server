@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Pruebas de los casos de uso de lectura del progreso
- * Descripción: Verifica el acceso a módulos, contenidos y lecciones (motivo, lecciones faltantes en orden, lecciones vacías saltadas y bypass de staff) según el estado de desbloqueo del currículo y las lecciones anteriores, la lista de módulos desbloqueados, el progreso y el detalle de una lección (con y sin registro, módulo inexistente), el resumen general, los reportes de progreso por página de sección, nivel y módulo (404 cuando no existen) y los catálogos fijos de habilidades e hitos
+ * Descripción: Verifica el acceso a módulos, contenidos y lecciones (motivo, lecciones faltantes en orden, lecciones vacías saltadas y bypass de staff) según el estado de desbloqueo del currículo y las lecciones anteriores, la lista de módulos desbloqueados, el progreso y el detalle de una lección (con y sin registro, módulo inexistente), el resumen general (XP, nivel y racha tomados de las estadísticas de gamificación), los reportes de progreso por página de sección, nivel y módulo (404 cuando no existen) y los catálogos fijos de habilidades e hitos
  * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -22,6 +22,7 @@ import {
 import { CheckContentUnlockedUseCase } from "@/features/progress/application/use-cases/check-content-unlocked.usecase";
 import { CheckLessonAccessUseCase } from "@/features/progress/application/use-cases/check-lesson-access.usecase";
 import { CheckModuleAccessUseCase } from "@/features/progress/application/use-cases/check-module-access.usecase";
+import { type GetGamificationStatsUseCase } from "@/features/progress/application/use-cases/get-gamification-stats.usecase";
 import { GetLearningProgressSummaryUseCase } from "@/features/progress/application/use-cases/get-learning-progress-summary.usecase";
 import { GetLessonProgressDetailsUseCase } from "@/features/progress/application/use-cases/get-lesson-progress-details.usecase";
 import { GetLessonProgressUseCase } from "@/features/progress/application/use-cases/get-lesson-progress.usecase";
@@ -221,11 +222,20 @@ describe("progress reports", () => {
     queries.getOverviewModules.mockResolvedValue([{ id: "M1", title: "Module 1", order: 1, lessonIds: ["L1", "L2"] }]);
     learning.getLessonFacts.mockResolvedValue(SOURCE.facts);
 
-    const overview: ProgressOverview = await new GetProgressOverviewUseCase(progress, queries, learning).execute("U1");
+    const gamification: { execute: jest.Mock } = {
+      execute: jest.fn().mockResolvedValue({ xpTotal: 555, level: 2, xpIntoLevel: 55, nextLevelXp: 1000, streakDays: 3, longestStreak: 4, xpToday: 5 }),
+    };
+    const overview: ProgressOverview = await new GetProgressOverviewUseCase(
+      progress,
+      queries,
+      learning,
+      gamification as unknown as GetGamificationStatsUseCase,
+    ).execute("U1");
 
     expect(learning.getLessonFacts).toHaveBeenCalledWith("U1", ["L1", "L2"]);
     expect(progress.getLessonCompletions).toHaveBeenCalledWith("U1", ["L1", "L2"]);
-    expect(overview.stats).toMatchObject({ completedLessons: 1, totalLessons: 2 });
+    expect(overview.stats).toMatchObject({ completedLessons: 1, totalLessons: 2, xpTotal: 555, level: 2, nextLevelXp: 1000, streakDays: 3 });
+    expect(gamification.execute).toHaveBeenCalledWith("U1");
   });
 
   it("reports an empty summary when there is no progress source", async () => {

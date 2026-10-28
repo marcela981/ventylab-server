@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Construcción del resumen general de progreso
- * Descripción: Función pura que arma el resumen del panel del estudiante (estadísticas, módulos con disponibilidad secuencial por nivel, lecciones con avance por páginas vistas y progreso por nivel ponderado por lecciones) a partir de los módulos publicados, los hechos de completitud por páginas y LessonCompletion
- * Versión: 1.1
+ * Descripción: Función pura que arma el resumen del panel del estudiante (estadísticas, con XP, nivel y racha tomados de las estadísticas de gamificación del registro de actividad para usar una sola fórmula, módulos con disponibilidad secuencial por nivel, lecciones con avance por páginas vistas y progreso por nivel ponderado por lecciones) a partir de los módulos publicados, los hechos de completitud por páginas y LessonCompletion
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { type LessonCompletionFact, type LessonWeightedProgress } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
 import { computeLessonWeightedProgress, isLessonCompleted } from "@/features/curriculum/domain/services/lesson-completion-rules";
+import { type GamificationStats } from "@/features/progress/domain/read-models/gamification.read-model";
 import { type LessonCompletionSnapshot, type OverviewModuleSource } from "@/features/progress/domain/read-models/progress-records.read-model";
 import {
   type OverviewLessonItem,
@@ -17,10 +18,13 @@ import {
   type OverviewModuleItem,
   type ProgressOverview,
 } from "@/features/progress/domain/read-models/progress-views.read-model";
+import { computeLevel, XP_PER_LESSON } from "@/features/progress/domain/services/gamification-rules";
 import { MAX_IN_PROGRESS_FRACTION } from "@/features/progress/domain/services/module-progress-calculator";
 
-export const XP_PER_OVERVIEW_LEVEL: number = 500;
-export const XP_PER_COMPLETED_LESSON: number = 100;
+// XP of a completed lesson in the lesson items; the same value the activity ledger awards.
+export const XP_PER_COMPLETED_LESSON: number = XP_PER_LESSON;
+
+const EMPTY_GAMIFICATION: GamificationStats = { xpTotal: 0, ...computeLevel(0), streakDays: 0, longestStreak: 0, xpToday: 0 };
 
 const NO_LEVEL_KEY: string = "__no_level__";
 
@@ -160,10 +164,12 @@ export function buildProgressOverview({
   modules,
   facts,
   completions,
+  gamification = EMPTY_GAMIFICATION,
 }: {
   modules: OverviewModuleSource[];
   facts: LessonCompletionFact[];
   completions: LessonCompletionSnapshot[];
+  gamification?: GamificationStats;
 }): ProgressOverview {
   const factByLesson: Map<string, LessonCompletionFact> = new Map(facts.map((fact: LessonCompletionFact): [string, LessonCompletionFact] => [fact.lessonId, fact]));
 
@@ -174,8 +180,6 @@ export function buildProgressOverview({
   const moduleItems: OverviewModuleItem[] = buildModuleItems(modules, factByLesson);
   const lessonItems: OverviewLessonItem[] = buildLessonItems(modules, factByLesson, completionByLesson);
   const completedLessons: number = lessonItems.filter((lesson: OverviewLessonItem) => lesson.completed).length;
-  const xpTotal: number = completedLessons * XP_PER_COMPLETED_LESSON;
-  const level: number = Math.floor(xpTotal / XP_PER_OVERVIEW_LEVEL) + 1;
 
   return {
     stats: {
@@ -183,10 +187,10 @@ export function buildProgressOverview({
       totalLessons: lessonItems.length,
       modulesCompleted: moduleItems.filter((module: OverviewModuleItem) => module.completed).length,
       totalModules: modules.length,
-      xpTotal,
-      level,
-      nextLevelXp: level * XP_PER_OVERVIEW_LEVEL,
-      streakDays: 0,
+      xpTotal: gamification.xpTotal,
+      level: gamification.level,
+      nextLevelXp: gamification.nextLevelXp,
+      streakDays: gamification.streakDays,
     },
     modules: moduleItems,
     lessons: lessonItems,

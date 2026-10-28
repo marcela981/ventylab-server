@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de las valoraciones de IA
- * Descripción: Tipos de objetivo valorable y dimensiones QUEST (Tam et al. 2024, npj Digital Medicine), casos de uso de IA esperados por tipo de objetivo, filtros y agregados de estadísticas por caso de uso, proveedor, modelo y versión de prompt, y filas exportables sin identificador de usuario
- * Versión: 1.0
+ * Descripción: Tipos de objetivo valorable y dimensiones QUEST (Tam et al. 2024, npj Digital Medicine), casos de uso de IA esperados por tipo de objetivo, filtros y agregados de estadísticas por caso de uso, proveedor, modelo y versión de prompt, y filas exportables sin identificador de usuario; superficie (POPUP, ACCORDION, ASSISTANT, NOTES_ANALYSIS) y alcance (LESSON, MODULE, PAGE, FREE) de la valoración como filtro, grupo y columna de exportación, con el estado de la llamada (ABORTED para respuestas detenidas)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,14 @@ export type AiRatingTargetTypeValue = "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANAL
 
 export const AI_RATING_TARGET_TYPE_VALUES: readonly AiRatingTargetTypeValue[] = ["GRADE_FEEDBACK", "MESSAGE", "NOTES_ANALYSIS", "SIM_ASSIST"] as const;
 
+export type AiRatingSurfaceValue = "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS";
+
+export const AI_RATING_SURFACE_VALUES: readonly AiRatingSurfaceValue[] = ["POPUP", "ACCORDION", "ASSISTANT", "NOTES_ANALYSIS"] as const;
+
+export type AiRatingScopeValue = "LESSON" | "MODULE" | "PAGE" | "FREE";
+
+export const AI_RATING_SCOPE_VALUES: readonly AiRatingScopeValue[] = ["LESSON", "MODULE", "PAGE", "FREE"] as const;
+
 export type AiRatingDimension = "quality" | "understanding" | "expression" | "safety" | "trust";
 
 export const AI_RATING_DIMENSIONS: readonly AiRatingDimension[] = ["quality", "understanding", "expression", "safety", "trust"] as const;
@@ -23,7 +31,7 @@ export type AiRatingDimensionScores = Readonly<Record<AiRatingDimension, number 
 // A client-sent aiCallId is only linked when the call was produced by one of the use cases that can emit this kind of target.
 export const AI_RATING_TARGET_USE_CASES: Readonly<Record<AiRatingTargetTypeValue, readonly AiTelemetryUseCaseValue[]>> = {
   GRADE_FEEDBACK: ["GRADE_FEEDBACK"],
-  MESSAGE: ["PAGE_DEEPEN", "LESSON_QA", "FREE_CHAT"],
+  MESSAGE: ["PAGE_DEEPEN", "LESSON_QA", "MODULE_QA", "FREE_CHAT"],
   NOTES_ANALYSIS: ["NOTES_ANALYSIS"],
   SIM_ASSIST: ["SIM_ASSIST"],
 };
@@ -35,6 +43,8 @@ export interface AiRatingStatsFilters {
   readonly from: Date;
   readonly to: Date;
   readonly targetType?: AiRatingTargetTypeValue;
+  readonly surface?: AiRatingSurfaceValue;
+  readonly scope?: AiRatingScopeValue;
   readonly useCase?: AiTelemetryUseCaseValue;
   readonly provider?: string;
   readonly model?: string;
@@ -47,6 +57,8 @@ export interface AiRatingDimensionStats {
 }
 
 export interface AiRatingGroupAggregate {
+  readonly surface: string;
+  readonly scope: string;
   readonly useCase: string;
   readonly provider: string;
   readonly model: string;
@@ -69,6 +81,8 @@ export interface AiRatingStats {
 export interface AiRatingExportRow {
   readonly targetType: AiRatingTargetTypeValue;
   readonly targetId: string;
+  readonly surface?: AiRatingSurfaceValue;
+  readonly scope?: AiRatingScopeValue;
   readonly helpful: boolean;
   readonly quality?: number;
   readonly understanding?: number;
@@ -81,4 +95,5 @@ export interface AiRatingExportRow {
   readonly provider?: string;
   readonly model?: string;
   readonly promptVersion?: string;
+  readonly callStatus?: string;
 }

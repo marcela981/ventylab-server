@@ -100,6 +100,7 @@ export interface ProgressOverview {
 
 export interface UnlockedAchievementView {
   readonly id: string;
+  readonly code: string;
   readonly title: string;
   readonly description?: string;
   readonly icon?: string;

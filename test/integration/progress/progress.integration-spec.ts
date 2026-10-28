@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba de integración del progreso
- * Descripción: Con la aplicación Nest real contra el PostgreSQL de Testcontainers verifica el repositorio Prisma de progreso a través de UpdateStepProgressUseCase: N actualizaciones simultáneas del primer acceso de un estudiante a una lección terminan todas bien, dejan exactamente una fila de user_progress y una de lesson_completions (upsert sobre las claves únicas) y acumulan el tiempo con incrementos atómicos sin perder actualizaciones; y a través de RecordPageViewUseCase que vistas concurrentes que completan la misma lección emiten un solo LessonCompletedEvent y que primeras vistas concurrentes de una página dan un solo PageViewedEvent con firstView. v1.1: carreras de la vista de página (Bloque 2, S5)
- * Versión: 1.1
+ * Descripción: Con la aplicación Nest real contra el PostgreSQL de Testcontainers verifica el repositorio Prisma de progreso a través de UpdateStepProgressUseCase: N actualizaciones simultáneas del primer acceso de un estudiante a una lección terminan todas bien, dejan exactamente una fila de user_progress y una de lesson_completions (upsert sobre las claves únicas) y acumulan el tiempo con incrementos atómicos sin perder actualizaciones; y a través de RecordPageViewUseCase que vistas concurrentes que completan la misma lección emiten un solo LessonCompletedEvent y que primeras vistas concurrentes de una página dan un solo PageViewedEvent con firstView; y que la primera vista de una página deja una sola entrada PAGE_VIEWED de 5 XP en el registro de actividad (manejador de gamificación) y una vista repetida no añade otra. v1.1: carreras de la vista de página (Bloque 2, S5). v1.2: PAGE_VIEWED en el registro de actividad tras integrar la gamificación
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { type LessonCompletion, type Page, type User, type UserProgress } from "@prisma/client";
+import { type LearningActivityEvent, type LessonCompletion, type Page, type User, type UserProgress } from "@prisma/client";
 
 import { RecordPageViewCommand } from "@/features/progress/application/commands/record-page-view.command";
 import { UpdateStepProgressCommand } from "@/features/progress/application/commands/update-step-progress.command";
@@ -21,6 +21,7 @@ import { PageViewedEvent } from "@/features/progress/domain/events/page-viewed.e
 import { type ContentTree, createContentTree, createPage, createStudent } from "../../factories";
 import { resetDatabase } from "../../support/database";
 import { createIntegrationApp, type IntegrationApp } from "../../support/integration-app";
+import { waitUntil } from "../../support/polling";
 
 const CONCURRENCY: number = 10;
 const TIME_DELTA_SECONDS: number = 7;
@@ -131,6 +132,29 @@ describe("progress against PostgreSQL", () => {
       expect(viewEvents[0]).toMatchObject({ userId: student.id, pageId: tree.page.id, lessonId: tree.lesson.id, moduleId: tree.module.id });
       expect(lessonEvents).toHaveLength(1);
       expect(await harness.prisma.pageProgress.count({ where: { userId: student.id, pageId: tree.page.id } })).toBe(1);
+    });
+
+    it("should record one PAGE_VIEWED ledger entry worth 5 XP for the first view of a page only", async () => {
+      const student: User = await createStudent(harness.prisma);
+      const tree: ContentTree = await createContentTree(harness.prisma);
+      const useCase: RecordPageViewUseCase = harness.app.get(RecordPageViewUseCase);
+      const pageViews = (): Promise<LearningActivityEvent[]> =>
+        harness.prisma.learningActivityEvent.findMany({ where: { userId: student.id, kind: "PAGE_VIEWED" } });
+
+      await view(useCase, student.id, tree.page.id);
+
+      const entries: LearningActivityEvent[] = await waitUntil(pageViews, (rows: LearningActivityEvent[]) => rows.length > 0, { description: "the PAGE_VIEWED ledger entry" });
+
+      expect(entries).toHaveLength(1);
+      expect(entries[0]).toMatchObject({ kind: "PAGE_VIEWED", refId: tree.page.id, xp: 5 });
+      expect(entries[0].occurredAt).toEqual(viewEvents[0].occurredAt);
+
+      // A repeated view publishes firstView = false and leaves the ledger unchanged.
+      await view(useCase, student.id, tree.page.id);
+      await waitUntil(() => Promise.resolve(viewEvents.length), (count: number) => count === 2, { description: "the repeated PageViewedEvent" });
+
+      expect(viewEvents[1].firstView).toBe(false);
+      expect(await pageViews()).toHaveLength(1);
     });
   });
 });

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: CSV de valoraciones de IA
- * Descripción: Serializa las filas de valoraciones de IA a CSV (RFC 4180, neutralización de fórmulas) con la utilidad común; por seudonimato no incluye identificador ni datos del usuario
- * Versión: 1.0
+ * Descripción: Serializa las filas de valoraciones de IA a CSV (RFC 4180, neutralización de fórmulas) con la utilidad común; por seudonimato no incluye identificador ni datos del usuario; columnas de superficie, alcance y estado de la llamada (ABORTED para respuestas detenidas)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,8 @@ import { type AiRatingExportRow } from "@/features/ai-ratings/domain/read-models
 export const AI_RATINGS_CSV_COLUMNS: readonly (keyof AiRatingExportRow)[] = [
   "targetType",
   "targetId",
+  "surface",
+  "scope",
   "helpful",
   "quality",
   "understanding",
@@ -26,6 +28,7 @@ export const AI_RATINGS_CSV_COLUMNS: readonly (keyof AiRatingExportRow)[] = [
   "provider",
   "model",
   "promptVersion",
+  "callStatus",
 ] as const;
 
 export function toAiRatingsCsv(rows: readonly AiRatingExportRow[]): string {

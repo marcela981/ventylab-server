@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del caso de uso GetAiRatingStatsUseCase
  * Descripción: Verifica la validación del rango de fechas (422) y el cálculo de la tasa de utilidad por grupo de caso de uso, proveedor, modelo y versión de prompt
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,8 @@ const TO: Date = new Date("2026-10-05T00:00:00Z");
 
 function group(overrides: Partial<AiRatingGroupAggregate>): AiRatingGroupAggregate {
   return {
+    surface: "unknown",
+    scope: "unknown",
     useCase: "unknown",
     provider: "unknown",
     model: "unknown",

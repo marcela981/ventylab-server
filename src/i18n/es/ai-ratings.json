@@ -7,6 +7,7 @@
   "target_not_found": "No se encontró la respuesta de IA a valorar",
   "not_recipient": "Solo quien recibió una respuesta de IA puede valorarla",
   "ai_call_mismatch": "La llamada de IA no corresponde a la respuesta valorada",
+  "scope_mismatch": "El alcance no corresponde al contenido de la respuesta valorada",
   "invalid_range": "El rango de fechas debe empezar antes de terminar y abarcar como máximo 366 días",
   "validation": {
     "target_type_invalid": "El tipo de objetivo de la valoración no es válido",
@@ -15,6 +16,8 @@
     "score_number": "Cada dimensión de la valoración debe ser un número",
     "date_invalid": "La fecha debe ser una fecha ISO 8601 válida",
     "use_case_invalid": "El caso de uso de IA no es válido",
-    "filter_too_long": "El filtro debe tener como máximo 100 caracteres"
+    "filter_too_long": "El filtro debe tener como máximo 100 caracteres",
+    "surface_invalid": "La superficie debe ser POPUP, ACCORDION, ASSISTANT o NOTES_ANALYSIS",
+    "scope_invalid": "El alcance debe ser LESSON, MODULE, PAGE o FREE"
   }
 }

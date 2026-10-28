@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del constructor del resumen de progreso
- * Descripción: Verifica las estadísticas globales (lecciones, módulos, XP y nivel), la disponibilidad secuencial de módulos dentro de cada nivel, el avance por páginas vistas de cada lección acotado al 99 %, las fechas tomadas del registro de la lección y la agregación por nivel ordenada con su slug
- * Versión: 1.0
+ * Descripción: Verifica las estadísticas globales (lecciones y módulos; XP, nivel y racha tomados de las estadísticas de gamificación, en cero sin ellas), la disponibilidad secuencial de módulos dentro de cada nivel, el avance por páginas vistas de cada lección acotado al 99 %, las fechas tomadas del registro de la lección y la agregación por nivel ordenada con su slug
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type LessonCompletionFact } from "@/features/curriculum/domain/read-models/lesson-completion.read-model";
+import { type GamificationStats } from "@/features/progress/domain/read-models/gamification.read-model";
 import { type LessonCompletionSnapshot, type OverviewModuleSource } from "@/features/progress/domain/read-models/progress-records.read-model";
 import { type OverviewLessonItem, type ProgressOverview } from "@/features/progress/domain/read-models/progress-views.read-model";
 import { buildProgressOverview, XP_PER_COMPLETED_LESSON } from "@/features/progress/domain/services/progress-overview-builder";
@@ -47,19 +48,26 @@ function lesson(overview: ProgressOverview, lessonId: string): OverviewLessonIte
 }
 
 describe("buildProgressOverview", () => {
-  it("summarizes completed lessons, modules, XP and level", () => {
-    const overview: ProgressOverview = buildProgressOverview({ modules: MODULES, facts: FACTS, completions: COMPLETIONS });
+  it("summarizes completed lessons and modules and takes XP, level and streak from the gamification stats", () => {
+    const gamification: GamificationStats = { xpTotal: 1205, level: 3, xpIntoLevel: 205, nextLevelXp: 1500, streakDays: 4, longestStreak: 6, xpToday: 10 };
+    const overview: ProgressOverview = buildProgressOverview({ modules: MODULES, facts: FACTS, completions: COMPLETIONS, gamification });
 
     expect(overview.stats).toEqual({
       completedLessons: 3,
       totalLessons: 5,
       modulesCompleted: 2,
       totalModules: 4,
-      xpTotal: 3 * XP_PER_COMPLETED_LESSON,
-      level: 1,
-      nextLevelXp: 500,
-      streakDays: 0,
+      xpTotal: 1205,
+      level: 3,
+      nextLevelXp: 1500,
+      streakDays: 4,
     });
+  });
+
+  it("reports level 1 with no XP and no streak without gamification stats", () => {
+    const overview: ProgressOverview = buildProgressOverview({ modules: MODULES, facts: FACTS, completions: COMPLETIONS });
+
+    expect(overview.stats).toMatchObject({ xpTotal: 0, level: 1, nextLevelXp: 500, streakDays: 0 });
   });
 
   it("makes a module available only when the previous module of the same level is completed", () => {

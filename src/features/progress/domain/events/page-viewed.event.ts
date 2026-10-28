@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Evento PageViewedEvent
- * Descripción: Evento de dominio publicado después de confirmar cada vista de página registrada por un usuario; firstView indica que la fila de PageProgress se creó con esta vista (primera vez que el usuario ve la página). Lo consumen otras features (por ejemplo, la gamificación para la XP por página) sin depender del caso de uso
- * Versión: 1.0
+ * Descripción: Evento de dominio publicado después de confirmar cada vista de página registrada por un usuario; firstView indica que la fila de PageProgress se creó con esta vista (primera vez que el usuario ve la página). Lo consumen otras features (por ejemplo, la gamificación, que registra PAGE_VIEWED en el registro de actividad solo con firstView) sin depender del caso de uso; occurredAt lo fija DomainEvent al construir el evento. v1.1: unifica el evento de la rama de gamificación (lessonId nulo para páginas sin lección; moduleId siempre presente porque toda página pertenece a un módulo)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de turnos del tutor
- * Descripción: Ejecuta un turno de conversación con el tutor de IA: redacta correo y nombre del texto saliente, arma el historial y el contexto, verifica el tema del chat libre con TOPIC_CHECK (respaldo por lista de términos) salvo que la verificación esté desactivada en los ajustes del tutor y responde con el rechazo fijo registrando BLOCKED_OFFTOPIC, abre el stream del gateway (cuota verificada antes de persistir), guarda el mensaje del usuario antes de llamar al modelo y la respuesta completa con su aiCallId o la parcial como incompleta si el stream se corta
- * Versión: 1.1
+ * Descripción: Ejecuta un turno de conversación con el tutor de IA (las conversaciones de módulo usan el caso de uso MODULE_QA y las de lección LESSON_QA; emite start con el id del mensaje antes de los fragmentos): redacta correo y nombre del texto saliente, arma el historial y el contexto, verifica el tema del chat libre con TOPIC_CHECK (respaldo por lista de términos) salvo que la verificación esté desactivada en los ajustes del tutor y responde con el rechazo fijo registrando BLOCKED_OFFTOPIC, abre el stream del gateway (cuota verificada antes de persistir), guarda el mensaje del usuario antes de llamar al modelo y la respuesta completa con su aiCallId o la parcial como incompleta si el stream se corta
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,11 +25,11 @@ import { type AiConversationMessage } from "@/features/ai-tutor/domain/read-mode
 import { AI_CONVERSATIONS_REPOSITORY_TOKEN, type IAiConversationsRepository } from "@/features/ai-tutor/domain/repositories/ai-conversations.repository";
 import { OFF_TOPIC_REPLY, parseTopicCheckResponse, termListCheck } from "@/features/ai-tutor/domain/services/topic-guard";
 import { buildHistoryWindow } from "@/features/ai-tutor/domain/services/tutor-context";
-import { FREE_CONVERSATION_SCOPE } from "@/features/ai-tutor/domain/value-objects/ai-conversation-scope";
+import { FREE_CONVERSATION_SCOPE, MODULE_CONVERSATION_SCOPE } from "@/features/ai-tutor/domain/value-objects/ai-conversation-scope";
 
 export const AI_MESSAGE_REF_TYPE: string = "ai_message";
 
-export type TutorStreamUseCase = "PAGE_DEEPEN" | "LESSON_QA" | "FREE_CHAT";
+export type TutorStreamUseCase = "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT";
 
 export type TextRedactor = (text: string) => string;
 
@@ -121,7 +121,7 @@ export class TutorTurnService {
 
     return await this.streamTurn({
       ...this._turnBase(turn),
-      useCase: "LESSON_QA",
+      useCase: conversation.scope === MODULE_CONVERSATION_SCOPE ? "MODULE_QA" : "LESSON_QA",
       input: { history, question, contextTitle: context.contextTitle, context: context.context, language: caller.language },
     });
   }
@@ -186,6 +186,7 @@ export class TutorTurnService {
     });
 
     const events: TutorStreamEvent[] = [
+      { type: "start", conversationId: target.conversationId, messageId: target.messageId },
       { type: "delta", text: OFF_TOPIC_REPLY },
       { type: "done", aiCallId, messageId: target.messageId, conversationId: target.conversationId },
     ];
@@ -206,6 +207,9 @@ export class TutorTurnService {
     let persisted: boolean = false;
 
     try {
+      // Sent before any text so a client that stops the answer still knows which message to rate.
+      yield { type: "start", conversationId: target.conversationId, messageId: target.messageId };
+
       for await (const chunk of chunks) {
         if (chunk.type === "delta") {
           received += chunk.text;

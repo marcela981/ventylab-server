@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del CSV de valoraciones de IA
  * Descripción: Verifica las columnas exportadas (sin identificador de usuario), el escape RFC 4180 de comentarios con comas, comillas y saltos de línea y la neutralización de comentarios con forma de fórmula
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,8 @@ import { AI_RATINGS_CSV_COLUMNS, toAiRatingsCsv } from "@/features/ai-ratings/pr
 const ROW: AiRatingExportRow = {
   targetType: "MESSAGE",
   targetId: "message-1",
+  surface: "POPUP",
+  scope: "MODULE",
   helpful: true,
   quality: 4,
   safety: 5,
@@ -23,6 +25,7 @@ const ROW: AiRatingExportRow = {
   provider: "gemini",
   model: "gemini-2.0-flash",
   promptVersion: "1.0.0",
+  callStatus: "ABORTED",
 };
 
 describe("toAiRatingsCsv", () => {
@@ -31,6 +34,8 @@ describe("toAiRatingsCsv", () => {
     expect(AI_RATINGS_CSV_COLUMNS).toEqual([
       "targetType",
       "targetId",
+      "surface",
+      "scope",
       "helpful",
       "quality",
       "understanding",
@@ -43,6 +48,7 @@ describe("toAiRatingsCsv", () => {
       "provider",
       "model",
       "promptVersion",
+      "callStatus",
     ]);
   });
 
@@ -52,15 +58,15 @@ describe("toAiRatingsCsv", () => {
 
     expect(header).toBe(AI_RATINGS_CSV_COLUMNS.join(","));
     expect(line).toBe(
-      "MESSAGE,message-1,true,4,,,5,,\"Good, but \"\"long\"\"\nsecond line\",2026-10-02T10:00:00.000Z,FREE_CHAT,gemini,gemini-2.0-flash,1.0.0",
+      "MESSAGE,message-1,POPUP,MODULE,true,4,,,5,,\"Good, but \"\"long\"\"\nsecond line\",2026-10-02T10:00:00.000Z,FREE_CHAT,gemini,gemini-2.0-flash,1.0.0,ABORTED",
     );
     expect(csv.endsWith("\r\n")).toBe(true);
   });
 
   it("neutralizes a comment that a spreadsheet would run as a formula", () => {
-    const csv: string = toAiRatingsCsv([{ ...ROW, comment: "=HYPERLINK(\"http://x\")", useCase: undefined, provider: undefined, model: undefined, promptVersion: undefined }]);
+    const csv: string = toAiRatingsCsv([{ ...ROW, comment: "=HYPERLINK(\"http://x\")", useCase: undefined, provider: undefined, model: undefined, promptVersion: undefined, callStatus: undefined }]);
 
     expect(csv).toContain(",\"'=HYPERLINK(\"\"http://x\"\")\",");
-    expect(csv.split("\r\n")[1].endsWith("2026-10-02T10:00:00.000Z,,,,")).toBe(true);
+    expect(csv.split("\r\n")[1].endsWith("2026-10-02T10:00:00.000Z,,,,,")).toBe(true);
   });
 });
