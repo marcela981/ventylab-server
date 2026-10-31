@@ -374,6 +374,14 @@ export class EvaluationGradingPrismaRepository implements IEvaluationGradingRepo
     return count > 0;
   }
 
+  public async isGroupInScope(groupId: string, scope: EvaluationAssignmentScope): Promise<boolean> {
+    const count: number = await this._prisma.group.count({
+      where: { id: groupId, type: GroupType.STUDENT, OR: [{ createdBy: scope.teacherId }, { id: { in: [...scope.supervisedGroupIds] } }] },
+    });
+
+    return count > 0;
+  }
+
   public async getPublishableAttempts(filter: GradingAttemptFilter): Promise<GradingAttemptKey[]> {
     return await this._prisma.studentEvaluationAttempt.findMany({
       where: { AND: [{ status: GRADED_STATUS, gradePublishedAt: null, grade: { not: null } }, ...filterConditions(filter)] },

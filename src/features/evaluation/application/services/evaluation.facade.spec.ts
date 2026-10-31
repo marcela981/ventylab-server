@@ -56,6 +56,7 @@ function build(): FacadeHarness {
     countAttemptsByStatus: jest.fn(),
     getExpiredInProgressAttemptIds: jest.fn(),
     isAttemptInScope: jest.fn(),
+    isGroupInScope: jest.fn(),
     getPublishableAttempts: jest.fn(),
     getPublishedGradesOfUser: jest.fn().mockResolvedValue([view(), view({ attemptId: "attempt-legacy", grade: 2.9, legacy: true, evaluationType: "QUIZ" })]),
     getPublishedGradesOfGroup: jest.fn().mockResolvedValue([view({ userId: "student-2", grade: 3 })]),

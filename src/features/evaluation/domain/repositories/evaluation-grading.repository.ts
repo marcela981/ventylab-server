@@ -54,6 +54,7 @@ export interface IEvaluationGradingRepository {
   countAttemptsByStatus(filter: GradingAttemptFilter): Promise<AttemptStatusCountsView>;
   getExpiredInProgressAttemptIds(filter: GradingAttemptFilter, cutoff: Date, limit: number): Promise<string[]>;
   isAttemptInScope(attemptId: string, scope: EvaluationAssignmentScope): Promise<boolean>;
+  isGroupInScope(groupId: string, scope: EvaluationAssignmentScope): Promise<boolean>;
   getPublishableAttempts(filter: GradingAttemptFilter): Promise<GradingAttemptKey[]>;
   getPublishedGradesOfUser(userId: string, scope?: EvaluationAssignmentScope): Promise<PublishedGradeView[]>;
   getPublishedGradesOfGroup(groupId: string, evaluationId?: string): Promise<PublishedGradeView[]>;

@@ -104,10 +104,14 @@
     "teacher_comment_too_long": "El comentario no debe superar {constraints.0} caracteres",
     "evaluation_id_required": "evaluationId es obligatorio",
     "hint_too_long": "La pista no debe superar {constraints.0} caracteres",
-    "attempt_status_invalid": "El estado debe ser IN_PROGRESS, SUBMITTED, PENDING_REVIEW o GRADED"
+    "attempt_status_invalid": "El estado debe ser IN_PROGRESS, SUBMITTED, PENDING_REVIEW o GRADED",
+    "reset_reason_required": "El motivo es obligatorio y debe tener entre 1 y {constraints.0} caracteres"
   },
   "answer_checked": "Respuesta revisada correctamente",
   "answer_locked": "Esta respuesta ya fue revisada y no se puede cambiar",
   "answer_check_unavailable": "La retroalimentación inmediata solo está disponible en preguntas de selección de quizzes y talleres",
-  "evaluation_attempts_retrieved": "Intentos de la evaluación obtenidos correctamente"
+  "evaluation_attempts_retrieved": "Intentos de la evaluación obtenidos correctamente",
+  "attempt_reset": "Intento reiniciado: el estudiante puede repetir la evaluación",
+  "attempt_in_progress": "El estudiante tiene un intento en curso; espera a que lo entregue para reiniciarlo",
+  "assignment_not_active": "La asignación del grupo del estudiante no está activa; amplía su ventana antes de reiniciar el intento"
 }

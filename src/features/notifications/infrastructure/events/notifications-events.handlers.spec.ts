@@ -200,6 +200,13 @@ describe("NotificationsEventsHandlers", () => {
       "Retroalimentación disponible",
     ],
     [
+      "evaluation.attemptReset",
+      (handlers: NotificationsEventsHandlers): Promise<void> =>
+        handlers.handleAttemptReset({ ...META, evaluationId: "evaluation-1", userId: "student-1", title: "Quiz de PEEP", extraAttempts: 1 }),
+      "ATTEMPT_RESET",
+      "Puedes repetir la evaluación",
+    ],
+    [
       "user.roleChanged",
       (handlers: NotificationsEventsHandlers): Promise<void> => handlers.handleRoleChanged({ ...META, userId: "student-1", previousRole: "STUDENT", newRole: "TEACHER" }),
       "ROLE_CHANGED",

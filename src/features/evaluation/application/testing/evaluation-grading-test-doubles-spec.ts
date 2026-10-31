@@ -44,6 +44,7 @@ export class InMemoryGradingRepository implements IEvaluationGradingRepository {
   public readonly getPublishedGradesOfGroup: jest.Mock = jest.fn().mockResolvedValue([]);
   public readonly getEvaluationStats: jest.Mock = jest.fn();
   public readonly countPendingReview: jest.Mock = jest.fn().mockResolvedValue(0);
+  public readonly isGroupInScope: jest.Mock = jest.fn().mockResolvedValue(true);
 
   public constructor(
     private readonly _attempts: InMemoryAttemptsRepository,

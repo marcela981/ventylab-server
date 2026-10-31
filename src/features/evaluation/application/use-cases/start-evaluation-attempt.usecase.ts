@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso StartEvaluationAttemptUseCase
- * Descripción: Inicia o retoma el intento de un estudiante en una asignación de su grupo STUDENT (GroupsFacade): en una transacción bajo el candado por evaluación y usuario cierra de forma perezosa un intento vencido, devuelve el intento en curso si existe (idempotente), exige asignación ACTIVE y evaluación READY (403), aplica maxAttempts contando también los intentos heredados (409) y crea el intento con número max+1 y plazo calculado en el servidor; un cierre perezoso se confirma aunque el inicio se rechace
- * Versión: 1.0
+ * Descripción: Inicia o retoma el intento de un estudiante en una asignación de su grupo STUDENT (GroupsFacade): en una transacción bajo el candado por evaluación y usuario cierra de forma perezosa un intento vencido, devuelve el intento en curso si existe (idempotente), exige asignación ACTIVE y evaluación READY (403), aplica maxAttempts contando también los intentos heredados (409) y crea el intento con número max+1 y plazo calculado en el servidor; un cierre perezoso se confirma aunque el inicio se rechace; el límite es maxAttempts más los intentos extra concedidos por reinicios del docente
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -101,9 +101,11 @@ export class StartEvaluationAttemptUseCase {
       }
 
       const counters: AttemptCounters = await this._attemptsRepository.getAttemptCounters(evaluation.id, command.userId, transaction);
+      // Read under the same lock the reset takes, so a grant and a start never interleave
+      const allowed: number = evaluation.maxAttempts + (await this._attemptsRepository.getExtraAttempts(evaluation.id, command.userId, transaction));
 
-      if (counters.count >= evaluation.maxAttempts) {
-        return { events, rejection: new MaxAttemptsReachedError(evaluation.maxAttempts) };
+      if (counters.count >= allowed) {
+        return { events, rejection: new MaxAttemptsReachedError(allowed) };
       }
 
       const attempt: StudentEvaluationAttempt = StudentEvaluationAttempt.start({

@@ -99,6 +99,7 @@ export interface StudentEvaluationListItemResult {
   readonly assignment: EvaluationAssignmentResult;
   readonly evaluation?: StudentEvaluationBriefView;
   readonly attempts: ReadonlyArray<StudentAttemptSummaryView>;
+  readonly extraAttempts: number;
   readonly passingGrade: number;
 }
 

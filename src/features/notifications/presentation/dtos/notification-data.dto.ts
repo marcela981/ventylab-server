@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de datos de notificaciones por tipo
  * Descripción: Forma del campo data de cada tipo de notificación (referencias de enlace profundo que construyen las plantillas): reserva desplazada o cancelada, evaluación asignada, calificación publicada, retroalimentación lista, cambio de rol y ventilador fuera de línea
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -52,6 +52,11 @@ export class FeedbackReadyNotificationDataDTO {
 
   @ApiProperty({ description: "ID of the generated feedback", example: "01932e9f-6789-7abc-9def-1a2b3c4d5e6f" })
   public feedbackId: string;
+}
+
+export class AttemptResetNotificationDataDTO {
+  @ApiProperty({ description: "ID of the evaluation the student may take again", example: EVALUATION_ID_EXAMPLE })
+  public evaluationId: string;
 }
 
 export class RoleChangedNotificationDataDTO {

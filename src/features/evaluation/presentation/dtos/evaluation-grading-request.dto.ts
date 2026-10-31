@@ -62,6 +62,16 @@ export class GetEvaluationAttemptsQueryDTO extends PickType(ListQueryDTO, ["page
   public status?: string[];
 }
 
+export const MAX_RESET_REASON_LENGTH: number = 500;
+
+export class ResetEvaluationAttemptDTO {
+  @ApiProperty({ description: "Why the student may take the evaluation again (audited)", example: "Connection lost during the quiz", minLength: 1, maxLength: MAX_RESET_REASON_LENGTH })
+  @IsString({ message: i18nValidationMessage("evaluation.validation.reset_reason_required") })
+  @IsNotEmpty({ message: i18nValidationMessage("evaluation.validation.reset_reason_required") })
+  @MaxLength(MAX_RESET_REASON_LENGTH, { message: i18nValidationMessage("evaluation.validation.reset_reason_required") })
+  public reason: string;
+}
+
 export class GradeEvaluationAnswerDTO {
   @ApiProperty({ description: "Manual score between 0 and the question points", example: 2.5 })
   @IsNumber({ allowNaN: false, allowInfinity: false }, { message: i18nValidationMessage("evaluation.validation.manual_score_number") })

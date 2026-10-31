@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Controlador de calificación de evaluaciones
- * Descripción: Rutas /api/evaluation-grading del profesor o administrador con el permiso evaluations:grade: cola paginada de intentos PENDING_REVIEW en su alcance filtrable por evaluación, grupo o estudiante (cierra antes los intentos vencidos) y su conteo, lista paginada de todos los intentos no heredados de una evaluación filtrable por grupo y estados con conteos por estado, notas publicadas de un estudiante de sus grupos, vista de calificación de un intento, calificación manual de una pregunta (comentario obligatorio al sobrescribir, auditado), publicación idempotente de una nota y publicación masiva de una evaluación o grupo
+ * Descripción: Rutas /api/evaluation-grading del profesor o administrador con el permiso evaluations:grade: cola paginada de intentos PENDING_REVIEW en su alcance filtrable por evaluación, grupo o estudiante (cierra antes los intentos vencidos) y su conteo, lista paginada de todos los intentos no heredados de una evaluación filtrable por grupo y estados con conteos por estado, reinicio no destructivo del intento de un estudiante (concede un intento más, auditado y notificado), notas publicadas de un estudiante de sus grupos, vista de calificación de un intento, calificación manual de una pregunta (comentario obligatorio al sobrescribir, auditado), publicación idempotente de una nota y publicación masiva de una evaluación o grupo
  * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -21,6 +21,7 @@ import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard
 import { PermissionsGuard } from "@/features/auth/presentation/guards/permissions.guard";
 import { GradeEvaluationAnswerCommand } from "@/features/evaluation/application/commands/grade-evaluation-answer.command";
 import { PublishEvaluationGradesCommand } from "@/features/evaluation/application/commands/publish-evaluation-grades.command";
+import { ResetEvaluationAttemptCommand } from "@/features/evaluation/application/commands/reset-evaluation-attempt.command";
 import {
   type EvaluationUserGrade,
   type GradeEvaluationAnswerResult,
@@ -35,6 +36,7 @@ import { GetStudentGradesUseCase } from "@/features/evaluation/application/use-c
 import { GradeEvaluationAnswerUseCase } from "@/features/evaluation/application/use-cases/grade-evaluation-answer.usecase";
 import { PublishEvaluationAttemptGradeUseCase } from "@/features/evaluation/application/use-cases/publish-evaluation-attempt-grade.usecase";
 import { PublishEvaluationGradesUseCase } from "@/features/evaluation/application/use-cases/publish-evaluation-grades.usecase";
+import { ResetEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/reset-evaluation-attempt.usecase";
 import { type GradingQueueItemView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
 import { type EvaluationAttemptStatusValue } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 import {
@@ -43,6 +45,7 @@ import {
   GetGradingQueueQueryDTO,
   GradeEvaluationAnswerDTO,
   PublishEvaluationGradesDTO,
+  ResetEvaluationAttemptDTO,
 } from "@/features/evaluation/presentation/dtos/evaluation-grading-request.dto";
 import {
   EvaluationAttemptsPageDTO,
@@ -65,6 +68,7 @@ export class EvaluationGradingController {
   public constructor(
     private readonly _getGradingQueueUseCase: GetGradingQueueUseCase,
     private readonly _getEvaluationAttemptsUseCase: GetEvaluationAttemptsUseCase,
+    private readonly _resetEvaluationAttemptUseCase: ResetEvaluationAttemptUseCase,
     private readonly _getAttemptForGradingUseCase: GetAttemptForGradingUseCase,
     private readonly _gradeEvaluationAnswerUseCase: GradeEvaluationAnswerUseCase,
     private readonly _publishEvaluationAttemptGradeUseCase: PublishEvaluationAttemptGradeUseCase,
@@ -187,6 +191,38 @@ export class EvaluationGradingController {
       .setMessage(await i18n.t("evaluation.evaluation_attempts_retrieved"))
       .setPagination(page.attempts.pagination)
       .build();
+  }
+
+  @Post("students/:userId/evaluations/:evaluationId/reset")
+  @RequirePermissions("evaluations:grade")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Reset a student attempt",
+    description:
+      "Non-destructive reset: grants the student one more attempt of the evaluation (maxAttempts plus the accumulated grants), keeping every previous attempt, grade and feedback; the reason is audited and the student is notified (ATTEMPT_RESET). Requires the grading scope over the student group and an ACTIVE assignment of that group",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Attempt reset successfully" })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "The student group is outside the caller grading scope" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Evaluation not found, or not assigned to the student group" })
+  @ApiResponseDoc({
+    status: HttpStatus.CONFLICT,
+    description:
+      "evaluation.attempt_in_progress: the student has an attempt in progress; evaluation.assignment_not_active: the assignment of the student group is not active (data: assignmentId, startsAt, endsAt, to extend its window)",
+  })
+  public async resetAttempt(
+    @Param("userId") userId: string,
+    @Param("evaluationId") evaluationId: string,
+    @Body() dto: ResetEvaluationAttemptDTO,
+    @CurrentUser() currentUser: CurrentCaller,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<null>> {
+    await this._resetEvaluationAttemptUseCase.execute(
+      new ResetEvaluationAttemptCommand({ userId, evaluationId, reason: dto.reason, actor: toEvaluationActor(currentUser) }),
+    );
+
+    return new APIResponseBuilder<null>().setMessage(await i18n.t("evaluation.attempt_reset")).build();
   }
 
   @Get("attempts/:attemptId")

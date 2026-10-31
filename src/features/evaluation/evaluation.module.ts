@@ -59,6 +59,7 @@ import { RemoveEvaluationScenarioUseCase } from "@/features/evaluation/applicati
 import { ReorderEvaluationOptionsUseCase } from "@/features/evaluation/application/use-cases/reorder-evaluation-options.usecase";
 import { ReorderEvaluationQuestionsUseCase } from "@/features/evaluation/application/use-cases/reorder-evaluation-questions.usecase";
 import { ReorderEvaluationScenariosUseCase } from "@/features/evaluation/application/use-cases/reorder-evaluation-scenarios.usecase";
+import { ResetEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/reset-evaluation-attempt.usecase";
 import { SaveEvaluationAnswerUseCase } from "@/features/evaluation/application/use-cases/save-evaluation-answer.usecase";
 import { StartEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/start-evaluation-attempt.usecase";
 import { SubmitEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/submit-evaluation-attempt.usecase";
@@ -180,6 +181,7 @@ import { SimulationModule } from "@/features/simulation/simulation.module";
     GradingQueueLazyCloser,
     GetGradingQueueUseCase,
     GetEvaluationAttemptsUseCase,
+    ResetEvaluationAttemptUseCase,
     GetGradingQueueCountUseCase,
     GetStudentGradesUseCase,
     GetAttemptForGradingUseCase,

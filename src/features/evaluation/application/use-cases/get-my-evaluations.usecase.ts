@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Caso de uso GetMyEvaluationsUseCase
- * Descripción: Listado del estudiante: cierra de forma perezosa sus intentos vencidos, toma las asignaciones de su grupo STUDENT activo con el estado derivado (GetStudentEvaluationAssignmentsUseCase; sin grupo, lista vacía) y añade el resumen de cada evaluación (sin respuestas) y los resúmenes de sus propios intentos, incluidos los heredados; filtro opcional por módulo del currículo
+ * Descripción: Listado del estudiante: cierra de forma perezosa sus intentos vencidos, toma las asignaciones de su grupo STUDENT activo con el estado derivado (GetStudentEvaluationAssignmentsUseCase; sin grupo, lista vacía) y añade el resumen de cada evaluación (sin respuestas) y los resúmenes de sus propios intentos, incluidos los heredados; filtro opcional por módulo del currículo e intentos extra concedidos por reinicios
  * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -49,9 +49,10 @@ export class GetMyEvaluationsUseCase {
 
     const evaluationIds: string[] = [...new Set<string>(assignments.map((assignment: EvaluationAssignmentResult) => assignment.evaluationId))];
 
-    const [briefs, attempts] = await Promise.all([
+    const [briefs, attempts, extraAttempts] = await Promise.all([
       this._attemptsRepository.getStudentEvaluationBriefs(evaluationIds),
       this._attemptsRepository.getUserAttemptSummaries(userId, evaluationIds),
+      this._attemptsRepository.getExtraAttemptsByEvaluation(userId, evaluationIds),
     ]);
 
     const items: StudentEvaluationListItemResult[] = assignments.map((assignment: EvaluationAssignmentResult) => ({
@@ -60,6 +61,7 @@ export class GetMyEvaluationsUseCase {
       attempts: attempts
         .filter((attempt: StudentAttemptSummaryView) => attempt.evaluationId === assignment.evaluationId)
         .sort((left: StudentAttemptSummaryView, right: StudentAttemptSummaryView) => left.attemptNumber - right.attemptNumber),
+      extraAttempts: extraAttempts.get(assignment.evaluationId) ?? 0,
       passingGrade: this._closer.passingGrade,
     }));
 

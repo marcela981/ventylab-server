@@ -35,6 +35,7 @@ import { type IEvaluationAssignmentsRepository } from "@/features/evaluation/dom
 import { type IEvaluationsRepository } from "@/features/evaluation/domain/repositories/evaluations.repository";
 import {
   type AttemptCounters,
+  type AttemptGrantInput,
   type IStudentEvaluationAttemptsRepository,
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
 import { ATTEMPT_SUBMIT_GRACE_MS } from "@/features/evaluation/domain/services/evaluation-attempt-policy";
@@ -175,6 +176,7 @@ export class InMemoryAttemptsRepository implements IStudentEvaluationAttemptsRep
   public readonly locks: string[] = [];
   public readonly sharedLocks: string[] = [];
   public readonly briefs: StudentEvaluationBriefView[] = [];
+  public readonly grants: Map<string, AttemptGrantInput & { id: string }> = new Map<string, AttemptGrantInput & { id: string }>();
   private readonly _mutex: KeyedMutex = new KeyedMutex();
 
   public constructor(attempts: StudentEvaluationAttempt[] = []) {
@@ -268,6 +270,33 @@ export class InMemoryAttemptsRepository implements IStudentEvaluationAttemptsRep
     } else {
       this.store.set(attempt.id, snapshot);
     }
+  }
+
+  public async getExtraAttempts(evaluationId: string, userId: string): Promise<number> {
+    await Promise.resolve();
+
+    return this.grants.get(`${evaluationId}:${userId}`)?.extraAttempts ?? 0;
+  }
+
+  public async getExtraAttemptsByEvaluation(userId: string, evaluationIds: ReadonlyArray<string>): Promise<ReadonlyMap<string, number>> {
+    await Promise.resolve();
+
+    return new Map<string, number>(
+      [...this.grants.values()]
+        .filter((grant: AttemptGrantInput) => grant.userId === userId && evaluationIds.includes(grant.evaluationId))
+        .map((grant: AttemptGrantInput) => [grant.evaluationId, grant.extraAttempts]),
+    );
+  }
+
+  public async saveAttemptGrant(grant: AttemptGrantInput): Promise<string> {
+    await Promise.resolve();
+
+    const key: string = `${grant.evaluationId}:${grant.userId}`;
+    const id: string = this.grants.get(key)?.id ?? `grant-${this.grants.size + 1}`;
+
+    this.grants.set(key, { ...grant, id });
+
+    return id;
   }
 
   public commit(transaction: FakeTransaction): void {

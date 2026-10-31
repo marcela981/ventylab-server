@@ -576,6 +576,9 @@ export class MyEvaluationDTO {
   @ApiProperty({ description: "Own attempts for this evaluation, migrated ones included", type: [MyEvaluationAttemptDTO] })
   public attempts: MyEvaluationAttemptDTO[];
 
+  @ApiProperty({ description: "Attempts the student may use: maxAttempts plus the extra attempts granted by teacher resets", example: 2 })
+  public attemptsAllowed: number;
+
   @ApiProperty({ description: "Whether an attempt can be started or resumed now", example: true })
   public canStart: boolean;
 
@@ -586,6 +589,7 @@ export class MyEvaluationDTO {
     endsAt: Date | null;
     evaluation: MyEvaluationSummaryDTO | null;
     attempts: MyEvaluationAttemptDTO[];
+    attemptsAllowed: number;
     canStart: boolean;
   }) {
     this.assignmentId = fields.assignmentId;
@@ -594,6 +598,7 @@ export class MyEvaluationDTO {
     this.endsAt = fields.endsAt;
     this.evaluation = fields.evaluation;
     this.attempts = fields.attempts;
+    this.attemptsAllowed = fields.attemptsAllowed;
     this.canStart = fields.canStart;
   }
 }

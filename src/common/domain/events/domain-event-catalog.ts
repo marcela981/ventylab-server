@@ -77,6 +77,13 @@ export interface GradeFeedbackReadyPayload extends CatalogEventMeta {
   readonly feedbackId: string;
 }
 
+export interface EvaluationAttemptResetPayload extends CatalogEventMeta {
+  readonly evaluationId: string;
+  readonly userId: string;
+  readonly title: string;
+  readonly extraAttempts: number;
+}
+
 export interface UserRoleChangedPayload extends CatalogEventMeta {
   readonly userId: string;
   readonly previousRole: string;
@@ -104,6 +111,7 @@ export interface DomainEventCatalog {
   "evaluation.activated": EvaluationActivatedPayload;
   "grade.published": GradePublishedPayload;
   "grade.feedbackReady": GradeFeedbackReadyPayload;
+  "evaluation.attemptReset": EvaluationAttemptResetPayload;
   "user.roleChanged": UserRoleChangedPayload;
   "user.statusChanged": UserStatusChangedPayload;
   "ventilator.deviceOffline": VentilatorDeviceOfflinePayload;

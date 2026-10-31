@@ -147,7 +147,7 @@ export class StudentEvaluationsMapper {
     });
 
     const hasOpenAttempt: boolean = item.attempts.some((attempt: StudentAttemptSummaryView) => attempt.status === IN_PROGRESS_ATTEMPT_STATUS);
-    const maxAttempts: number = item.evaluation?.maxAttempts ?? 0;
+    const attemptsAllowed: number = (item.evaluation?.maxAttempts ?? 0) + item.extraAttempts;
 
     return new MyEvaluationDTO({
       assignmentId: item.assignment.id,
@@ -171,7 +171,8 @@ export class StudentEvaluationsMapper {
         })
         : null,
       attempts,
-      canStart: item.assignment.state === ACTIVE_ASSIGNMENT_STATE && (hasOpenAttempt || item.attempts.length < maxAttempts),
+      attemptsAllowed,
+      canStart: item.assignment.state === ACTIVE_ASSIGNMENT_STATE && (hasOpenAttempt || item.attempts.length < attemptsAllowed),
     });
   }
 
