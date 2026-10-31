@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
  * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad
- * Versión: 1.6
+ * Versión: 1.7
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -173,6 +173,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/evaluation-assignments": TEACHER_UP, // evaluations:assign
   "GET /api/evaluation-attempts/:attemptId": STUDENT_UP, // evaluations:attempt
   "GET /api/evaluation-attempts/:attemptId/feedback": STUDENT_UP, // evaluations:attempt
+  "GET /api/evaluation-grading/attempts": TEACHER_UP, // evaluations:grade
   "GET /api/evaluation-grading/attempts/:attemptId": TEACHER_UP, // evaluations:grade
   "GET /api/evaluation-grading/attempts/:attemptId/feedback": TEACHER_UP, // evaluations:grade
   "GET /api/evaluation-grading/queue": TEACHER_UP, // evaluations:grade
@@ -193,6 +194,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "POST /api/evaluation-grading/attempts/:attemptId/feedback/regenerate": TEACHER_UP, // evaluations:grade
   "POST /api/evaluation-grading/attempts/:attemptId/publish": TEACHER_UP, // evaluations:grade
   "POST /api/evaluation-grading/publish": TEACHER_UP, // evaluations:grade
+  "POST /api/evaluation-grading/students/:userId/evaluations/:evaluationId/reset": TEACHER_UP, // evaluations:grade
   "POST /api/evaluations": TEACHER_UP, // evaluations:manage
   "POST /api/evaluations/:id/assignments": TEACHER_UP, // evaluations:assign
   "POST /api/evaluations/:id/assignments/:assignmentId/close": TEACHER_UP, // evaluations:assign
@@ -201,6 +203,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "POST /api/evaluations/:id/questions/:questionId/options": TEACHER_UP, // evaluations:manage
   "POST /api/evaluations/:id/scenarios": TEACHER_UP, // evaluations:manage
   "POST /api/my-evaluations/:assignmentId/attempts": STUDENT_UP, // evaluations:attempt
+  "POST /api/my-evaluations/attempts/:attemptId/answers/:questionId/check": STUDENT_UP, // evaluations:attempt
   "PUT /api/evaluation-attempts/:attemptId/answers/:questionId": STUDENT_UP, // evaluations:attempt
   "PUT /api/evaluation-grading/attempts/:attemptId/answers/:questionId": TEACHER_UP, // evaluations:grade
   "PUT /api/evaluations/:id/questions/:questionId/options/order": TEACHER_UP, // evaluations:manage
