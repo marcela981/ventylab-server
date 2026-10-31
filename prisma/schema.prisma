@@ -97,6 +97,8 @@ model User {
   assignedEvaluations       EvaluationAssignment[]     @relation("EvaluationAssigner")
   studentEvaluationAttempts StudentEvaluationAttempt[] @relation("StudentEvaluationAttempts")
   gradedEvaluationAnswers   EvaluationAnswer[]         @relation("EvaluationAnswerGrader")
+  evaluationAttemptGrants   EvaluationAttemptGrant[]   @relation("EvaluationAttemptGrantStudent")
+  updatedAttemptGrants      EvaluationAttemptGrant[]   @relation("EvaluationAttemptGrantUpdater")
 
   // AI features
   aiCallLogs      AiCallLog[]
@@ -1626,10 +1628,11 @@ model Evaluation {
   lesson    Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
   createdBy User?   @relation("EvaluationCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
-  scenarios   EvaluationScenario[]
-  questions   EvaluationQuestion[]
-  assignments EvaluationAssignment[]
-  attempts    StudentEvaluationAttempt[]
+  scenarios     EvaluationScenario[]
+  questions     EvaluationQuestion[]
+  assignments   EvaluationAssignment[]
+  attempts      StudentEvaluationAttempt[]
+  attemptGrants EvaluationAttemptGrant[]
 
   @@index([type, status])
   @@index([moduleId])
@@ -1665,6 +1668,7 @@ model EvaluationQuestion {
   mediaIds       String[]               @default([]) @map("media_ids")
   points         Float                  @default(1)
   explanation    String?                @db.Text
+  hint           String?                @db.Text
   clinicalCaseId String?                @map("clinical_case_id")
   rubric         Json?
   legacyType     String?                @map("legacy_type")
@@ -1764,18 +1768,20 @@ model StudentEvaluationAttempt {
 }
 
 model EvaluationAnswer {
-  id                  String   @id @default(cuid())
-  attemptId           String   @map("attempt_id")
-  questionId          String   @map("question_id")
-  selectedOptionIds   String[] @default([]) @map("selected_option_ids")
-  textAnswer          String?  @map("text_answer") @db.Text
-  simulationSessionId String?  @map("simulation_session_id")
-  autoScore           Float?   @map("auto_score")
-  manualScore         Float?   @map("manual_score")
-  teacherComment      String?  @map("teacher_comment") @db.Text
-  gradedById          String?  @map("graded_by_id")
-  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                  String    @id @default(cuid())
+  attemptId           String    @map("attempt_id")
+  questionId          String    @map("question_id")
+  selectedOptionIds   String[]  @default([]) @map("selected_option_ids")
+  textAnswer          String?   @map("text_answer") @db.Text
+  simulationSessionId String?   @map("simulation_session_id")
+  autoScore           Float?    @map("auto_score")
+  manualScore         Float?    @map("manual_score")
+  teacherComment      String?   @map("teacher_comment") @db.Text
+  gradedById          String?   @map("graded_by_id")
+  // Set when the student checked the answer for immediate feedback; the answer is locked afterwards.
+  revealedAt          DateTime? @map("revealed_at") @db.Timestamptz(6)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   attempt  StudentEvaluationAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   question EvaluationQuestion       @relation(fields: [questionId], references: [id], onDelete: Restrict)
@@ -1788,16 +1794,18 @@ model EvaluationAnswer {
 }
 
 model GradeFeedback {
-  id         String              @id @default(cuid())
-  attemptId  String              @map("attempt_id")
-  questionId String?             @map("question_id")
-  content    String              @db.Text
-  source     GradeFeedbackSource
-  provider   String?
-  model      String?
-  status     GradeFeedbackStatus @default(PENDING)
-  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String              @id @default(cuid())
+  attemptId    String              @map("attempt_id")
+  questionId   String?             @map("question_id")
+  content      String              @db.Text
+  source       GradeFeedbackSource
+  provider     String?
+  model        String?
+  status       GradeFeedbackStatus @default(PENDING)
+  // Set when a regeneration replaces this row; superseded rows are kept so their ratings keep resolving.
+  supersededAt DateTime?           @map("superseded_at") @db.Timestamptz(6)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   attempt  StudentEvaluationAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   question EvaluationQuestion?      @relation(fields: [questionId], references: [id], onDelete: SetNull)
@@ -1805,6 +1813,26 @@ model GradeFeedback {
   @@index([attemptId])
   @@index([questionId])
   @@map("grade_feedbacks")
+}
+
+// Extra attempts a teacher granted to one student on one evaluation (non-destructive attempt reset).
+model EvaluationAttemptGrant {
+  id            String   @id @default(cuid())
+  evaluationId  String   @map("evaluation_id")
+  userId        String   @map("user_id")
+  extraAttempts Int      @map("extra_attempts")
+  updatedById   String?  @map("updated_by_id")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  evaluation Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  user       User       @relation("EvaluationAttemptGrantStudent", fields: [userId], references: [id], onDelete: Cascade)
+  updatedBy  User?      @relation("EvaluationAttemptGrantUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([evaluationId, userId])
+  @@index([userId])
+  @@index([updatedById])
+  @@map("evaluation_attempt_grants")
 }
 
 // ============================================
@@ -1853,6 +1881,7 @@ enum AiRatingSurface {
   ACCORDION
   ASSISTANT
   NOTES_ANALYSIS
+  EVALUATION_FEEDBACK
 }
 
 // Content scope of the rated answer; derived from the conversation for MESSAGE targets.
