@@ -113,5 +113,6 @@
   "evaluation_attempts_retrieved": "Intentos de la evaluación obtenidos correctamente",
   "attempt_reset": "Intento reiniciado: el estudiante puede repetir la evaluación",
   "attempt_in_progress": "El estudiante tiene un intento en curso; espera a que lo entregue para reiniciarlo",
-  "assignment_not_active": "La asignación del grupo del estudiante no está activa; amplía su ventana antes de reiniciar el intento"
+  "assignment_not_active": "La asignación del grupo del estudiante no está activa; amplía su ventana antes de reiniciar el intento",
+  "grade_feedback_generation_in_progress": "Ya se está generando la retroalimentación de este intento; espera unos minutos"
 }

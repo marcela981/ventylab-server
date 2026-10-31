@@ -8,9 +8,12 @@
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { AiRatingsFacade, type AiRatingUserUseCaseStats } from "@/features/ai-ratings/application/services/ai-ratings.facade";
+import { AiRatingsFacade, type AiRatingUserUseCaseStats, type OwnAiRatingView } from "@/features/ai-ratings/application/services/ai-ratings.facade";
+import { InMemoryAiRatingsRepository } from "@/features/ai-ratings/application/testing/ai-ratings-test-doubles-spec";
+import { AiRating } from "@/features/ai-ratings/domain/entities/ai-rating.entity";
 import { type AiRatingDimensionStats, type AiRatingDimension } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { type IAiRatingsAnalyticsRepository } from "@/features/ai-ratings/domain/repositories/ai-ratings-analytics.repository";
+import { AiRatingAnswers } from "@/features/ai-ratings/domain/value-objects/ai-rating-answers";
 
 const DIMENSIONS: Readonly<Record<AiRatingDimension, AiRatingDimensionStats>> = {
   quality: { mean: 4, n: 2 },
@@ -28,12 +31,28 @@ describe("AiRatingsFacade", () => {
         { userId: "student-2", useCase: "unknown", ratings: 0, helpfulCount: 0, dimensions: DIMENSIONS },
       ]),
     };
-    const facade: AiRatingsFacade = new AiRatingsFacade(repository);
+    const facade: AiRatingsFacade = new AiRatingsFacade(repository, new InMemoryAiRatingsRepository());
 
     const stats: AiRatingUserUseCaseStats[] = await facade.getHelpfulnessForUsers(["student-1", "student-2"]);
 
     expect(repository.getUserUseCaseAggregates).toHaveBeenCalledTimes(1);
     expect(repository.getUserUseCaseAggregates).toHaveBeenCalledWith(["student-1", "student-2"]);
     expect(stats.map((item: AiRatingUserUseCaseStats) => item.helpfulRate)).toEqual([0.75, null]);
+  });
+});
+
+describe("AiRatingsFacade.getOwnRatings", () => {
+  it("returns only the ratings of the user on the requested targets of that type", async () => {
+    const ratings: InMemoryAiRatingsRepository = new InMemoryAiRatingsRepository();
+    const answers: AiRatingAnswers = AiRatingAnswers.create({ helpful: true, quality: 4 });
+
+    await ratings.save(AiRating.create({ userId: "student-1", targetType: "GRADE_FEEDBACK", targetId: "feedback-1", surface: "EVALUATION_FEEDBACK", answers }));
+    await ratings.save(AiRating.create({ userId: "student-2", targetType: "GRADE_FEEDBACK", targetId: "feedback-1", answers }));
+    await ratings.save(AiRating.create({ userId: "student-1", targetType: "MESSAGE", targetId: "feedback-2", answers }));
+
+    const facade: AiRatingsFacade = new AiRatingsFacade({ getUserUseCaseAggregates: jest.fn() }, ratings);
+    const own: OwnAiRatingView[] = await facade.getOwnRatings("student-1", "GRADE_FEEDBACK", ["feedback-1", "feedback-2"]);
+
+    expect(own).toEqual([expect.objectContaining({ targetId: "feedback-1", surface: "EVALUATION_FEEDBACK", helpful: true, quality: 4 })]);
   });
 });

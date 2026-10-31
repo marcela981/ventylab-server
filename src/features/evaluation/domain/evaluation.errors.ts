@@ -292,6 +292,12 @@ export class GradeFeedbackAttemptNotGradedError extends DomainError {
   }
 }
 
+export class GradeFeedbackGenerationInProgressError extends DomainError {
+  public constructor() {
+    super("A feedback generation is already in progress for this attempt", "evaluation.grade_feedback_generation_in_progress");
+  }
+}
+
 export class GradeFeedbackForbiddenError extends DomainError {
   public constructor() {
     super("You are not allowed to review this attempt", "evaluation.grade_feedback_forbidden");

@@ -113,5 +113,6 @@
   "evaluation_attempts_retrieved": "Evaluation attempts retrieved successfully",
   "attempt_reset": "Attempt reset: the student can take the evaluation again",
   "attempt_in_progress": "The student has an attempt in progress; wait until it is submitted to reset it",
-  "assignment_not_active": "The assignment of the student group is not active; extend its window before resetting the attempt"
+  "assignment_not_active": "The assignment of the student group is not active; extend its window before resetting the attempt",
+  "grade_feedback_generation_in_progress": "The feedback of this attempt is already being generated; wait a few minutes"
 }

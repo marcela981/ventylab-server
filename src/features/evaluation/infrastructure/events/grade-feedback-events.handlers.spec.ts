@@ -29,7 +29,7 @@ import { type AttemptDoubles, buildAttemptDoubles, buildStoredAttempt } from "@/
 import { InMemoryGradeFeedbacksRepository } from "@/features/evaluation/application/testing/grade-feedback-test-doubles-spec";
 import { GenerateGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-generation.usecase";
 import { SubmitEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/submit-evaluation-attempt.usecase";
-import { EvaluationAttemptGradedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
+import { EvaluationAttemptGradedEvent, EvaluationGradeUpdatedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
 import { GradeFeedbackRegenerationRequestedEvent } from "@/features/evaluation/domain/events/grade-feedback.events";
 import { type GradeFeedbackRecord } from "@/features/evaluation/domain/read-models/grade-feedback.read-model";
 import { AIGradeFeedbackGenerator } from "@/features/evaluation/infrastructure/ai/ai-grade-feedback-generator";
@@ -113,7 +113,7 @@ async function waitUntil(condition: () => boolean): Promise<void> {
 }
 
 function readyOverall(feedbacks: InMemoryGradeFeedbacksRepository): GradeFeedbackRecord | undefined {
-  return feedbacks.records.find((record: GradeFeedbackRecord) => record.questionId === undefined && record.status === "READY");
+  return feedbacks.current().find((record: GradeFeedbackRecord) => record.questionId === undefined && record.status === "READY");
 }
 
 describe("GradeFeedbackEventsHandlers", () => {
@@ -142,15 +142,15 @@ describe("GradeFeedbackEventsHandlers", () => {
     const result: SubmitEvaluationAttemptResult = await submit.execute(new SubmitEvaluationAttemptCommand({ attemptId: "attempt-1", userId: "student-1" }));
 
     expect(result).toMatchObject({ attemptId: "attempt-1", status: "GRADED", published: true, score: 1, maxScore: 2, grade: 2.5, passed: false });
-    expect(feedbacks.records.some((record: GradeFeedbackRecord) => record.status === "READY")).toBe(false);
+    expect(feedbacks.current().some((record: GradeFeedbackRecord) => record.status === "READY")).toBe(false);
 
     await waitUntil(() => readyOverall(feedbacks) !== undefined);
 
     expect(providers.every((provider: FakeLlmProvider) => provider.calls > 0)).toBe(true);
     expect(aiCalls.records.length).toBeGreaterThan(0);
     expect(aiCalls.records.every((record: { status: string }) => record.status === "FALLBACK")).toBe(true);
-    expect(feedbacks.records).toHaveLength(3);
-    expect(feedbacks.records.every((record: GradeFeedbackRecord) => record.status === "READY" && record.source === "DETERMINISTIC")).toBe(true);
+    expect(feedbacks.current()).toHaveLength(3);
+    expect(feedbacks.current().every((record: GradeFeedbackRecord) => record.status === "READY" && record.source === "DETERMINISTIC")).toBe(true);
     expect(readyOverall(feedbacks)?.content).toContain("2.5");
   });
 
@@ -168,6 +168,18 @@ describe("GradeFeedbackEventsHandlers", () => {
 
     expect(result.status).toBe("GRADED");
     expect(errorLog).toHaveBeenCalledWith("Grade feedback generation failed for attempt attempt-1 (RangeError)");
+  });
+
+  it("replaces the current feedback when a published grade is regraded, and ignores unpublished regrades", async () => {
+    const execute: jest.Mock = jest.fn().mockResolvedValue("ready");
+    const handlers: GradeFeedbackEventsHandlers = new GradeFeedbackEventsHandlers({ execute } as unknown as GenerateGradeFeedbackUseCase);
+    const base: ConstructorParameters<typeof EvaluationGradeUpdatedEvent>[0] = { attemptId: "attempt-1", evaluationId: "evaluation-1", userId: "student-1", score: 1, maxScore: 2, grade: 2.5, passed: false };
+
+    await handlers.handleGradeUpdated(new EvaluationGradeUpdatedEvent(base));
+    expect(execute).not.toHaveBeenCalled();
+
+    await handlers.handleGradeUpdated(new EvaluationGradeUpdatedEvent({ ...base, publishedAt: new Date() }));
+    expect(execute).toHaveBeenCalledWith(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1", replaceCurrent: true }));
   });
 
   it("completes the reserved feedback of a regeneration request", async () => {

@@ -38,6 +38,12 @@ export class InMemoryAiRatingsRepository implements IAiRatingsRepository {
     return Promise.resolve(this._ratings.get(InMemoryAiRatingsRepository._key(userId, targetType, targetId)));
   }
 
+  public getByUserAndTargets(userId: string, targetType: AiRatingTargetTypeValue, targetIds: ReadonlyArray<string>): Promise<AiRating[]> {
+    return Promise.resolve(
+      this.all().filter((rating: AiRating) => rating.userId === userId && rating.targetType === targetType && targetIds.includes(rating.targetId)),
+    );
+  }
+
   public save(rating: AiRating, transaction?: unknown): Promise<void> {
     this.transactions.push(transaction);
     this._ratings.set(InMemoryAiRatingsRepository._key(rating.userId, rating.targetType, rating.targetId), rating);

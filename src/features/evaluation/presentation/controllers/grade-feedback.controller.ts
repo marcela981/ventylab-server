@@ -10,6 +10,7 @@
  */
 import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
@@ -27,6 +28,10 @@ import { GradeFeedbackDTO, GradeFeedbackRegenerationDTO, StudentGradeFeedbackDTO
 import { GradeFeedbacksMapper } from "@/features/evaluation/presentation/mappers/grade-feedbacks.mapper";
 import { type CurrentCaller, toEvaluationActor } from "@/features/evaluation/presentation/types/current-caller";
 
+// Each regeneration calls the language model again: a teacher may request at most 5 per minute
+const REGENERATE_RATE_LIMIT: number = 5;
+const REGENERATE_RATE_WINDOW_MS: number = 60000;
+
 @ApiTags("Grade feedback")
 @ApiBearerAuth("JWT-auth")
 @Controller("api")
@@ -43,7 +48,8 @@ export class GradeFeedbackController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Get my attempt feedback",
-    description: "Overall and per-question feedback of the own attempt with its status; content and source only when READY; available once the grade is published",
+    description:
+      "Overall and per-question feedback of the own attempt with its status (a PENDING generation older than 10 minutes reads as FAILED); content, source and the caller's own rating (myRating) only when READY; available once the grade is published",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Feedback retrieved successfully", type: StudentGradeFeedbackDTO })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
@@ -88,16 +94,18 @@ export class GradeFeedbackController {
 
   @Post("evaluation-grading/attempts/:attemptId/feedback/regenerate")
   @RequirePermissions("evaluations:grade")
+  @Throttle({ default: { limit: REGENERATE_RATE_LIMIT, ttl: REGENERATE_RATE_WINDOW_MS } })
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
     summary: "Regenerate attempt feedback",
-    description: "Replaces the feedback of a graded attempt with a PENDING one and generates it asynchronously (language model with deterministic fallback)",
+    description:
+      "Supersedes the current feedback of a graded attempt (kept, never deleted, so its ratings still resolve) with a PENDING one and generates it asynchronously (language model with deterministic fallback); at most 5 requests per minute",
   })
   @ApiResponseDoc({ status: HttpStatus.ACCEPTED, description: "Regeneration accepted", type: GradeFeedbackRegenerationDTO })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "The caller does not manage the attempt's group" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Attempt not found" })
-  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "The attempt is not graded yet" })
+  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "The attempt is not graded yet, or a generation started less than 10 minutes ago is still PENDING" })
   public async regenerateFeedback(
     @Param("attemptId") attemptId: string,
     @CurrentUser() currentUser: CurrentCaller,

@@ -20,6 +20,8 @@ export interface GradeFeedbackRecord {
   readonly provider?: string;
   readonly model?: string;
   readonly status: GradeFeedbackStatusValue;
+  // Set once a regeneration replaced the row; superseded rows are kept for the ratings that point at them
+  readonly supersededAt?: Date;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

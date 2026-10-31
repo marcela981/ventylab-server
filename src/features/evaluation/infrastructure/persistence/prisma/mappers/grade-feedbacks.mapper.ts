@@ -23,6 +23,7 @@ export class GradeFeedbacksMapper {
       provider: row.provider ?? undefined,
       model: row.model ?? undefined,
       status: row.status,
+      supersededAt: row.supersededAt ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -38,6 +39,7 @@ export class GradeFeedbacksMapper {
       provider: record.provider ?? null,
       model: record.model ?? null,
       status: record.status,
+      supersededAt: record.supersededAt ?? null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };

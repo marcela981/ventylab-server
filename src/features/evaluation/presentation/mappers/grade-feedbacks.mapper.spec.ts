@@ -8,6 +8,7 @@
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type GradeFeedbackRatingView } from "@/features/evaluation/application/ports/grade-feedback-ratings-reader.interface";
 import { GradeFeedbackResult } from "@/features/evaluation/application/results/grade-feedback.result";
 import { feedbackRecord } from "@/features/evaluation/application/testing/grade-feedback-test-doubles-spec";
 import { type GradeFeedbackDTO, type StudentGradeFeedbackDTO } from "@/features/evaluation/presentation/dtos/grade-feedback.dto";
@@ -25,8 +26,8 @@ describe("GradeFeedbacksMapper", () => {
 
     expect(JSON.parse(JSON.stringify(dto))).toEqual({
       attemptId: "attempt-1",
-      overall: { id: "overall", questionId: null, status: "READY", source: "LLM", content: "Buen trabajo." },
-      questions: [{ id: "fq1", questionId: "q1", status: "PENDING", source: null, content: null }],
+      overall: { id: "overall", questionId: null, status: "READY", source: "LLM", content: "Buen trabajo.", myRating: null },
+      questions: [{ id: "fq1", questionId: "q1", status: "PENDING", source: null, content: null, myRating: null }],
     });
   });
 
@@ -35,5 +36,33 @@ describe("GradeFeedbacksMapper", () => {
 
     expect(dto.overall).toMatchObject({ id: "overall", questionId: null, status: "READY", source: "LLM", provider: "gemini", model: "gemini-2.0-flash" });
     expect(dto.questions[0]).toMatchObject({ id: "fq1", status: "PENDING", source: null, provider: "gemini" });
+  });
+});
+
+describe("GradeFeedbacksMapper.toStudentDTO myRating", () => {
+  it("embeds the own rating of a READY block and null elsewhere", () => {
+    const rating: GradeFeedbackRatingView = {
+      id: "rating-1",
+      targetId: "overall",
+      surface: "EVALUATION_FEEDBACK",
+      helpful: false,
+      comment: "Muy general",
+      quality: 2,
+      createdAt: new Date("2026-10-05T12:00:00.000Z"),
+      updatedAt: new Date("2026-10-05T12:05:00.000Z"),
+    };
+    const dto: StudentGradeFeedbackDTO = GradeFeedbacksMapper.toStudentDTO(
+      new GradeFeedbackResult({
+        attemptId: "attempt-1",
+        overall: feedbackRecord({ id: "overall" }),
+        questions: [feedbackRecord({ id: "fq1", questionId: "q1" })],
+        ratings: new Map<string, GradeFeedbackRatingView>([["overall", rating]]),
+      }),
+    );
+
+    expect(dto.overall?.myRating).toEqual(
+      expect.objectContaining({ id: "rating-1", surface: "EVALUATION_FEEDBACK", helpful: false, comment: "Muy general", quality: 2, updatedAt: "2026-10-05T12:05:00.000Z" }),
+    );
+    expect(dto.questions[0].myRating).toBeNull();
   });
 });

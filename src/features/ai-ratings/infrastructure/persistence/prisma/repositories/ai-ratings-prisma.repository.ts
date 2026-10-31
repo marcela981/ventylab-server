@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de valoraciones de IA
  * Descripción: Implementa IAiRatingsRepository sobre ai_ratings con PrismaService: lectura por (usuario, tipo de objetivo, objetivo), upsert sobre esa clave única en la transacción activa, agregados con LEFT JOIN a ai_call_logs agrupados por caso de uso, proveedor, modelo y versión de prompt mediante $queryRaw parametrizado y filas de exportación sin identificador de usuario; exporta las columnas SQL de dimensiones y de grupo desconocido que reutiliza el repositorio de analítica; filtra y agrupa también por superficie y alcance (unknown en valoraciones anteriores) y exporta el estado de la llamada
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -57,6 +57,16 @@ export class AiRatingsPrismaRepository implements IAiRatingsRepository {
     });
 
     return row ? AiRatingsMapper.toDomain(row) : undefined;
+  }
+
+  public async getByUserAndTargets(userId: string, targetType: AiRatingTargetTypeValue, targetIds: ReadonlyArray<string>): Promise<AiRating[]> {
+    if (targetIds.length === 0) {
+      return [];
+    }
+
+    const rows: AiRatingModel[] = await this._prisma.aiRating.findMany({ where: { userId, targetType, targetId: { in: [...targetIds] } } });
+
+    return rows.map((row: AiRatingModel) => AiRatingsMapper.toDomain(row));
   }
 
   public async save(rating: AiRating, transaction?: unknown): Promise<void> {

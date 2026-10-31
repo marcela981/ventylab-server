@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso RegenerateGradeFeedbackUseCase
- * Descripción: Regeneración de la retroalimentación de un intento calificado por un docente con alcance sobre su grupo o un administrador: en una transacción bajo el candado por intento borra las filas anteriores e inserta una fila global PENDING, y tras confirmar publica GradeFeedbackRegenerationRequestedEvent para que la generación corra de forma asíncrona; responde de inmediato con el estado PENDING
- * Versión: 1.0
+ * Descripción: Regeneración de la retroalimentación de un intento calificado por un docente con alcance sobre su grupo o un administrador: en una transacción bajo el candado por intento rechaza con 409 si ya hay una generación PENDING de menos de 10 minutos, marca las filas vigentes como superseded (no las borra: sus valoraciones siguen resolviendo su texto) e inserta una fila global PENDING, y tras confirmar publica GradeFeedbackRegenerationRequestedEvent para que la generación corra de forma asíncrona; responde de inmediato con el estado PENDING
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,7 +16,11 @@ import { type RegenerateGradeFeedbackCommand } from "@/features/evaluation/appli
 import { GradeFeedbackRegenerationResult } from "@/features/evaluation/application/results/grade-feedback.result";
 import { GradeFeedbackAccess } from "@/features/evaluation/application/services/grade-feedback-access";
 import { type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
-import { EvaluationAttemptNotFoundError, GradeFeedbackAttemptNotGradedError } from "@/features/evaluation/domain/evaluation.errors";
+import {
+  EvaluationAttemptNotFoundError,
+  GradeFeedbackAttemptNotGradedError,
+  GradeFeedbackGenerationInProgressError,
+} from "@/features/evaluation/domain/evaluation.errors";
 import { GradeFeedbackRegenerationRequestedEvent } from "@/features/evaluation/domain/events/grade-feedback.events";
 import { type GradeFeedbackRecord } from "@/features/evaluation/domain/read-models/grade-feedback.read-model";
 import { GRADE_FEEDBACKS_REPOSITORY_TOKEN, type IGradeFeedbacksRepository } from "@/features/evaluation/domain/repositories/grade-feedbacks.repository";
@@ -24,13 +28,19 @@ import {
   type IStudentEvaluationAttemptsRepository,
   STUDENT_EVALUATION_ATTEMPTS_REPOSITORY_TOKEN,
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
-import { createPendingGradeFeedback, gradeFeedbackLockKey } from "@/features/evaluation/domain/services/grade-feedback-records";
+import {
+  createPendingGradeFeedback,
+  gradeFeedbackLockKey,
+  isFreshPendingGradeFeedback,
+  splitGradeFeedback,
+} from "@/features/evaluation/domain/services/grade-feedback-records";
 import { GRADED_ATTEMPT_STATUS } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 
 /**
  * @throws {EvaluationAttemptNotFoundError} If the attempt does not exist
  * @throws {GradeFeedbackForbiddenError} If a teacher does not manage the group of the attempt
  * @throws {GradeFeedbackAttemptNotGradedError} If the attempt has no final grade yet
+ * @throws {GradeFeedbackGenerationInProgressError} If a generation started less than 10 minutes ago is still PENDING
  */
 @Injectable()
 export class RegenerateGradeFeedbackUseCase {
@@ -62,9 +72,15 @@ export class RegenerateGradeFeedbackUseCase {
     const pending: GradeFeedbackRecord = await this._transactionManager.run(async (transaction: unknown): Promise<GradeFeedbackRecord> => {
       await this._feedbacksRepository.acquireTransactionLock(gradeFeedbackLockKey(attempt.id), transaction);
 
-      const reserved: GradeFeedbackRecord = createPendingGradeFeedback(attempt.id, new Date());
+      const now: Date = new Date();
 
-      await this._feedbacksRepository.replaceForAttempt(attempt.id, [reserved], transaction);
+      if (isFreshPendingGradeFeedback(splitGradeFeedback(await this._feedbacksRepository.getByAttempt(attempt.id, transaction)).overall, now)) {
+        throw new GradeFeedbackGenerationInProgressError();
+      }
+
+      const reserved: GradeFeedbackRecord = createPendingGradeFeedback(attempt.id, now);
+
+      await this._feedbacksRepository.supersedeForAttempt(attempt.id, [reserved], now, transaction);
 
       return reserved;
     });

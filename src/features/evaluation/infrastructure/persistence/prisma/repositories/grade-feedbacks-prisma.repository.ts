@@ -33,20 +33,44 @@ export class GradeFeedbacksPrismaRepository implements IGradeFeedbacksRepository
     const client: PrismaExecutor = resolveClient(this._prisma, transaction);
 
     const rows: GradeFeedbackModel[] = await client.gradeFeedback.findMany({
-      where: { attemptId },
+      where: { attemptId, supersededAt: null },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     });
 
     return rows.map((row: GradeFeedbackModel) => GradeFeedbacksMapper.toRecord(row));
   }
 
-  public async replaceForAttempt(attemptId: string, records: ReadonlyArray<GradeFeedbackRecord>, transaction: unknown): Promise<void> {
+  public async supersedeForAttempt(attemptId: string, records: ReadonlyArray<GradeFeedbackRecord>, now: Date, transaction: unknown): Promise<void> {
     const client: PrismaExecutor = resolveClient(this._prisma, transaction);
 
-    await client.gradeFeedback.deleteMany({ where: { attemptId } });
+    await client.gradeFeedback.updateMany({ where: { attemptId, supersededAt: null }, data: { supersededAt: now } });
 
     if (records.length > 0) {
       await client.gradeFeedback.createMany({ data: records.map((record: GradeFeedbackRecord) => GradeFeedbacksMapper.toPersistence(record)) });
+    }
+  }
+
+  public async completePending(pendingId: string, records: ReadonlyArray<GradeFeedbackRecord>, transaction: unknown): Promise<void> {
+    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+    const overall: GradeFeedbackRecord | undefined = records.find((record: GradeFeedbackRecord) => record.id === pendingId);
+    const others: GradeFeedbackRecord[] = records.filter((record: GradeFeedbackRecord) => record.id !== pendingId);
+
+    if (overall) {
+      await client.gradeFeedback.update({
+        where: { id: pendingId },
+        data: {
+          content: overall.content,
+          source: overall.source,
+          provider: overall.provider ?? null,
+          model: overall.model ?? null,
+          status: overall.status,
+          updatedAt: overall.updatedAt,
+        },
+      });
+    }
+
+    if (others.length > 0) {
+      await client.gradeFeedback.createMany({ data: others.map((record: GradeFeedbackRecord) => GradeFeedbacksMapper.toPersistence(record)) });
     }
   }
 

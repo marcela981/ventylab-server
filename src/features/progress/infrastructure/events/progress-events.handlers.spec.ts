@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type IRealtimePublisher } from "@/common/application/ports/realtime-publisher.interface";
-import { EvaluationGradePublishedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
+import { EvaluationGradePublishedEvent, EvaluationGradeUpdatedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
 import { type RecordLearningActivityCommand } from "@/features/progress/application/commands/record-learning-activity.command";
 import { type UnlockAchievementsCommand } from "@/features/progress/application/commands/unlock-achievements.command";
 import { type RecordLearningActivityUseCase } from "@/features/progress/application/use-cases/record-learning-activity.usecase";
@@ -104,6 +104,29 @@ describe("ProgressEventsHandlers", () => {
     await handlers.handleEvaluationGradePublished(new EvaluationGradePublishedEvent({ ...base, passed: true }));
 
     expect(recorded()).toEqual([{ userId: "U1", kind: "EVALUATION_PASSED", refId: "E1", occurredAt: OCCURRED_AT, achievementReward: 0 }]);
+    expect(triggers()).toEqual([["evaluations_passed", "perfect_score", "streak_days", "level_reached"]]);
+  });
+
+  it("records EVALUATION_PASSED when a published grade is regraded to passing, and ignores unpublished or failing regrades", async () => {
+    const base: ConstructorParameters<typeof EvaluationGradeUpdatedEvent>[0] = {
+      attemptId: "A1",
+      evaluationId: "E1",
+      userId: "U1",
+      score: 8,
+      maxScore: 10,
+      grade: 4,
+      passed: true,
+    };
+
+    await handlers.handleEvaluationGradeUpdated(new EvaluationGradeUpdatedEvent(base));
+    await handlers.handleEvaluationGradeUpdated(new EvaluationGradeUpdatedEvent({ ...base, passed: false, publishedAt: OCCURRED_AT }));
+    expect(record).not.toHaveBeenCalled();
+
+    const regrade: EvaluationGradeUpdatedEvent = new EvaluationGradeUpdatedEvent({ ...base, publishedAt: OCCURRED_AT });
+
+    await handlers.handleEvaluationGradeUpdated(regrade);
+
+    expect(recorded()).toEqual([{ userId: "U1", kind: "EVALUATION_PASSED", refId: "E1", occurredAt: regrade.occurredAt, achievementReward: 0 }]);
     expect(triggers()).toEqual([["evaluations_passed", "perfect_score", "streak_days", "level_reached"]]);
   });
 
