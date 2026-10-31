@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de respuestas de evaluaciones del estudiante
- * Descripción: Convierte los resultados de los casos de uso del estudiante a sus DTOs propios: inicio de intento, detalle del intento (oculta isCorrect, explicación, rúbrica, retroalimentación de opciones, puntajes y nota hasta que la nota se publica; luego los incluye con el puntaje por pregunta), entrega y listado de evaluaciones asignadas con sus intentos
- * Versión: 1.0
+ * Descripción: Convierte los resultados de los casos de uso del estudiante a sus DTOs propios: inicio de intento, detalle del intento (oculta isCorrect, explicación, rúbrica, retroalimentación de opciones, puntajes y nota hasta que la nota se publica; luego los incluye con el puntaje por pregunta; la nota parcial de las preguntas cerradas solo en intentos PENDING_REVIEW de QUIZ y WORKSHOP), entrega y listado de evaluaciones asignadas con sus intentos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,15 +22,17 @@ import {
 } from "@/features/evaluation/domain/entities/evaluation-items";
 import { type EvaluationAnswerRecord, type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import { type StudentAttemptSummaryView } from "@/features/evaluation/domain/read-models/student-evaluation.read-model";
-import { hasPassedEvaluation } from "@/features/evaluation/domain/services/evaluation-attempt-grader";
+import { computePartialClosedScore, hasPassedEvaluation } from "@/features/evaluation/domain/services/evaluation-attempt-grader";
 import { ACTIVE_ASSIGNMENT_STATE } from "@/features/evaluation/domain/value-objects/evaluation-assignment-state";
-import { IN_PROGRESS_ATTEMPT_STATUS } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
+import { IN_PROGRESS_ATTEMPT_STATUS, PENDING_REVIEW_ATTEMPT_STATUS } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 import { readEvaluationDescription } from "@/features/evaluation/domain/value-objects/evaluation-rich-text";
+import { immediateFeedbackFor } from "@/features/evaluation/domain/value-objects/evaluation-type";
 import { EvaluationMediaDTO } from "@/features/evaluation/presentation/dtos/evaluation.dto";
 import {
   MyEvaluationAttemptDTO,
   MyEvaluationDTO,
   MyEvaluationSummaryDTO,
+  PartialClosedScoreDTO,
   type PublishedGradeFields,
   StudentAnswerDTO,
   StudentAttemptDetailDTO,
@@ -80,6 +82,7 @@ export class StudentEvaluationsMapper {
       serverNow: result.now,
       published,
       grade: gradeFields(attempt.grade, attempt.score, attempt.maxScore, result.passingGrade),
+      partialClosedScore: StudentEvaluationsMapper._toPartialClosedScore(result),
       evaluation: new StudentAttemptEvaluationDTO({
         id: evaluation.id,
         title: evaluation.title,
@@ -149,6 +152,18 @@ export class StudentEvaluationsMapper {
       attempts,
       canStart: item.assignment.state === ACTIVE_ASSIGNMENT_STATE && (hasOpenAttempt || item.attempts.length < maxAttempts),
     });
+  }
+
+  private static _toPartialClosedScore({ attempt, evaluation }: StudentEvaluationAttemptDetailResult): PartialClosedScoreDTO | null {
+    if (attempt.status !== PENDING_REVIEW_ATTEMPT_STATUS || attempt.isPublished || !immediateFeedbackFor(evaluation.type)) {
+      return null;
+    }
+
+    const answers: Map<string, EvaluationAnswerRecord> = new Map<string, EvaluationAnswerRecord>(
+      attempt.answers.map((answer: EvaluationAnswerRecord) => [answer.questionId, answer]),
+    );
+
+    return new PartialClosedScoreDTO(computePartialClosedScore(evaluation.questions, answers));
   }
 
   private static _toQuestionDTO(

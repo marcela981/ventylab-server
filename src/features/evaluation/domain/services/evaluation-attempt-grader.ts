@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Calificador automático de intentos de evaluación
- * Descripción: Función pura que califica un intento al entregarlo: preguntas de selección todo-o-nada (conjunto elegido igual al conjunto correcto), sin respuesta 0, OPEN_TEXT pendiente de revisión manual, SIMULATION con el puntaje práctico disponible (puntos × puntaje, 2 decimales) o pendiente; suma puntaje y máximo, decide GRADED o PENDING_REVIEW y calcula la nota 0.0–5.0 con un decimal y la aprobación; resume además los puntajes de un intento ya cerrado tras la calificación docente (puntaje manual sobre el automático, preguntas sin puntaje pendientes, nota solo sin pendientes)
- * Versión: 1.1
+ * Descripción: Función pura que califica un intento al entregarlo: preguntas de selección todo-o-nada (conjunto elegido igual al conjunto correcto), sin respuesta 0, OPEN_TEXT pendiente de revisión manual, SIMULATION con el puntaje práctico disponible (puntos × puntaje, 2 decimales) o pendiente; suma puntaje y máximo, decide GRADED o PENDING_REVIEW y calcula la nota 0.0–5.0 con un decimal y la aprobación; resume además los puntajes de un intento ya cerrado tras la calificación docente (puntaje manual sobre el automático, preguntas sin puntaje pendientes, nota solo sin pendientes), corrige una respuesta de selección aislada (retroalimentación inmediata) y calcula la nota parcial de las preguntas cerradas (correctas de total) mientras las abiertas esperan revisión
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,6 +44,11 @@ export interface AttemptScoreSummary {
   readonly grade?: number;
 }
 
+export interface PartialClosedScore {
+  readonly correct: number;
+  readonly total: number;
+}
+
 export interface EvaluationAttemptGrading {
   readonly questions: ReadonlyArray<QuestionGrade>;
   readonly score: number;
@@ -78,10 +83,18 @@ function sameSet(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boo
   return leftSet.size === rightSet.size && [...leftSet].every((id: string) => rightSet.has(id));
 }
 
+export function correctOptionIds(question: Pick<EvaluationQuestionItem, "options">): string[] {
+  return question.options.filter((option: EvaluationOptionItem) => option.isCorrect).map((option: EvaluationOptionItem) => option.id);
+}
+
+// All-or-nothing: the selected set must equal the set of correct options.
+export function isChoiceAnswerCorrect(question: Pick<EvaluationQuestionItem, "options">, selectedOptionIds: ReadonlyArray<string>): boolean {
+  return sameSet(selectedOptionIds, correctOptionIds(question));
+}
+
 function gradeQuestion(question: EvaluationQuestionItem, answer: GradableAnswer | undefined, practicalScore: number | undefined): QuestionGrade {
   if (isChoiceQuestionType(question.type)) {
-    const correct: string[] = question.options.filter((option: EvaluationOptionItem) => option.isCorrect).map((option: EvaluationOptionItem) => option.id);
-    const isRight: boolean = answer !== undefined && sameSet(answer.selectedOptionIds, correct);
+    const isRight: boolean = answer !== undefined && isChoiceAnswerCorrect(question, answer.selectedOptionIds);
 
     return { questionId: question.id, autoScore: isRight ? question.points : 0, pendingManual: false };
   }
@@ -124,6 +137,24 @@ export function gradeEvaluationAttempt(
     grade: pending ? undefined : computeEvaluationGrade(score, maxScore),
     zeroMaxScore: maxScore <= 0,
   };
+}
+
+// Correct closed (choice) questions out of all closed questions, shown while open questions wait for the teacher.
+export function computePartialClosedScore(
+  questions: ReadonlyArray<Pick<EvaluationQuestionItem, "id" | "type" | "options">>,
+  answers: ReadonlyMap<string, Pick<GradableAnswer, "selectedOptionIds">>,
+): PartialClosedScore {
+  const closed: ReadonlyArray<Pick<EvaluationQuestionItem, "id" | "type" | "options">> = questions.filter(
+    (question: Pick<EvaluationQuestionItem, "id" | "type" | "options">) => isChoiceQuestionType(question.type),
+  );
+
+  const correct: number = closed.filter((question: Pick<EvaluationQuestionItem, "id" | "type" | "options">) => {
+    const answer: Pick<GradableAnswer, "selectedOptionIds"> | undefined = answers.get(question.id);
+
+    return answer !== undefined && isChoiceAnswerCorrect(question, answer.selectedOptionIds);
+  }).length;
+
+  return { correct, total: closed.length };
 }
 
 export function earnedScore(answer: ScoredAnswer | undefined): number | undefined {

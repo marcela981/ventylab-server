@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad Evaluation
- * Descripción: Agregado de evaluación (EXAM, QUIZ o WORKSHOP) con sus escenarios, preguntas y opciones; aplica las transiciones de estado DRAFT/READY/ARCHIVED con validación de READY, marca los cambios estructurales (preguntas, opciones, corrección, puntos, tipo, rúbrica y caso clínico), reordena por lotes, duplica en profundidad y registra los cambios pendientes de persistir, la auditoría y los eventos
- * Versión: 1.0
+ * Descripción: Agregado de evaluación (EXAM, QUIZ o WORKSHOP) con sus escenarios, preguntas y opciones; aplica las transiciones de estado DRAFT/READY/ARCHIVED con validación de READY, marca los cambios estructurales (preguntas, opciones, corrección, puntos, tipo, rúbrica y caso clínico), reordena por lotes, duplica en profundidad y registra los cambios pendientes de persistir, la auditoría y los eventos; expone si publica la nota al cerrar según la política por tipo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -45,7 +45,7 @@ import {
   isAllowedStatusTransition,
   READY_EVALUATION_STATUS,
 } from "@/features/evaluation/domain/value-objects/evaluation-status";
-import { defaultShowResultsImmediately, type EvaluationTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-type";
+import { autoPublishFor, defaultShowResultsImmediately, type EvaluationTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-type";
 
 export const EVALUATION_ENTITY_COLLECTION: string = "evaluations";
 export const EVALUATION_ENTITY_TYPE: string = "evaluation";
@@ -272,6 +272,10 @@ export class Evaluation extends AggregateRoot {
 
   public get showResultsImmediately(): boolean {
     return this._showResultsImmediately;
+  }
+
+  public get autoPublishesGrades(): boolean {
+    return autoPublishFor(this._type, this._showResultsImmediately);
   }
 
   public get status(): EvaluationStatusValue {

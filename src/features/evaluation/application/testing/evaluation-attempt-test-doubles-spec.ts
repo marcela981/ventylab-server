@@ -39,6 +39,7 @@ import {
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
 import { ATTEMPT_SUBMIT_GRACE_MS } from "@/features/evaluation/domain/services/evaluation-attempt-policy";
 import { type EvaluationQuestionTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-question-type";
+import { type EvaluationTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-type";
 import { type GroupsFacade } from "@/features/groups/application/services/groups.facade";
 
 export const STUDENT_ID: string = "student-1";
@@ -75,6 +76,7 @@ export function attemptQuestion(id: string, type: EvaluationQuestionTypeValue = 
 }
 
 export function buildAttemptEvaluation({
+  type = "QUIZ",
   questions = [attemptQuestion("q1"), attemptQuestion("q2")],
   durationMinutes,
   maxAttempts = 1,
@@ -88,10 +90,11 @@ export function buildAttemptEvaluation({
   showResultsImmediately?: boolean;
   shuffleQuestions?: boolean;
   status?: "DRAFT" | "READY" | "ARCHIVED";
+  type?: EvaluationTypeValue;
 } = {}): Evaluation {
   return Evaluation.reconstitute({
     id: "evaluation-1",
-    type: "QUIZ",
+    type,
     title: "Ventilation basics",
     description: "Answer every question",
     durationMinutes,

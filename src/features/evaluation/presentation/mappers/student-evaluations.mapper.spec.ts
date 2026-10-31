@@ -94,3 +94,26 @@ describe("StudentEvaluationsMapper.toAttemptDetailDTO (check 11)", () => {
     expect(dto.questions.map((question: { earnedScore?: number | null }) => question.earnedScore)).toEqual([1, 1.5, null]);
   });
 });
+
+describe("StudentEvaluationsMapper.toAttemptDetailDTO partialClosedScore", () => {
+  const pendingAnswers: { id: string; questionId: string; selectedOptionIds: string[]; textAnswer?: string }[] = [
+    { id: "answer-1", questionId: "q1", selectedOptionIds: ["q1-ok"] },
+    { id: "answer-2", questionId: "q2", selectedOptionIds: [], textAnswer: "Raise PEEP" },
+  ];
+
+  function pendingDetail(type: "QUIZ" | "WORKSHOP" | "EXAM"): StudentEvaluationAttemptDetailResult {
+    const evaluation: Evaluation = buildAttemptEvaluation({ type, questions: [attemptQuestion("q1"), attemptQuestion("q4"), attemptQuestion("q2", "OPEN_TEXT", 2)] });
+    const attempt: StudentEvaluationAttempt = buildStoredAttempt({ status: "PENDING_REVIEW", submittedAt: minutesFromNow(-1), answers: pendingAnswers });
+
+    return new StudentEvaluationAttemptDetailResult({ attempt, evaluation, questions: evaluation.questions, mediaUrls: new Map(), now: new Date(), passingGrade: 3 });
+  }
+
+  it("exposes the correct closed questions of a PENDING_REVIEW WORKSHOP attempt", () => {
+    expect(StudentEvaluationsMapper.toAttemptDetailDTO(pendingDetail("WORKSHOP")).partialClosedScore).toEqual({ correct: 1, total: 2 });
+  });
+
+  it("stays null for an EXAM and for attempts that are not pending review", () => {
+    expect(StudentEvaluationsMapper.toAttemptDetailDTO(pendingDetail("EXAM")).partialClosedScore).toBeNull();
+    expect(StudentEvaluationsMapper.toAttemptDetailDTO(detail(buildStoredAttempt())).partialClosedScore).toBeNull();
+  });
+});

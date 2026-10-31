@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de evaluaciones del estudiante
- * Descripción: Contratos HTTP propios del estudiante (no reutilizan los de gestión): inicio de intento, detalle del intento con preguntas, opciones y respuestas guardadas (respuestas correctas, explicaciones, rúbricas, retroalimentación de opciones y puntaje por pregunta solo cuando la nota está publicada), resultado de la entrega y listado de evaluaciones asignadas con sus intentos
- * Versión: 1.0
+ * Descripción: Contratos HTTP propios del estudiante (no reutilizan los de gestión): inicio de intento, detalle del intento con preguntas, opciones y respuestas guardadas (respuestas correctas, explicaciones, rúbricas, retroalimentación de opciones y puntaje por pregunta solo cuando la nota está publicada; nota parcial de las cerradas mientras espera revisión), resultado de la entrega y listado de evaluaciones asignadas con sus intentos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -237,6 +237,19 @@ export class StudentAttemptEvaluationDTO {
   }
 }
 
+export class PartialClosedScoreDTO {
+  @ApiProperty({ description: "Closed (choice) questions answered correctly", example: 3 })
+  public correct: number;
+
+  @ApiProperty({ description: "Closed (choice) questions in the evaluation", example: 4 })
+  public total: number;
+
+  public constructor({ correct, total }: { correct: number; total: number }) {
+    this.correct = correct;
+    this.total = total;
+  }
+}
+
 function assignPublishedGrade(target: PublishedGradeFields, published: boolean, fields: PublishedGradeFields): void {
   if (!published) {
     return;
@@ -288,6 +301,13 @@ export class StudentAttemptDetailDTO implements PublishedGradeFields {
   @ApiPropertyOptional({ description: "Whether the grade reaches the passing grade (published only)", example: true })
   public passed?: boolean;
 
+  @ApiProperty({
+    description: "Correct closed questions while open questions wait for the teacher (PENDING_REVIEW QUIZ or WORKSHOP attempts only; null otherwise)",
+    nullable: true,
+    type: PartialClosedScoreDTO,
+  })
+  public partialClosedScore: PartialClosedScoreDTO | null;
+
   @ApiProperty({ description: "Evaluation", type: StudentAttemptEvaluationDTO })
   public evaluation: StudentAttemptEvaluationDTO;
 
@@ -308,6 +328,7 @@ export class StudentAttemptDetailDTO implements PublishedGradeFields {
     serverNow: Date;
     published: boolean;
     grade: PublishedGradeFields;
+    partialClosedScore: PartialClosedScoreDTO | null;
     evaluation: StudentAttemptEvaluationDTO;
     scenarios: StudentScenarioDTO[];
     questions: StudentQuestionDTO[];
@@ -322,6 +343,7 @@ export class StudentAttemptDetailDTO implements PublishedGradeFields {
     this.serverNow = fields.serverNow;
     this.published = fields.published;
     assignPublishedGrade(this, fields.published, fields.grade);
+    this.partialClosedScore = fields.partialClosedScore;
     this.evaluation = fields.evaluation;
     this.scenarios = fields.scenarios;
     this.questions = fields.questions;
