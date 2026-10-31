@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GradeFeedbackEventsHandlers
- * Descripción: Verifica que los manejadores de retroalimentación escuchen de forma asíncrona, que la entrega del intento no espere ni se vea afectada por la generación, que con todos los proveedores del gateway de IA real fallando la retroalimentación quede READY con origen DETERMINISTIC (check 14) y que un error inesperado nunca se propague al emisor y solo registre el nombre del error. v1.3: el caso del check 14 queda en cuarentena por intermitente (ver docs/quarantine.md)
- * Versión: 1.3
+ * Descripción: Verifica que los manejadores de retroalimentación escuchen de forma asíncrona, que la entrega del intento no espere ni se vea afectada por la generación, que con todos los proveedores del gateway de IA real fallando la retroalimentación quede READY con origen DETERMINISTIC (check 14) y que un error inesperado nunca se propague al emisor y solo registre el nombre del error. v1.4: el check 14 sale de la cuarentena: la espera sondea en tiempo real con un plazo explícito de 2 s; además, la recalificación de una nota publicada reemplaza la retroalimentación vigente
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -104,10 +104,20 @@ function buildPipeline(feedbacks: InMemoryGradeFeedbacksRepository = new InMemor
   return { submit, feedbacks, providers, aiCalls, handlers };
 }
 
-async function waitUntil(condition: () => boolean): Promise<void> {
-  for (let tick: number = 0; tick < 50 && !condition(); tick += 1) {
+const WAIT_DEADLINE_MS: number = 2000;
+const WAIT_INTERVAL_MS: number = 5;
+
+// Polls in real time (the provider retries wait on setTimeout, not on setImmediate) and fails explicitly at the deadline
+async function waitUntil(condition: () => boolean, description: string): Promise<void> {
+  const deadline: number = Date.now() + WAIT_DEADLINE_MS;
+
+  while (!condition()) {
+    if (Date.now() > deadline) {
+      throw new Error(`Timed out after ${WAIT_DEADLINE_MS} ms waiting for ${description}`);
+    }
+
     await new Promise<void>((resolve: () => void) => {
-      setImmediate(resolve);
+      setTimeout(resolve, WAIT_INTERVAL_MS);
     });
   }
 }
@@ -135,8 +145,7 @@ describe("GradeFeedbackEventsHandlers", () => {
     expect(regenerationListeners).toEqual([{ event: GradeFeedbackRegenerationRequestedEvent.name, options: { async: true } }]);
   });
 
-  // QUARANTINE(flaky: waitUntil polls only 50 setImmediate ticks while the provider retry waits on setTimeout, ver docs/quarantine.md)
-  it.skip("stores READY DETERMINISTIC feedback when the language model fails, without affecting the submit result (check 14)", async () => {
+  it("stores READY DETERMINISTIC feedback when the language model fails, without affecting the submit result (check 14)", async () => {
     const { submit, feedbacks, providers, aiCalls } = buildPipeline();
 
     const result: SubmitEvaluationAttemptResult = await submit.execute(new SubmitEvaluationAttemptCommand({ attemptId: "attempt-1", userId: "student-1" }));
@@ -144,7 +153,7 @@ describe("GradeFeedbackEventsHandlers", () => {
     expect(result).toMatchObject({ attemptId: "attempt-1", status: "GRADED", published: true, score: 1, maxScore: 2, grade: 2.5, passed: false });
     expect(feedbacks.current().some((record: GradeFeedbackRecord) => record.status === "READY")).toBe(false);
 
-    await waitUntil(() => readyOverall(feedbacks) !== undefined);
+    await waitUntil(() => readyOverall(feedbacks) !== undefined && feedbacks.current().length === 3, "the READY DETERMINISTIC feedback");
 
     expect(providers.every((provider: FakeLlmProvider) => provider.calls > 0)).toBe(true);
     expect(aiCalls.records.length).toBeGreaterThan(0);
@@ -164,7 +173,7 @@ describe("GradeFeedbackEventsHandlers", () => {
 
     const result: SubmitEvaluationAttemptResult = await submit.execute(new SubmitEvaluationAttemptCommand({ attemptId: "attempt-1", userId: "student-1" }));
 
-    await waitUntil(() => errorLog.mock.calls.length > 0);
+    await waitUntil(() => errorLog.mock.calls.length > 0, "the logged generation error");
 
     expect(result.status).toBe("GRADED");
     expect(errorLog).toHaveBeenCalledWith("Grade feedback generation failed for attempt attempt-1 (RangeError)");
