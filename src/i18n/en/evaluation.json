@@ -103,9 +103,11 @@
     "manual_score_number": "manualScore must be a number",
     "teacher_comment_too_long": "The comment must not exceed {constraints.0} characters",
     "evaluation_id_required": "evaluationId is required",
-    "hint_too_long": "The hint must not exceed {constraints.0} characters"
+    "hint_too_long": "The hint must not exceed {constraints.0} characters",
+    "attempt_status_invalid": "The status must be IN_PROGRESS, SUBMITTED, PENDING_REVIEW or GRADED"
   },
   "answer_checked": "Answer checked successfully",
   "answer_locked": "This answer was already checked and can no longer change",
-  "answer_check_unavailable": "Immediate feedback is only available for choice questions of quizzes and workshops"
+  "answer_check_unavailable": "Immediate feedback is only available for choice questions of quizzes and workshops",
+  "evaluation_attempts_retrieved": "Evaluation attempts retrieved successfully"
 }

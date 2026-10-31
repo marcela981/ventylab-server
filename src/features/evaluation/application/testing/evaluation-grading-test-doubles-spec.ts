@@ -20,9 +20,14 @@ import {
   type InMemoryAttemptsRepository,
 } from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
 import { type StudentEvaluationAttemptProps } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
-import { type GradingQueueItemView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
+import {
+  type AttemptStatusCountsView,
+  type GradingAttemptListItemView,
+  type GradingQueueItemView,
+} from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
 import { type EvaluationAssignmentScope } from "@/features/evaluation/domain/repositories/evaluation-assignments.repository";
 import {
+  type GetGradingAttemptsQuery,
   type GetGradingQueueQuery,
   type GradingAttemptFilter,
   type GradingAttemptKey,
@@ -68,6 +73,49 @@ export class InMemoryGradingRepository implements IEvaluationGradingRepository {
       }));
 
     return new Paginated<GradingQueueItemView>({ items, total: items.length, page: query.page, limit: query.limit });
+  }
+
+  public async getAttempts(query: GetGradingAttemptsQuery): Promise<Paginated<GradingAttemptListItemView>> {
+    await Promise.resolve();
+
+    const items: GradingAttemptListItemView[] = this._matching(query)
+      .filter((item: StudentEvaluationAttemptProps) => item.legacySource === undefined)
+      .filter((item: StudentEvaluationAttemptProps) => query.statuses === undefined || query.statuses.length === 0 || query.statuses.includes(item.status))
+      .map((item: StudentEvaluationAttemptProps) => ({
+        attemptId: item.id,
+        evaluationId: item.evaluationId,
+        assignmentId: item.assignmentId,
+        groupId: "group-1",
+        attemptNumber: item.attemptNumber,
+        student: { id: item.userId, name: "Student", email: "student@example.com" },
+        status: item.status,
+        startedAt: item.startedAt,
+        submittedAt: item.submittedAt,
+        score: item.score,
+        maxScore: item.maxScore,
+        grade: item.grade,
+        gradePublishedAt: item.gradePublishedAt,
+        isLate: item.isLate,
+      }));
+
+    return new Paginated<GradingAttemptListItemView>({
+      items: items.slice((query.page - 1) * query.limit, query.page * query.limit),
+      total: items.length,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  public async countAttemptsByStatus(filter: GradingAttemptFilter): Promise<AttemptStatusCountsView> {
+    await Promise.resolve();
+
+    const counts: Record<"IN_PROGRESS" | "SUBMITTED" | "PENDING_REVIEW" | "GRADED", number> = { IN_PROGRESS: 0, SUBMITTED: 0, PENDING_REVIEW: 0, GRADED: 0 };
+
+    for (const item of this._matching(filter).filter((attempt: StudentEvaluationAttemptProps) => attempt.legacySource === undefined)) {
+      counts[item.status] += 1;
+    }
+
+    return counts;
   }
 
   public async countQueue(filter: GradingAttemptFilter): Promise<number> {

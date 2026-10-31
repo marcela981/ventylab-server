@@ -14,13 +14,16 @@ import { type EvaluationAttemptStatus, type EvaluationType, GroupType, type Pris
 import { Paginated } from "@/common/domain/utils/paginated";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import {
+  type AttemptStatusCountsView,
   type EvaluationGradeAggregateView,
+  type GradingAttemptListItemView,
   type GradingQueueItemView,
   type PublishedGradeView,
 } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
 import { type EvaluationAttemptScope } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
 import { type EvaluationAssignmentScope } from "@/features/evaluation/domain/repositories/evaluation-assignments.repository";
 import {
+  type GetGradingAttemptsQuery,
   type GetGradingQueueQuery,
   type GradingAttemptFilter,
   type GradingAttemptKey,
@@ -77,6 +80,65 @@ interface QueueRow {
   legacySource: string | null;
   userId: string;
   evaluation: { title: string; type: EvaluationType };
+  user: { name: string | null; email: string };
+}
+
+interface StatusCountRow {
+  status: EvaluationAttemptStatus;
+  _count: { _all: number };
+}
+
+const NEW_FLOW_WHERE: Prisma.StudentEvaluationAttemptWhereInput = { legacySource: null };
+
+const ATTEMPT_LIST_SELECT: {
+  id: true;
+  evaluationId: true;
+  assignmentId: true;
+  attemptNumber: true;
+  status: true;
+  startedAt: true;
+  submittedAt: true;
+  score: true;
+  maxScore: true;
+  grade: true;
+  gradePublishedAt: true;
+  isLate: true;
+  userId: true;
+  assignment: { select: { groupId: true } };
+  user: { select: { name: true; email: true } };
+} = {
+  id: true,
+  evaluationId: true,
+  assignmentId: true,
+  attemptNumber: true,
+  status: true,
+  startedAt: true,
+  submittedAt: true,
+  score: true,
+  maxScore: true,
+  grade: true,
+  gradePublishedAt: true,
+  isLate: true,
+  userId: true,
+  assignment: { select: { groupId: true } },
+  user: { select: { name: true, email: true } },
+};
+
+interface AttemptListRow {
+  id: string;
+  evaluationId: string;
+  assignmentId: string | null;
+  attemptNumber: number;
+  status: EvaluationAttemptStatus;
+  startedAt: Date;
+  submittedAt: Date | null;
+  score: number | null;
+  maxScore: number | null;
+  grade: number | null;
+  gradePublishedAt: Date | null;
+  isLate: boolean;
+  userId: string;
+  assignment: { groupId: string } | null;
   user: { name: string | null; email: string };
 }
 
@@ -230,6 +292,63 @@ export class EvaluationGradingPrismaRepository implements IEvaluationGradingRepo
 
   public async countQueue(filter: GradingAttemptFilter): Promise<number> {
     return await this._prisma.studentEvaluationAttempt.count({ where: { AND: [NEW_FLOW_PENDING_REVIEW_WHERE, ...filterConditions(filter)] } });
+  }
+
+  public async getAttempts(query: GetGradingAttemptsQuery): Promise<Paginated<GradingAttemptListItemView>> {
+    const statuses: Prisma.StudentEvaluationAttemptWhereInput[] = query.statuses && query.statuses.length > 0 ? [{ status: { in: [...query.statuses] } }] : [];
+    const where: Prisma.StudentEvaluationAttemptWhereInput = { AND: [NEW_FLOW_WHERE, ...statuses, ...filterConditions(query)] };
+
+    const [rows, total] = await Promise.all([
+      this._prisma.studentEvaluationAttempt.findMany({
+        where,
+        select: ATTEMPT_LIST_SELECT,
+        orderBy: [{ user: { name: "asc" } }, { user: { email: "asc" } }, { attemptNumber: "asc" }, { id: "asc" }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this._prisma.studentEvaluationAttempt.count({ where }),
+    ]);
+
+    return new Paginated<GradingAttemptListItemView>({
+      items: rows.map((row: AttemptListRow) => ({
+        attemptId: row.id,
+        evaluationId: row.evaluationId,
+        assignmentId: row.assignmentId ?? undefined,
+        groupId: row.assignment?.groupId,
+        attemptNumber: row.attemptNumber,
+        student: { id: row.userId, name: row.user.name ?? undefined, email: row.user.email },
+        status: row.status,
+        startedAt: row.startedAt,
+        submittedAt: row.submittedAt ?? undefined,
+        score: row.score ?? undefined,
+        maxScore: row.maxScore ?? undefined,
+        grade: row.grade ?? undefined,
+        gradePublishedAt: row.gradePublishedAt ?? undefined,
+        isLate: row.isLate,
+      })),
+      total,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  public async countAttemptsByStatus(filter: GradingAttemptFilter): Promise<AttemptStatusCountsView> {
+    const where: Prisma.StudentEvaluationAttemptWhereInput = { AND: [NEW_FLOW_WHERE, ...filterConditions(filter)] };
+
+    // The result is typed in the callback: annotating the awaited groupBy breaks Prisma's overload inference
+    return await this._prisma.studentEvaluationAttempt
+      .groupBy({ by: ["status"], where, _count: { _all: true } })
+      .then((groups: StatusCountRow[]): AttemptStatusCountsView => {
+        const counts: Record<EvaluationAttemptStatusValue, number> = Object.fromEntries(
+          EVALUATION_ATTEMPT_STATUS_VALUES.map((status: EvaluationAttemptStatusValue) => [status, 0]),
+        ) as Record<EvaluationAttemptStatusValue, number>;
+
+        for (const group of groups) {
+          counts[group.status] = group._count._all;
+        }
+
+        return counts;
+      });
   }
 
   public async getExpiredInProgressAttemptIds(filter: GradingAttemptFilter, cutoff: Date, limit: number): Promise<string[]> {

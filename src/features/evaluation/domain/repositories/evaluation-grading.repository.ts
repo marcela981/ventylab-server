@@ -10,12 +10,15 @@
  */
 import { type Paginated } from "@/common/domain/utils/paginated";
 import {
+  type AttemptStatusCountsView,
   type EvaluationGradeAggregateView,
+  type GradingAttemptListItemView,
   type GradingQueueItemView,
   type PublishedGradeView,
 } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
 import { type EvaluationAttemptScope } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
 import { type EvaluationAssignmentScope } from "@/features/evaluation/domain/repositories/evaluation-assignments.repository";
+import { type EvaluationAttemptStatusValue } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 
 export const EVALUATION_GRADING_REPOSITORY_TOKEN: unique symbol = Symbol("EVALUATION_GRADING_REPOSITORY_TOKEN");
 
@@ -31,6 +34,12 @@ export interface GetGradingQueueQuery extends GradingAttemptFilter {
   readonly limit: number;
 }
 
+export interface GetGradingAttemptsQuery extends GradingAttemptFilter {
+  readonly statuses?: ReadonlyArray<EvaluationAttemptStatusValue>;
+  readonly page: number;
+  readonly limit: number;
+}
+
 export interface GradingAttemptKey {
   readonly id: string;
   readonly evaluationId: string;
@@ -40,6 +49,9 @@ export interface GradingAttemptKey {
 export interface IEvaluationGradingRepository {
   getQueue(query: GetGradingQueueQuery): Promise<Paginated<GradingQueueItemView>>;
   countQueue(filter: GradingAttemptFilter): Promise<number>;
+  // New-flow attempts only (legacy attempts are excluded), whatever their status
+  getAttempts(query: GetGradingAttemptsQuery): Promise<Paginated<GradingAttemptListItemView>>;
+  countAttemptsByStatus(filter: GradingAttemptFilter): Promise<AttemptStatusCountsView>;
   getExpiredInProgressAttemptIds(filter: GradingAttemptFilter, cutoff: Date, limit: number): Promise<string[]>;
   isAttemptInScope(attemptId: string, scope: EvaluationAssignmentScope): Promise<boolean>;
   getPublishableAttempts(filter: GradingAttemptFilter): Promise<GradingAttemptKey[]>;

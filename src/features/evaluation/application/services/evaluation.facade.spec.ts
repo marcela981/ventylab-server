@@ -52,6 +52,8 @@ function assignment(id: string, state: EvaluationAssignmentResult["state"]): Eva
 function build(): FacadeHarness {
   const repository: jest.Mocked<IEvaluationGradingRepository> = {
     getQueue: jest.fn(),
+    getAttempts: jest.fn(),
+    countAttemptsByStatus: jest.fn(),
     getExpiredInProgressAttemptIds: jest.fn(),
     isAttemptInScope: jest.fn(),
     getPublishableAttempts: jest.fn(),

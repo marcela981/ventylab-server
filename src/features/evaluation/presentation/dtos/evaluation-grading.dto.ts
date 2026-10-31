@@ -446,3 +446,117 @@ export class MyEvaluationGradeDTO {
     this.legacy = fields.legacy;
   }
 }
+
+export class GradingAttemptListItemDTO {
+  @ApiProperty({ description: "Attempt ID", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e6f" })
+  public attemptId: string;
+
+  @ApiProperty({ description: "Evaluation ID", example: "cm5evaluation01" })
+  public evaluationId: string;
+
+  @ApiProperty({ description: "Assignment ID", example: "cm5assignment01", nullable: true, type: String })
+  public assignmentId: string | null;
+
+  @ApiProperty({ description: "STUDENT group of the assignment", example: "cm5group01", nullable: true, type: String })
+  public groupId: string | null;
+
+  @ApiProperty({ description: "Attempt number", example: 1 })
+  public attemptNumber: number;
+
+  @ApiProperty({ description: "Student", type: GradingStudentDTO })
+  public student: GradingStudentDTO;
+
+  @ApiProperty({ description: "Attempt status", enum: EVALUATION_ATTEMPT_STATUS_VALUES, example: "GRADED" })
+  public status: string;
+
+  @ApiProperty({ description: "When the attempt started", example: "2026-10-06T08:00:00.000Z" })
+  public startedAt: Date;
+
+  @ApiProperty({ description: "When the attempt was submitted or closed", example: "2026-10-06T08:30:00.000Z", nullable: true, type: Date })
+  public submittedAt: Date | null;
+
+  @ApiProperty({ description: "Points earned so far", example: 3, nullable: true, type: Number })
+  public score: number | null;
+
+  @ApiProperty({ description: "Total points", example: 5, nullable: true, type: Number })
+  public maxScore: number | null;
+
+  @ApiProperty({ description: "Grade 0.0–5.0 (null while pending)", example: 3, nullable: true, type: Number })
+  public grade: number | null;
+
+  @ApiProperty({ description: "When the grade was published (null while unpublished)", example: "2026-10-06T09:00:00.000Z", nullable: true, type: Date })
+  public gradePublishedAt: Date | null;
+
+  @ApiProperty({ description: "Whether the attempt was closed after its deadline", example: false })
+  public isLate: boolean;
+
+  public constructor(fields: {
+    attemptId: string;
+    evaluationId: string;
+    assignmentId: string | null;
+    groupId: string | null;
+    attemptNumber: number;
+    student: GradingStudentDTO;
+    status: string;
+    startedAt: Date;
+    submittedAt: Date | null;
+    score: number | null;
+    maxScore: number | null;
+    grade: number | null;
+    gradePublishedAt: Date | null;
+    isLate: boolean;
+  }) {
+    this.attemptId = fields.attemptId;
+    this.evaluationId = fields.evaluationId;
+    this.assignmentId = fields.assignmentId;
+    this.groupId = fields.groupId;
+    this.attemptNumber = fields.attemptNumber;
+    this.student = fields.student;
+    this.status = fields.status;
+    this.startedAt = fields.startedAt;
+    this.submittedAt = fields.submittedAt;
+    this.score = fields.score;
+    this.maxScore = fields.maxScore;
+    this.grade = fields.grade;
+    this.gradePublishedAt = fields.gradePublishedAt;
+    this.isLate = fields.isLate;
+  }
+}
+
+export class AttemptStatusCountsDTO {
+  @ApiProperty({ description: "Attempts in progress", example: 2 })
+  public IN_PROGRESS: number;
+
+  @ApiProperty({ description: "Submitted attempts not yet graded", example: 0 })
+  public SUBMITTED: number;
+
+  @ApiProperty({ description: "Attempts waiting for the teacher", example: 3 })
+  public PENDING_REVIEW: number;
+
+  @ApiProperty({ description: "Graded attempts", example: 10 })
+  public GRADED: number;
+
+  @ApiProperty({ description: "Every attempt of the evaluation (and group) in the caller scope, whatever the status filter", example: 15 })
+  public total: number;
+
+  public constructor(counts: Readonly<Record<"IN_PROGRESS" | "SUBMITTED" | "PENDING_REVIEW" | "GRADED", number>>) {
+    this.IN_PROGRESS = counts.IN_PROGRESS;
+    this.SUBMITTED = counts.SUBMITTED;
+    this.PENDING_REVIEW = counts.PENDING_REVIEW;
+    this.GRADED = counts.GRADED;
+    this.total = counts.IN_PROGRESS + counts.SUBMITTED + counts.PENDING_REVIEW + counts.GRADED;
+  }
+}
+
+export class EvaluationAttemptsPageDTO {
+  @ApiProperty({ description: "Attempts of this page, ordered by student and attempt number", type: [GradingAttemptListItemDTO] })
+  public items: GradingAttemptListItemDTO[];
+
+  @ApiProperty({ description: "Attempts by status of the evaluation (and group) in the caller scope, ignoring the status filter", type: AttemptStatusCountsDTO })
+  public counts: AttemptStatusCountsDTO;
+
+  public constructor({ items, counts }: { items: GradingAttemptListItemDTO[]; counts: AttemptStatusCountsDTO }) {
+    this.items = items;
+    this.counts = counts;
+  }
+}

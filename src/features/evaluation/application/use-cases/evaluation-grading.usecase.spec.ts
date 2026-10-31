@@ -25,6 +25,7 @@ import {
 } from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
 import { ADMIN, buildGradingDoubles, type GradingDoubles, TEACHER } from "@/features/evaluation/application/testing/evaluation-grading-test-doubles-spec";
 import { GetAttemptForGradingUseCase } from "@/features/evaluation/application/use-cases/get-attempt-for-grading.usecase";
+import { type EvaluationAttemptsPage, GetEvaluationAttemptsUseCase } from "@/features/evaluation/application/use-cases/get-evaluation-attempts.usecase";
 import { GetGradingQueueCountUseCase } from "@/features/evaluation/application/use-cases/get-grading-queue-count.usecase";
 import { GetGradingQueueUseCase } from "@/features/evaluation/application/use-cases/get-grading-queue.usecase";
 import { GetStudentGradesUseCase } from "@/features/evaluation/application/use-cases/get-student-grades.usecase";
@@ -77,6 +78,29 @@ describe("GetGradingQueueUseCase", () => {
     );
 
     expect(result.data.map((item: GradingQueueItemView) => item.attemptId)).toEqual(["attempt-2"]);
+  });
+});
+
+describe("GetEvaluationAttemptsUseCase", () => {
+  it("closes expired attempts in scope first, then lists the attempts with counts by status", async () => {
+    const doubles: GradingDoubles = buildGradingDoubles({
+      evaluation: buildAttemptEvaluation({ type: "EXAM", showResultsImmediately: false }),
+      attempts: [
+        buildStoredAttempt({ id: "attempt-1", deadlineAt: minutesFromNow(-5) }),
+        buildStoredAttempt({ id: "attempt-2", userId: "student-2", status: "PENDING_REVIEW" }),
+        buildStoredAttempt({ id: "attempt-3", userId: "student-3", status: "GRADED", grade: 4, legacySource: "activity_submission" }),
+      ],
+      scopedAttemptIds: ["attempt-1", "attempt-2", "attempt-3"],
+    });
+
+    const page: EvaluationAttemptsPage = await new GetEvaluationAttemptsUseCase(doubles.gradingRepository, doubles.lazyCloser, doubles.gradingAccess).execute(
+      { evaluationId: "evaluation-1", statuses: ["GRADED"], page: 1, limit: 10 },
+      TEACHER,
+    );
+
+    expect(doubles.attemptsRepository.store.get("attempt-1")?.status).toBe("GRADED");
+    expect(page.attempts.data.map((item: { attemptId: string }) => item.attemptId)).toEqual(["attempt-1"]);
+    expect(page.counts).toEqual({ IN_PROGRESS: 0, SUBMITTED: 0, PENDING_REVIEW: 1, GRADED: 1 });
   });
 });
 

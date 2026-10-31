@@ -32,6 +32,25 @@ export interface GradingQueueItemView {
   readonly legacy: boolean;
 }
 
+export interface GradingAttemptListItemView {
+  readonly attemptId: string;
+  readonly evaluationId: string;
+  readonly assignmentId?: string;
+  readonly groupId?: string;
+  readonly attemptNumber: number;
+  readonly student: GradingStudentView;
+  readonly status: EvaluationAttemptStatusValue;
+  readonly startedAt: Date;
+  readonly submittedAt?: Date;
+  readonly score?: number;
+  readonly maxScore?: number;
+  readonly grade?: number;
+  readonly gradePublishedAt?: Date;
+  readonly isLate: boolean;
+}
+
+export type AttemptStatusCountsView = Readonly<Record<EvaluationAttemptStatusValue, number>>;
+
 export interface PublishedGradeView {
   readonly attemptId: string;
   readonly evaluationId: string;

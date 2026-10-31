@@ -37,6 +37,7 @@ import { DuplicateEvaluationUseCase } from "@/features/evaluation/application/us
 import { GetAttemptForGradingUseCase } from "@/features/evaluation/application/use-cases/get-attempt-for-grading.usecase";
 import { GetEvaluationAssignmentsUseCase } from "@/features/evaluation/application/use-cases/get-evaluation-assignments.usecase";
 import { GetEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/get-evaluation-attempt.usecase";
+import { GetEvaluationAttemptsUseCase } from "@/features/evaluation/application/use-cases/get-evaluation-attempts.usecase";
 import { GetEvaluationDetailUseCase } from "@/features/evaluation/application/use-cases/get-evaluation-detail.usecase";
 import { GetEvaluationsUseCase } from "@/features/evaluation/application/use-cases/get-evaluations.usecase";
 import { GetGradingQueueCountUseCase } from "@/features/evaluation/application/use-cases/get-grading-queue-count.usecase";
@@ -178,6 +179,7 @@ import { SimulationModule } from "@/features/simulation/simulation.module";
     EvaluationGradingAccess,
     GradingQueueLazyCloser,
     GetGradingQueueUseCase,
+    GetEvaluationAttemptsUseCase,
     GetGradingQueueCountUseCase,
     GetStudentGradesUseCase,
     GetAttemptForGradingUseCase,

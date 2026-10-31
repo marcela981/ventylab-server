@@ -15,14 +15,18 @@ import {
   type GradingAttemptDetailResult,
   type PublishEvaluationAttemptGradeResult,
 } from "@/features/evaluation/application/results/evaluation-grading.result";
+import { type EvaluationAttemptsPage } from "@/features/evaluation/application/use-cases/get-evaluation-attempts.usecase";
 import { type EvaluationQuestionItem, type EvaluationScenarioItem } from "@/features/evaluation/domain/entities/evaluation-items";
 import { type EvaluationAnswerRecord } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
-import { type GradingQueueItemView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
+import { type GradingAttemptListItemView, type GradingQueueItemView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
 import { earnedScore, hasPassedEvaluation } from "@/features/evaluation/domain/services/evaluation-attempt-grader";
 import {
+  AttemptStatusCountsDTO,
+  EvaluationAttemptsPageDTO,
   GradeEvaluationAnswerResponseDTO,
   GradingAnswerDTO,
   GradingAttemptDTO,
+  GradingAttemptListItemDTO,
   GradingQueueItemDTO,
   GradingStudentDTO,
   MyEvaluationGradeDTO,
@@ -46,6 +50,31 @@ export class EvaluationGradingMapper {
       score: view.score ?? null,
       maxScore: view.maxScore ?? null,
       legacy: view.legacy,
+    });
+  }
+
+  public static toAttemptsPageDTO(page: EvaluationAttemptsPage): EvaluationAttemptsPageDTO {
+    return new EvaluationAttemptsPageDTO({
+      items: page.attempts.data.map(
+        (view: GradingAttemptListItemView) =>
+          new GradingAttemptListItemDTO({
+            attemptId: view.attemptId,
+            evaluationId: view.evaluationId,
+            assignmentId: view.assignmentId ?? null,
+            groupId: view.groupId ?? null,
+            attemptNumber: view.attemptNumber,
+            student: new GradingStudentDTO({ id: view.student.id, name: view.student.name ?? null, email: view.student.email }),
+            status: view.status,
+            startedAt: view.startedAt,
+            submittedAt: view.submittedAt ?? null,
+            score: view.score ?? null,
+            maxScore: view.maxScore ?? null,
+            grade: view.grade ?? null,
+            gradePublishedAt: view.gradePublishedAt ?? null,
+            isLate: view.isLate,
+          }),
+      ),
+      counts: new AttemptStatusCountsDTO(page.counts),
     });
   }
 

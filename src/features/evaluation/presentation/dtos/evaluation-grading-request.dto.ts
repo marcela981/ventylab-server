@@ -9,10 +9,12 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { ApiProperty, ApiPropertyOptional, PickType } from "@nestjs/swagger";
-import { IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from "class-validator";
+import { Transform } from "class-transformer";
+import { IsArray, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
 
 import { ListQueryDTO } from "@/common/presentation/dtos/list-query.dto";
+import { EVALUATION_ATTEMPT_STATUS_VALUES } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 
 export const MAX_TEACHER_COMMENT_LENGTH: number = 2000;
 
@@ -34,6 +36,31 @@ export class GetGradingQueueQueryDTO extends ListQueryDTO {
 }
 
 export class GetGradingQueueCountQueryDTO extends PickType(GetGradingQueueQueryDTO, ["evaluationId", "groupId", "studentId"] as const) {}
+
+export class GetEvaluationAttemptsQueryDTO extends PickType(ListQueryDTO, ["page", "limit"] as const) {
+  @ApiProperty({ description: "Evaluation whose attempts are listed", example: "cm5evaluation01" })
+  @IsString({ message: i18nValidationMessage("evaluation.validation.evaluation_id_required") })
+  @IsNotEmpty({ message: i18nValidationMessage("evaluation.validation.evaluation_id_required") })
+  public evaluationId: string;
+
+  @ApiPropertyOptional({ description: "Only attempts of this STUDENT group", example: "cm5group01" })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("common.validation.string") })
+  public groupId?: string;
+
+  @ApiPropertyOptional({
+    description: "Only these statuses (comma-separated or repeated query parameter)",
+    example: "PENDING_REVIEW,GRADED",
+    type: String,
+  })
+  @IsOptional()
+  @Transform(({ value }: { value: string | string[] }) =>
+    Array.isArray(value) ? value : typeof value === "string" ? value.split(",").map((item: string) => item.trim()).filter(Boolean) : undefined,
+  )
+  @IsArray({ message: i18nValidationMessage("evaluation.validation.attempt_status_invalid") })
+  @IsIn([...EVALUATION_ATTEMPT_STATUS_VALUES], { each: true, message: i18nValidationMessage("evaluation.validation.attempt_status_invalid") })
+  public status?: string[];
+}
 
 export class GradeEvaluationAnswerDTO {
   @ApiProperty({ description: "Manual score between 0 and the question points", example: 2.5 })
