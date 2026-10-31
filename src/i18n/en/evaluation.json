@@ -102,6 +102,10 @@
     "answers_invalid": "answers must be a list of up to 500 answers",
     "manual_score_number": "manualScore must be a number",
     "teacher_comment_too_long": "The comment must not exceed {constraints.0} characters",
-    "evaluation_id_required": "evaluationId is required"
-  }
+    "evaluation_id_required": "evaluationId is required",
+    "hint_too_long": "The hint must not exceed {constraints.0} characters"
+  },
+  "answer_checked": "Answer checked successfully",
+  "answer_locked": "This answer was already checked and can no longer change",
+  "answer_check_unavailable": "Immediate feedback is only available for choice questions of quizzes and workshops"
 }

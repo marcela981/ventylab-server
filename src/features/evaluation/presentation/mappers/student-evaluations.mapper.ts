@@ -10,6 +10,7 @@
  */
 import { type ResolvedMediaURL } from "@/common/application/ports/media-url-resolver.interface";
 import {
+  type CheckEvaluationAnswerResult,
   type StartEvaluationAttemptResult,
   type StudentEvaluationAttemptDetailResult,
   type StudentEvaluationListItemResult,
@@ -22,13 +23,19 @@ import {
 } from "@/features/evaluation/domain/entities/evaluation-items";
 import { type EvaluationAnswerRecord, type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import { type StudentAttemptSummaryView } from "@/features/evaluation/domain/read-models/student-evaluation.read-model";
-import { computePartialClosedScore, hasPassedEvaluation } from "@/features/evaluation/domain/services/evaluation-attempt-grader";
+import {
+  computePartialClosedScore,
+  correctOptionIds,
+  hasPassedEvaluation,
+  isChoiceAnswerCorrect,
+} from "@/features/evaluation/domain/services/evaluation-attempt-grader";
 import { ACTIVE_ASSIGNMENT_STATE } from "@/features/evaluation/domain/value-objects/evaluation-assignment-state";
 import { IN_PROGRESS_ATTEMPT_STATUS, PENDING_REVIEW_ATTEMPT_STATUS } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 import { readEvaluationDescription } from "@/features/evaluation/domain/value-objects/evaluation-rich-text";
-import { immediateFeedbackFor } from "@/features/evaluation/domain/value-objects/evaluation-type";
+import { type EvaluationTypeValue, immediateFeedbackFor, WORKSHOP_EVALUATION_TYPE } from "@/features/evaluation/domain/value-objects/evaluation-type";
 import { EvaluationMediaDTO } from "@/features/evaluation/presentation/dtos/evaluation.dto";
 import {
+  CheckEvaluationAnswerResponseDTO,
   MyEvaluationAttemptDTO,
   MyEvaluationDTO,
   MyEvaluationSummaryDTO,
@@ -37,6 +44,7 @@ import {
   StudentAnswerDTO,
   StudentAttemptDetailDTO,
   StudentAttemptEvaluationDTO,
+  StudentAnswerRevealDTO,
   StudentAttemptStartDTO,
   StudentOptionDTO,
   StudentQuestionDTO,
@@ -99,8 +107,16 @@ export class StudentEvaluationsMapper {
           }),
       ),
       questions: result.questions.map((question: EvaluationQuestionItem, position: number) =>
-        StudentEvaluationsMapper._toQuestionDTO(question, position, attempt.answerFor(question.id), published, mediaUrls),
+        StudentEvaluationsMapper._toQuestionDTO(question, position, attempt.answerFor(question.id), { published, evaluationType: evaluation.type }, mediaUrls),
       ),
+    });
+  }
+
+  public static toCheckDTO(result: CheckEvaluationAnswerResult): CheckEvaluationAnswerResponseDTO {
+    return new CheckEvaluationAnswerResponseDTO({
+      isCorrect: result.isCorrect,
+      correctOptionIds: [...result.correctOptionIds],
+      explanation: result.explanation ?? null,
     });
   }
 
@@ -170,7 +186,7 @@ export class StudentEvaluationsMapper {
     question: EvaluationQuestionItem,
     position: number,
     answer: EvaluationAnswerRecord | undefined,
-    published: boolean,
+    { published, evaluationType }: { published: boolean; evaluationType: EvaluationTypeValue },
     media: MediaLookup,
   ): StudentQuestionDTO {
     return new StudentQuestionDTO({
@@ -190,6 +206,8 @@ export class StudentEvaluationsMapper {
           simulationSessionId: answer.simulationSessionId ?? null,
         })
         : null,
+      hint: evaluationType === WORKSHOP_EVALUATION_TYPE ? (question.hint ?? null) : null,
+      reveal: StudentEvaluationsMapper._toRevealDTO(question, answer),
       published: published
         ? {
           explanation: question.explanation ?? null,
@@ -197,6 +215,20 @@ export class StudentEvaluationsMapper {
           earnedScore: answer?.manualScore ?? answer?.autoScore ?? null,
         }
         : undefined,
+    });
+  }
+
+  // Only an answer the student checked carries its correction before the grade is published.
+  private static _toRevealDTO(question: EvaluationQuestionItem, answer: EvaluationAnswerRecord | undefined): StudentAnswerRevealDTO | null {
+    if (answer?.revealedAt === undefined) {
+      return null;
+    }
+
+    return new StudentAnswerRevealDTO({
+      revealedAt: answer.revealedAt,
+      isCorrect: isChoiceAnswerCorrect(question, answer.selectedOptionIds),
+      correctOptionIds: correctOptionIds(question),
+      explanation: question.explanation ?? null,
     });
   }
 

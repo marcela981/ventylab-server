@@ -84,8 +84,11 @@ export class SubmitEvaluationAttemptUseCase {
         return { attempt, events: attempt.getEvents() };
       }
 
+      // A checked (revealed) answer is locked: the final answers of the body cannot replace it.
       for (const answer of command.answers ?? []) {
-        await this._recorder.record(attempt, context.evaluation, answer, now);
+        if (!attempt.isRevealed(answer.questionId)) {
+          await this._recorder.record(attempt, context.evaluation, answer, now);
+        }
       }
 
       await this._closer.close(attempt, context.evaluation, now, now);

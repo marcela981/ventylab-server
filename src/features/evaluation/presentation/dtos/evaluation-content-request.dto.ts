@@ -23,6 +23,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  MaxLength,
   Min,
   ValidateNested,
 } from "class-validator";
@@ -33,6 +34,7 @@ import { EVALUATION_QUESTION_TYPE_VALUES } from "@/features/evaluation/domain/va
 export const MAX_REORDER_ITEMS: number = 500;
 export const MAX_MEDIA_PER_ITEM: number = 20;
 export const MAX_OPTIONS_PER_QUESTION: number = 20;
+export const MAX_QUESTION_HINT_LENGTH: number = 2000;
 
 const TIPTAP_EXAMPLE: Record<string, unknown> = {
   type: "doc",
@@ -126,6 +128,12 @@ export class CreateEvaluationQuestionDTO {
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   public explanation?: string;
 
+  @ApiPropertyOptional({ description: "Hint the student can open while answering (shown in WORKSHOP evaluations only)", example: "Think about alveolar recruitment", maxLength: MAX_QUESTION_HINT_LENGTH })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("common.validation.string") })
+  @MaxLength(MAX_QUESTION_HINT_LENGTH, { message: i18nValidationMessage("evaluation.validation.hint_too_long") })
+  public hint?: string;
+
   @ApiPropertyOptional({ description: "Scenario of the same evaluation the question belongs to", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e6f" })
   @IsOptional()
   @IsString({ message: i18nValidationMessage("common.validation.string") })
@@ -178,6 +186,12 @@ export class UpdateEvaluationQuestionDTO {
   @IsOptional()
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   public explanation?: string | null;
+
+  @ApiPropertyOptional({ description: "Hint (WORKSHOP evaluations only); null removes it", example: "Think about alveolar recruitment", nullable: true, type: String, maxLength: MAX_QUESTION_HINT_LENGTH })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("common.validation.string") })
+  @MaxLength(MAX_QUESTION_HINT_LENGTH, { message: i18nValidationMessage("evaluation.validation.hint_too_long") })
+  public hint?: string | null;
 
   @ApiPropertyOptional({ description: "Scenario of the same evaluation; null detaches it", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e6f", nullable: true, type: String })
   @IsOptional()

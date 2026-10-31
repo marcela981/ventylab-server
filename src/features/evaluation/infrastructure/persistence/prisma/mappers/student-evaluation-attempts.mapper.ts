@@ -142,6 +142,7 @@ export class StudentEvaluationAttemptsMapper {
     manualScore: number | null;
     teacherComment: string | null;
     gradedById: string | null;
+    revealedAt: Date | null;
   } {
     return {
       selectedOptionIds: [...answer.selectedOptionIds],
@@ -151,6 +152,7 @@ export class StudentEvaluationAttemptsMapper {
       manualScore: answer.manualScore ?? null,
       teacherComment: answer.teacherComment ?? null,
       gradedById: answer.gradedById ?? null,
+      revealedAt: answer.revealedAt ?? null,
     };
   }
 
@@ -195,6 +197,7 @@ export class StudentEvaluationAttemptsMapper {
       manualScore: answer.manualScore ?? undefined,
       teacherComment: answer.teacherComment ?? undefined,
       gradedById: answer.gradedById ?? undefined,
+      revealedAt: answer.revealedAt ?? undefined,
     };
   }
 }

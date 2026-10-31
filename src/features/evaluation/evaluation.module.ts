@@ -27,6 +27,7 @@ import { AddEvaluationOptionUseCase } from "@/features/evaluation/application/us
 import { AddEvaluationQuestionUseCase } from "@/features/evaluation/application/use-cases/add-evaluation-question.usecase";
 import { AddEvaluationScenarioUseCase } from "@/features/evaluation/application/use-cases/add-evaluation-scenario.usecase";
 import { ChangeEvaluationStatusUseCase } from "@/features/evaluation/application/use-cases/change-evaluation-status.usecase";
+import { CheckEvaluationAnswerUseCase } from "@/features/evaluation/application/use-cases/check-evaluation-answer.usecase";
 import { CloseEvaluationAssignmentUseCase } from "@/features/evaluation/application/use-cases/close-evaluation-assignment.usecase";
 import { CreateEvaluationAssignmentsUseCase } from "@/features/evaluation/application/use-cases/create-evaluation-assignments.usecase";
 import { CreateEvaluationUseCase } from "@/features/evaluation/application/use-cases/create-evaluation.usecase";
@@ -172,6 +173,7 @@ import { SimulationModule } from "@/features/simulation/simulation.module";
     StartEvaluationAttemptUseCase,
     GetEvaluationAttemptUseCase,
     SaveEvaluationAnswerUseCase,
+    CheckEvaluationAnswerUseCase,
     SubmitEvaluationAttemptUseCase,
     EvaluationGradingAccess,
     GradingQueueLazyCloser,

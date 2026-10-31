@@ -132,6 +132,7 @@ export interface NewEvaluationQuestion {
   prompt: EvaluationRichTextDocument;
   points?: number;
   explanation?: string;
+  hint?: string;
   scenarioId?: string;
   mediaIds?: string[];
   clinicalCaseId?: string;
@@ -144,6 +145,7 @@ export interface EvaluationQuestionChanges {
   prompt?: EvaluationRichTextDocument;
   points?: number;
   explanation?: string | null;
+  hint?: string | null;
   scenarioId?: string | null;
   mediaIds?: string[];
   clinicalCaseId?: string | null;
@@ -612,6 +614,7 @@ export class Evaluation extends AggregateRoot {
       mediaIds: input.mediaIds ?? [],
       points: input.points ?? DEFAULT_QUESTION_POINTS,
       explanation: input.explanation,
+      hint: input.hint,
       clinicalCaseId: input.clinicalCaseId,
       rubric: input.rubric,
       options: options.map((option: NewEvaluationOption, index: number) => this._newOption(id, index, option)),
@@ -645,6 +648,7 @@ export class Evaluation extends AggregateRoot {
       prompt: changes.prompt ?? question.prompt,
       points: changes.points ?? question.points,
       explanation: changes.explanation === undefined ? question.explanation : (changes.explanation ?? undefined),
+      hint: changes.hint === undefined ? question.hint : (changes.hint ?? undefined),
       scenarioId: changes.scenarioId === undefined ? question.scenarioId : (changes.scenarioId ?? undefined),
       mediaIds: changes.mediaIds ?? question.mediaIds,
       clinicalCaseId: changes.clinicalCaseId === undefined ? question.clinicalCaseId : (changes.clinicalCaseId ?? undefined),

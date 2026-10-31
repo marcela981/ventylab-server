@@ -90,6 +90,8 @@ import { CurriculumNodeHasStudentDataError } from "@/features/curriculum/domain/
 import {
   AttemptDeadlinePassedError,
   EvaluationAlreadyAssignedError,
+  EvaluationAnswerCheckUnavailableError,
+  EvaluationAnswerLockedError,
   EvaluationAssignmentClosedError,
   EvaluationAssignmentForbiddenError,
   EvaluationAssignmentHasAttemptsError,
@@ -523,6 +525,8 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [EvaluationAttemptNotInProgressError, HttpStatus.CONFLICT],
   [EvaluationAttemptReadOnlyError, HttpStatus.CONFLICT],
   [InvalidEvaluationAnswerError, HttpStatus.UNPROCESSABLE_ENTITY],
+  [EvaluationAnswerLockedError, HttpStatus.CONFLICT],
+  [EvaluationAnswerCheckUnavailableError, HttpStatus.UNPROCESSABLE_ENTITY],
   [EvaluationGradingForbiddenError, HttpStatus.FORBIDDEN],
   [EvaluationStudentGradesForbiddenError, HttpStatus.FORBIDDEN],
   [EvaluationAttemptNotGradableError, HttpStatus.CONFLICT],

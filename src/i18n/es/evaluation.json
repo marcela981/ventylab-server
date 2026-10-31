@@ -102,6 +102,10 @@
     "answers_invalid": "answers debe ser una lista de hasta 500 respuestas",
     "manual_score_number": "manualScore debe ser un número",
     "teacher_comment_too_long": "El comentario no debe superar {constraints.0} caracteres",
-    "evaluation_id_required": "evaluationId es obligatorio"
-  }
+    "evaluation_id_required": "evaluationId es obligatorio",
+    "hint_too_long": "La pista no debe superar {constraints.0} caracteres"
+  },
+  "answer_checked": "Respuesta revisada correctamente",
+  "answer_locked": "Esta respuesta ya fue revisada y no se puede cambiar",
+  "answer_check_unavailable": "La retroalimentación inmediata solo está disponible en preguntas de selección de quizzes y talleres"
 }

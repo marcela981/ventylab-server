@@ -40,6 +40,7 @@ export interface EvaluationQuestionItem {
   readonly mediaIds: ReadonlyArray<string>;
   readonly points: number;
   readonly explanation?: string;
+  readonly hint?: string;
   readonly clinicalCaseId?: string;
   readonly rubric?: unknown;
   readonly legacyType?: string;

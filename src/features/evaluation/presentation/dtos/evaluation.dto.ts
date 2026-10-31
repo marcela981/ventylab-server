@@ -123,6 +123,9 @@ export class EvaluationQuestionDTO {
   @ApiProperty({ description: "Explanation shown with the results", example: "A PEEP of 8 keeps the alveoli open", nullable: true, type: String })
   public explanation: string | null;
 
+  @ApiProperty({ description: "Hint shown to students on demand (WORKSHOP evaluations only)", example: "Think about alveolar recruitment", nullable: true, type: String })
+  public hint: string | null;
+
   @ApiProperty({ description: "Clinical case of a SIMULATION question", example: null, nullable: true, type: String })
   public clinicalCaseId: string | null;
 
@@ -142,6 +145,7 @@ export class EvaluationQuestionDTO {
     this.media = data.media;
     this.points = data.points;
     this.explanation = data.explanation;
+    this.hint = data.hint;
     this.clinicalCaseId = data.clinicalCaseId;
     this.rubric = data.rubric;
     this.options = data.options;

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Agregado StudentEvaluationAttempt
- * Descripción: Intento de un estudiante en una evaluación con sus respuestas por pregunta: inicio con número de intento y plazo del servidor, autoguardado (solo en curso y no heredado), cierre con la calificación automática (puntaje por pregunta, estado GRADED o PENDING_REVIEW, nota, publicación inmediata opcional) y eventos de intento calificado y nota publicada; calificación docente por pregunta (puntaje manual 0–puntos, comentario obligatorio al sobrescribir un puntaje existente, recálculo de puntaje, estado y nota con eventos de calificado, publicado o actualizado) y publicación idempotente de la nota; los intentos heredados (legacySource) son de solo lectura para el estudiante pero el profesor puede calificarlos
- * Versión: 1.2
+ * Descripción: Intento de un estudiante en una evaluación con sus respuestas por pregunta: inicio con número de intento y plazo del servidor, autoguardado (solo en curso, no heredado y sin revisar) y revisión inmediata que guarda la respuesta con revealedAt y la bloquea, cierre con la calificación automática (puntaje por pregunta, estado GRADED o PENDING_REVIEW, nota, publicación inmediata opcional) y eventos de intento calificado y nota publicada; calificación docente por pregunta (puntaje manual 0–puntos, comentario obligatorio al sobrescribir un puntaje existente, recálculo de puntaje, estado y nota con eventos de calificado, publicado o actualizado) y publicación idempotente de la nota; los intentos heredados (legacySource) son de solo lectura para el estudiante pero el profesor puede calificarlos
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { AggregateRoot } from "@/common/domain/aggregates/aggregate-root";
 import { generateId } from "@/common/domain/utils/generate-id";
 import { type EvaluationQuestionItem } from "@/features/evaluation/domain/entities/evaluation-items";
 import {
+  EvaluationAnswerLockedError,
   EvaluationAttemptNotGradableError,
   EvaluationAttemptNotGradedError,
   EvaluationAttemptNotInProgressError,
@@ -55,6 +56,7 @@ export interface EvaluationAnswerRecord {
   readonly manualScore?: number;
   readonly teacherComment?: string;
   readonly gradedById?: string;
+  readonly revealedAt?: Date;
 }
 
 export interface StudentEvaluationAttemptProps {
@@ -225,21 +227,17 @@ export class StudentEvaluationAttempt extends AggregateRoot {
     return this._answers.get(questionId);
   }
 
+  public isRevealed(questionId: string): boolean {
+    return this._answers.get(questionId)?.revealedAt !== undefined;
+  }
+
   public saveAnswer(questionId: string, answer: ValidatedEvaluationAnswer, now: Date): void {
-    this._assertWritable();
+    this._writeAnswer(questionId, answer, now, undefined);
+  }
 
-    const current: EvaluationAnswerRecord | undefined = this._answers.get(questionId);
-
-    this._answers.set(questionId, {
-      id: current?.id ?? generateId(),
-      questionId,
-      selectedOptionIds: [...answer.selectedOptionIds],
-      textAnswer: answer.textAnswer,
-      simulationSessionId: answer.simulationSessionId,
-    });
-
-    this._changedQuestionIds.add(questionId);
-    this._props.updatedAt = now;
+  // Stores the answer and reveals its correction; a revealed answer is locked for the rest of the attempt.
+  public revealAnswer(questionId: string, answer: ValidatedEvaluationAnswer, now: Date): void {
+    this._writeAnswer(questionId, answer, now, now);
   }
 
   public close({ grading, submittedAt, now, publishImmediately, passingGrade }: CloseAttemptInput): void {
@@ -327,6 +325,7 @@ export class StudentEvaluationAttempt extends AggregateRoot {
       manualScore: roundTo(manualScore, 2),
       teacherComment: trimmedComment ?? current?.teacherComment,
       gradedById: graderId,
+      revealedAt: current?.revealedAt,
     };
 
     this._answers.set(questionId, answer);
@@ -481,9 +480,32 @@ export class StudentEvaluationAttempt extends AggregateRoot {
       manualScore: current?.manualScore,
       teacherComment: current?.teacherComment,
       gradedById: current?.gradedById,
+      revealedAt: current?.revealedAt,
     });
 
     this._changedQuestionIds.add(questionGrade.questionId);
+  }
+
+  private _writeAnswer(questionId: string, answer: ValidatedEvaluationAnswer, now: Date, revealedAt: Date | undefined): void {
+    this._assertWritable();
+
+    const current: EvaluationAnswerRecord | undefined = this._answers.get(questionId);
+
+    if (current?.revealedAt !== undefined) {
+      throw new EvaluationAnswerLockedError();
+    }
+
+    this._answers.set(questionId, {
+      id: current?.id ?? generateId(),
+      questionId,
+      selectedOptionIds: [...answer.selectedOptionIds],
+      textAnswer: answer.textAnswer,
+      simulationSessionId: answer.simulationSessionId,
+      revealedAt,
+    });
+
+    this._changedQuestionIds.add(questionId);
+    this._props.updatedAt = now;
   }
 
   private _assertWritable(): void {

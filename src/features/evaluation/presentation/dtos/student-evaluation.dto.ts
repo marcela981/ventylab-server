@@ -144,6 +144,44 @@ export class StudentScenarioDTO {
   }
 }
 
+export class CheckEvaluationAnswerResponseDTO {
+  @ApiProperty({ description: "Whether the selected options are exactly the correct ones", example: true })
+  public isCorrect: boolean;
+
+  @ApiProperty({ description: "Correct option IDs", example: ["cm5option01"], type: [String] })
+  public correctOptionIds: string[];
+
+  @ApiProperty({ description: "Teacher explanation", example: "PEEP keeps the alveoli open", nullable: true, type: String })
+  public explanation: string | null;
+
+  public constructor({ isCorrect, correctOptionIds, explanation }: { isCorrect: boolean; correctOptionIds: string[]; explanation: string | null }) {
+    this.isCorrect = isCorrect;
+    this.correctOptionIds = correctOptionIds;
+    this.explanation = explanation;
+  }
+}
+
+export class StudentAnswerRevealDTO {
+  @ApiProperty({ description: "When the answer was checked (it is locked since then)", example: "2026-10-06T08:05:00.000Z" })
+  public revealedAt: Date;
+
+  @ApiProperty({ description: "Whether the checked answer is correct", example: false })
+  public isCorrect: boolean;
+
+  @ApiProperty({ description: "Correct option IDs", example: ["cm5option01"], type: [String] })
+  public correctOptionIds: string[];
+
+  @ApiProperty({ description: "Teacher explanation", example: "PEEP keeps the alveoli open", nullable: true, type: String })
+  public explanation: string | null;
+
+  public constructor(fields: { revealedAt: Date; isCorrect: boolean; correctOptionIds: string[]; explanation: string | null }) {
+    this.revealedAt = fields.revealedAt;
+    this.isCorrect = fields.isCorrect;
+    this.correctOptionIds = fields.correctOptionIds;
+    this.explanation = fields.explanation;
+  }
+}
+
 export class StudentQuestionDTO {
   @ApiProperty({ description: "Question ID", example: "cm5question01" })
   public id: string;
@@ -175,6 +213,16 @@ export class StudentQuestionDTO {
   @ApiProperty({ description: "Saved answer", nullable: true, type: StudentAnswerDTO })
   public answer: StudentAnswerDTO | null;
 
+  @ApiProperty({ description: "Hint shown on demand (WORKSHOP evaluations only; null otherwise)", example: "Think about the alveolar recruitment", nullable: true, type: String })
+  public hint: string | null;
+
+  @ApiProperty({
+    description: "Correction of an answer the student checked for immediate feedback (QUIZ and WORKSHOP); null when the answer was not checked",
+    nullable: true,
+    type: StudentAnswerRevealDTO,
+  })
+  public reveal: StudentAnswerRevealDTO | null;
+
   @ApiPropertyOptional({ description: "Teacher explanation (only once the grade is published)", nullable: true, type: String })
   public explanation?: string | null;
 
@@ -195,6 +243,8 @@ export class StudentQuestionDTO {
     clinicalCaseId: string | null;
     options: StudentOptionDTO[];
     answer: StudentAnswerDTO | null;
+    hint: string | null;
+    reveal: StudentAnswerRevealDTO | null;
     published?: { explanation: string | null; rubric: unknown; earnedScore: number | null };
   }) {
     this.id = fields.id;
@@ -207,6 +257,8 @@ export class StudentQuestionDTO {
     this.clinicalCaseId = fields.clinicalCaseId;
     this.options = fields.options;
     this.answer = fields.answer;
+    this.hint = fields.hint;
+    this.reveal = fields.reveal;
 
     if (fields.published) {
       this.explanation = fields.published.explanation;

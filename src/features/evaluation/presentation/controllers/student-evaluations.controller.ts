@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de evaluaciones del estudiante
- * Descripción: Rutas del estudiante con el permiso evaluations:attempt: /api/my-evaluations (asignaciones de su grupo con sus intentos e inicio idempotente de un intento, 201 nuevo o 200 el que está en curso) y /api/evaluation-attempts/:attemptId (detalle sin respuestas correctas hasta la publicación, autoguardado por pregunta y entrega idempotente con calificación automática); notas publicadas propias (GET /api/my-evaluations/grades vía EvaluationFacade, incluidas las heredadas)
- * Versión: 1.1
+ * Descripción: Rutas del estudiante con el permiso evaluations:attempt: /api/my-evaluations (asignaciones de su grupo con sus intentos e inicio idempotente de un intento, 201 nuevo o 200 el que está en curso) y /api/evaluation-attempts/:attemptId (detalle sin respuestas correctas hasta la publicación salvo las revisadas, autoguardado por pregunta y entrega idempotente con calificación automática); retroalimentación inmediata de una pregunta de selección (POST /api/my-evaluations/attempts/:attemptId/answers/:questionId/check, solo QUIZ y WORKSHOP, bloquea la respuesta); notas publicadas propias (GET /api/my-evaluations/grades vía EvaluationFacade, incluidas las heredadas)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,25 +19,34 @@ import { CurrentUser } from "@/features/auth/presentation/decorators/current-use
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
 import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard";
 import { PermissionsGuard } from "@/features/auth/presentation/guards/permissions.guard";
+import { CheckEvaluationAnswerCommand } from "@/features/evaluation/application/commands/check-evaluation-answer.command";
 import { SaveEvaluationAnswerCommand } from "@/features/evaluation/application/commands/save-evaluation-answer.command";
 import { StartEvaluationAttemptCommand } from "@/features/evaluation/application/commands/start-evaluation-attempt.command";
 import { SubmitEvaluationAttemptCommand } from "@/features/evaluation/application/commands/submit-evaluation-attempt.command";
 import { type EvaluationUserGrade } from "@/features/evaluation/application/results/evaluation-grading.result";
 import {
+  type CheckEvaluationAnswerResult,
   type StartEvaluationAttemptResult,
   type StudentEvaluationAttemptDetailResult,
   type StudentEvaluationListItemResult,
   type SubmitEvaluationAttemptResult,
 } from "@/features/evaluation/application/results/student-evaluation-attempt.result";
 import { EvaluationFacade } from "@/features/evaluation/application/services/evaluation.facade";
+import { CheckEvaluationAnswerUseCase } from "@/features/evaluation/application/use-cases/check-evaluation-answer.usecase";
 import { GetEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/get-evaluation-attempt.usecase";
 import { GetMyEvaluationsUseCase } from "@/features/evaluation/application/use-cases/get-my-evaluations.usecase";
 import { SaveEvaluationAnswerUseCase } from "@/features/evaluation/application/use-cases/save-evaluation-answer.usecase";
 import { StartEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/start-evaluation-attempt.usecase";
 import { SubmitEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/submit-evaluation-attempt.usecase";
 import { MyEvaluationGradeDTO } from "@/features/evaluation/presentation/dtos/evaluation-grading.dto";
-import { SaveEvaluationAnswerDTO, SubmitEvaluationAnswerDTO, SubmitEvaluationAttemptDTO } from "@/features/evaluation/presentation/dtos/student-evaluation-request.dto";
 import {
+  CheckEvaluationAnswerDTO,
+  SaveEvaluationAnswerDTO,
+  SubmitEvaluationAnswerDTO,
+  SubmitEvaluationAttemptDTO,
+} from "@/features/evaluation/presentation/dtos/student-evaluation-request.dto";
+import {
+  CheckEvaluationAnswerResponseDTO,
   MyEvaluationDTO,
   StudentAttemptDetailDTO,
   StudentAttemptStartDTO,
@@ -57,6 +66,7 @@ export class StudentEvaluationsController {
     private readonly _startEvaluationAttemptUseCase: StartEvaluationAttemptUseCase,
     private readonly _getEvaluationAttemptUseCase: GetEvaluationAttemptUseCase,
     private readonly _saveEvaluationAnswerUseCase: SaveEvaluationAnswerUseCase,
+    private readonly _checkEvaluationAnswerUseCase: CheckEvaluationAnswerUseCase,
     private readonly _submitEvaluationAttemptUseCase: SubmitEvaluationAttemptUseCase,
     private readonly _evaluationFacade: EvaluationFacade,
   ) {}
@@ -167,7 +177,7 @@ export class StudentEvaluationsController {
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Attempt or question not found" })
-  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "The attempt is closed, read-only or past its deadline" })
+  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "The attempt is closed, read-only or past its deadline, or the answer was already checked (locked)" })
   @ApiResponseDoc({ status: HttpStatus.UNPROCESSABLE_ENTITY, description: "The answer does not match the question" })
   public async saveAnswer(
     @Param("attemptId") attemptId: string,
@@ -188,6 +198,37 @@ export class StudentEvaluationsController {
     );
 
     return new APIResponseBuilder<null>().setMessage(await i18n.t("evaluation.answer_saved")).build();
+  }
+
+  @Post("my-evaluations/attempts/:attemptId/answers/:questionId/check")
+  @RequirePermissions("evaluations:attempt")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Check evaluation answer",
+    description:
+      "Immediate feedback (QUIZ and WORKSHOP choice questions): saves the selected options of the own attempt in progress, reveals whether they are correct with the correct options and the explanation, and locks the answer (a later save or check answers 409); the score is still computed only at submission",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Answer checked successfully", type: CheckEvaluationAnswerResponseDTO })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Attempt or question not found" })
+  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "The attempt is closed, read-only or past its deadline, or the answer was already checked" })
+  @ApiResponseDoc({ status: HttpStatus.UNPROCESSABLE_ENTITY, description: "EXAM evaluation, non-choice question, or options that do not match the question" })
+  public async checkAnswer(
+    @Param("attemptId") attemptId: string,
+    @Param("questionId") questionId: string,
+    @Body() dto: CheckEvaluationAnswerDTO,
+    @CurrentUser() currentUser: CurrentCaller,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<CheckEvaluationAnswerResponseDTO>> {
+    const result: CheckEvaluationAnswerResult = await this._checkEvaluationAnswerUseCase.execute(
+      new CheckEvaluationAnswerCommand({ attemptId, questionId, userId: currentUser.sub, selectedOptionIds: dto.selectedOptionIds }),
+    );
+
+    return new APIResponseBuilder<CheckEvaluationAnswerResponseDTO>()
+      .setData(StudentEvaluationsMapper.toCheckDTO(result))
+      .setMessage(await i18n.t("evaluation.answer_checked"))
+      .build();
   }
 
   @Post("evaluation-attempts/:attemptId/submit")

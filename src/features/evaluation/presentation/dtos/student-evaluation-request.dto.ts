@@ -58,3 +58,11 @@ export class SubmitEvaluationAttemptDTO {
   @Type(() => SubmitEvaluationAnswerDTO)
   public answers?: SubmitEvaluationAnswerDTO[];
 }
+
+export class CheckEvaluationAnswerDTO {
+  @ApiProperty({ description: "Selected option IDs to check (choice questions)", example: ["cm5option01"], type: [String] })
+  @IsArray({ message: i18nValidationMessage("evaluation.validation.selected_option_ids_invalid") })
+  @ArrayMaxSize(MAX_SELECTED_OPTIONS, { message: i18nValidationMessage("evaluation.validation.selected_option_ids_invalid") })
+  @IsString({ each: true, message: i18nValidationMessage("evaluation.validation.selected_option_ids_invalid") })
+  public selectedOptionIds: string[];
+}
