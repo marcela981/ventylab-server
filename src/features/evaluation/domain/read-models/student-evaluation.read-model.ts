@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de evaluaciones del estudiante
- * Descripción: Vistas planas para el listado del estudiante: resumen de una evaluación sin respuestas (título, tipo, descripción, duración, intentos permitidos, número de preguntas) y resumen de cada intento propio (estado, fechas y nota, que solo se expone si está publicada)
- * Versión: 1.0
+ * Descripción: Vistas planas para el listado del estudiante: resumen de una evaluación sin respuestas (título, tipo, descripción, duración, intentos permitidos, número de preguntas y su lugar en el currículo: módulo, nivel propio o del módulo, orden y ruta del nivel) y resumen de cada intento propio (estado, fechas y nota, que solo se expone si está publicada)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,16 @@ export interface StudentEvaluationBriefView {
   readonly maxAttempts: number;
   readonly questionCount: number;
   readonly showResultsImmediately: boolean;
+  readonly curriculum: StudentEvaluationCurriculumView;
+}
+
+// Level of the evaluation, or of its module when the evaluation has no level of its own.
+export interface StudentEvaluationCurriculumView {
+  readonly moduleId?: string;
+  readonly levelId?: string;
+  readonly levelTitle?: string;
+  readonly levelOrder?: number;
+  readonly track?: string;
 }
 
 export interface StudentAttemptSummaryView {

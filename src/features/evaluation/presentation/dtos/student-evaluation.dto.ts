@@ -513,7 +513,35 @@ export class MyEvaluationSummaryDTO {
   @ApiProperty({ description: "Number of questions", example: 10 })
   public questionCount: number;
 
-  public constructor(fields: { id: string; title: string; type: string; description: unknown; durationMinutes: number | null; maxAttempts: number; questionCount: number }) {
+  @ApiProperty({ description: "Curriculum module of the evaluation", example: "cm5module01", nullable: true, type: String })
+  public moduleId: string | null;
+
+  @ApiProperty({ description: "Curriculum level (the evaluation's own, or its module's)", example: "cm5level01", nullable: true, type: String })
+  public levelId: string | null;
+
+  @ApiProperty({ description: "Title of that level", example: "Fundamentos de la ventilación mecánica", nullable: true, type: String })
+  public levelTitle: string | null;
+
+  @ApiProperty({ description: "Order of that level within its track", example: 1, nullable: true, type: Number })
+  public levelOrder: number | null;
+
+  @ApiProperty({ description: "Track (section slug) of that level", example: "mecanica", nullable: true, type: String })
+  public track: string | null;
+
+  public constructor(fields: {
+    id: string;
+    title: string;
+    type: string;
+    description: unknown;
+    durationMinutes: number | null;
+    maxAttempts: number;
+    questionCount: number;
+    moduleId: string | null;
+    levelId: string | null;
+    levelTitle: string | null;
+    levelOrder: number | null;
+    track: string | null;
+  }) {
     this.id = fields.id;
     this.title = fields.title;
     this.type = fields.type;
@@ -521,6 +549,11 @@ export class MyEvaluationSummaryDTO {
     this.durationMinutes = fields.durationMinutes;
     this.maxAttempts = fields.maxAttempts;
     this.questionCount = fields.questionCount;
+    this.moduleId = fields.moduleId;
+    this.levelId = fields.levelId;
+    this.levelTitle = fields.levelTitle;
+    this.levelOrder = fields.levelOrder;
+    this.track = fields.track;
   }
 }
 

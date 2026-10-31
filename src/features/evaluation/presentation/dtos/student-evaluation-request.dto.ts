@@ -66,3 +66,11 @@ export class CheckEvaluationAnswerDTO {
   @IsString({ each: true, message: i18nValidationMessage("evaluation.validation.selected_option_ids_invalid") })
   public selectedOptionIds: string[];
 }
+
+export class GetMyEvaluationsQueryDTO {
+  @ApiPropertyOptional({ description: "Only evaluations linked to this curriculum module", example: "cm5module01" })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage("common.validation.string") })
+  @IsNotEmpty({ message: i18nValidationMessage("common.validation.string") })
+  public moduleId?: string;
+}

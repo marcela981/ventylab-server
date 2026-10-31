@@ -163,6 +163,11 @@ export class StudentEvaluationsMapper {
           durationMinutes: item.evaluation.durationMinutes ?? null,
           maxAttempts: item.evaluation.maxAttempts,
           questionCount: item.evaluation.questionCount,
+          moduleId: item.evaluation.curriculum.moduleId ?? null,
+          levelId: item.evaluation.curriculum.levelId ?? null,
+          levelTitle: item.evaluation.curriculum.levelTitle ?? null,
+          levelOrder: item.evaluation.curriculum.levelOrder ?? null,
+          track: item.evaluation.curriculum.track ?? null,
         })
         : null,
       attempts,

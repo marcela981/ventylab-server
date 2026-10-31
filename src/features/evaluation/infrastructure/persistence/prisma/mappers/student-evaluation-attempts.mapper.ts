@@ -22,6 +22,7 @@ import {
 import {
   type StudentAttemptSummaryView,
   type StudentEvaluationBriefView,
+  type StudentEvaluationCurriculumView,
 } from "@/features/evaluation/domain/read-models/student-evaluation.read-model";
 
 export const STUDENT_ATTEMPT_INCLUDE: { answers: true } = { answers: true };
@@ -58,6 +59,39 @@ export const STUDENT_ATTEMPT_SUMMARY_SELECT: {
 
 export type StudentAttemptSummaryRow = Pick<StudentEvaluationAttemptModel, keyof typeof STUDENT_ATTEMPT_SUMMARY_SELECT>;
 
+interface CurriculumLevelRow {
+  id: string;
+  title: string;
+  order: number;
+  track: string;
+}
+
+export const STUDENT_EVALUATION_BRIEF_SELECT: {
+  id: true;
+  title: true;
+  type: true;
+  description: true;
+  durationMinutes: true;
+  maxAttempts: true;
+  showResultsImmediately: true;
+  moduleId: true;
+  level: { select: { id: true; title: true; order: true; track: true } };
+  module: { select: { level: { select: { id: true; title: true; order: true; track: true } } } };
+  _count: { select: { questions: true } };
+} = {
+  id: true,
+  title: true,
+  type: true,
+  description: true,
+  durationMinutes: true,
+  maxAttempts: true,
+  showResultsImmediately: true,
+  moduleId: true,
+  level: { select: { id: true, title: true, order: true, track: true } },
+  module: { select: { level: { select: { id: true, title: true, order: true, track: true } } } },
+  _count: { select: { questions: true } },
+};
+
 export interface StudentEvaluationBriefRow {
   id: string;
   title: string;
@@ -66,6 +100,9 @@ export interface StudentEvaluationBriefRow {
   durationMinutes: number | null;
   maxAttempts: number;
   showResultsImmediately: boolean;
+  moduleId: string | null;
+  level: CurriculumLevelRow | null;
+  module: { level: CurriculumLevelRow | null } | null;
   _count: { questions: number };
 }
 
@@ -183,6 +220,19 @@ export class StudentEvaluationAttemptsMapper {
       maxAttempts: row.maxAttempts,
       questionCount: row._count.questions,
       showResultsImmediately: row.showResultsImmediately,
+      curriculum: StudentEvaluationAttemptsMapper._toCurriculum(row),
+    };
+  }
+
+  private static _toCurriculum(row: StudentEvaluationBriefRow): StudentEvaluationCurriculumView {
+    const level: CurriculumLevelRow | null = row.level ?? row.module?.level ?? null;
+
+    return {
+      moduleId: row.moduleId ?? undefined,
+      levelId: level?.id,
+      levelTitle: level?.title,
+      levelOrder: level?.order,
+      track: level?.track,
     };
   }
 

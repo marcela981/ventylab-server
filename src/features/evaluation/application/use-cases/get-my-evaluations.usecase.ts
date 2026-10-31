@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetMyEvaluationsUseCase
- * Descripción: Listado del estudiante: cierra de forma perezosa sus intentos vencidos, toma las asignaciones de su grupo STUDENT activo con el estado derivado (GetStudentEvaluationAssignmentsUseCase; sin grupo, lista vacía) y añade el resumen de cada evaluación (sin respuestas) y los resúmenes de sus propios intentos, incluidos los heredados
- * Versión: 1.0
+ * Descripción: Listado del estudiante: cierra de forma perezosa sus intentos vencidos, toma las asignaciones de su grupo STUDENT activo con el estado derivado (GetStudentEvaluationAssignmentsUseCase; sin grupo, lista vacía) y añade el resumen de cada evaluación (sin respuestas) y los resúmenes de sus propios intentos, incluidos los heredados; filtro opcional por módulo del currículo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -33,7 +33,7 @@ export class GetMyEvaluationsUseCase {
     private readonly _getStudentAssignmentsUseCase: GetStudentEvaluationAssignmentsUseCase,
   ) {}
 
-  public async execute(userId: string): Promise<StudentEvaluationListItemResult[]> {
+  public async execute(userId: string, filter: { moduleId?: string } = {}): Promise<StudentEvaluationListItemResult[]> {
     const now: Date = new Date();
     const inProgress: StudentEvaluationAttempt[] = await this._attemptsRepository.getInProgressByUser(userId);
 
@@ -54,7 +54,7 @@ export class GetMyEvaluationsUseCase {
       this._attemptsRepository.getUserAttemptSummaries(userId, evaluationIds),
     ]);
 
-    return assignments.map((assignment: EvaluationAssignmentResult) => ({
+    const items: StudentEvaluationListItemResult[] = assignments.map((assignment: EvaluationAssignmentResult) => ({
       assignment,
       evaluation: briefs.find((brief: StudentEvaluationBriefView) => brief.id === assignment.evaluationId),
       attempts: attempts
@@ -62,5 +62,9 @@ export class GetMyEvaluationsUseCase {
         .sort((left: StudentAttemptSummaryView, right: StudentAttemptSummaryView) => left.attemptNumber - right.attemptNumber),
       passingGrade: this._closer.passingGrade,
     }));
+
+    return filter.moduleId === undefined
+      ? items
+      : items.filter((item: StudentEvaluationListItemResult) => item.evaluation?.curriculum.moduleId === filter.moduleId);
   }
 }

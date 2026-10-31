@@ -91,7 +91,15 @@ describe("GetMyEvaluationsUseCase", () => {
     });
 
     (doubles.assignmentsRepository.getStudentGroupViews as jest.Mock).mockResolvedValue([buildView({ evaluationId: "evaluation-1" })]);
-    doubles.attemptsRepository.briefs.push({ id: "evaluation-1", title: "Ventilation basics", type: "QUIZ", maxAttempts: 2, questionCount: 2, showResultsImmediately: true });
+    doubles.attemptsRepository.briefs.push({
+      id: "evaluation-1",
+      title: "Ventilation basics",
+      type: "QUIZ",
+      maxAttempts: 2,
+      questionCount: 2,
+      showResultsImmediately: true,
+      curriculum: { moduleId: "module-1", levelId: "level-1", levelTitle: "Basics", levelOrder: 1, track: "mecanica" },
+    });
 
     const items: StudentEvaluationListItemResult[] = await listUseCase(doubles).execute(STUDENT_ID);
 
@@ -99,6 +107,24 @@ describe("GetMyEvaluationsUseCase", () => {
     expect(items[0].assignment.state).toBe("ACTIVE");
     expect(items[0].evaluation?.maxAttempts).toBe(2);
     expect(items[0].attempts.map((attempt: { id: string }) => attempt.id)).toEqual(["attempt-1"]);
+  });
+
+  it("filters by curriculum module when moduleId is given", async () => {
+    const doubles: AttemptDoubles = buildAttemptDoubles();
+
+    (doubles.assignmentsRepository.getStudentGroupViews as jest.Mock).mockResolvedValue([
+      buildView({ evaluationId: "evaluation-1" }),
+      buildView({ id: "assignment-2", evaluationId: "evaluation-2" }),
+    ]);
+    doubles.attemptsRepository.briefs.push(
+      { id: "evaluation-1", title: "In module", type: "QUIZ", maxAttempts: 1, questionCount: 2, showResultsImmediately: true, curriculum: { moduleId: "module-1" } },
+      { id: "evaluation-2", title: "Elsewhere", type: "EXAM", maxAttempts: 1, questionCount: 2, showResultsImmediately: false, curriculum: {} },
+    );
+
+    const items: StudentEvaluationListItemResult[] = await listUseCase(doubles).execute(STUDENT_ID, { moduleId: "module-1" });
+
+    expect(items.map((item: StudentEvaluationListItemResult) => item.evaluation?.title)).toEqual(["In module"]);
+    expect(await listUseCase(doubles).execute(STUDENT_ID)).toHaveLength(2);
   });
 
   it("lazily closes the expired attempts of the student before listing", async () => {

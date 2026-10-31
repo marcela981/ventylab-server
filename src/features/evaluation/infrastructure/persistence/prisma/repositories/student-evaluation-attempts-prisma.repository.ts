@@ -25,6 +25,7 @@ import {
 import {
   STUDENT_ATTEMPT_INCLUDE,
   STUDENT_ATTEMPT_SUMMARY_SELECT,
+  STUDENT_EVALUATION_BRIEF_SELECT,
   type StudentAttemptRow,
   type StudentAttemptSummaryRow,
   type StudentEvaluationBriefRow,
@@ -112,16 +113,7 @@ export class StudentEvaluationAttemptsPrismaRepository implements IStudentEvalua
 
     const rows: StudentEvaluationBriefRow[] = await this._prisma.evaluation.findMany({
       where: { id: { in: [...evaluationIds] } },
-      select: {
-        id: true,
-        title: true,
-        type: true,
-        description: true,
-        durationMinutes: true,
-        maxAttempts: true,
-        showResultsImmediately: true,
-        _count: { select: { questions: true } },
-      },
+      select: STUDENT_EVALUATION_BRIEF_SELECT,
     });
 
     return rows.map((row: StudentEvaluationBriefRow) => StudentEvaluationAttemptsMapper.toBrief(row));

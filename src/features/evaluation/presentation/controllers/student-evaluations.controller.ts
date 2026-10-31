@@ -8,7 +8,7 @@
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
 import { type Response } from "express";
 import { I18n, I18nContext } from "nestjs-i18n";
@@ -41,6 +41,7 @@ import { SubmitEvaluationAttemptUseCase } from "@/features/evaluation/applicatio
 import { MyEvaluationGradeDTO } from "@/features/evaluation/presentation/dtos/evaluation-grading.dto";
 import {
   CheckEvaluationAnswerDTO,
+  GetMyEvaluationsQueryDTO,
   SaveEvaluationAnswerDTO,
   SubmitEvaluationAnswerDTO,
   SubmitEvaluationAttemptDTO,
@@ -95,13 +96,19 @@ export class StudentEvaluationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Get my evaluations",
-    description: "Assignments of the caller's active STUDENT group with derived state, evaluation summary (no answers) and own attempts; grades only when published; empty without group",
+    description:
+      "Assignments of the caller's active STUDENT group with derived state, evaluation summary (no answers, with its curriculum module, level and track) and own attempts; grades only when published; empty without group; optionally only the evaluations of one module",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Evaluations retrieved successfully", type: MyEvaluationDTO, isArray: true })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
-  public async getMyEvaluations(@CurrentUser() currentUser: CurrentCaller, @I18n() i18n: I18nContext): Promise<APIResponse<MyEvaluationDTO[]>> {
-    const items: StudentEvaluationListItemResult[] = await this._getMyEvaluationsUseCase.execute(currentUser.sub);
+  public async getMyEvaluations(
+    @Query() query: GetMyEvaluationsQueryDTO,
+    @CurrentUser() currentUser: CurrentCaller,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<MyEvaluationDTO[]>> {
+    const items: StudentEvaluationListItemResult[] = await this._getMyEvaluationsUseCase.execute(currentUser.sub, { moduleId: query.moduleId });
 
     return new APIResponseBuilder<MyEvaluationDTO[]>()
       .setData(items.map((item: StudentEvaluationListItemResult) => StudentEvaluationsMapper.toMyEvaluationDTO(item)))
