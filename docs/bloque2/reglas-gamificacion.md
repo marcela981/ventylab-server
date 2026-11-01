@@ -39,7 +39,7 @@ Cada hecho de aprendizaje que da XP se guarda una sola vez en `learning_activity
 | Evaluación aprobada (primera vez) | 100 | `EvaluationGradePublishedEvent` con `passed` |
 | Logro desbloqueado | Su recompensa (`xpReward`) | `AchievementUnlockedEvent` |
 
-**Evaluación aprobada.** `passed` es verdadero cuando la nota publicada es mayor o igual que la nota mínima aprobatoria (`evaluation.passingGrade`, 0 a 5, por defecto 3,0; editable en los ajustes de plataforma). La referencia es la evaluación, así que solo la primera aprobación da XP: aprobar de nuevo otro intento no suma.
+**Evaluación aprobada.** `passed` es verdadero cuando la nota publicada es mayor o igual que la nota mínima aprobatoria (`evaluation.passingGrade`, 0 a 5, por defecto 3,0; editable en los ajustes de plataforma). La referencia es la evaluación, así que solo la primera aprobación da XP: aprobar de nuevo otro intento no suma. El registro solo inserta: si el docente recalifica a la baja una nota ya publicada (Bloque 3), la XP ganada no se descuenta.
 
 ## 3. Nivel
 
