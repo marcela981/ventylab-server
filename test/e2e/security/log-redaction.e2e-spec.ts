@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e de redacción de secretos y datos personales en los registros
  * Descripción: Con un logger de captura instalado en la aplicación e2e recorre inicio de sesión (correcto, con credenciales erróneas y con validación fallida), renovación de token (manipulada y con validación fallida), cambio de contraseña (contraseña actual errónea y nueva contraseña débil) y una llamada de IA del tutor cuyo primer proveedor falla con un mensaje que contiene claves; comprueba que ni la salida del logger, ni las filas de error_logs, ni las filas de ai_call_logs, ni el prompt enviado al proveedor contienen contraseñas, tokens, secretos, claves de API, correos o nombres del usuario. v1.2: sin los pasos del puente de NextAuth retirado
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -107,8 +107,8 @@ describe("security: secrets and personal data never reach the logs", () => {
   it("should keep the current and new passwords out of the logs on password change", async () => {
     const token: string = await mintAccessToken(student, e2e.app);
 
-    const wrongCurrent: Response = await request(e2e.baseUrl).post("/api/users/me/change-password").set("authorization", `Bearer ${token}`).send({ currentPassword: "Not-The-Current-1", newPassword: NEW_PASSWORD });
-    const weakNew: Response = await request(e2e.baseUrl).post("/api/users/me/change-password").set("authorization", `Bearer ${token}`).send({ currentPassword: TEST_USER_PASSWORD, newPassword: "weak" });
+    const wrongCurrent: Response = await request(e2e.baseUrl).post("/api/auth/change-password").set("authorization", `Bearer ${token}`).send({ currentPassword: "Not-The-Current-1", newPassword: NEW_PASSWORD });
+    const weakNew: Response = await request(e2e.baseUrl).post("/api/auth/change-password").set("authorization", `Bearer ${token}`).send({ currentPassword: TEST_USER_PASSWORD, newPassword: "weak" });
 
     expect(wrongCurrent.status).toBe(400);
     expect(weakNew.status).toBe(400);

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo UsersModule
  * Descripción: Registra controlador, casos de uso, repositorios (usuarios, estadísticas y membresías de grupo), el correo del superadministrador, el arranque que fuerza su rol ADMIN y los manejadores de eventos de la feature de usuarios; exporta UsersFacade y los proveedores que aún usan otras features
- * Versión: 1.3
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -81,6 +81,7 @@ import { UsersController } from "@/features/users/presentation/controllers/users
     CreateUserUseCase,
     GetUserByIdUseCase,
     ChangeUserRoleUseCase,
+    ChangePasswordUseCase,
     UsersFacade,
   ],
 })

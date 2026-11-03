@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador AuthController
- * Descripción: Expone las rutas api/auth de registro, inicio de sesión (local y con Google), refresco, cierre de sesión y perfil, con límites de peticiones estrictos en las rutas que emiten tokens y en el registro. v1.4: se retira la ruta nextauth-token del puente de NextAuth
- * Versión: 1.4
+ * Descripción: Expone las rutas api/auth de registro, inicio de sesión (local y con Google), refresco, cierre de sesión y perfil, con límites de peticiones estrictos en las rutas que emiten tokens y en el registro. v1.4: se retira la ruta nextauth-token del puente de NextAuth. v1.5: cambio de contraseña propio (5 por minuto) que revoca los refresh tokens y reemite el par de la sesión actual
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,6 +22,7 @@ import { RegisterCommand } from "@/features/auth/application/commands/register.c
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { LoginResult } from "@/features/auth/application/results/login.result";
 import { RefreshTokenResult } from "@/features/auth/application/results/refresh-token.result";
+import { ChangeOwnPasswordUseCase } from "@/features/auth/application/use-cases/change-own-password.usecase";
 import { GoogleLoginUseCase } from "@/features/auth/application/use-cases/google-login.usecase";
 import { LoginUseCase } from "@/features/auth/application/use-cases/login.usecase";
 import { RefreshTokenUseCase } from "@/features/auth/application/use-cases/refresh-token.usecase";
@@ -38,11 +39,13 @@ import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard
 import { AuthMapper } from "@/features/auth/presentation/mappers/auth.mapper";
 import { GetUserByIdUseCase } from "@/features/users/application/use-cases/get-user-by-id.usecase";
 import { User } from "@/features/users/domain/entities/user.entity";
+import { ChangePasswordDTO } from "@/features/users/presentation/dtos/change-password.dto";
 
 const SIGN_IN_RATE_LIMIT: number = 5;
 // Students of one classroom often register from the same public IP (campus NAT), so registration allows more than sign-in while staying far below the global limit.
 const REGISTER_RATE_LIMIT: number = 10;
 const REFRESH_RATE_LIMIT: number = 20;
+const CHANGE_PASSWORD_RATE_LIMIT: number = 5;
 const AUTH_RATE_WINDOW_MS: number = 60000;
 
 @ApiTags("Authentication")
@@ -54,6 +57,7 @@ export class AuthController {
     private readonly _refreshTokenUseCase: RefreshTokenUseCase,
     private readonly _googleLoginUseCase: GoogleLoginUseCase,
     private readonly _getUserByIdUseCase: GetUserByIdUseCase,
+    private readonly _changeOwnPasswordUseCase: ChangeOwnPasswordUseCase,
   ) {}
 
   @Post("register")
@@ -153,6 +157,34 @@ export class AuthController {
     return new APIResponseBuilder<RefreshTokenResponseDTO>()
       .setData(AuthMapper.toRefreshTokenResponseDTO(result))
       .setMessage(await i18n.t("auth.token_refreshed"))
+      .build();
+  }
+
+  @Post("change-password")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Throttle({ default: { limit: CHANGE_PASSWORD_RATE_LIMIT, ttl: AUTH_RATE_WINDOW_MS } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Change own password",
+    description:
+      "Changes the authenticated user's password (8 to 128 characters with an uppercase letter, a lowercase letter and a number), revokes every refresh token issued so far and returns a new token pair for the current session; other sessions must sign in again once their access token expires (at most 15 minutes). Accounts without a password (Google sign-in) answer 400. Limited to 5 requests per minute.",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Password changed; new token pair for the current session", type: LoginResponseDTO })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error, wrong current password, same password or no password set" })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "User not found" })
+  @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many password change attempts" })
+  public async changePassword(
+    @Body() dto: ChangePasswordDTO,
+    @CurrentUser() currentUser: JwtPayload,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<LoginResponseDTO>> {
+    const result: LoginResult = await this._changeOwnPasswordUseCase.execute({ userId: currentUser.sub, currentPassword: dto.currentPassword, newPassword: dto.newPassword });
+
+    return new APIResponseBuilder<LoginResponseDTO>()
+      .setData(AuthMapper.toLoginResponseDTO(result))
+      .setMessage(await i18n.t("auth.password_changed"))
       .build();
   }
 

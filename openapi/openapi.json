@@ -25627,6 +25627,11 @@
               "null"
             ]
           },
+          "hasPassword": {
+            "description": "Whether the account has a local password (false for Google sign-in accounts, whose password is managed by Google)",
+            "example": true,
+            "type": "boolean"
+          },
           "id": {
             "description": "User unique identifier",
             "example": "cm5x2k9a00000abcd1234efgh",
@@ -25692,6 +25697,7 @@
           "isActive",
           "studentCode",
           "isSuperadmin",
+          "hasPassword",
           "emailVerified",
           "createdAt",
           "updatedAt"
@@ -33004,6 +33010,136 @@
         "x-required-permissions": [
           "audit:read"
         ]
+      }
+    },
+    "/api/auth/change-password": {
+      "post": {
+        "description": "Changes the authenticated user's password (8 to 128 characters with an uppercase letter, a lowercase letter and a number), revokes every refresh token issued so far and returns a new token pair for the current session; other sessions must sign in again once their access token expires (at most 15 minutes). Accounts without a password (Google sign-in) answer 400. Limited to 5 requests per minute.\n\n**Required access:** any authenticated user (bearer token); minimum role STUDENT.",
+        "operationId": "authChangePassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/LoginResponseDTO"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Password changed; new token pair for the current session"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ValidationError": {
+                    "$ref": "#/components/examples/ValidationError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error, wrong current password, same password or no password set"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFoundError": {
+                    "$ref": "#/components/examples/NotFoundError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "User not found"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many password change attempts"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Change own password",
+        "tags": [
+          "Authentication"
+        ],
+        "x-min-role": "STUDENT",
+        "x-required-permissions": []
       }
     },
     "/api/auth/google": {
@@ -78055,8 +78191,9 @@
     },
     "/api/users/me/change-password": {
       "post": {
-        "description": "Changes the authenticated user's password; access and refresh tokens already issued stay valid until they expire\n\n**Required access:** any authenticated user (bearer token); minimum role STUDENT.",
-        "operationId": "changePassword",
+        "deprecated": true,
+        "description": "Deprecated alias of POST /api/auth/change-password without reissuing tokens: changes the authenticated user's password and revokes every refresh token issued so far (the current session too); access tokens stay valid until they expire\n\n**Required access:** any authenticated user (bearer token); minimum role STUDENT.\n\n**Deprecated:** use `POST /api/auth/change-password`. Responses carry the `Deprecation` header (RFC 9745) and, when the successor URL can be built from this request, `Link: <successor>; rel=\"successor-version\"`.",
+        "operationId": "usersChangePassword",
         "parameters": [],
         "requestBody": {
           "content": {
@@ -78180,7 +78317,8 @@
           "Users"
         ],
         "x-min-role": "STUDENT",
-        "x-required-permissions": []
+        "x-required-permissions": [],
+        "x-successor": "POST /api/auth/change-password"
       }
     },
     "/api/users/me/stats": {

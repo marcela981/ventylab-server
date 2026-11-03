@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador UsersController
  * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id. v1.3: la descripción del cambio de contraseña ya no menciona sesiones de NextAuth
- * Versión: 1.3
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,9 @@ import { I18n, I18nContext } from "nestjs-i18n";
 
 import { Paginated } from "@/common/domain/utils/paginated";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { DeprecatedRoute } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
+import { BLOCK4_ROUTES_DEPRECATED_AT } from "@/common/presentation/utils/deprecation.util";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
@@ -150,10 +152,12 @@ export class UsersController {
   }
 
   @Post("me/change-password")
+  @DeprecatedRoute({ successor: "/api/auth/change-password", since: BLOCK4_ROUTES_DEPRECATED_AT })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Change own password",
-    description: "Changes the authenticated user's password; access and refresh tokens already issued stay valid until they expire",
+    description:
+      "Deprecated alias of POST /api/auth/change-password without reissuing tokens: changes the authenticated user's password and revokes every refresh token issued so far (the current session too); access tokens stay valid until they expire",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Password changed successfully" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error, wrong current password, or no password set" })

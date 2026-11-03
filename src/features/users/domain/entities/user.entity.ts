@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad User
  * Descripción: Agregado de usuario con datos de perfil, rol, contraseña, estado activo, vínculo con Google, revocación de refresh tokens y código estudiantil opcional asignado por un administrador, y sus eventos y registros de auditoría
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -292,9 +292,13 @@ export class User extends AggregateRoot {
     }
   }
 
+  // Revokes every refresh token issued so far: the caller reissues the current session's pair if it should stay signed in.
   public changePassword({ newPasswordHash, performedBy }: { newPasswordHash: string; performedBy?: string }): void {
+    const now: Date = new Date();
+
     this._passwordHash = newPasswordHash;
-    this._updatedAt = new Date();
+    this._refreshTokensRevokedAt = now;
+    this._updatedAt = now;
 
     this._auditLogs.push(
       AuditLog.create<UserAuditAction>({

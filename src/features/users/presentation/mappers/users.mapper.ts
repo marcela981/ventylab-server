@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper UsersMapper
  * Descripción: Convierte entidades y resultados de usuarios en DTOs de respuesta; el usuario indica si es el superadministrador comparando su correo con el configurado
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,6 +27,7 @@ export class UsersMapper {
       isActive: user.isActive,
       studentCode: user.studentCode ?? null,
       isSuperadmin: isSuperadmin(user.email, superadminEmail),
+      hasPassword: user.passwordHash !== undefined,
       emailVerified: user.emailVerified ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

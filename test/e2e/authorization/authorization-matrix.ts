@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
- * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante; gamificación, actividad reciente y logros de un estudiante en solo lectura; listado de grabaciones del ventilador por usuario; ai-ratings:read solo ADMIN
+ * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante; gamificación, actividad reciente y logros de un estudiante en solo lectura; listado de grabaciones del ventilador por usuario; ai-ratings:read solo ADMIN; cambio de contraseña en auth
  * Versión: 1.8
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -109,6 +109,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/auth/me": AUTHENTICATED, // JwtAuthGuard
   "POST /api/auth/google": PUBLIC, // no guard
   "POST /api/auth/login": PUBLIC, // no guard
+  "POST /api/auth/change-password": AUTHENTICATED, // JwtAuthGuard
   "POST /api/auth/logout": AUTHENTICATED, // JwtAuthGuard
   "POST /api/auth/refresh": PUBLIC, // no guard
   "POST /api/auth/register": PUBLIC, // no guard
