@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO StudentDTO
- * Descripción: Representa un estudiante, su código institucional, sus grupos STUDENT activos y su resumen de progreso en las respuestas
- * Versión: 1.1
+ * Descripción: Representa un estudiante, su código institucional, sus grupos STUDENT activos, su imagen resuelta como en UserDTO (foto subida firmada o imagen guardada) y su resumen de progreso en las respuestas
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -81,7 +81,12 @@ export class StudentDTO {
   @ApiProperty({ description: "Active STUDENT groups of the student, in joining order", type: [StudentGroupDTO] })
   public groups: StudentGroupDTO[];
 
-  @ApiProperty({ description: "Profile image URL", example: "https://example.com/avatar.png", nullable: true, type: String })
+  @ApiProperty({
+    description: "Profile image URL: a signed URL of the uploaded photo (it expires; read it again instead of storing it), or else the stored image (the Google picture)",
+    example: "https://example.com/avatar.png",
+    nullable: true,
+    type: String,
+  })
   public image: string | null;
 
   @ApiProperty({ description: "Creation timestamp", example: "2024-01-15T10:30:00.000Z" })

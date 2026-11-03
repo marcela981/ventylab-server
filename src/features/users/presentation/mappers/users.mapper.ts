@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper UsersMapper
- * Descripción: Convierte entidades y resultados de usuarios en DTOs de respuesta; el usuario indica si es el superadministrador comparando su correo con el configurado; el estudiante lleva su código institucional y sus grupos STUDENT activos
- * Versión: 1.4
+ * Descripción: Convierte entidades y resultados de usuarios en DTOs de respuesta; el usuario indica si es el superadministrador comparando su correo con el configurado; el estudiante lleva su código institucional, sus grupos STUDENT activos y la imagen resuelta (foto subida o imagen guardada)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -48,7 +48,8 @@ export class UsersMapper {
     });
   }
 
-  public static toStudentDTO(result: StudentResult): StudentDTO {
+  // image: the resolved photo (UserImageResolver), same rule as UserDTO.image; defaults to the stored image.
+  public static toStudentDTO(result: StudentResult, image: string | undefined = result.user.image): StudentDTO {
     return new StudentDTO({
       id: result.user.id,
       email: result.user.email,
@@ -56,7 +57,7 @@ export class UsersMapper {
       role: result.user.role.value,
       studentCode: result.user.studentCode ?? null,
       groups: result.groups.map((group: StudentGroupRef) => new StudentGroupDTO({ id: group.id, name: group.name })),
-      image: result.user.image ?? null,
+      image: image ?? null,
       createdAt: result.user.createdAt,
       updatedAt: result.user.updatedAt,
       stats: new StudentProgressDTO({

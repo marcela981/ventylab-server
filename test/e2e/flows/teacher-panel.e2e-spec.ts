@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e del panel docente (Bloque 4)
- * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; la cabecera del detalle GET /api/users/students/:id con el código y solo los grupos activos (sin consultar el directorio); y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; y que un docente pueda reservar el ventilador para un grupo que creó (no solo para los que supervisa) y no para uno ajeno; y la pestaña Profesores (GET /api/admin/teachers solo ADMIN, con los grupos activos creados o supervisados y los estudiantes distintos); y la analítica de valoraciones de IA solo para ADMIN con la superficie derivada del tipo de objetivo (SIMULATOR_ASSIST, NOTES_ANALYSIS, EVALUATION_FEEDBACK) en estadísticas y CSV; las respuestas se validan contra openapi/openapi.json
- * Versión: 1.5
+ * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; la cabecera del detalle GET /api/users/students/:id con el código y solo los grupos activos (sin consultar el directorio) y la foto subida resuelta como en UserDTO (también en GET /api/users/students, o la imagen guardada sin foto); y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; y que un docente pueda reservar el ventilador para un grupo que creó (no solo para los que supervisa) y no para uno ajeno; y la pestaña Profesores (GET /api/admin/teachers solo ADMIN, con los grupos activos creados o supervisados y los estudiantes distintos); y la analítica de valoraciones de IA solo para ADMIN con la superficie derivada del tipo de objetivo (SIMULATOR_ASSIST, NOTES_ANALYSIS, EVALUATION_FEEDBACK) en estadísticas y CSV; las respuestas se validan contra openapi/openapi.json
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,7 +11,7 @@
 import { randomUUID } from "node:crypto";
 
 import { type Reservation, type User } from "@prisma/client";
-import { type Response } from "supertest";
+import request, { type Response } from "supertest";
 
 import { createAdmin, createReservation, nextFreeSlot, createStudent, createStudentGroup, createTeacher, createTeacherGroup, type GroupWithMembers } from "../../factories";
 import { mintAccessToken } from "../../support/auth";
@@ -19,6 +19,9 @@ import { contractCaller, type ContractCaller, expectStatus } from "../../support
 import { resetDatabase } from "../../support/database";
 import { createE2eApp, type E2eApp } from "../../support/e2e-app";
 import { callApi } from "../../support/http";
+
+const GOOGLE_PICTURE: string = "https://lh3.googleusercontent.com/a/test-picture";
+const PNG: Buffer = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 1)]);
 
 interface DirectoryRow {
   readonly id: string;
@@ -159,6 +162,34 @@ describe("flow: teacher panel", () => {
       expectStatus(former, 200);
       expect(own.body.data).toEqual(expect.objectContaining({ id: fixture.ownStudent.id, studentCode: "B4-0001", groups: [{ id: fixture.activeGroup.group.id, name: "Grupo activo" }] }));
       expect(former.body.data).toEqual(expect.objectContaining({ id: fixture.formerStudent.id, studentCode: null, groups: [] }));
+    });
+
+    it("shows the uploaded photo like the profile does, in the detail and the students list, and the stored image without one", async () => {
+      const uploaded: Response = await request(e2e.baseUrl)
+        .put("/api/users/me/avatar")
+        .set("authorization", `Bearer ${await tokenOf(fixture.ownStudent)}`)
+        .attach("file", PNG, { filename: "photo.png", contentType: "image/png" });
+
+      expectStatus(uploaded, 200);
+      await e2e.prisma.user.update({ where: { id: fixture.formerStudent.id }, data: { image: GOOGLE_PICTURE } });
+
+      const photo: string = uploaded.body.data.image as string;
+      const detail: Response = await api("GET", `/api/users/students/${fixture.ownStudent.id}`, await tokenOf(fixture.creator));
+      const former: Response = await api("GET", `/api/users/students/${fixture.formerStudent.id}`, await tokenOf(fixture.creator));
+      const list: Response = await api("GET", "/api/users/students?search=Directorio&limit=50", await tokenOf(fixture.admin));
+      const imageById: Map<string, string | null> = new Map(
+        (list.body.data as { id: string; image: string | null }[]).map((row: { id: string; image: string | null }): [string, string | null] => [row.id, row.image]),
+      );
+
+      expect(photo).toBe(`data:image/png;base64,${PNG.toString("base64")}`);
+      expectStatus(detail, 200);
+      expectStatus(former, 200);
+      expectStatus(list, 200);
+      expect(detail.body.data.image).toBe(photo);
+      expect(former.body.data.image).toBe(GOOGLE_PICTURE);
+      expect(imageById.get(fixture.ownStudent.id)).toBe(photo);
+      expect(imageById.get(fixture.formerStudent.id)).toBe(GOOGLE_PICTURE);
+      expect(imageById.get(fixture.supervisedStudent.id)).toBeNull();
     });
 
     it("keeps the header out of reach of a teacher who does not manage the student", async () => {

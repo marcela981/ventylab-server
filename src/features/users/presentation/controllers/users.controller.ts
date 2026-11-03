@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador UsersController
- * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id. v1.3: la descripción del cambio de contraseña ya no menciona sesiones de NextAuth
- * Versión: 1.5
+ * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id. v1.3: la descripción del cambio de contraseña ya no menciona sesiones de NextAuth. v1.6: el listado y el detalle de estudiantes resuelven la foto subida como UserDTO (una lectura firmada por página)
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -290,8 +290,10 @@ export class UsersController {
       sortOrder: query.sortOrder,
     });
 
+    const images: Map<string, string | undefined> = await this._userImageResolver.resolve(students.data.map((student: StudentResult) => student.user));
+
     return new APIResponseBuilder<StudentDTO[]>()
-      .setData(students.data.map((student: StudentResult) => UsersMapper.toStudentDTO(student)))
+      .setData(students.data.map((student: StudentResult) => UsersMapper.toStudentDTO(student, images.get(student.user.id))))
       .setMessage(await i18n.t("users.students_retrieved"))
       .setPagination(students.pagination)
       .build();
@@ -324,7 +326,7 @@ export class UsersController {
     );
 
     return new APIResponseBuilder<StudentDTO>()
-      .setData(UsersMapper.toStudentDTO(student))
+      .setData(UsersMapper.toStudentDTO(student, await this._userImageResolver.resolveOne(student.user)))
       .setMessage(await i18n.t("users.student_retrieved"))
       .build();
   }
