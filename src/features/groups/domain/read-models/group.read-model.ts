@@ -92,6 +92,12 @@ export interface GroupNameView {
   readonly name: string;
 }
 
+// An active STUDENT group of a user, read for many users at once.
+export interface UserActiveStudentGroupView {
+  readonly userId: string;
+  readonly group: GroupNameView;
+}
+
 export interface StudentGroupSummaryView {
   readonly id: string;
   readonly name: string;

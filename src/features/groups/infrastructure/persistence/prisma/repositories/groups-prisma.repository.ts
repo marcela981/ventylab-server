@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de grupos
- * Descripción: Implementa IGroupsRepository sobre las tablas groups, group_members y group_supervisions; las vistas leen líder, creador, grupo padre y subgrupos activos en una sola consulta y aplican el alcance del profesor; consulta el historial (miembros actuales o pasados en audit_logs, asignaciones de evaluaciones, intentos ligados al grupo por asignación o por el groupId heredado en legacy_payload, y reservas) que impide el borrado físico, y registra la auditoría del agregado
- * Versión: 1.3
+ * Descripción: Implementa IGroupsRepository sobre las tablas groups, group_members y group_supervisions; las vistas leen líder, creador, grupo padre y subgrupos activos en una sola consulta y aplican el alcance del profesor; consulta el historial (miembros actuales o pasados en audit_logs, asignaciones de evaluaciones, intentos ligados al grupo por asignación o por el groupId heredado en legacy_payload, y reservas) que impide el borrado físico, y registra la auditoría del agregado; lee en una consulta los grupos STUDENT activos de varios usuarios
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,6 +24,7 @@ import {
   type GroupPersonView,
   type GroupView,
   type StudentGroupSummaryView,
+  type UserActiveStudentGroupView,
 } from "@/features/groups/domain/read-models/group.read-model";
 import { type IGroupsRepository } from "@/features/groups/domain/repositories/groups.repository";
 import { STUDENT_MEMBER_ROLE, TEACHER_MEMBER_ROLE } from "@/features/groups/domain/value-objects/group-member-role";
@@ -302,6 +303,20 @@ export class GroupsPrismaRepository implements IGroupsRepository {
         memberRole: toGroupMembershipRole(row.memberRole),
       }),
     );
+  }
+
+  public async getActiveStudentGroupsOfUsers(userIds: ReadonlyArray<string>): Promise<UserActiveStudentGroupView[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const rows: { userId: string; group: { id: string; name: string } }[] = await this._prisma.groupMember.findMany({
+      where: { userId: { in: [...userIds] }, group: { type: STUDENT_GROUP_TYPE, isActive: true } },
+      select: { userId: true, group: { select: { id: true, name: true } } },
+      orderBy: { joinedAt: "asc" },
+    });
+
+    return rows.map((row: { userId: string; group: { id: string; name: string } }): UserActiveStudentGroupView => ({ userId: row.userId, group: row.group }));
   }
 
   public async save(group: Group, transaction?: unknown): Promise<void> {

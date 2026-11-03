@@ -157,6 +157,7 @@ export function buildDoubles(state: GroupsState = {}): GroupsDoubles {
     ),
     getStudentGroupSummaryOfUser: jest.fn().mockResolvedValue(undefined),
     getMembershipSummariesOfUser: jest.fn().mockResolvedValue([]),
+    getActiveStudentGroupsOfUsers: jest.fn().mockResolvedValue([]),
     save: saveGroup,
     delete: deleteGroup,
   } as unknown as IGroupsRepository;

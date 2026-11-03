@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada pública de grupos
- * Descripción: API de lectura que GroupsModule exporta para otras features: grupo STUDENT activo de un usuario, miembros de un grupo, liderazgo, pertenencia, grupos STUDENT supervisados por los grupos TEACHER de un profesor alcance de gestión y resumen (nombre, tipo, estado) de un grupo y, para analítica, los grupos STUDENT que un actor gestiona (una consulta), si un usuario STUDENT pertenece a alguno de ellos, si un actor gestiona algún grupo STUDENT de un estudiante (sin bucle por grupo) y membresías de estudiantes en grupos STUDENT y el alcance de lectura de un estudiante (ADMIN todos; TEACHER los miembros STUDENT de los grupos que creó o supervisa, incluidos los inactivos; 403 fuera de él) que usan el detalle, el progreso y las grabaciones; usa los repositorios de grupos, miembros y analítica y GroupAccessService
- * Versión: 1.4
+ * Descripción: API de lectura que GroupsModule exporta para otras features: grupo STUDENT activo de un usuario, miembros de un grupo, liderazgo, pertenencia, grupos STUDENT supervisados por los grupos TEACHER de un profesor alcance de gestión y resumen (nombre, tipo, estado) de un grupo y, para analítica, los grupos STUDENT que un actor gestiona (una consulta), si un usuario STUDENT pertenece a alguno de ellos, si un actor gestiona algún grupo STUDENT de un estudiante (sin bucle por grupo) y membresías de estudiantes en grupos STUDENT y el alcance de lectura de un estudiante (ADMIN todos; TEACHER los miembros STUDENT de los grupos que creó o supervisa, incluidos los inactivos; 403 fuera de él) que usan el detalle, el progreso y las grabaciones, y los grupos STUDENT activos de varios estudiantes en una lectura; usa los repositorios de grupos, miembros y analítica y GroupAccessService
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,7 @@ import { GroupAccessService } from "@/features/groups/application/services/group
 import { type GroupMember } from "@/features/groups/domain/entities/group-member.entity";
 import { type Group } from "@/features/groups/domain/entities/group.entity";
 import { StudentOutOfScopeError } from "@/features/groups/domain/groups.errors";
-import { type GroupMemberView, type StudentGroupSummaryView } from "@/features/groups/domain/read-models/group.read-model";
+import { type GroupMemberView, type GroupNameView, type StudentGroupSummaryView, type UserActiveStudentGroupView } from "@/features/groups/domain/read-models/group.read-model";
 import {
   GROUP_ANALYTICS_REPOSITORY_TOKEN,
   type IGroupAnalyticsRepository,
@@ -63,6 +63,18 @@ export class GroupsFacade {
 
   public async getStudentGroupOfUser(userId: string): Promise<StudentGroupSummaryView | undefined> {
     return await this._groupsRepository.getStudentGroupSummaryOfUser(userId);
+  }
+
+  // Active STUDENT groups of each user (in joining order), read in one query; users without one are absent from the map.
+  public async getActiveStudentGroupsOfUsers(userIds: ReadonlyArray<string>): Promise<Map<string, GroupNameView[]>> {
+    const rows: UserActiveStudentGroupView[] = await this._groupsRepository.getActiveStudentGroupsOfUsers(userIds);
+    const groupsByUser: Map<string, GroupNameView[]> = new Map<string, GroupNameView[]>();
+
+    for (const row of rows) {
+      groupsByUser.set(row.userId, [...(groupsByUser.get(row.userId) ?? []), { id: row.group.id, name: row.group.name }]);
+    }
+
+    return groupsByUser;
   }
 
   public async getGroupSummary(groupId: string): Promise<GroupSummary | undefined> {

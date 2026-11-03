@@ -1,18 +1,19 @@
 /*
  * Funcionalidad: Mapper UsersMapper
- * Descripción: Convierte entidades y resultados de usuarios en DTOs de respuesta; el usuario indica si es el superadministrador comparando su correo con el configurado
- * Versión: 1.3
+ * Descripción: Convierte entidades y resultados de usuarios en DTOs de respuesta; el usuario indica si es el superadministrador comparando su correo con el configurado; el estudiante lleva su código institucional y sus grupos STUDENT activos
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type StudentGroupRef } from "@/features/users/application/ports/student-groups-reader.interface";
 import { type StudentResult } from "@/features/users/application/results/student.result";
 import { type User } from "@/features/users/domain/entities/user.entity";
 import { isSuperadmin } from "@/features/users/domain/services/is-superadmin";
 import { type UserStats } from "@/features/users/domain/value-objects/user-stats";
-import { StudentDTO, StudentProgressDTO } from "@/features/users/presentation/dtos/student.dto";
+import { StudentDTO, StudentGroupDTO, StudentProgressDTO } from "@/features/users/presentation/dtos/student.dto";
 import { UserStatsDTO } from "@/features/users/presentation/dtos/user-stats.dto";
 import { UserDTO } from "@/features/users/presentation/dtos/user.dto";
 
@@ -53,6 +54,8 @@ export class UsersMapper {
       email: result.user.email,
       name: result.user.name ?? null,
       role: result.user.role.value,
+      studentCode: result.user.studentCode ?? null,
+      groups: result.groups.map((group: StudentGroupRef) => new StudentGroupDTO({ id: group.id, name: group.name })),
       image: result.user.image ?? null,
       createdAt: result.user.createdAt,
       updatedAt: result.user.updatedAt,

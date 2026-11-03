@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e del panel docente (Bloque 4)
- * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; y que un docente pueda reservar el ventilador para un grupo que creó (no solo para los que supervisa) y no para uno ajeno; y la pestaña Profesores (GET /api/admin/teachers solo ADMIN, con los grupos activos creados o supervisados y los estudiantes distintos); y la analítica de valoraciones de IA solo para ADMIN con la superficie derivada del tipo de objetivo (SIMULATOR_ASSIST, NOTES_ANALYSIS, EVALUATION_FEEDBACK) en estadísticas y CSV; las respuestas se validan contra openapi/openapi.json
- * Versión: 1.4
+ * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; la cabecera del detalle GET /api/users/students/:id con el código y solo los grupos activos (sin consultar el directorio); y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; y que un docente pueda reservar el ventilador para un grupo que creó (no solo para los que supervisa) y no para uno ajeno; y la pestaña Profesores (GET /api/admin/teachers solo ADMIN, con los grupos activos creados o supervisados y los estudiantes distintos); y la analítica de valoraciones de IA solo para ADMIN con la superficie derivada del tipo de objetivo (SIMULATOR_ASSIST, NOTES_ANALYSIS, EVALUATION_FEEDBACK) en estadísticas y CSV; las respuestas se validan contra openapi/openapi.json
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -147,6 +147,24 @@ describe("flow: teacher panel", () => {
       expectStatus(response, 200);
       expect(response.body.data).toHaveLength(2);
       expect(response.body.pagination).toEqual(expect.objectContaining({ total: 3, pages: 2 }));
+    });
+  });
+
+  describe("student detail header", () => {
+    it("carries the student code and only the active groups", async () => {
+      const own: Response = await api("GET", `/api/users/students/${fixture.ownStudent.id}`, await tokenOf(fixture.creator));
+      const former: Response = await api("GET", `/api/users/students/${fixture.formerStudent.id}`, await tokenOf(fixture.creator));
+
+      expectStatus(own, 200);
+      expectStatus(former, 200);
+      expect(own.body.data).toEqual(expect.objectContaining({ id: fixture.ownStudent.id, studentCode: "B4-0001", groups: [{ id: fixture.activeGroup.group.id, name: "Grupo activo" }] }));
+      expect(former.body.data).toEqual(expect.objectContaining({ id: fixture.formerStudent.id, studentCode: null, groups: [] }));
+    });
+
+    it("keeps the header out of reach of a teacher who does not manage the student", async () => {
+      const response: Response = await api("GET", `/api/users/students/${fixture.ownStudent.id}`, await tokenOf(fixture.loner));
+
+      expectStatus(response, 403);
     });
   });
 

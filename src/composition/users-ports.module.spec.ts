@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de UsersPortsModule
- * Descripción: Verifica que el puerto de alcance docente de la feature de usuarios se enlaza a GroupsFacade.canViewStudent con el actor y el estudiante recibidos, y el almacenamiento de la foto de perfil a MediaFacade
- * Versión: 1.1
+ * Descripción: Verifica que el puerto de alcance docente de la feature de usuarios se enlaza a GroupsFacade.canViewStudent con el actor y el estudiante recibidos, el lector de grupos activos a GroupsFacade.getActiveStudentGroupsOfUsers, y el almacenamiento de la foto de perfil a MediaFacade
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,10 +10,11 @@
  */
 import { type FactoryProvider } from "@nestjs/common";
 
-import { AVATAR_STORAGE_PROVIDER, STUDENT_SCOPE_CHECKER_PROVIDER } from "@/composition/users-ports.module";
+import { AVATAR_STORAGE_PROVIDER, STUDENT_GROUPS_READER_PROVIDER, STUDENT_SCOPE_CHECKER_PROVIDER } from "@/composition/users-ports.module";
 import { GroupsFacade } from "@/features/groups/application/services/groups.facade";
 import { MediaFacade } from "@/features/media/application/services/media.facade";
 import { AVATAR_STORAGE_TOKEN, type AvatarFile, type IAvatarStorage } from "@/features/users/application/ports/avatar-storage.interface";
+import { type IStudentGroupsReader, STUDENT_GROUPS_READER_TOKEN } from "@/features/users/application/ports/student-groups-reader.interface";
 import { type IStudentScopeChecker, STUDENT_SCOPE_CHECKER_TOKEN } from "@/features/users/application/ports/student-scope-checker.interface";
 
 describe("UsersPortsModule", () => {
@@ -27,6 +28,19 @@ describe("UsersPortsModule", () => {
     expect(provider.inject).toEqual([GroupsFacade]);
     expect(await checker.canViewStudent({ id: "teacher-1", role: "TEACHER" }, "student-1")).toBe(true);
     expect(facade.canViewStudent).toHaveBeenCalledWith({ id: "teacher-1", role: "TEACHER" }, "student-1");
+  });
+
+  it("binds the student groups reader to GroupsFacade.getActiveStudentGroupsOfUsers", async () => {
+    const provider: FactoryProvider<IStudentGroupsReader> = STUDENT_GROUPS_READER_PROVIDER as FactoryProvider<IStudentGroupsReader>;
+    const groups: Map<string, { id: string; name: string }[]> = new Map([["student-1", [{ id: "group-1", name: "Grupo A" }]]]);
+    const facade: { getActiveStudentGroupsOfUsers: jest.Mock } = { getActiveStudentGroupsOfUsers: jest.fn().mockResolvedValue(groups) };
+
+    const reader: IStudentGroupsReader = provider.useFactory(facade) as IStudentGroupsReader;
+
+    expect(provider.provide).toBe(STUDENT_GROUPS_READER_TOKEN);
+    expect(provider.inject).toEqual([GroupsFacade]);
+    expect(await reader.getActiveGroups(["student-1"])).toBe(groups);
+    expect(facade.getActiveStudentGroupsOfUsers).toHaveBeenCalledWith(["student-1"]);
   });
 
   it("binds the avatar storage to MediaFacade", async () => {

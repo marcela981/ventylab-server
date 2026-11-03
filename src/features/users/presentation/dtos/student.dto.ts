@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO StudentDTO
- * Descripción: Representa un estudiante y su resumen de progreso en las respuestas
- * Versión: 1.0
+ * Descripción: Representa un estudiante, su código institucional, sus grupos STUDENT activos y su resumen de progreso en las respuestas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -49,6 +49,19 @@ export class StudentProgressDTO {
   }
 }
 
+export class StudentGroupDTO {
+  @ApiProperty({ description: "Group ID", example: "cm5group01" })
+  public id: string;
+
+  @ApiProperty({ description: "Group name", example: "Grupo A" })
+  public name: string;
+
+  public constructor({ id, name }: { id: string; name: string }) {
+    this.id = id;
+    this.name = name;
+  }
+}
+
 export class StudentDTO {
   @ApiProperty({ description: "Student unique identifier", example: "cm5x2k9a00000abcd1234efgh" })
   public id: string;
@@ -61,6 +74,12 @@ export class StudentDTO {
 
   @ApiProperty({ description: "User role", enum: USER_ROLE_VALUES, example: "STUDENT" })
   public role: string;
+
+  @ApiProperty({ description: "Institutional student code", example: "2026-0001", nullable: true, type: String })
+  public studentCode: string | null;
+
+  @ApiProperty({ description: "Active STUDENT groups of the student, in joining order", type: [StudentGroupDTO] })
+  public groups: StudentGroupDTO[];
 
   @ApiProperty({ description: "Profile image URL", example: "https://example.com/avatar.png", nullable: true, type: String })
   public image: string | null;
@@ -79,6 +98,8 @@ export class StudentDTO {
     email,
     name,
     role,
+    studentCode,
+    groups,
     image,
     createdAt,
     updatedAt,
@@ -88,6 +109,8 @@ export class StudentDTO {
     email: string;
     name: string | null;
     role: string;
+    studentCode: string | null;
+    groups: StudentGroupDTO[];
     image: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -97,6 +120,8 @@ export class StudentDTO {
     this.email = email;
     this.name = name;
     this.role = role;
+    this.studentCode = studentCode;
+    this.groups = groups;
     this.image = image;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;

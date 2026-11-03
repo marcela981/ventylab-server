@@ -302,7 +302,8 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Get student by ID",
-    description: "Retrieves a student with their lesson progress summary. Teachers only see students assigned to them.",
+    description:
+      "Retrieves a student with their institutional code, active STUDENT groups and lesson progress summary. Teachers only see students of the groups they created or supervise (or assigned to them).",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Student retrieved successfully", type: StudentDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "User is not a student" })
