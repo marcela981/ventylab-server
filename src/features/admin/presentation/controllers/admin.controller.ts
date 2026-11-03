@@ -61,7 +61,8 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Get dashboard students",
-    description: "Paginated students with progress summary and group; myGroups=true limits it to the caller's groups as teacher",
+    description:
+      "Paginated students with their published-content progress, active groups, student code and whether the caller may open their detail (canView); search matches name, email or student code; myGroups=true limits it to the groups the caller created or supervises (an empty page when there are none); sorting by progress or lastActivity is computed on the server before paging",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Students retrieved successfully", type: AdminStudentListItemDTO, isArray: true })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
@@ -73,10 +74,11 @@ export class AdminController {
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<AdminStudentListItemDTO[]>> {
     const students: Paginated<AdminStudentListItem> = await this._getAdminStudentsUseCase.execute({
+      actor: { id: currentUser.sub, role: currentUser.role },
       page: query.page,
       limit: query.limit,
       groupId: query.groupId,
-      teacherId: query.myGroups === "true" ? currentUser.sub : undefined,
+      myGroups: query.myGroups === "true",
       search: query.search,
       sortBy: (query.sortBy ?? "name") as AdminStudentSortByValue,
       sortOrder: query.sortOrder ?? "asc",

@@ -147,7 +147,7 @@
             "description": "Next page number",
             "example": 3,
             "type": [
-              "object",
+              "number",
               "null"
             ]
           },
@@ -165,7 +165,7 @@
             "description": "Previous page number",
             "example": 1,
             "type": [
-              "object",
+              "number",
               "null"
             ]
           },
@@ -1223,6 +1223,25 @@
         ],
         "type": "object"
       },
+      "AdminGroupRefDTO": {
+        "properties": {
+          "id": {
+            "description": "Group ID",
+            "example": "cm5group01",
+            "type": "string"
+          },
+          "name": {
+            "description": "Group name",
+            "example": "Grupo A",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
       "AdminLessonCompletionDTO": {
         "properties": {
           "completedAt": {
@@ -1535,8 +1554,13 @@
       },
       "AdminStudentListItemDTO": {
         "properties": {
+          "canView": {
+            "description": "Whether the caller may open the student's detail (an administrator always; a teacher when they created or supervise one of the student's groups)",
+            "example": true,
+            "type": "boolean"
+          },
           "completedModules": {
-            "description": "Completed modules",
+            "description": "Completed published modules",
             "example": 2,
             "type": "number"
           },
@@ -1546,12 +1570,19 @@
             "type": "string"
           },
           "groupName": {
-            "description": "Name of the first group of the student",
+            "description": "Name of the first active group of the student",
             "example": "Grupo A",
             "type": [
               "string",
               "null"
             ]
+          },
+          "groups": {
+            "description": "Active STUDENT groups of the student",
+            "items": {
+              "$ref": "#/components/schemas/AdminGroupRefDTO"
+            },
+            "type": "array"
           },
           "id": {
             "description": "Student ID",
@@ -1559,7 +1590,7 @@
             "type": "string"
           },
           "lastActivity": {
-            "description": "Most recent module access",
+            "description": "Most recent page or lesson activity",
             "example": "2026-03-01T10:00:00.000Z",
             "format": "date-time",
             "type": [
@@ -1576,12 +1607,20 @@
             ]
           },
           "overallProgress": {
-            "description": "Rounded average progress over started modules (0-100)",
+            "description": "Lesson-weighted progress over all published content (0-100, rounded down)",
             "example": 45,
             "type": "number"
           },
+          "studentCode": {
+            "description": "Institutional student code",
+            "example": "2026-0001",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "totalModules": {
-            "description": "Started modules",
+            "description": "Published modules",
             "example": 5,
             "type": "number"
           }
@@ -1590,11 +1629,14 @@
           "id",
           "name",
           "email",
+          "studentCode",
           "lastActivity",
           "overallProgress",
           "completedModules",
           "totalModules",
-          "groupName"
+          "groupName",
+          "groups",
+          "canView"
         ],
         "type": "object"
       },
@@ -30170,7 +30212,7 @@
     },
     "/api/admin/students": {
       "get": {
-        "description": "Paginated students with progress summary and group; myGroups=true limits it to the caller's groups as teacher\n\n**Required access:** bearer token holding `students:read`; minimum role TEACHER.",
+        "description": "Paginated students with their published-content progress, active groups, student code and whether the caller may open their detail (canView); search matches name, email or student code; myGroups=true limits it to the groups the caller created or supervises (an empty page when there are none); sorting by progress or lastActivity is computed on the server before paging\n\n**Required access:** bearer token holding `students:read`; minimum role TEACHER.",
         "operationId": "adminGetStudents",
         "parameters": [
           {
@@ -30209,7 +30251,7 @@
             }
           },
           {
-            "description": "Partial, case-insensitive match against name or email",
+            "description": "Partial, case-insensitive match against name, email or student code",
             "in": "query",
             "name": "search",
             "required": false,
@@ -30251,7 +30293,7 @@
             }
           },
           {
-            "description": "Only students of the groups where the caller is a teacher (ignored when groupId is sent)",
+            "description": "Only students of the STUDENT groups the caller created or supervises (an administrator manages all of them); combined with groupId it keeps that group only when the caller manages it",
             "in": "query",
             "name": "myGroups",
             "required": false,
@@ -30387,7 +30429,7 @@
     },
     "/api/admin/students/{id}/progress": {
       "get": {
-        "description": "Full activity detail and statistics of a student\n\n**Required access:** bearer token holding `students:read`; minimum role TEACHER.",
+        "description": "Full activity detail and statistics of a student; a teacher only reads students of the groups they created or supervise\n\n**Required access:** bearer token holding `students:read`; minimum role TEACHER.",
         "operationId": "getStudentProgress",
         "parameters": [
           {
@@ -30468,7 +30510,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "Forbidden or the student is outside the teacher's groups"
           },
           "404": {
             "content": {
@@ -65175,7 +65217,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "Forbidden or the student is outside the teacher's groups"
           },
           "404": {
             "content": {
@@ -65329,7 +65371,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "Forbidden or the student is outside the teacher's groups"
           },
           "404": {
             "content": {
@@ -65483,7 +65525,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "Forbidden or the student is outside the teacher's groups"
           },
           "404": {
             "content": {
@@ -65629,7 +65671,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "Forbidden or the student is outside the teacher's groups"
           },
           "404": {
             "content": {
@@ -80092,7 +80134,7 @@
     },
     "/api/ventilator/telemetry/recordings/{reservationId}": {
       "get": {
-        "description": "Decompressed frames of a reservation ordered by server time; allowed to the reservation holders, teachers and administrators\n\n**Required access:** bearer token holding `simulation:read`; minimum role STUDENT.",
+        "description": "Decompressed frames of a reservation ordered by server time; allowed to administrators, the reservation holders and creator, and teachers who manage the holder (a student of, or one of, the groups they created or supervise)\n\n**Required access:** bearer token holding `simulation:read`; minimum role STUDENT.",
         "operationId": "getTelemetryRecording",
         "parameters": [
           {
@@ -80173,7 +80215,7 @@
                 }
               }
             },
-            "description": "Not a holder of the reservation"
+            "description": "Not a holder of the reservation nor a teacher who manages it"
           },
           "404": {
             "content": {
