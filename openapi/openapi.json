@@ -17582,7 +17582,7 @@
             "type": "number"
           },
           "completionsToday": {
-            "description": "Lessons completed since local midnight",
+            "description": "Lessons completed since midnight in America/Bogota",
             "example": 5,
             "type": "number"
           },
@@ -17598,7 +17598,7 @@
             "type": "boolean"
           },
           "publishedModules": {
-            "description": "Published modules (same as active modules)",
+            "description": "Active modules that students can see (published, inside a published level and section)",
             "example": 12,
             "type": "number"
           },
@@ -17615,7 +17615,7 @@
             "type": "number"
           },
           "totalEvaluations": {
-            "description": "Active clinical cases",
+            "description": "Evaluations ready to assign (status READY)",
             "example": 10,
             "type": "number"
           },
@@ -17625,7 +17625,7 @@
             "type": "number"
           },
           "totalLessons": {
-            "description": "Active lessons",
+            "description": "Active published lessons inside a published module",
             "example": 60,
             "type": "number"
           },

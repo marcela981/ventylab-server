@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Repositorio Prisma de lectura del panel de administración
- * Descripción: Modelo de lectura que agrega en consultas directas tablas de varias features (users, group_members, groups, user_progress, lesson_completions, lessons, modules, evaluation_attempts, student_evaluation_attempts de evaluaciones QUIZ en lugar de la tabla congelada quiz_attempts, simulator_sessions, scores, clinical_cases y reservations, cuya reserva activa se deriva de la ventana SCHEDULED vigente), igual que el servicio de administración original; el listado de estudiantes filtra por nombre, correo o código y por grupos, y devuelve los grupos STUDENT activos y todos sus grupos STUDENT (para el alcance docente) sin calcular avance; no escribe en ninguna
+ * Descripción: Modelo de lectura que agrega en consultas directas tablas de varias features (users, group_members, groups, user_progress, lesson_completions, lessons, modules, evaluation_attempts, student_evaluation_attempts de evaluaciones QUIZ en lugar de la tabla congelada quiz_attempts, simulator_sessions, scores, clinical_cases y reservations, cuya reserva activa se deriva de la ventana SCHEDULED vigente), igual que el servicio de administración original; las estadísticas cuentan módulos y lecciones publicados con los filtros del currículo y las evaluaciones READY; el listado de estudiantes filtra por nombre, correo o código y por grupos, y devuelve los grupos STUDENT activos y todos sus grupos STUDENT (para el alcance docente) sin calcular avance; no escribe en ninguna
  * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -22,6 +22,7 @@ import {
   type PlatformCounts,
 } from "@/features/admin/domain/read-models/admin-dashboard.read-model";
 import { type IAdminDashboardRepository } from "@/features/admin/domain/repositories/admin-dashboard.repository";
+import { publishedLessonWhere, publishedModuleWhere } from "@/features/curriculum/infrastructure/persistence/prisma/published-content-filters";
 import {
   QUIZ_RESULT_ATTEMPT_SCOPE,
   QUIZ_RESULT_ATTEMPT_SELECT,
@@ -353,6 +354,7 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
       totalAdmins,
       totalGroups,
       totalModules,
+      publishedModules,
       totalLessons,
       totalEvaluations,
       totalSimulatorSessions,
@@ -368,8 +370,9 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
       this._prisma.user.count({ where: { role: "ADMIN" } }),
       this._prisma.group.count({ where: { isActive: true } }),
       this._prisma.module.count({ where: { isActive: true } }),
-      this._prisma.lesson.count({ where: { isActive: true } }),
-      this._prisma.clinicalCase.count({ where: { isActive: true } }),
+      this._prisma.module.count({ where: { AND: [{ isActive: true }, publishedModuleWhere()] } }),
+      this._prisma.lesson.count({ where: { AND: [{ isActive: true }, publishedLessonWhere()] } }),
+      this._prisma.evaluation.count({ where: { status: "READY" } }),
       this._prisma.simulatorSession.count(),
       this._prisma.lessonCompletion.count({ where: { isCompleted: true, completedAt: { gte: todayStart } } }),
       this._prisma.reservation.findFirst({
@@ -395,6 +398,7 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
       totalAdmins,
       totalGroups,
       totalModules,
+      publishedModules,
       totalLessons,
       totalEvaluations,
       totalSimulatorSessions,

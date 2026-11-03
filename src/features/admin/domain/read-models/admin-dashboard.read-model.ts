@@ -228,6 +228,7 @@ export interface PlatformCounts {
   readonly totalAdmins: number;
   readonly totalGroups: number;
   readonly totalModules: number;
+  readonly publishedModules: number;
   readonly totalLessons: number;
   readonly totalEvaluations: number;
   readonly totalSimulatorSessions: number;

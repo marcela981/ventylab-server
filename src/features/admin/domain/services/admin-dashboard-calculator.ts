@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Cálculos del panel de administración
- * Descripción: Funciones puras que resumen el avance por módulos de un estudiante (promedio redondeado, módulos completados, última actividad), ordenan los identificadores del listado por progreso o última actividad (orden estable: el empate conserva el orden por nombre) y derivan las estadísticas del estudiante y de la plataforma
- * Versión: 1.1
+ * Descripción: Funciones puras que resumen el avance por módulos de un estudiante (promedio redondeado, módulos completados, última actividad), ordenan los identificadores del listado por progreso o última actividad (orden estable: el empate conserva el orden por nombre) derivan las estadísticas del estudiante y de la plataforma y calculan el inicio del día de America/Bogota (corte de "hoy")
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,14 @@ import {
   type PlatformStatistics,
   type StudentProgressSnapshot,
 } from "@/features/admin/domain/read-models/admin-dashboard.read-model";
+import { localDateToUtcMidnight, toBogotaLocalDate } from "@/features/progress/domain/services/activity-calendar";
+
+// Colombia keeps UTC−05:00 all year, so Bogotá midnight is 05:00 UTC of the same calendar day.
+const BOGOTA_MIDNIGHT_UTC_OFFSET_MS: number = 5 * 60 * 60 * 1000;
+
+export function startOfBogotaDay(instant: Date): Date {
+  return new Date(localDateToUtcMidnight(toBogotaLocalDate(instant)).getTime() + BOGOTA_MIDNIGHT_UTC_OFFSET_MS);
+}
 
 export interface ModuleProgressSummary {
   readonly overallProgress: number;
@@ -99,7 +107,7 @@ export function buildPlatformStatistics(counts: PlatformCounts, generatedAt: Dat
     totalAdmins: counts.totalAdmins,
     totalGroups: counts.totalGroups,
     totalModules: counts.totalModules,
-    publishedModules: counts.totalModules,
+    publishedModules: counts.publishedModules,
     totalLessons: counts.totalLessons,
     totalEvaluations: counts.totalEvaluations,
     totalSimulatorSessions: counts.totalSimulatorSessions,
