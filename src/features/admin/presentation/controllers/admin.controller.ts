@@ -119,7 +119,10 @@ export class AdminController {
   @Get("teachers")
   @RequirePermissions("users:read")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Get dashboard teachers", description: "Teachers and admins ordered by name with their groups and student counts" })
+  @ApiOperation({
+    summary: "Get dashboard teachers",
+    description: "Teachers and admins ordered by name with the active student groups they created or supervise and the number of distinct students in them",
+  })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Teachers retrieved successfully", type: AdminTeacherDTO, isArray: true })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })

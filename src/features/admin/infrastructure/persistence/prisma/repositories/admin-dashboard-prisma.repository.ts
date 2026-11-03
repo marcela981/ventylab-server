@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de lectura del panel de administración
- * Descripción: Modelo de lectura que agrega en consultas directas tablas de varias features (users, group_members, groups, user_progress, lesson_completions, lessons, modules, evaluation_attempts, student_evaluation_attempts de evaluaciones QUIZ en lugar de la tabla congelada quiz_attempts, simulator_sessions, scores, clinical_cases y reservations, cuya reserva activa se deriva de la ventana SCHEDULED vigente), igual que el servicio de administración original; las estadísticas cuentan módulos y lecciones publicados con los filtros del currículo y las evaluaciones READY; el listado de estudiantes filtra por nombre, correo o código y por grupos, y devuelve los grupos STUDENT activos y todos sus grupos STUDENT (para el alcance docente) sin calcular avance; no escribe en ninguna
- * Versión: 1.3
+ * Descripción: Modelo de lectura que agrega en consultas directas tablas de varias features (users, group_members, groups, user_progress, lesson_completions, lessons, modules, evaluation_attempts, student_evaluation_attempts de evaluaciones QUIZ en lugar de la tabla congelada quiz_attempts, simulator_sessions, scores, clinical_cases y reservations, cuya reserva activa se deriva de la ventana SCHEDULED vigente), igual que el servicio de administración original; los profesores muestran los grupos STUDENT activos que crearon o supervisan desde un grupo TEACHER activo del que son miembros y los estudiantes distintos (rol STUDENT) de esos grupos; las estadísticas cuentan módulos y lecciones publicados con los filtros del currículo y las evaluaciones READY; el listado de estudiantes filtra por nombre, correo o código y por grupos, y devuelve los grupos STUDENT activos y todos sus grupos STUDENT (para el alcance docente) sin calcular avance; no escribe en ninguna
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -31,8 +31,6 @@ import {
 } from "@/features/progress/infrastructure/persistence/prisma/quiz-results";
 import { type QuizAttemptRow } from "@/features/quizzes/infrastructure/persistence/prisma/mappers/quizzes.mapper";
 
-const TEACHER_MEMBER_ROLE: string = "TEACHER";
-const STUDENT_MEMBER_ROLE: string = "STUDENT";
 const ACTIVE_RESERVATION_STATUS: ReservationLifecycleStatus = ReservationLifecycleStatus.SCHEDULED;
 const RECENT_COMPLETIONS_LIMIT: number = 10;
 const LESSON_COMPLETIONS_LIMIT: number = 50;
@@ -111,8 +109,24 @@ interface TeacherRow {
   role: string;
   image: string | null;
   createdAt: Date;
-  groupMembers: { group: { id: string; name: string } }[];
   _count: { createdGroups: number };
+}
+
+interface ManagedGroupRow {
+  id: string;
+  name: string;
+  createdBy: string | null;
+  supervisingGroups: { teacherGroup: { members: { userId: string }[] } }[];
+  members: { userId: string }[];
+}
+
+function isManagedBy(group: ManagedGroupRow, teacherId: string): boolean {
+  return (
+    group.createdBy === teacherId ||
+    group.supervisingGroups.some((supervision: ManagedGroupRow["supervisingGroups"][number]) =>
+      supervision.teacherGroup.members.some((member: { userId: string }) => member.userId === teacherId),
+    )
+  );
 }
 
 @Injectable()
@@ -311,25 +325,14 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
 
     const rows: TeacherRow[] = await this._prisma.user.findMany({
       where,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        image: true,
-        createdAt: true,
-        groupMembers: { where: { role: TEACHER_MEMBER_ROLE }, select: { group: { select: { id: true, name: true } } } },
-        _count: { select: { createdGroups: true } },
-      },
+      select: { id: true, name: true, email: true, role: true, image: true, createdAt: true, _count: { select: { createdGroups: true } } },
       orderBy: { name: "asc" },
     });
-
-    const studentCounts: Map<string, number> = await this._countStudentsInGroups(
-      rows.flatMap((row: TeacherRow) => row.groupMembers.map((member: { group: { id: string } }) => member.group.id)),
-    );
+    const groups: ManagedGroupRow[] = await this._getManagedGroups(rows.map((row: TeacherRow) => row.id));
 
     return rows.map((row: TeacherRow): AdminTeacherItem => {
-      const groupIds: Set<string> = new Set(row.groupMembers.map((member: { group: { id: string } }) => member.group.id));
+      const managed: ManagedGroupRow[] = groups.filter((group: ManagedGroupRow) => isManagedBy(group, row.id));
+      const students: Set<string> = new Set(managed.flatMap((group: ManagedGroupRow) => group.members.map((member: { userId: string }) => member.userId)));
 
       return {
         id: row.id,
@@ -338,8 +341,8 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
         role: row.role,
         image: row.image ?? undefined,
         createdAt: row.createdAt,
-        groups: row.groupMembers.map((member: { group: { id: string; name: string } }) => member.group),
-        studentCount: [...groupIds].reduce((sum: number, groupId: string) => sum + (studentCounts.get(groupId) ?? 0), 0),
+        groups: managed.map((group: ManagedGroupRow) => ({ id: group.id, name: group.name })),
+        studentCount: students.size,
         groupsCreated: row._count.createdGroups,
       };
     });
@@ -421,22 +424,30 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
     };
   }
 
-  private async _countStudentsInGroups(groupIds: string[]): Promise<Map<string, number>> {
-    if (groupIds.length === 0) {
-      return new Map<string, number>();
+  // Active STUDENT groups created by, or supervised from an active TEACHER group with, any of the teachers; one query.
+  private async _getManagedGroups(teacherIds: string[]): Promise<ManagedGroupRow[]> {
+    if (teacherIds.length === 0) {
+      return [];
     }
 
-    const memberships: { groupId: string }[] = await this._prisma.groupMember.findMany({
-      where: { groupId: { in: [...new Set(groupIds)] }, role: STUDENT_MEMBER_ROLE },
-      select: { groupId: true },
+    return await this._prisma.group.findMany({
+      where: {
+        type: STUDENT_GROUP_TYPE,
+        isActive: true,
+        OR: [
+          { createdBy: { in: teacherIds } },
+          { supervisingGroups: { some: { teacherGroup: { isActive: true, members: { some: { userId: { in: teacherIds } } } } } } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        createdBy: true,
+        supervisingGroups: { where: { teacherGroup: { isActive: true } }, select: { teacherGroup: { select: { members: { select: { userId: true } } } } } },
+        members: { where: { user: { role: "STUDENT" } }, select: { userId: true } },
+      },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
     });
-    const counts: Map<string, number> = new Map<string, number>();
-
-    for (const membership of memberships) {
-      counts.set(membership.groupId, (counts.get(membership.groupId) ?? 0) + 1);
-    }
-
-    return counts;
   }
 
   private async _findQuizAttempts(userId: string): Promise<QuizAttemptActivityRow[]> {

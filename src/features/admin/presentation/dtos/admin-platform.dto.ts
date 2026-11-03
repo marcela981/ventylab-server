@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de profesores y estadísticas del panel de administración
  * Descripción: Formas de respuesta documentadas en Swagger para el listado de profesores y las estadísticas de la plataforma, incluida la actividad reciente y la reserva activa del ventilador; módulos y lecciones publicados, evaluaciones listas y el día de America/Bogota
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -42,10 +42,10 @@ export class AdminTeacherDTO {
   @ApiProperty({ description: "Account creation date", example: "2026-01-15T10:00:00.000Z" })
   public createdAt: Date;
 
-  @ApiProperty({ description: "Groups where the user is a teacher", type: AdminTeacherGroupDTO, isArray: true })
+  @ApiProperty({ description: "Active student groups the user created or supervises from an active teacher group", type: AdminTeacherGroupDTO, isArray: true })
   public groups: AdminTeacherGroupDTO[];
 
-  @ApiProperty({ description: "Student memberships across those groups", example: 25 })
+  @ApiProperty({ description: "Distinct students across those groups", example: 25 })
   public studentCount: number;
 
   @ApiProperty({ description: "Groups created by the user", example: 3 })

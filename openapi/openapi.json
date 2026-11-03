@@ -1858,7 +1858,7 @@
             "type": "string"
           },
           "groups": {
-            "description": "Groups where the user is a teacher",
+            "description": "Active student groups the user created or supervises from an active teacher group",
             "items": {
               "$ref": "#/components/schemas/AdminTeacherGroupDTO"
             },
@@ -1896,7 +1896,7 @@
             "type": "string"
           },
           "studentCount": {
-            "description": "Student memberships across those groups",
+            "description": "Distinct students across those groups",
             "example": 25,
             "type": "number"
           }
@@ -30648,7 +30648,7 @@
     },
     "/api/admin/teachers": {
       "get": {
-        "description": "Teachers and admins ordered by name with their groups and student counts\n\n**Required access:** bearer token holding `users:read`; minimum role ADMIN.",
+        "description": "Teachers and admins ordered by name with the active student groups they created or supervise and the number of distinct students in them\n\n**Required access:** bearer token holding `users:read`; minimum role ADMIN.",
         "operationId": "getTeachers",
         "parameters": [
           {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma del panel de administración
- * Descripción: Verifica con un cliente Prisma simulado que la actividad del estudiante lea los intentos de quiz de student_evaluation_attempts de evaluaciones QUIZ (nunca quiz_attempts), con el mismo orden y límite, y los convierta a porcentaje y aprobado como las rutas heredadas de quizzes
- * Versión: 1.0
+ * Descripción: Verifica con un cliente Prisma simulado que la actividad del estudiante lea los intentos de quiz de student_evaluation_attempts de evaluaciones QUIZ (nunca quiz_attempts), con el mismo orden y límite, y los convierta a porcentaje y aprobado como las rutas heredadas de quizzes; y que los profesores reciban los grupos STUDENT activos que crearon o supervisan y los estudiantes distintos de esos grupos, con una sola lectura de grupos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
-import { type AdminStudentActivity } from "@/features/admin/domain/read-models/admin-dashboard.read-model";
+import { type AdminStudentActivity, type AdminTeacherItem } from "@/features/admin/domain/read-models/admin-dashboard.read-model";
 import { AdminDashboardPrismaRepository } from "@/features/admin/infrastructure/persistence/prisma/repositories/admin-dashboard-prisma.repository";
 import { QUIZ_RESULT_ATTEMPT_SCOPE, QUIZ_RESULT_ATTEMPT_SELECT } from "@/features/progress/infrastructure/persistence/prisma/quiz-results";
 
@@ -84,5 +84,48 @@ describe("AdminDashboardPrismaRepository.getStudentActivity", () => {
       { quizId: "quiz-1", quizTitle: "Legacy quiz", score: 55, passed: false, startedAt },
       { quizId: "eval-2", quizTitle: "New quiz", score: 70, passed: true, startedAt },
     ]);
+  });
+});
+
+describe("AdminDashboardPrismaRepository.getTeachers", () => {
+  it("returns the active student groups each teacher created or supervises and their distinct students", async () => {
+    const createdAt: Date = new Date("2026-01-01T00:00:00Z");
+    const prisma: { user: { findMany: jest.Mock }; group: { findMany: jest.Mock } } = {
+      user: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: "creator", name: "Ana", email: "ana@example.edu", role: "TEACHER", image: null, createdAt, _count: { createdGroups: 2 } },
+          { id: "supervisor", name: "Beto", email: "beto@example.edu", role: "TEACHER", image: null, createdAt, _count: { createdGroups: 0 } },
+          { id: "loner", name: "Caro", email: "caro@example.edu", role: "TEACHER", image: null, createdAt, _count: { createdGroups: 0 } },
+        ]),
+      },
+      group: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: "g1", name: "Grupo 1", createdBy: "creator", supervisingGroups: [{ teacherGroup: { members: [{ userId: "supervisor" }] } }], members: [{ userId: "s1" }, { userId: "s2" }] },
+          { id: "g2", name: "Grupo 2", createdBy: "creator", supervisingGroups: [], members: [{ userId: "s2" }, { userId: "s3" }] },
+        ]),
+      },
+    };
+    const repository: AdminDashboardPrismaRepository = new AdminDashboardPrismaRepository(prisma as unknown as PrismaService);
+
+    const teachers: AdminTeacherItem[] = await repository.getTeachers();
+
+    expect(teachers.map((teacher: AdminTeacherItem) => [teacher.id, teacher.groups.map((group: { id: string }) => group.id), teacher.studentCount, teacher.groupsCreated])).toEqual([
+      ["creator", ["g1", "g2"], 3, 2],
+      ["supervisor", ["g1"], 2, 0],
+      ["loner", [], 0, 0],
+    ]);
+    expect(prisma.group.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.group.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          type: "STUDENT",
+          isActive: true,
+          OR: [
+            { createdBy: { in: ["creator", "supervisor", "loner"] } },
+            { supervisingGroups: { some: { teacherGroup: { isActive: true, members: { some: { userId: { in: ["creator", "supervisor", "loner"] } } } } } } },
+          ],
+        },
+      }),
+    );
   });
 });

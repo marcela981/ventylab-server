@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e del panel docente (Bloque 4)
- * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; y que un docente pueda reservar el ventilador para un grupo que creó (no solo para los que supervisa) y no para uno ajeno; las respuestas se validan contra openapi/openapi.json
- * Versión: 1.2
+ * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; y que un docente pueda reservar el ventilador para un grupo que creó (no solo para los que supervisa) y no para uno ajeno; y la pestaña Profesores (GET /api/admin/teachers solo ADMIN, con los grupos activos creados o supervisados y los estudiantes distintos); las respuestas se validan contra openapi/openapi.json
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -146,6 +146,21 @@ describe("flow: teacher panel", () => {
       expectStatus(response, 200);
       expect(response.body.data).toHaveLength(2);
       expect(response.body.pagination).toEqual(expect.objectContaining({ total: 3, pages: 2 }));
+    });
+  });
+
+  describe("teachers tab", () => {
+    it("lists the current groups and distinct students of each teacher to an administrator only", async () => {
+      const response: Response = await api("GET", "/api/admin/teachers", await tokenOf(fixture.admin));
+      const byId: Map<string, { groups: { name: string }[]; studentCount: number }> = new Map(
+        (response.body.data as { id: string; groups: { name: string }[]; studentCount: number }[]).map((teacher: { id: string; groups: { name: string }[]; studentCount: number }) => [teacher.id, teacher]),
+      );
+
+      expectStatus(response, 200);
+      expect(byId.get(fixture.creator.id)).toEqual(expect.objectContaining({ groups: [expect.objectContaining({ name: "Grupo activo" })], studentCount: 1 }));
+      expect(byId.get(fixture.supervisor.id)).toEqual(expect.objectContaining({ groups: [expect.objectContaining({ name: "Grupo ajeno" })], studentCount: 1 }));
+      expect(byId.get(fixture.loner.id)).toEqual(expect.objectContaining({ groups: [], studentCount: 0 }));
+      expectStatus(await api("GET", "/api/admin/teachers", await tokenOf(fixture.creator)), 403);
     });
   });
 
