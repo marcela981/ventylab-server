@@ -42,6 +42,7 @@ export const AUDIT_ACTIONS = {
   EVALUATION_ASSIGNMENT_CLOSED: "evaluation_assignment_closed",
   EVALUATION_ASSIGNMENT_DELETED: "evaluation_assignment_deleted",
   EVALUATION_ATTEMPT_CREATED: "evaluation_attempt_created",
+  EVALUATION_ATTEMPT_RESET: "evaluation_attempt_reset",
   RESERVATION_CREATED: "reservation_created",
   RESERVATION_PREEMPTED: "reservation.preempted",
   RESERVATION_PREEMPTED_BY_HOLDER: "reservation_preempted",

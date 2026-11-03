@@ -14,9 +14,9 @@ export type AiRatingTargetTypeValue = "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANAL
 
 export const AI_RATING_TARGET_TYPE_VALUES: readonly AiRatingTargetTypeValue[] = ["GRADE_FEEDBACK", "MESSAGE", "NOTES_ANALYSIS", "SIM_ASSIST"] as const;
 
-export type AiRatingSurfaceValue = "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS";
+export type AiRatingSurfaceValue = "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK";
 
-export const AI_RATING_SURFACE_VALUES: readonly AiRatingSurfaceValue[] = ["POPUP", "ACCORDION", "ASSISTANT", "NOTES_ANALYSIS"] as const;
+export const AI_RATING_SURFACE_VALUES: readonly AiRatingSurfaceValue[] = ["POPUP", "ACCORDION", "ASSISTANT", "NOTES_ANALYSIS", "EVALUATION_FEEDBACK"] as const;
 
 export type AiRatingScopeValue = "LESSON" | "MODULE" | "PAGE" | "FREE";
 

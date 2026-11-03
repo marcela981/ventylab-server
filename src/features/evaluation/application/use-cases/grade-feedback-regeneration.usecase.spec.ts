@@ -14,13 +14,20 @@ import {
   type AttemptDoubles,
   buildAttemptDoubles,
   buildStoredAttempt,
+  minutesFromNow,
   publishedEvents,
 } from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
 import { feedbackRecord, gradeFeedbackAccess, gradedAttempt, InMemoryGradeFeedbacksRepository } from "@/features/evaluation/application/testing/grade-feedback-test-doubles-spec";
 import { RegenerateGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-regeneration.usecase";
 import { type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
-import { EvaluationAttemptNotFoundError, GradeFeedbackAttemptNotGradedError, GradeFeedbackForbiddenError } from "@/features/evaluation/domain/evaluation.errors";
+import {
+  EvaluationAttemptNotFoundError,
+  GradeFeedbackAttemptNotGradedError,
+  GradeFeedbackForbiddenError,
+  GradeFeedbackGenerationInProgressError,
+} from "@/features/evaluation/domain/evaluation.errors";
 import { GradeFeedbackRegenerationRequestedEvent } from "@/features/evaluation/domain/events/grade-feedback.events";
+import { type GradeFeedbackRecord } from "@/features/evaluation/domain/read-models/grade-feedback.read-model";
 import { type EvaluationActor } from "@/features/evaluation/domain/services/evaluation-management-policy";
 
 const TEACHER: EvaluationActor = { id: "teacher-9", role: "TEACHER" };
@@ -33,12 +40,13 @@ interface Setup {
   canManageGroup: jest.Mock;
 }
 
-function setup({ attempt = gradedAttempt(), manages = true }: { attempt?: StudentEvaluationAttempt; manages?: boolean } = {}): Setup {
+function setup({
+  attempt = gradedAttempt(),
+  manages = true,
+  records = [feedbackRecord({ id: "old-overall" }), feedbackRecord({ id: "old-q1", questionId: "q1" })],
+}: { attempt?: StudentEvaluationAttempt; manages?: boolean; records?: GradeFeedbackRecord[] } = {}): Setup {
   const doubles: AttemptDoubles = buildAttemptDoubles({ attempts: [attempt] });
-  const feedbacks: InMemoryGradeFeedbacksRepository = new InMemoryGradeFeedbacksRepository([
-    feedbackRecord({ id: "old-overall" }),
-    feedbackRecord({ id: "old-q1", questionId: "q1" }),
-  ]);
+  const feedbacks: InMemoryGradeFeedbacksRepository = new InMemoryGradeFeedbacksRepository(records);
   const canManageGroup: jest.Mock = jest.fn().mockResolvedValue(manages);
 
   const useCase: RegenerateGradeFeedbackUseCase = new RegenerateGradeFeedbackUseCase(
@@ -61,7 +69,7 @@ describe("RegenerateGradeFeedbackUseCase", () => {
     expect(result.status).toBe("PENDING");
     expect(canManageGroup).toHaveBeenCalledWith({ id: "teacher-9", role: "TEACHER" }, "group-1");
     expect(feedbacks.locks).toEqual(["evaluations:grade-feedback:attempt-1"]);
-    expect(feedbacks.records).toEqual([expect.objectContaining({ id: result.feedbackId, attemptId: "attempt-1", status: "PENDING" })]);
+    expect(feedbacks.current()).toEqual([expect.objectContaining({ id: result.feedbackId, attemptId: "attempt-1", status: "PENDING" })]);
 
     const events: GradeFeedbackRegenerationRequestedEvent[] = publishedEvents(doubles, GradeFeedbackRegenerationRequestedEvent);
 
@@ -69,12 +77,39 @@ describe("RegenerateGradeFeedbackUseCase", () => {
     expect(events[0]).toMatchObject({ attemptId: "attempt-1", feedbackId: result.feedbackId, performedBy: "teacher-9" });
   });
 
+  it("keeps the previous rows as superseded instead of deleting them (their ratings keep resolving)", async () => {
+    const { useCase, feedbacks } = setup();
+
+    await useCase.execute(new RegenerateGradeFeedbackCommand({ attemptId: "attempt-1", actor: TEACHER }));
+
+    expect(feedbacks.records.filter((record: GradeFeedbackRecord) => record.supersededAt !== undefined).map((record: GradeFeedbackRecord) => record.id)).toEqual([
+      "old-overall",
+      "old-q1",
+    ]);
+  });
+
+  it("answers 409 while a generation started less than 10 minutes ago is still PENDING", async () => {
+    const { useCase, feedbacks, doubles } = setup({ records: [feedbackRecord({ id: "pending-1", status: "PENDING", content: "", createdAt: minutesFromNow(-2) })] });
+
+    await expect(useCase.execute(new RegenerateGradeFeedbackCommand({ attemptId: "attempt-1", actor: TEACHER }))).rejects.toBeInstanceOf(
+      GradeFeedbackGenerationInProgressError,
+    );
+    expect(feedbacks.current().map((record: GradeFeedbackRecord) => record.id)).toEqual(["pending-1"]);
+    expect(doubles.publish).not.toHaveBeenCalled();
+  });
+
+  it("regenerates over a PENDING feedback older than 10 minutes (stale)", async () => {
+    const { useCase } = setup({ records: [feedbackRecord({ id: "pending-1", status: "PENDING", content: "", createdAt: minutesFromNow(-11) })] });
+
+    await expect(useCase.execute(new RegenerateGradeFeedbackCommand({ attemptId: "attempt-1", actor: TEACHER }))).resolves.toMatchObject({ status: "PENDING" });
+  });
+
   it("forbids a teacher who does not manage the attempt's group", async () => {
     const { useCase, feedbacks, doubles } = setup({ manages: false });
 
     await expect(useCase.execute(new RegenerateGradeFeedbackCommand({ attemptId: "attempt-1", actor: TEACHER }))).rejects.toThrow(GradeFeedbackForbiddenError);
 
-    expect(feedbacks.records).toHaveLength(2);
+    expect(feedbacks.current()).toHaveLength(2);
     expect(doubles.publish).not.toHaveBeenCalled();
   });
 

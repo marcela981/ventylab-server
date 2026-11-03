@@ -8,11 +8,46 @@
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 import { GRADE_FEEDBACK_STATUS_VALUES } from "@/features/evaluation/domain/value-objects/grade-feedback-status";
 
 const GRADE_FEEDBACK_SOURCE_VALUES: readonly string[] = ["LLM", "DETERMINISTIC"];
+
+export class GradeFeedbackMyRatingDTO {
+  @ApiProperty({ description: "Rating id", example: "0192f0c4-7b1e-7a3d-9c2b-3f4e5d6a7b8c" })
+  public id: string;
+
+  @ApiPropertyOptional({ description: "Surface where the feedback was rated", example: "EVALUATION_FEEDBACK" })
+  public surface?: string;
+
+  @ApiProperty({ description: "Whether the feedback was helpful", example: true })
+  public helpful: boolean;
+
+  @ApiPropertyOptional({ description: "Free-text comment", example: "Me ayudó a entender la PEEP" })
+  public comment?: string;
+
+  @ApiPropertyOptional({ description: "Overall quality (1–5)", example: 4 })
+  public quality?: number;
+
+  @ApiPropertyOptional({ description: "Understanding of the answer (1–5)", example: 5 })
+  public understanding?: number;
+
+  @ApiPropertyOptional({ description: "Expression style and clarity (1–5)", example: 4 })
+  public expression?: number;
+
+  @ApiPropertyOptional({ description: "Safety and harm avoidance (1–5)", example: 5 })
+  public safety?: number;
+
+  @ApiPropertyOptional({ description: "Trust and confidence (1–5)", example: 3 })
+  public trust?: number;
+
+  @ApiProperty({ description: "First rated at", example: "2026-10-05T12:00:00.000Z" })
+  public createdAt: string;
+
+  @ApiProperty({ description: "Last edited at", example: "2026-10-05T12:05:00.000Z" })
+  public updatedAt: string;
+}
 
 export class StudentGradeFeedbackItemDTO {
   @ApiProperty({ description: "Feedback ID (target ID when rating this feedback)", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e6f" })
@@ -30,24 +65,30 @@ export class StudentGradeFeedbackItemDTO {
   @ApiProperty({ description: "Feedback text, only when READY", example: "Buen manejo de la PEEP.", nullable: true, type: String })
   public content: string | null;
 
+  @ApiProperty({ description: "The caller's own rating of this block (target GRADE_FEEDBACK with this id), or null when not rated", nullable: true, type: GradeFeedbackMyRatingDTO })
+  public myRating: GradeFeedbackMyRatingDTO | null;
+
   public constructor({
     id,
     questionId,
     status,
     source,
     content,
+    myRating,
   }: {
     id: string;
     questionId: string | null;
     status: string;
     source: string | null;
     content: string | null;
+    myRating: GradeFeedbackMyRatingDTO | null;
   }) {
     this.id = id;
     this.questionId = questionId;
     this.status = status;
     this.source = source;
     this.content = content;
+    this.myRating = myRating;
   }
 }
 

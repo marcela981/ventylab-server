@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Cierre y calificación de intentos de evaluación
- * Descripción: Servicio compartido por los casos de uso de intentos: carga un intento solo para su propietario (404 en otro caso), toma el candado exclusivo por evaluación y usuario y el compartido de estructura de la evaluación (pg_advisory_xact_lock_shared sobre la misma clave que el editor), carga la evaluación y el plazo efectivo (plazo del intento ajustado por un cierre anticipado de la asignación), califica con el calificador puro y el puntaje práctico de IPracticalScoreProvider, cierra el intento y lo cierra de forma perezosa en su propia transacción cuando venció (plazo + gracia de entrega configurable), publicando los eventos tras confirmar
- * Versión: 1.2
+ * Descripción: Servicio compartido por los casos de uso de intentos: carga un intento solo para su propietario (404 en otro caso), toma el candado exclusivo por evaluación y usuario y el compartido de estructura de la evaluación (pg_advisory_xact_lock_shared sobre la misma clave que el editor), carga la evaluación y el plazo efectivo (plazo del intento ajustado por un cierre anticipado de la asignación), califica con el calificador puro y el puntaje práctico de IPracticalScoreProvider, cierra el intento (publicando la nota según la política por tipo: QUIZ y WORKSHOP siempre, EXAM según showResultsImmediately) y lo cierra de forma perezosa en su propia transacción cuando venció (plazo + gracia de entrega configurable), publicando los eventos tras confirmar
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -118,7 +118,7 @@ export class EvaluationAttemptCloser {
       grading,
       submittedAt,
       now,
-      publishImmediately: evaluation.showResultsImmediately,
+      publishImmediately: evaluation.autoPublishesGrades,
       passingGrade: this._gradingConfig.passingGrade,
     });
   }

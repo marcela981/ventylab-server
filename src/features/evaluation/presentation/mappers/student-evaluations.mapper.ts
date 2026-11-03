@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de respuestas de evaluaciones del estudiante
- * Descripción: Convierte los resultados de los casos de uso del estudiante a sus DTOs propios: inicio de intento, detalle del intento (oculta isCorrect, explicación, rúbrica, retroalimentación de opciones, puntajes y nota hasta que la nota se publica; luego los incluye con el puntaje por pregunta), entrega y listado de evaluaciones asignadas con sus intentos
- * Versión: 1.0
+ * Descripción: Convierte los resultados de los casos de uso del estudiante a sus DTOs propios: inicio de intento, detalle del intento (oculta isCorrect, explicación, rúbrica, retroalimentación de opciones, puntajes y nota hasta que la nota se publica; luego los incluye con el puntaje por pregunta; la nota parcial de las preguntas cerradas solo en intentos PENDING_REVIEW de QUIZ y WORKSHOP), entrega y listado de evaluaciones asignadas con sus intentos
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { type ResolvedMediaURL } from "@/common/application/ports/media-url-resolver.interface";
 import {
+  type CheckEvaluationAnswerResult,
   type StartEvaluationAttemptResult,
   type StudentEvaluationAttemptDetailResult,
   type StudentEvaluationListItemResult,
@@ -22,19 +23,28 @@ import {
 } from "@/features/evaluation/domain/entities/evaluation-items";
 import { type EvaluationAnswerRecord, type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import { type StudentAttemptSummaryView } from "@/features/evaluation/domain/read-models/student-evaluation.read-model";
-import { hasPassedEvaluation } from "@/features/evaluation/domain/services/evaluation-attempt-grader";
+import {
+  computePartialClosedScore,
+  correctOptionIds,
+  hasPassedEvaluation,
+  isChoiceAnswerCorrect,
+} from "@/features/evaluation/domain/services/evaluation-attempt-grader";
 import { ACTIVE_ASSIGNMENT_STATE } from "@/features/evaluation/domain/value-objects/evaluation-assignment-state";
-import { IN_PROGRESS_ATTEMPT_STATUS } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
+import { IN_PROGRESS_ATTEMPT_STATUS, PENDING_REVIEW_ATTEMPT_STATUS } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 import { readEvaluationDescription } from "@/features/evaluation/domain/value-objects/evaluation-rich-text";
+import { type EvaluationTypeValue, immediateFeedbackFor, WORKSHOP_EVALUATION_TYPE } from "@/features/evaluation/domain/value-objects/evaluation-type";
 import { EvaluationMediaDTO } from "@/features/evaluation/presentation/dtos/evaluation.dto";
 import {
+  CheckEvaluationAnswerResponseDTO,
   MyEvaluationAttemptDTO,
   MyEvaluationDTO,
   MyEvaluationSummaryDTO,
+  PartialClosedScoreDTO,
   type PublishedGradeFields,
   StudentAnswerDTO,
   StudentAttemptDetailDTO,
   StudentAttemptEvaluationDTO,
+  StudentAnswerRevealDTO,
   StudentAttemptStartDTO,
   StudentOptionDTO,
   StudentQuestionDTO,
@@ -80,6 +90,7 @@ export class StudentEvaluationsMapper {
       serverNow: result.now,
       published,
       grade: gradeFields(attempt.grade, attempt.score, attempt.maxScore, result.passingGrade),
+      partialClosedScore: StudentEvaluationsMapper._toPartialClosedScore(result),
       evaluation: new StudentAttemptEvaluationDTO({
         id: evaluation.id,
         title: evaluation.title,
@@ -96,8 +107,16 @@ export class StudentEvaluationsMapper {
           }),
       ),
       questions: result.questions.map((question: EvaluationQuestionItem, position: number) =>
-        StudentEvaluationsMapper._toQuestionDTO(question, position, attempt.answerFor(question.id), published, mediaUrls),
+        StudentEvaluationsMapper._toQuestionDTO(question, position, attempt.answerFor(question.id), { published, evaluationType: evaluation.type }, mediaUrls),
       ),
+    });
+  }
+
+  public static toCheckDTO(result: CheckEvaluationAnswerResult): CheckEvaluationAnswerResponseDTO {
+    return new CheckEvaluationAnswerResponseDTO({
+      isCorrect: result.isCorrect,
+      correctOptionIds: [...result.correctOptionIds],
+      explanation: result.explanation ?? null,
     });
   }
 
@@ -128,7 +147,7 @@ export class StudentEvaluationsMapper {
     });
 
     const hasOpenAttempt: boolean = item.attempts.some((attempt: StudentAttemptSummaryView) => attempt.status === IN_PROGRESS_ATTEMPT_STATUS);
-    const maxAttempts: number = item.evaluation?.maxAttempts ?? 0;
+    const attemptsAllowed: number = (item.evaluation?.maxAttempts ?? 0) + item.extraAttempts;
 
     return new MyEvaluationDTO({
       assignmentId: item.assignment.id,
@@ -144,18 +163,36 @@ export class StudentEvaluationsMapper {
           durationMinutes: item.evaluation.durationMinutes ?? null,
           maxAttempts: item.evaluation.maxAttempts,
           questionCount: item.evaluation.questionCount,
+          moduleId: item.evaluation.curriculum.moduleId ?? null,
+          levelId: item.evaluation.curriculum.levelId ?? null,
+          levelTitle: item.evaluation.curriculum.levelTitle ?? null,
+          levelOrder: item.evaluation.curriculum.levelOrder ?? null,
+          track: item.evaluation.curriculum.track ?? null,
         })
         : null,
       attempts,
-      canStart: item.assignment.state === ACTIVE_ASSIGNMENT_STATE && (hasOpenAttempt || item.attempts.length < maxAttempts),
+      attemptsAllowed,
+      canStart: item.assignment.state === ACTIVE_ASSIGNMENT_STATE && (hasOpenAttempt || item.attempts.length < attemptsAllowed),
     });
+  }
+
+  private static _toPartialClosedScore({ attempt, evaluation }: StudentEvaluationAttemptDetailResult): PartialClosedScoreDTO | null {
+    if (attempt.status !== PENDING_REVIEW_ATTEMPT_STATUS || attempt.isPublished || !immediateFeedbackFor(evaluation.type)) {
+      return null;
+    }
+
+    const answers: Map<string, EvaluationAnswerRecord> = new Map<string, EvaluationAnswerRecord>(
+      attempt.answers.map((answer: EvaluationAnswerRecord) => [answer.questionId, answer]),
+    );
+
+    return new PartialClosedScoreDTO(computePartialClosedScore(evaluation.questions, answers));
   }
 
   private static _toQuestionDTO(
     question: EvaluationQuestionItem,
     position: number,
     answer: EvaluationAnswerRecord | undefined,
-    published: boolean,
+    { published, evaluationType }: { published: boolean; evaluationType: EvaluationTypeValue },
     media: MediaLookup,
   ): StudentQuestionDTO {
     return new StudentQuestionDTO({
@@ -175,6 +212,8 @@ export class StudentEvaluationsMapper {
           simulationSessionId: answer.simulationSessionId ?? null,
         })
         : null,
+      hint: evaluationType === WORKSHOP_EVALUATION_TYPE ? (question.hint ?? null) : null,
+      reveal: StudentEvaluationsMapper._toRevealDTO(question, answer),
       published: published
         ? {
           explanation: question.explanation ?? null,
@@ -182,6 +221,20 @@ export class StudentEvaluationsMapper {
           earnedScore: answer?.manualScore ?? answer?.autoScore ?? null,
         }
         : undefined,
+    });
+  }
+
+  // Only an answer the student checked carries its correction before the grade is published.
+  private static _toRevealDTO(question: EvaluationQuestionItem, answer: EvaluationAnswerRecord | undefined): StudentAnswerRevealDTO | null {
+    if (answer?.revealedAt === undefined) {
+      return null;
+    }
+
+    return new StudentAnswerRevealDTO({
+      revealedAt: answer.revealedAt,
+      isCorrect: isChoiceAnswerCorrect(question, answer.selectedOptionIds),
+      correctOptionIds: correctOptionIds(question),
+      explanation: question.explanation ?? null,
     });
   }
 

@@ -9,7 +9,13 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { GenerateGradeFeedbackCommand } from "@/features/evaluation/application/commands/grade-feedback-generation.command";
-import { type AttemptDoubles, buildAttemptDoubles, buildStoredAttempt, publishedEvents } from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
+import {
+  type AttemptDoubles,
+  buildAttemptDoubles,
+  buildStoredAttempt,
+  minutesFromNow,
+  publishedEvents,
+} from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
 import {
   feedbackGenerator,
   feedbackRecord,
@@ -63,12 +69,12 @@ describe("GenerateGradeFeedbackUseCase", () => {
 
     expect(outcome).toBe("ready");
     expect(feedbacks.locks).toContain("evaluations:grade-feedback:attempt-1");
-    expect(feedbacks.records).toEqual([
+    expect(feedbacks.current()).toEqual([
       expect.objectContaining({ attemptId: "attempt-1", content: "Buen trabajo en general.", source: "LLM", provider: "gemini", model: "gemini-2.0-flash", status: "READY" }),
       expect.objectContaining({ attemptId: "attempt-1", questionId: "q1", content: "Correcto.", source: "LLM", provider: "gemini", status: "READY" }),
       expect.objectContaining({ attemptId: "attempt-1", questionId: "q2", content: "Revisa la PEEP.", source: "LLM", provider: "gemini", status: "READY" }),
     ]);
-    expect(feedbacks.records[0]?.questionId).toBeUndefined();
+    expect(feedbacks.current()[0]?.questionId).toBeUndefined();
 
     const context: GradeFeedbackContext = generate.mock.calls[0][0] as GradeFeedbackContext;
 
@@ -86,7 +92,7 @@ describe("GenerateGradeFeedbackUseCase", () => {
 
     expect(outcome).toBe("skipped");
     expect(generate).not.toHaveBeenCalled();
-    expect(feedbacks.records).toEqual([existing]);
+    expect(feedbacks.current()).toEqual([existing]);
   });
 
   it("generates again when the previous feedback FAILED", async () => {
@@ -95,8 +101,8 @@ describe("GenerateGradeFeedbackUseCase", () => {
     const outcome: GradeFeedbackGenerationOutcome = await useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1" }));
 
     expect(outcome).toBe("ready");
-    expect(feedbacks.records.every((record: GradeFeedbackRecord) => record.status === "READY")).toBe(true);
-    expect(feedbacks.records).toHaveLength(3);
+    expect(feedbacks.current().every((record: GradeFeedbackRecord) => record.status === "READY")).toBe(true);
+    expect(feedbacks.current()).toHaveLength(3);
   });
 
   it("completes a reserved PENDING feedback without reserving again", async () => {
@@ -106,12 +112,12 @@ describe("GenerateGradeFeedbackUseCase", () => {
     const outcome: GradeFeedbackGenerationOutcome = await useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1", pendingFeedbackId: "pending-1" }));
 
     expect(outcome).toBe("ready");
-    expect(feedbacks.records[0]).toEqual(expect.objectContaining({ id: "pending-1", status: "READY" }));
+    expect(feedbacks.current()[0]).toEqual(expect.objectContaining({ id: "pending-1", status: "READY" }));
   });
 
   it("publishes GradeFeedbackReadyEvent under the catalog name once the feedback is stored", async () => {
     const pending: GradeFeedbackRecord = feedbackRecord({ id: "pending-1", status: "PENDING", content: "", source: "DETERMINISTIC", provider: undefined, model: undefined });
-    const { useCase, doubles } = setup({ records: [pending] });
+    const { useCase, doubles } = setup({ attempt: gradedAttempt({ gradePublishedAt: minutesFromNow(-1) }), records: [pending] });
 
     await useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1", pendingFeedbackId: "pending-1" }));
 
@@ -121,12 +127,38 @@ describe("GenerateGradeFeedbackUseCase", () => {
     expect(event.toCatalogPayload()).toEqual(expect.objectContaining({ attemptId: "attempt-1", userId: "student-1", feedbackId: "pending-1" }));
   });
 
+  it("does not announce the feedback while the grade is unpublished (the student would get a 404)", async () => {
+    const { useCase, doubles, feedbacks } = setup();
+
+    expect(await useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1" }))).toBe("ready");
+    expect(feedbacks.current()[0]?.status).toBe("READY");
+    expect(publishedEvents(doubles, GradeFeedbackReadyEvent)).toHaveLength(0);
+  });
+
+  it("treats a PENDING feedback older than 10 minutes as stale and generates again, keeping the old row superseded", async () => {
+    const stale: GradeFeedbackRecord = feedbackRecord({ id: "stale-1", status: "PENDING", content: "", createdAt: minutesFromNow(-11) });
+    const { useCase, feedbacks } = setup({ records: [stale] });
+
+    expect(await useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1" }))).toBe("ready");
+    expect(feedbacks.records.find((record: GradeFeedbackRecord) => record.id === "stale-1")?.supersededAt).toBeDefined();
+    expect(feedbacks.current()).toHaveLength(3);
+  });
+
+  it("replaces a READY feedback when asked to (published grade updated), superseding instead of deleting", async () => {
+    const existing: GradeFeedbackRecord = feedbackRecord({ id: "old-1" });
+    const { useCase, feedbacks } = setup({ records: [existing] });
+
+    expect(await useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1", replaceCurrent: true }))).toBe("ready");
+    expect(feedbacks.records.find((record: GradeFeedbackRecord) => record.id === "old-1")).toEqual(expect.objectContaining({ status: "READY", supersededAt: expect.anything() }));
+    expect(feedbacks.current().map((record: GradeFeedbackRecord) => record.id)).not.toContain("old-1");
+  });
+
   it("discards the result when a regeneration replaced the pending feedback meanwhile", async () => {
     const { useCase, feedbacks, generate, doubles } = setup();
     const newer: GradeFeedbackRecord = feedbackRecord({ id: "pending-2", status: "PENDING", content: "" });
 
     generate.mockImplementation(async (): Promise<typeof GENERATED_FEEDBACK> => {
-      await feedbacks.replaceForAttempt("attempt-1", [newer]);
+      await feedbacks.supersedeForAttempt("attempt-1", [newer]);
 
       return GENERATED_FEEDBACK;
     });
@@ -134,7 +166,7 @@ describe("GenerateGradeFeedbackUseCase", () => {
     const outcome: GradeFeedbackGenerationOutcome = await useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1" }));
 
     expect(outcome).toBe("superseded");
-    expect(feedbacks.records).toEqual([expect.objectContaining({ id: "pending-2", status: "PENDING" })]);
+    expect(feedbacks.current()).toEqual([expect.objectContaining({ id: "pending-2", status: "PENDING" })]);
     expect(doubles.publish).not.toHaveBeenCalled();
   });
 
@@ -143,7 +175,7 @@ describe("GenerateGradeFeedbackUseCase", () => {
 
     await expect(useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1" }))).rejects.toThrow(TypeError);
 
-    expect(feedbacks.records).toEqual([expect.objectContaining({ status: "FAILED" })]);
+    expect(feedbacks.current()).toEqual([expect.objectContaining({ status: "FAILED" })]);
   });
 
   it("ignores attempts that are not graded", async () => {
@@ -153,7 +185,7 @@ describe("GenerateGradeFeedbackUseCase", () => {
 
     expect(outcome).toBe("skipped");
     expect(generate).not.toHaveBeenCalled();
-    expect(feedbacks.records).toEqual([]);
+    expect(feedbacks.current()).toEqual([]);
   });
 
   it("fails with not found for an unknown attempt", async () => {

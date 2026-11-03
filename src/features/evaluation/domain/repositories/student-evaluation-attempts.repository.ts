@@ -21,6 +21,13 @@ export interface AttemptCounters {
   readonly maxAttemptNumber: number;
 }
 
+export interface AttemptGrantInput {
+  readonly evaluationId: string;
+  readonly userId: string;
+  readonly extraAttempts: number;
+  readonly updatedById: string;
+}
+
 export interface IStudentEvaluationAttemptsRepository {
   acquireTransactionLock(key: string, transaction: unknown): Promise<void>;
   acquireSharedTransactionLock(key: string, transaction: unknown): Promise<void>;
@@ -31,4 +38,9 @@ export interface IStudentEvaluationAttemptsRepository {
   getUserAttemptSummaries(userId: string, evaluationIds: ReadonlyArray<string>): Promise<StudentAttemptSummaryView[]>;
   getStudentEvaluationBriefs(evaluationIds: ReadonlyArray<string>): Promise<StudentEvaluationBriefView[]>;
   save(attempt: StudentEvaluationAttempt, transaction?: unknown): Promise<void>;
+  // Extra attempts granted by a teacher reset on top of maxAttempts (0 without a grant)
+  getExtraAttempts(evaluationId: string, userId: string, transaction?: unknown): Promise<number>;
+  getExtraAttemptsByEvaluation(userId: string, evaluationIds: ReadonlyArray<string>): Promise<ReadonlyMap<string, number>>;
+  // Upserts the grant of (evaluation, student) and returns its ID
+  saveAttemptGrant(grant: AttemptGrantInput, transaction: unknown): Promise<string>;
 }

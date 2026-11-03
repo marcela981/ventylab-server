@@ -132,6 +132,7 @@ export class EvaluationsMapper {
       media: EvaluationsMapper._toMediaList(question.mediaIds, media),
       points: question.points,
       explanation: question.explanation ?? null,
+      hint: question.hint ?? null,
       clinicalCaseId: question.clinicalCaseId ?? null,
       rubric: question.rubric ?? null,
       options: question.options.map((option: EvaluationOptionItem) => EvaluationsMapper._toOptionDTO(option, media)),

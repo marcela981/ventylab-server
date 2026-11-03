@@ -20,11 +20,13 @@ import {
 } from "@/features/evaluation/domain/read-models/student-evaluation.read-model";
 import {
   type AttemptCounters,
+  type AttemptGrantInput,
   type IStudentEvaluationAttemptsRepository,
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
 import {
   STUDENT_ATTEMPT_INCLUDE,
   STUDENT_ATTEMPT_SUMMARY_SELECT,
+  STUDENT_EVALUATION_BRIEF_SELECT,
   type StudentAttemptRow,
   type StudentAttemptSummaryRow,
   type StudentEvaluationBriefRow,
@@ -112,19 +114,46 @@ export class StudentEvaluationAttemptsPrismaRepository implements IStudentEvalua
 
     const rows: StudentEvaluationBriefRow[] = await this._prisma.evaluation.findMany({
       where: { id: { in: [...evaluationIds] } },
-      select: {
-        id: true,
-        title: true,
-        type: true,
-        description: true,
-        durationMinutes: true,
-        maxAttempts: true,
-        showResultsImmediately: true,
-        _count: { select: { questions: true } },
-      },
+      select: STUDENT_EVALUATION_BRIEF_SELECT,
     });
 
     return rows.map((row: StudentEvaluationBriefRow) => StudentEvaluationAttemptsMapper.toBrief(row));
+  }
+
+  public async getExtraAttempts(evaluationId: string, userId: string, transaction?: unknown): Promise<number> {
+    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+    const grant: { extraAttempts: number } | null = await client.evaluationAttemptGrant.findUnique({
+      where: { evaluationId_userId: { evaluationId, userId } },
+      select: { extraAttempts: true },
+    });
+
+    return grant?.extraAttempts ?? 0;
+  }
+
+  public async getExtraAttemptsByEvaluation(userId: string, evaluationIds: ReadonlyArray<string>): Promise<ReadonlyMap<string, number>> {
+    if (evaluationIds.length === 0) {
+      return new Map<string, number>();
+    }
+
+    const grants: Array<{ evaluationId: string; extraAttempts: number }> = await this._prisma.evaluationAttemptGrant.findMany({
+      where: { userId, evaluationId: { in: [...evaluationIds] } },
+      select: { evaluationId: true, extraAttempts: true },
+    });
+
+    return new Map<string, number>(grants.map((grant: { evaluationId: string; extraAttempts: number }) => [grant.evaluationId, grant.extraAttempts]));
+  }
+
+  public async saveAttemptGrant(grant: AttemptGrantInput, transaction: unknown): Promise<string> {
+    const client: PrismaExecutor = resolveClient(this._prisma, transaction);
+
+    const saved: { id: string } = await client.evaluationAttemptGrant.upsert({
+      where: { evaluationId_userId: { evaluationId: grant.evaluationId, userId: grant.userId } },
+      create: { evaluationId: grant.evaluationId, userId: grant.userId, extraAttempts: grant.extraAttempts, updatedById: grant.updatedById },
+      update: { extraAttempts: grant.extraAttempts, updatedById: grant.updatedById },
+      select: { id: true },
+    });
+
+    return saved.id;
   }
 
   public async save(attempt: StudentEvaluationAttempt, transaction?: unknown): Promise<void> {

@@ -11,6 +11,8 @@
 import { type EvaluationQuestionItem } from "@/features/evaluation/domain/entities/evaluation-items";
 import {
   computeEvaluationGrade,
+  computePartialClosedScore,
+  isChoiceAnswerCorrect,
   type EvaluationAttemptGrading,
   type GradableAnswer,
   gradeEvaluationAttempt,
@@ -128,6 +130,38 @@ describe("gradeEvaluationAttempt (check 12)", () => {
     const grading: EvaluationAttemptGrading = gradeEvaluationAttempt([], answers(), NO_PRACTICAL);
 
     expect(grading).toMatchObject({ status: "GRADED", score: 0, maxScore: 0, grade: 0, zeroMaxScore: true });
+  });
+});
+
+describe("computePartialClosedScore", () => {
+  it("counts correct closed questions out of every closed question and ignores open ones", () => {
+    const questions: EvaluationQuestionItem[] = [...CHOICE_QUESTIONS, question("q3", "OPEN_TEXT", 2), question("q4", "MULTIPLE_CHOICE", 1, ["q4-a", "q4-b"], ["q4-c"])];
+
+    expect(
+      computePartialClosedScore(
+        questions,
+        answers(
+          { questionId: "q1", selectedOptionIds: ["q1-a"] },
+          { questionId: "q2", selectedOptionIds: ["q2-f"] },
+          { questionId: "q3", selectedOptionIds: [], textAnswer: "Raise PEEP" },
+          { questionId: "q4", selectedOptionIds: ["q4-a"] },
+        ),
+      ),
+    ).toEqual({ correct: 1, total: 3 });
+  });
+
+  it("returns 0 of 0 without closed questions", () => {
+    expect(computePartialClosedScore([question("q1", "OPEN_TEXT", 1)], answers())).toEqual({ correct: 0, total: 0 });
+  });
+});
+
+describe("isChoiceAnswerCorrect", () => {
+  it("requires the exact set of correct options", () => {
+    const multiple: EvaluationQuestionItem = question("q1", "MULTIPLE_CHOICE", 1, ["a", "b"], ["c"]);
+
+    expect(isChoiceAnswerCorrect(multiple, ["b", "a"])).toBe(true);
+    expect(isChoiceAnswerCorrect(multiple, ["a"])).toBe(false);
+    expect(isChoiceAnswerCorrect(multiple, ["a", "b", "c"])).toBe(false);
   });
 });
 

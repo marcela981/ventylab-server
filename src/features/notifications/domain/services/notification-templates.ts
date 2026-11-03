@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Plantillas de notificaciones
  * Descripción: Único punto con los textos en español (copia de producto para estudiantes y docentes) de cada tipo de notificación y sus referencias de enlace profundo, construidos a partir de la carga útil del evento de dominio de catálogo
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import {
   type EvaluationActivatedPayload,
+  type EvaluationAttemptResetPayload,
   type GradeFeedbackReadyPayload,
   type GradePublishedPayload,
   type ReservationCancelledPayload,
@@ -37,6 +38,7 @@ export const NOTIFICATION_TEMPLATES: {
   evaluationActivated(payload: EvaluationActivatedPayload): NotificationContent;
   gradePublished(payload: GradePublishedPayload): NotificationContent;
   feedbackReady(payload: GradeFeedbackReadyPayload): NotificationContent;
+  attemptReset(payload: EvaluationAttemptResetPayload): NotificationContent;
   roleChanged(payload: UserRoleChangedPayload): NotificationContent;
   ventilatorOffline(payload: VentilatorDeviceOfflinePayload, reservationId: string): NotificationContent;
 } = {
@@ -69,6 +71,12 @@ export const NOTIFICATION_TEMPLATES: {
     title: "Retroalimentación disponible",
     body: "La retroalimentación de tu evaluación ya está lista.",
     data: { evaluationId: payload.evaluationId, attemptId: payload.attemptId, feedbackId: payload.feedbackId },
+  }),
+  attemptReset: (payload: EvaluationAttemptResetPayload): NotificationContent => ({
+    type: "ATTEMPT_RESET",
+    title: "Puedes repetir la evaluación",
+    body: `Tu docente te habilitó un nuevo intento en la evaluación "${payload.title}".`,
+    data: { evaluationId: payload.evaluationId },
   }),
   roleChanged: (payload: UserRoleChangedPayload): NotificationContent => ({
     type: "ROLE_CHANGED",

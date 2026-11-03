@@ -1983,7 +1983,7 @@ export interface paths {
         };
         /**
          * Get my attempt feedback
-         * @description Overall and per-question feedback of the own attempt with its status; content and source only when READY; available once the grade is published
+         * @description Overall and per-question feedback of the own attempt with its status (a PENDING generation older than 10 minutes reads as FAILED); content, source and the caller's own rating (myRating) only when READY; available once the grade is published
          *
          *     **Required access:** bearer token holding `evaluations:attempt`; minimum role STUDENT.
          */
@@ -2012,6 +2012,28 @@ export interface paths {
          *     **Required access:** bearer token holding `evaluations:attempt`; minimum role STUDENT.
          */
         post: operations["submitAttempt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/evaluation-grading/attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List evaluation attempts
+         * @description Every non-legacy attempt of one evaluation in the caller grading scope (same scope as the grading queue), optionally filtered by STUDENT group and statuses, ordered by student and attempt number, with grade, publication date, late flag and the counts by status of the evaluation and group (the status filter does not apply to the counts); expired attempts in progress are closed first (at most 50 per request)
+         *
+         *     **Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.
+         */
+        get: operations["getEvaluationAttempts"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2095,7 +2117,7 @@ export interface paths {
         put?: never;
         /**
          * Regenerate attempt feedback
-         * @description Replaces the feedback of a graded attempt with a PENDING one and generates it asynchronously (language model with deterministic fallback)
+         * @description Supersedes the current feedback of a graded attempt (kept, never deleted, so its ratings still resolve) with a PENDING one and generates it asynchronously (language model with deterministic fallback); at most 5 requests per minute
          *
          *     **Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.
          */
@@ -2188,6 +2210,28 @@ export interface paths {
         get: operations["getQueueCount"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/evaluation-grading/students/{userId}/evaluations/{evaluationId}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset a student attempt
+         * @description Non-destructive reset: grants the student one more attempt of the evaluation (maxAttempts plus the accumulated grants), keeping every previous attempt, grade and feedback; the reason is audited and the student is notified (ATTEMPT_RESET). Requires the grading scope over the student group and an ACTIVE assignment of that group
+         *
+         *     **Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.
+         */
+        post: operations["resetAttempt"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3791,13 +3835,35 @@ export interface paths {
         };
         /**
          * Get my evaluations
-         * @description Assignments of the caller's active STUDENT group with derived state, evaluation summary (no answers) and own attempts; grades only when published; empty without group
+         * @description Assignments of the caller's active STUDENT group with derived state, evaluation summary (no answers, with its curriculum module, level and track) and own attempts; grades only when published; empty without group; optionally only the evaluations of one module
          *
          *     **Required access:** bearer token holding `evaluations:attempt`; minimum role STUDENT.
          */
         get: operations["getMyEvaluations"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/my-evaluations/attempts/{attemptId}/answers/{questionId}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check evaluation answer
+         * @description Immediate feedback (QUIZ and WORKSHOP choice questions): saves the selected options of the own attempt in progress, reveals whether they are correct with the correct options and the explanation, and locks the answer (a later save or check answers 409); the score is still computed only at submission
+         *
+         *     **Required access:** bearer token holding `evaluations:attempt`; minimum role STUDENT.
+         */
+        post: operations["checkAnswer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8175,7 +8241,7 @@ export interface components {
              * @example POPUP
              * @enum {string}
              */
-            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS";
+            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK";
             /**
              * @description Rated output id
              * @example cm1x2y3z40000abcd1234efgh
@@ -8658,6 +8724,76 @@ export interface components {
         AttemptQuizDTO: {
             /** @description Selected option per question */
             answers: components["schemas"]["QuizAnswerDTO"][];
+        };
+        AttemptResetNotificationDTO: {
+            /**
+             * @description Body shown to the user
+             * @example Ya puedes consultar tu calificación: 8 de 10 puntos (aprobada).
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the notification was created
+             * @example 2026-10-11T14:00:00.000Z
+             */
+            createdAt: string;
+            /** @description Evaluation the student may take again */
+            data: components["schemas"]["AttemptResetNotificationDataDTO"] | null;
+            /**
+             * @description Notification ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the notification was read (null while unread)
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * @description Title shown to the user
+             * @example Calificación publicada
+             */
+            title: string;
+            /**
+             * @description Notification type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "ATTEMPT_RESET";
+        };
+        AttemptResetNotificationDataDTO: {
+            /**
+             * @description ID of the evaluation the student may take again
+             * @example 01932e9f-2345-7abc-9def-1a2b3c4d5e6f
+             */
+            evaluationId: string;
+        };
+        AttemptStatusCountsDTO: {
+            /**
+             * @description Graded attempts
+             * @example 10
+             */
+            GRADED: number;
+            /**
+             * @description Attempts in progress
+             * @example 2
+             */
+            IN_PROGRESS: number;
+            /**
+             * @description Attempts waiting for the teacher
+             * @example 3
+             */
+            PENDING_REVIEW: number;
+            /**
+             * @description Submitted attempts not yet graded
+             * @example 0
+             */
+            SUBMITTED: number;
+            /**
+             * @description Every attempt of the evaluation (and group) in the caller scope, whatever the status filter
+             * @example 15
+             */
+            total: number;
         };
         AuditLogCatalogDTO: {
             /**
@@ -9147,6 +9283,34 @@ export interface components {
              * @example 2026-0001
              */
             studentCode: string | null;
+        };
+        CheckEvaluationAnswerDTO: {
+            /**
+             * @description Selected option IDs to check (choice questions)
+             * @example [
+             *       "cm5option01"
+             *     ]
+             */
+            selectedOptionIds: string[];
+        };
+        CheckEvaluationAnswerResponseDTO: {
+            /**
+             * @description Correct option IDs
+             * @example [
+             *       "cm5option01"
+             *     ]
+             */
+            correctOptionIds: string[];
+            /**
+             * @description Teacher explanation
+             * @example PEEP keeps the alveoli open
+             */
+            explanation: string | null;
+            /**
+             * @description Whether the selected options are exactly the correct ones
+             * @example true
+             */
+            isCorrect: boolean;
         };
         ClinicalCaseAttemptsDTO: {
             /** @description Attempts, most recent first */
@@ -10221,6 +10385,11 @@ export interface components {
              * @example A PEEP of 8 keeps the alveoli open
              */
             explanation?: string;
+            /**
+             * @description Hint the student can open while answering (shown in WORKSHOP evaluations only)
+             * @example Think about alveolar recruitment
+             */
+            hint?: string;
             /**
              * @description Media attached to the question
              * @example [
@@ -11611,6 +11780,12 @@ export interface components {
              */
             score: number;
         };
+        EvaluationAttemptsPageDTO: {
+            /** @description Attempts by status of the evaluation (and group) in the caller scope, ignoring the status filter */
+            counts: components["schemas"]["AttemptStatusCountsDTO"];
+            /** @description Attempts of this page, ordered by student and attempt number */
+            items: components["schemas"]["GradingAttemptListItemDTO"][];
+        };
         EvaluationDetailDTO: {
             /**
              * @description Whether the caller can edit it
@@ -11876,6 +12051,11 @@ export interface components {
              * @example A PEEP of 8 keeps the alveoli open
              */
             explanation: string | null;
+            /**
+             * @description Hint shown to students on demand (WORKSHOP evaluations only)
+             * @example Think about alveolar recruitment
+             */
+            hint: string | null;
             /**
              * @description Question ID (legacy questions look like <evaluationId>:q1)
              * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
@@ -12457,6 +12637,63 @@ export interface components {
              */
             updatedAt: string;
         };
+        GradeFeedbackMyRatingDTO: {
+            /**
+             * @description Free-text comment
+             * @example Me ayudó a entender la PEEP
+             */
+            comment?: string;
+            /**
+             * @description First rated at
+             * @example 2026-10-05T12:00:00.000Z
+             */
+            createdAt: string;
+            /**
+             * @description Expression style and clarity (1–5)
+             * @example 4
+             */
+            expression?: number;
+            /**
+             * @description Whether the feedback was helpful
+             * @example true
+             */
+            helpful: boolean;
+            /**
+             * @description Rating id
+             * @example 0192f0c4-7b1e-7a3d-9c2b-3f4e5d6a7b8c
+             */
+            id: string;
+            /**
+             * @description Overall quality (1–5)
+             * @example 4
+             */
+            quality?: number;
+            /**
+             * @description Safety and harm avoidance (1–5)
+             * @example 5
+             */
+            safety?: number;
+            /**
+             * @description Surface where the feedback was rated
+             * @example EVALUATION_FEEDBACK
+             */
+            surface?: string;
+            /**
+             * @description Trust and confidence (1–5)
+             * @example 3
+             */
+            trust?: number;
+            /**
+             * @description Understanding of the answer (1–5)
+             * @example 5
+             */
+            understanding?: number;
+            /**
+             * @description Last edited at
+             * @example 2026-10-05T12:05:00.000Z
+             */
+            updatedAt: string;
+        };
         GradeFeedbackRegenerationDTO: {
             /**
              * @description Attempt ID
@@ -12742,6 +12979,79 @@ export interface components {
              * @example cm5student01
              */
             userId: string;
+        };
+        GradingAttemptListItemDTO: {
+            /**
+             * @description Assignment ID
+             * @example cm5assignment01
+             */
+            assignmentId: string | null;
+            /**
+             * @description Attempt ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            attemptId: string;
+            /**
+             * @description Attempt number
+             * @example 1
+             */
+            attemptNumber: number;
+            /**
+             * @description Evaluation ID
+             * @example cm5evaluation01
+             */
+            evaluationId: string;
+            /**
+             * @description Grade 0.0–5.0 (null while pending)
+             * @example 3
+             */
+            grade: number | null;
+            /**
+             * Format: date-time
+             * @description When the grade was published (null while unpublished)
+             * @example 2026-10-06T09:00:00.000Z
+             */
+            gradePublishedAt: string | null;
+            /**
+             * @description STUDENT group of the assignment
+             * @example cm5group01
+             */
+            groupId: string | null;
+            /**
+             * @description Whether the attempt was closed after its deadline
+             * @example false
+             */
+            isLate: boolean;
+            /**
+             * @description Total points
+             * @example 5
+             */
+            maxScore: number | null;
+            /**
+             * @description Points earned so far
+             * @example 3
+             */
+            score: number | null;
+            /**
+             * Format: date-time
+             * @description When the attempt started
+             * @example 2026-10-06T08:00:00.000Z
+             */
+            startedAt: string;
+            /**
+             * @description Attempt status
+             * @example GRADED
+             * @enum {string}
+             */
+            status: "IN_PROGRESS" | "SUBMITTED" | "PENDING_REVIEW" | "GRADED";
+            /** @description Student */
+            student: components["schemas"]["GradingStudentDTO"];
+            /**
+             * Format: date-time
+             * @description When the attempt was submitted or closed
+             * @example 2026-10-06T08:30:00.000Z
+             */
+            submittedAt: string | null;
         };
         GradingQueueCountDTO: {
             /**
@@ -15757,6 +16067,11 @@ export interface components {
             /** @description Own attempts for this evaluation, migrated ones included */
             attempts: components["schemas"]["MyEvaluationAttemptDTO"][];
             /**
+             * @description Attempts the student may use: maxAttempts plus the extra attempts granted by teacher resets
+             * @example 2
+             */
+            attemptsAllowed: number;
+            /**
              * @description Whether an attempt can be started or resumed now
              * @example true
              */
@@ -15865,10 +16180,30 @@ export interface components {
              */
             id: string;
             /**
+             * @description Curriculum level (the evaluation's own, or its module's)
+             * @example cm5level01
+             */
+            levelId: string | null;
+            /**
+             * @description Order of that level within its track
+             * @example 1
+             */
+            levelOrder: number | null;
+            /**
+             * @description Title of that level
+             * @example Fundamentos de la ventilación mecánica
+             */
+            levelTitle: string | null;
+            /**
              * @description Attempts allowed
              * @example 1
              */
             maxAttempts: number;
+            /**
+             * @description Curriculum module of the evaluation
+             * @example cm5module01
+             */
+            moduleId: string | null;
             /**
              * @description Number of questions
              * @example 10
@@ -15879,6 +16214,11 @@ export interface components {
              * @example Mechanical ventilation midterm
              */
             title: string;
+            /**
+             * @description Track (section slug) of that level
+             * @example mecanica
+             */
+            track: string | null;
             /**
              * @description Evaluation type
              * @example EXAM
@@ -16242,7 +16582,7 @@ export interface components {
              *       "evaluationId": "01932e9f-1234-7abc-9def-1a2b3c4d5e6f"
              *     }
              */
-            data: (components["schemas"]["ReservationPreemptedNotificationDataDTO"] | components["schemas"]["ReservationCancelledNotificationDataDTO"] | components["schemas"]["EvaluationActivatedNotificationDataDTO"] | components["schemas"]["GradePublishedNotificationDataDTO"] | components["schemas"]["FeedbackReadyNotificationDataDTO"] | components["schemas"]["RoleChangedNotificationDataDTO"] | components["schemas"]["VentilatorOfflineNotificationDataDTO"]) | null;
+            data: (components["schemas"]["ReservationPreemptedNotificationDataDTO"] | components["schemas"]["ReservationCancelledNotificationDataDTO"] | components["schemas"]["EvaluationActivatedNotificationDataDTO"] | components["schemas"]["GradePublishedNotificationDataDTO"] | components["schemas"]["FeedbackReadyNotificationDataDTO"] | components["schemas"]["AttemptResetNotificationDataDTO"] | components["schemas"]["RoleChangedNotificationDataDTO"] | components["schemas"]["VentilatorOfflineNotificationDataDTO"]) | null;
             /**
              * @description Notification ID
              * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
@@ -16264,7 +16604,7 @@ export interface components {
              * @example GRADE_PUBLISHED
              * @enum {string}
              */
-            type: "RESERVATION_PREEMPTED" | "RESERVATION_CANCELLED" | "EVALUATION_ACTIVATED" | "GRADE_PUBLISHED" | "FEEDBACK_READY" | "ROLE_CHANGED" | "VENTILATOR_OFFLINE";
+            type: "RESERVATION_PREEMPTED" | "RESERVATION_CANCELLED" | "EVALUATION_ACTIVATED" | "GRADE_PUBLISHED" | "FEEDBACK_READY" | "ATTEMPT_RESET" | "ROLE_CHANGED" | "VENTILATOR_OFFLINE";
         };
         OverrideDataDTO: {
             /** @description Extra cards inserted in the lesson, LESSON only */
@@ -16938,6 +17278,18 @@ export interface components {
              * @example false
              */
             withinRange: boolean;
+        };
+        PartialClosedScoreDTO: {
+            /**
+             * @description Closed (choice) questions answered correctly
+             * @example 3
+             */
+            correct: number;
+            /**
+             * @description Closed (choice) questions in the evaluation
+             * @example 4
+             */
+            total: number;
         };
         PatientDTO: {
             /** @description Arterial blood gas */
@@ -18387,6 +18739,13 @@ export interface components {
              * @example Practice
              */
             purpose?: string;
+        };
+        ResetEvaluationAttemptDTO: {
+            /**
+             * @description Why the student may take the evaluation again (audited)
+             * @example Connection lost during the quiz
+             */
+            reason: string;
         };
         ResetPlatformSettingDTO: {
             /**
@@ -19877,6 +20236,31 @@ export interface components {
              */
             textAnswer: string | null;
         };
+        StudentAnswerRevealDTO: {
+            /**
+             * @description Correct option IDs
+             * @example [
+             *       "cm5option01"
+             *     ]
+             */
+            correctOptionIds: string[];
+            /**
+             * @description Teacher explanation
+             * @example PEEP keeps the alveoli open
+             */
+            explanation: string | null;
+            /**
+             * @description Whether the checked answer is correct
+             * @example false
+             */
+            isCorrect: boolean;
+            /**
+             * Format: date-time
+             * @description When the answer was checked (it is locked since then)
+             * @example 2026-10-06T08:05:00.000Z
+             */
+            revealedAt: string;
+        };
         StudentAssignmentCheckDTO: {
             /**
              * @description Whether the student is assigned to the teacher
@@ -19928,6 +20312,8 @@ export interface components {
              * @example 10
              */
             maxScore?: number;
+            /** @description Correct closed questions while open questions wait for the teacher (PENDING_REVIEW QUIZ or WORKSHOP attempts only; null otherwise) */
+            partialClosedScore: components["schemas"]["PartialClosedScoreDTO"] | null;
             /**
              * @description Whether the grade reaches the passing grade (published only)
              * @example true
@@ -20209,6 +20595,8 @@ export interface components {
              * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
              */
             id: string;
+            /** @description The caller's own rating of this block (target GRADE_FEEDBACK with this id), or null when not rated */
+            myRating: components["schemas"]["GradeFeedbackMyRatingDTO"] | null;
             /**
              * @description Question ID, or null for the overall feedback
              * @example cm5question01
@@ -20413,6 +20801,11 @@ export interface components {
             /** @description Teacher explanation (only once the grade is published) */
             explanation?: string | null;
             /**
+             * @description Hint shown on demand (WORKSHOP evaluations only; null otherwise)
+             * @example Think about the alveolar recruitment
+             */
+            hint: string | null;
+            /**
              * @description Question ID
              * @example cm5question01
              */
@@ -20433,6 +20826,8 @@ export interface components {
             position: number;
             /** @description Question prompt (Tiptap document) */
             prompt: Record<string, never>;
+            /** @description Correction of an answer the student checked for immediate feedback (QUIZ and WORKSHOP); null when the answer was not checked */
+            reveal: components["schemas"]["StudentAnswerRevealDTO"] | null;
             /** @description Rubric (only once the grade is published) */
             rubric?: Record<string, never> | null;
             /**
@@ -21293,6 +21688,11 @@ export interface components {
              */
             explanation?: string | null;
             /**
+             * @description Hint (WORKSHOP evaluations only); null removes it
+             * @example Think about alveolar recruitment
+             */
+            hint?: string | null;
+            /**
              * @description Media attached to the question (replaces the list)
              * @example [
              *       "cm5media01"
@@ -21855,7 +22255,7 @@ export interface components {
              * @example POPUP
              * @enum {string}
              */
-            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS";
+            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK";
             /**
              * @description Rated output: the grade feedback id (GRADE_FEEDBACK), the assistant message id (MESSAGE; announced by the SSE start event, so a stopped answer can be rated too) or the AI call id of the analysis (NOTES_ANALYSIS)
              * @example cm1x2y3z40000abcd1234efgh
@@ -23983,7 +24383,7 @@ export interface operations {
                 /** @description Only ratings of this kind of output */
                 targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
                 /** @description Only ratings given on this surface */
-                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS";
+                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK";
                 /** @description Only ratings of answers with this content scope */
                 scope?: "LESSON" | "MODULE" | "PAGE" | "FREE";
                 /** @description Only ratings linked to calls of this use case */
@@ -24076,7 +24476,7 @@ export interface operations {
                 /** @description Only ratings of this kind of output */
                 targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
                 /** @description Only ratings given on this surface */
-                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS";
+                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK";
                 /** @description Only ratings of answers with this content scope */
                 scope?: "LESSON" | "MODULE" | "PAGE" | "FREE";
                 /** @description Only ratings linked to calls of this use case */
@@ -29710,7 +30110,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description The attempt is closed, read-only or past its deadline */
+            /** @description The attempt is closed, read-only or past its deadline, or the answer was already checked (locked) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -29899,6 +30299,84 @@ export interface operations {
             };
             /** @description A final answer does not match its question */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getEvaluationAttempts: {
+        parameters: {
+            query: {
+                /** @description Page number (1-based) */
+                page?: number;
+                /** @description Number of items per page */
+                limit?: number;
+                /** @description Evaluation whose attempts are listed */
+                evaluationId: string;
+                /** @description Only attempts of this STUDENT group */
+                groupId?: string;
+                /** @description Only these statuses (comma-separated or repeated query parameter) */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Attempts retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["EvaluationAttemptsPageDTO"];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30241,7 +30719,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description The attempt is not graded yet */
+            /** @description The attempt is not graded yet, or a generation started less than 10 minutes ago is still PENDING */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -30570,6 +31048,98 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resetAttempt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+                evaluationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetEvaluationAttemptDTO"];
+            };
+        };
+        responses: {
+            /** @description Attempt reset successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The student group is outside the caller grading scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Evaluation not found, or not assigned to the student group */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description evaluation.attempt_in_progress: the student has an attempt in progress; evaluation.assignment_not_active: the assignment of the student group is not active (data: assignmentId, startsAt, endsAt, to extend its window) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37841,7 +38411,10 @@ export interface operations {
     };
     getMyEvaluations: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only evaluations linked to this curriculum module */
+                moduleId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -37859,6 +38432,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unauthorized */
             401: {
                 headers: {
@@ -37870,6 +38452,107 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    checkAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptId: string;
+                questionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckEvaluationAnswerDTO"];
+            };
+        };
+        responses: {
+            /** @description Answer checked successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["CheckEvaluationAnswerResponseDTO"];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The caller lacks the required permission or is not allowed to act on this resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Attempt or question not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The attempt is closed, read-only or past its deadline, or the answer was already checked */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description EXAM evaluation, non-choice question, or options that do not match the question */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38771,7 +39454,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
-                        data: (components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"])[];
+                        data: (components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["AttemptResetNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"])[];
                     };
                 };
             };
@@ -38998,7 +39681,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
-                        data: components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"];
+                        data: components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["AttemptResetNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"];
                     };
                 };
             };

@@ -58,9 +58,9 @@ describe("SubmitEvaluationAttemptUseCase", () => {
     expect(doubles.attemptsRepository.sharedLocks).toEqual(["evaluations:structure:evaluation-1"]);
   });
 
-  it("hides the score when results are not shown immediately", async () => {
+  it("hides the score of an EXAM that does not show results immediately", async () => {
     const doubles: AttemptDoubles = buildAttemptDoubles({
-      evaluation: buildAttemptEvaluation({ showResultsImmediately: false }),
+      evaluation: buildAttemptEvaluation({ type: "EXAM", showResultsImmediately: false }),
       attempts: [buildStoredAttempt({ answers: RIGHT_ANSWERS })],
     });
 
@@ -72,6 +72,40 @@ describe("SubmitEvaluationAttemptUseCase", () => {
     expect(result.passed).toBeUndefined();
     expect(stored(doubles)?.grade).toBe(5);
     expect(publishedEvents(doubles, EvaluationAttemptGradedEvent)).toHaveLength(1);
+    expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(0);
+  });
+
+  it("publishes an EXAM at once only when showResultsImmediately is set", async () => {
+    const doubles: AttemptDoubles = buildAttemptDoubles({
+      evaluation: buildAttemptEvaluation({ type: "EXAM", showResultsImmediately: true }),
+      attempts: [buildStoredAttempt({ answers: RIGHT_ANSWERS })],
+    });
+
+    expect(await submit(doubles)).toMatchObject({ status: "GRADED", published: true, grade: 5 });
+  });
+
+  it.each(["QUIZ", "WORKSHOP"] as const)("auto-publishes a %s with only closed questions even when showResultsImmediately is off", async (type: "QUIZ" | "WORKSHOP") => {
+    const doubles: AttemptDoubles = buildAttemptDoubles({
+      evaluation: buildAttemptEvaluation({ type, showResultsImmediately: false }),
+      attempts: [buildStoredAttempt({ answers: RIGHT_ANSWERS })],
+    });
+
+    const result: SubmitEvaluationAttemptResult = await submit(doubles);
+
+    expect(result).toMatchObject({ status: "GRADED", published: true, grade: 5, passed: true });
+    expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(1);
+  });
+
+  it("leaves a WORKSHOP with an OPEN_TEXT question in PENDING_REVIEW without publishing", async () => {
+    const doubles: AttemptDoubles = buildAttemptDoubles({
+      evaluation: buildAttemptEvaluation({ type: "WORKSHOP", questions: [attemptQuestion("q1"), attemptQuestion("q2", "OPEN_TEXT", 2)] }),
+      attempts: [buildStoredAttempt({ answers: [RIGHT_ANSWERS[0], { id: "answer-2", questionId: "q2", selectedOptionIds: [], textAnswer: "Raise PEEP" }] })],
+    });
+
+    const result: SubmitEvaluationAttemptResult = await submit(doubles);
+
+    expect(result).toMatchObject({ status: "PENDING_REVIEW", published: false });
+    expect(stored(doubles)?.gradePublishedAt).toBeUndefined();
     expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(0);
   });
 

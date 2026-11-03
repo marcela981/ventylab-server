@@ -11,9 +11,12 @@
 export class GenerateGradeFeedbackCommand {
   public readonly attemptId: string;
   public readonly pendingFeedbackId?: string;
+  // Supersedes the current feedback even when it is READY or PENDING (a published grade changed)
+  public readonly replaceCurrent: boolean;
 
-  public constructor({ attemptId, pendingFeedbackId }: { attemptId: string; pendingFeedbackId?: string }) {
+  public constructor({ attemptId, pendingFeedbackId, replaceCurrent = false }: { attemptId: string; pendingFeedbackId?: string; replaceCurrent?: boolean }) {
     this.attemptId = attemptId;
     this.pendingFeedbackId = pendingFeedbackId;
+    this.replaceCurrent = replaceCurrent;
   }
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Suscriptores de notificaciones
  * Descripción: Escuchan los eventos de catálogo (reservas, evaluaciones, calificaciones, rol, ventilador fuera de línea) en segundo plano, resuelven los destinatarios, construyen el texto con las plantillas y entregan las notificaciones con DeliverNotificationsUseCase; atrapan y registran todo error
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -68,6 +68,13 @@ export class NotificationsEventsHandlers {
   public async handleFeedbackReady(payload: DomainEventCatalog["grade.feedbackReady"]): Promise<void> {
     await this._run("grade.feedbackReady", payload.eventId, async (): Promise<void> => {
       await this._deliver([payload.userId], NOTIFICATION_TEMPLATES.feedbackReady(payload));
+    });
+  }
+
+  @OnEvent("evaluation.attemptReset", { async: true })
+  public async handleAttemptReset(payload: DomainEventCatalog["evaluation.attemptReset"]): Promise<void> {
+    await this._run("evaluation.attemptReset", payload.eventId, async (): Promise<void> => {
+      await this._deliver([payload.userId], NOTIFICATION_TEMPLATES.attemptReset(payload));
     });
   }
 

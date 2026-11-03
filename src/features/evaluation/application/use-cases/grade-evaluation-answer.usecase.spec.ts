@@ -35,6 +35,7 @@ import { EvaluationAttemptGradedEvent, EvaluationGradePublishedEvent } from "@/f
 import { type EvaluationActor } from "@/features/evaluation/domain/services/evaluation-management-policy";
 
 const OPEN_TEXT_EXAM: Parameters<typeof buildAttemptEvaluation>[0] = {
+  type: "EXAM",
   questions: [attemptQuestion("q1"), attemptQuestion("q2", "OPEN_TEXT", 3)],
   showResultsImmediately: false,
 };

@@ -15,7 +15,11 @@ export const GRADE_FEEDBACKS_REPOSITORY_TOKEN: unique symbol = Symbol("GRADE_FEE
 
 export interface IGradeFeedbacksRepository {
   acquireTransactionLock(key: string, transaction: unknown): Promise<void>;
+  // Current (not superseded) rows only
   getByAttempt(attemptId: string, transaction?: unknown): Promise<GradeFeedbackRecord[]>;
-  replaceForAttempt(attemptId: string, records: ReadonlyArray<GradeFeedbackRecord>, transaction: unknown): Promise<void>;
+  // Marks every current row of the attempt as superseded (never deletes) and inserts the new rows
+  supersedeForAttempt(attemptId: string, records: ReadonlyArray<GradeFeedbackRecord>, now: Date, transaction: unknown): Promise<void>;
+  // Turns the reserved PENDING row into the overall READY row and inserts the per-question rows
+  completePending(pendingId: string, records: ReadonlyArray<GradeFeedbackRecord>, transaction: unknown): Promise<void>;
   updateStatus(id: string, status: GradeFeedbackStatusValue, now: Date, transaction?: unknown): Promise<void>;
 }

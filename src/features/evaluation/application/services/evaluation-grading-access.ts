@@ -31,6 +31,15 @@ export class EvaluationGradingAccess {
     return await this._assignmentAccess.scopeFor(actor);
   }
 
+  // Same scope as the grading queue, applied to a whole STUDENT group (used by the attempt reset)
+  public async assertCanGradeGroup(actor: EvaluationActor, groupId: string): Promise<void> {
+    const scope: EvaluationAssignmentScope | undefined = await this.scopeFor(actor);
+
+    if (scope !== undefined && !(await this._gradingRepository.isGroupInScope(groupId, scope))) {
+      throw new EvaluationGradingForbiddenError();
+    }
+  }
+
   public async assertCanGrade(actor: EvaluationActor, attemptId: string): Promise<void> {
     const scope: EvaluationAssignmentScope | undefined = await this.scopeFor(actor);
 

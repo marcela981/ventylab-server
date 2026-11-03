@@ -160,6 +160,19 @@ describe("Evaluation", () => {
       expect(evaluation.title).toBe("Renamed");
     });
 
+    it("stores, keeps and removes a question hint without a structural change", () => {
+      const evaluation: Evaluation = draft("WORKSHOP");
+      const questionId: string = evaluation.addQuestion({ type: "OPEN_TEXT", prompt: PROMPT, hint: "Think about recruitment" }, "teacher-1");
+      const persisted: Evaluation = Evaluation.reconstitute(evaluation.toSnapshot());
+
+      persisted.updateQuestion(questionId, { points: 1 }, "teacher-1");
+      expect(persisted.questions[0].hint).toBe("Think about recruitment");
+
+      persisted.updateQuestion(questionId, { hint: null }, "teacher-1");
+      expect(persisted.questions[0].hint).toBeUndefined();
+      expect(persisted.hasStructuralChanges).toBe(false);
+    });
+
     it("rejects options on open text and simulation questions", () => {
       const evaluation: Evaluation = draft();
       const questionId: string = evaluation.addQuestion({ type: "OPEN_TEXT", prompt: PROMPT }, "teacher-1");

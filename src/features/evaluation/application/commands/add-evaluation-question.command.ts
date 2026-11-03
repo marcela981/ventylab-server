@@ -19,19 +19,21 @@ export class AddEvaluationQuestionCommand {
   public readonly prompt: unknown;
   public readonly points?: number;
   public readonly explanation?: string;
+  public readonly hint?: string;
   public readonly scenarioId?: string;
   public readonly mediaIds?: string[];
   public readonly clinicalCaseId?: string;
   public readonly rubric?: Record<string, unknown>;
   public readonly options?: NewEvaluationOption[];
 
-  public constructor({ evaluationId, actor, type, prompt, points, explanation, scenarioId, mediaIds, clinicalCaseId, rubric, options }: { evaluationId: string; actor: EvaluationActor; type: EvaluationQuestionTypeValue; prompt: unknown; points?: number; explanation?: string; scenarioId?: string; mediaIds?: string[]; clinicalCaseId?: string; rubric?: Record<string, unknown>; options?: NewEvaluationOption[] }) {
+  public constructor({ evaluationId, actor, type, prompt, points, explanation, hint, scenarioId, mediaIds, clinicalCaseId, rubric, options }: { evaluationId: string; actor: EvaluationActor; type: EvaluationQuestionTypeValue; prompt: unknown; points?: number; explanation?: string; hint?: string; scenarioId?: string; mediaIds?: string[]; clinicalCaseId?: string; rubric?: Record<string, unknown>; options?: NewEvaluationOption[] }) {
     this.evaluationId = evaluationId;
     this.actor = actor;
     this.type = type;
     this.prompt = prompt;
     this.points = points;
     this.explanation = explanation;
+    this.hint = hint;
     this.scenarioId = scenarioId;
     this.mediaIds = mediaIds;
     this.clinicalCaseId = clinicalCaseId;

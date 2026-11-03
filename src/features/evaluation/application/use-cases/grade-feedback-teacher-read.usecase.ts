@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetGradeFeedbackUseCase
  * Descripción: Retroalimentación de un intento para un docente con alcance sobre su grupo o un administrador, separada en global y por pregunta con origen, proveedor, modelo y estado
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,13 +14,14 @@ import { GradeFeedbackResult } from "@/features/evaluation/application/results/g
 import { GradeFeedbackAccess } from "@/features/evaluation/application/services/grade-feedback-access";
 import { type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import { EvaluationAttemptNotFoundError } from "@/features/evaluation/domain/evaluation.errors";
+import { type GradeFeedbackRecord } from "@/features/evaluation/domain/read-models/grade-feedback.read-model";
 import { GRADE_FEEDBACKS_REPOSITORY_TOKEN, type IGradeFeedbacksRepository } from "@/features/evaluation/domain/repositories/grade-feedbacks.repository";
 import {
   type IStudentEvaluationAttemptsRepository,
   STUDENT_EVALUATION_ATTEMPTS_REPOSITORY_TOKEN,
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
 import { type EvaluationActor } from "@/features/evaluation/domain/services/evaluation-management-policy";
-import { splitGradeFeedback } from "@/features/evaluation/domain/services/grade-feedback-records";
+import { splitGradeFeedback, withEffectiveStatus } from "@/features/evaluation/domain/services/grade-feedback-records";
 
 /**
  * @throws {EvaluationAttemptNotFoundError} If the attempt does not exist
@@ -45,6 +46,9 @@ export class GetGradeFeedbackUseCase {
 
     await this._access.assertCanReview(actor, attempt);
 
-    return new GradeFeedbackResult({ attemptId: attempt.id, ...splitGradeFeedback(await this._feedbacksRepository.getByAttempt(attempt.id)) });
+    const now: Date = new Date();
+    const records: GradeFeedbackRecord[] = (await this._feedbacksRepository.getByAttempt(attempt.id)).map((record: GradeFeedbackRecord) => withEffectiveStatus(record, now));
+
+    return new GradeFeedbackResult({ attemptId: attempt.id, ...splitGradeFeedback(records) });
   }
 }

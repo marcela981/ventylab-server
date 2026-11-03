@@ -35,6 +35,7 @@ import { RequestContextMiddleware } from "@/common/presentation/middlewares/requ
 import { TraceIdMiddleware } from "@/common/presentation/middlewares/trace-id.middleware";
 import { AnalyticsPortsModule } from "@/composition/analytics-ports.module";
 import { CompositionModule } from "@/composition/composition.module";
+import { EvaluationPortsModule } from "@/composition/evaluation-ports.module";
 import { ActivitiesModule } from "@/features/activities/activities.module";
 import { AdminModule } from "@/features/admin/admin.module";
 import { AiModule } from "@/features/ai/ai.module";
@@ -149,6 +150,7 @@ import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/venti
     NotificationsModule,
     SystemStatusModule,
     AnalyticsPortsModule,
+    EvaluationPortsModule,
     AnalyticsModule,
   ],
   controllers: [HealthController],

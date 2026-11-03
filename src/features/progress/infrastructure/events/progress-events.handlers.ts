@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Manejadores de eventos de progreso
- * Descripción: Alimentan el registro de actividad de gamificación de forma idempotente (primera vista de página, lección completada y, si completó el módulo, módulo completado, evaluación con nota publicada aprobada y logro desbloqueado con su recompensa) y después disparan UnlockAchievementsUseCase con los tipos de condición afectados; al desbloquearse un logro lo notifican al usuario por IRealtimePublisher (achievement:unlocked); todos fallan en silencio con registro en el logger
- * Versión: 1.2
+ * Descripción: Alimentan el registro de actividad de gamificación de forma idempotente (primera vista de página, lección completada y, si completó el módulo, módulo completado, evaluación con nota publicada aprobada, también cuando una recalificación de una nota publicada la aprueba, y logro desbloqueado con su recompensa) y después disparan UnlockAchievementsUseCase con los tipos de condición afectados; al desbloquearse un logro lo notifican al usuario por IRealtimePublisher (achievement:unlocked); todos fallan en silencio con registro en el logger
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,7 +12,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
 import { type IRealtimePublisher, REALTIME_PUBLISHER_TOKEN } from "@/common/application/ports/realtime-publisher.interface";
-import { EvaluationGradePublishedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
+import { EvaluationGradePublishedEvent, EvaluationGradeUpdatedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
 import { RecordLearningActivityCommand } from "@/features/progress/application/commands/record-learning-activity.command";
 import { UnlockAchievementsCommand } from "@/features/progress/application/commands/unlock-achievements.command";
 import { RecordLearningActivityUseCase } from "@/features/progress/application/use-cases/record-learning-activity.usecase";
@@ -97,19 +97,27 @@ export class ProgressEventsHandlers {
 
   @OnEvent(EvaluationGradePublishedEvent.name)
   public async handleEvaluationGradePublished(event: EvaluationGradePublishedEvent): Promise<void> {
-    if (!event.passed) {
-      return;
+    if (event.passed) {
+      await this._recordEvaluationPassed(event.userId, event.evaluationId, event.publishedAt);
     }
+  }
 
+  // A teacher regrade of a published grade: a newly passing grade earns EVALUATION_PASSED (idempotent per evaluation) and achievements are re-evaluated
+  @OnEvent(EvaluationGradeUpdatedEvent.name)
+  public async handleEvaluationGradeUpdated(event: EvaluationGradeUpdatedEvent): Promise<void> {
+    if (event.published && event.passed) {
+      await this._recordEvaluationPassed(event.userId, event.evaluationId, event.occurredAt);
+    }
+  }
+
+  private async _recordEvaluationPassed(userId: string, evaluationId: string, occurredAt: Date): Promise<void> {
     try {
-      await this._recordLearningActivityUseCase.execute(
-        new RecordLearningActivityCommand({ userId: event.userId, kind: EVALUATION_PASSED_ACTIVITY, refId: event.evaluationId, occurredAt: event.publishedAt }),
-      );
+      await this._recordLearningActivityUseCase.execute(new RecordLearningActivityCommand({ userId, kind: EVALUATION_PASSED_ACTIVITY, refId: evaluationId, occurredAt }));
     } catch (error) {
-      this._logger.warn(`Evaluation activity failed for user ${event.userId}: ${describeError(error)}`);
+      this._logger.warn(`Evaluation activity failed for user ${userId}: ${describeError(error)}`);
     }
 
-    await this._unlock(event.userId, [EVALUATIONS_PASSED_CONDITION, PERFECT_SCORE_CONDITION, STREAK_DAYS_CONDITION, LEVEL_REACHED_CONDITION]);
+    await this._unlock(userId, [EVALUATIONS_PASSED_CONDITION, PERFECT_SCORE_CONDITION, STREAK_DAYS_CONDITION, LEVEL_REACHED_CONDITION]);
   }
 
   @OnEvent(AchievementUnlockedEvent.name)

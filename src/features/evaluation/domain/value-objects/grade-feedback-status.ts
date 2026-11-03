@@ -15,7 +15,3 @@ export const READY_FEEDBACK_STATUS: GradeFeedbackStatusValue = "READY";
 export const FAILED_FEEDBACK_STATUS: GradeFeedbackStatusValue = "FAILED";
 
 export const GRADE_FEEDBACK_STATUS_VALUES: readonly GradeFeedbackStatusValue[] = [PENDING_FEEDBACK_STATUS, READY_FEEDBACK_STATUS, FAILED_FEEDBACK_STATUS];
-
-export function isActiveGradeFeedbackStatus(status: GradeFeedbackStatusValue): boolean {
-  return status === PENDING_FEEDBACK_STATUS || status === READY_FEEDBACK_STATUS;
-}

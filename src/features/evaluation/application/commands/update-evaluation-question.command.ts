@@ -19,12 +19,13 @@ export class UpdateEvaluationQuestionCommand {
   public readonly prompt?: unknown;
   public readonly points?: number;
   public readonly explanation?: string | null;
+  public readonly hint?: string | null;
   public readonly scenarioId?: string | null;
   public readonly mediaIds?: string[];
   public readonly clinicalCaseId?: string | null;
   public readonly rubric?: Record<string, unknown> | null;
 
-  public constructor({ evaluationId, questionId, actor, type, prompt, points, explanation, scenarioId, mediaIds, clinicalCaseId, rubric }: { evaluationId: string; questionId: string; actor: EvaluationActor; type?: EvaluationQuestionTypeValue; prompt?: unknown; points?: number; explanation?: string | null; scenarioId?: string | null; mediaIds?: string[]; clinicalCaseId?: string | null; rubric?: Record<string, unknown> | null }) {
+  public constructor({ evaluationId, questionId, actor, type, prompt, points, explanation, hint, scenarioId, mediaIds, clinicalCaseId, rubric }: { evaluationId: string; questionId: string; actor: EvaluationActor; type?: EvaluationQuestionTypeValue; prompt?: unknown; points?: number; explanation?: string | null; hint?: string | null; scenarioId?: string | null; mediaIds?: string[]; clinicalCaseId?: string | null; rubric?: Record<string, unknown> | null }) {
     this.evaluationId = evaluationId;
     this.questionId = questionId;
     this.actor = actor;
@@ -32,6 +33,7 @@ export class UpdateEvaluationQuestionCommand {
     this.prompt = prompt;
     this.points = points;
     this.explanation = explanation;
+    this.hint = hint;
     this.scenarioId = scenarioId;
     this.mediaIds = mediaIds;
     this.clinicalCaseId = clinicalCaseId;

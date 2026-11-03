@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Tipos de notificación
  * Descripción: Catálogo de tipos de notificación persistida que genera la plataforma a partir de los eventos de dominio
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,7 @@ export type NotificationTypeValue =
   | "EVALUATION_ACTIVATED"
   | "GRADE_PUBLISHED"
   | "FEEDBACK_READY"
+  | "ATTEMPT_RESET"
   | "ROLE_CHANGED"
   | "VENTILATOR_OFFLINE";
 
@@ -23,6 +24,7 @@ export const NOTIFICATION_TYPES: readonly NotificationTypeValue[] = [
   "EVALUATION_ACTIVATED",
   "GRADE_PUBLISHED",
   "FEEDBACK_READY",
+  "ATTEMPT_RESET",
   "ROLE_CHANGED",
   "VENTILATOR_OFFLINE",
 ];

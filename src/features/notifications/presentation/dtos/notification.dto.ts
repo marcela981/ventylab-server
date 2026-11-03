@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de notificaciones
  * Descripción: Notificación del usuario (misma forma que la carga útil de notification:new) con una variante por tipo que documenta su campo data y la unión discriminada por type, conteo de no leídas y resultado de marcar todas como leídas
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { ApiProperty, getSchemaPath, OmitType, type ReferenceObject, type Schema
 
 import { type NotificationTypeValue, NOTIFICATION_TYPES } from "@/features/notifications/domain/value-objects/notification-type";
 import {
+  AttemptResetNotificationDataDTO,
   EvaluationActivatedNotificationDataDTO,
   FeedbackReadyNotificationDataDTO,
   GradePublishedNotificationDataDTO,
@@ -27,6 +28,7 @@ export const NOTIFICATION_DATA_DTOS: (new () => object)[] = [
   EvaluationActivatedNotificationDataDTO,
   GradePublishedNotificationDataDTO,
   FeedbackReadyNotificationDataDTO,
+  AttemptResetNotificationDataDTO,
   RoleChangedNotificationDataDTO,
   VentilatorOfflineNotificationDataDTO,
 ];
@@ -99,6 +101,14 @@ export class FeedbackReadyNotificationDTO extends OmitType(NotificationDTO, ["ty
   public data: Record<string, string | number | boolean | null> | null;
 }
 
+export class AttemptResetNotificationDTO extends OmitType(NotificationDTO, ["type", "data"] as const) {
+  @ApiProperty({ description: "Notification type", enum: ["ATTEMPT_RESET"], example: "ATTEMPT_RESET" })
+  public type: string;
+
+  @ApiProperty({ description: "Evaluation the student may take again", type: AttemptResetNotificationDataDTO, nullable: true })
+  public data: Record<string, string | number | boolean | null> | null;
+}
+
 export class RoleChangedNotificationDTO extends OmitType(NotificationDTO, ["type", "data"] as const) {
   @ApiProperty({ description: "Notification type", enum: ["ROLE_CHANGED"], example: "ROLE_CHANGED" })
   public type: string;
@@ -121,6 +131,7 @@ export const NOTIFICATION_VARIANT_DTOS: Record<NotificationTypeValue, new () => 
   EVALUATION_ACTIVATED: EvaluationActivatedNotificationDTO,
   GRADE_PUBLISHED: GradePublishedNotificationDTO,
   FEEDBACK_READY: FeedbackReadyNotificationDTO,
+  ATTEMPT_RESET: AttemptResetNotificationDTO,
   ROLE_CHANGED: RoleChangedNotificationDTO,
   VENTILATOR_OFFLINE: VentilatorOfflineNotificationDTO,
 };

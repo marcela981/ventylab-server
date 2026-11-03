@@ -47,6 +47,7 @@ export class AddEvaluationQuestionUseCase {
             prompt,
             points: command.points,
             explanation: command.explanation,
+            hint: command.hint,
             scenarioId: command.scenarioId,
             mediaIds: command.mediaIds,
             clinicalCaseId: command.clinicalCaseId,

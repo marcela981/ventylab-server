@@ -1,7 +1,7 @@
 <!--
  * Funcionalidad: Contexto del backend para asistentes de IA
- * Descripción: Estado real del backend NestJS de VentyLab: stack, arquitectura, familias de rutas, roles y permisos, contrato OpenAPI compartido con ventilab-web, contrato Socket.io (incluido el lote ventilator:telemetry), MQTT, variables de entorno, migraciones versionadas, despliegue en un contenedor persistente de una sola réplica sobre Dokploy y comandos. v1.2: sin el puente de NextAuth (ruta nextauth-token, NEXTAUTH_SECRET y NEXTAUTH_BRIDGE_SECRET). v1.3 (Bloque 1): reserva inmediata, paciente propio en sesiones FREE, sembrador de arranque de casos clínicos y limitaciones conocidas (operador y sala en memoria, vencimiento por sondeo). v1.4 (Bloque 2): GET /api/lessons/:id/access y nuevas rutas deprecadas. v1.5 (W12 Bloque 2): sección de aprendizaje, gamificación y tutor (orden obligatorio, registro de actividad, logros, valoraciones con superficie y alcance, evento SSE start), 32 migraciones y limitaciones conocidas del bloque
- * Versión: 1.5
+ * Descripción: Estado real del backend NestJS de VentyLab: stack, arquitectura, familias de rutas, roles y permisos, contrato OpenAPI compartido con ventilab-web, contrato Socket.io (incluido el lote ventilator:telemetry), MQTT, variables de entorno, migraciones versionadas, despliegue en un contenedor persistente de una sola réplica sobre Dokploy y comandos. v1.2: sin el puente de NextAuth (ruta nextauth-token, NEXTAUTH_SECRET y NEXTAUTH_BRIDGE_SECRET). v1.3 (Bloque 1): reserva inmediata, paciente propio en sesiones FREE, sembrador de arranque de casos clínicos y limitaciones conocidas (operador y sala en memoria, vencimiento por sondeo). v1.4 (Bloque 2): GET /api/lessons/:id/access y nuevas rutas deprecadas. v1.5 (W12 Bloque 2): sección de aprendizaje, gamificación y tutor (orden obligatorio, registro de actividad, logros, valoraciones con superficie y alcance, evento SSE start), 32 migraciones y limitaciones conocidas del bloque. v1.6 (Bloque 3): evaluación por tipo (retroalimentación inmediata, publicación automática, pista, nota parcial), vínculo con el currículo, lista de intentos para calificar, reinicio de intento con concesión auditada, correcciones del feedback IA, 33 migraciones y limitaciones del bloque
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -42,7 +42,7 @@ src/
   features/<feature>/  domain/ application/ infrastructure/ presentation/ <feature>.module.ts (37 features)
 ```
 
-Prisma schema: `prisma/schema.prisma`, **59 models**. `PrismaService` is the only client in `src`.
+Prisma schema: `prisma/schema.prisma`, **62 models**. `PrismaService` is the only client in `src`.
 
 ## Routes
 
@@ -62,6 +62,17 @@ Prisma schema: `prisma/schema.prisma`, **59 models**. `PrismaService` is the onl
 - **`GET /api/me/summary`** adds `continueLearning {moduleId, lessonId, lessonTitle, moduleTitle, percent} | null` from `UserProgress.lastAccessedLessonId`.
 - **AI tutor and ratings:** tutor SSE streams (`POST /api/tutor/pages/:pageId/deepen`, `POST /api/tutor/conversations[/:id/messages]`) send a `start` event with `{conversationId, messageId}` before the first `delta`, then `done` / `error`. `AiRating` stores `surface` (`POPUP | ACCORDION | ASSISTANT | NOTES_ANALYSIS`) and `scope` (`LESSON | MODULE | PAGE | FREE`); module questions use the `MODULE_QA` use case (separate from `LESSON_QA`); a stopped answer with saved text can be rated. `GET /api/admin/ai-ratings/stats` filters and groups by `surface` and `scope`.
 - **No fake AI provider.** Without keys the AI use cases answer their deterministic fallback or 503. The web E2E specs point `OPENAI_BASE_URL` at a local OpenAI-compatible stand-in (`ventilab-web/scripts/e2e/fake-llm.mjs`).
+
+## Evaluation (Block 3)
+
+Design, default decisions and deviations: `../DISENO_BLOQUE3.md` (§2, §7b and §9). Migration `20261101120000_evaluation_block3` (additive: `evaluation_questions.hint`, `evaluation_answers.revealed_at`, `grade_feedbacks.superseded_at`, table `evaluation_attempt_grants`, enum value `AiRatingSurface.EVALUATION_FEEDBACK`).
+
+- **Policy by type, derived in the domain** (`evaluation-type.ts`: `immediateFeedbackFor`, `autoPublishFor`; no new column). QUIZ and WORKSHOP: immediate feedback and automatic publication; EXAM: no feedback, published by the teacher unless `showResultsImmediately`. An attempt with only closed questions ends GRADED (and PUBLISHED when auto-published); with an OPEN_TEXT question it ends PENDING_REVIEW with `partialClosedScore` (QUIZ and WORKSHOP only), and a WORKSHOP is auto-published when the teacher finishes the review.
+- **Immediate check:** `POST /api/my-evaluations/attempts/:attemptId/answers/:questionId/check` `{selectedOptionIds}` upserts the answer under the attempt lock, sets `revealedAt` and returns `{isCorrect, correctOptionIds, explanation}`. 422 `evaluation.answer_check_unavailable` for EXAM or a non-choice question; 409 `evaluation.answer_locked` for a revealed answer (a later PUT too; on submit a revealed answer is ignored). The attempt detail carries the correction of revealed questions only. `hint` reaches the student only in WORKSHOP and never falls back to the explanation.
+- **Curriculum link:** `GET /api/my-evaluations` items carry `moduleId`, `levelId`, `levelTitle`, `levelOrder`, `track` and `attemptsAllowed` (maxAttempts + granted extra attempts); optional `?moduleId=` filter.
+- **Grading list:** `GET /api/evaluation-grading/attempts?evaluationId&groupId&status[]&page&limit` (evaluationId required; counts by status ignore the status filter; ordered by student then attempt number), scoped like the grading queue.
+- **Reset (non-destructive):** `POST /api/evaluation-grading/students/:userId/evaluations/:evaluationId/reset` `{reason}` (1-500) upserts `EvaluationAttemptGrant.extraAttempts` (+1) and audits `EVALUATION_ATTEMPT_RESET` in the same transaction; after commit `ATTEMPT_RESET` is persisted and sent over `notification:new`. 404 when the student has no group or the evaluation is not assigned to it; 409 `evaluation.attempt_in_progress`; 409 `evaluation.assignment_not_active` with `{assignmentId, startsAt, endsAt}`. `start` allows `maxAttempts + extraAttempts`.
+- **AI feedback:** `FEEDBACK_READY` only when the grade is already published when generation ends; regenerate marks `supersededAt` instead of deleting (`@Throttle` 5/min, 409 with a PENDING younger than 10 min); a PENDING older than 10 min reads as FAILED; regrading a published grade regenerates. `GET .../feedback` embeds `myRating` per item. Ratings from the result send `surface=EVALUATION_FEEDBACK`.
 
 ## Roles and authorization
 
@@ -109,7 +120,7 @@ Validated at startup by `src/common/infrastructure/config/env.validation.ts` (10
 
 ## Database and migrations
 
-- `prisma/migrations/` **is tracked by git** (32 migrations, latest `20261028120200_ai_rating_surface_scope`). `.gitignore` keeps `*.sql` backups ignored but re-includes `prisma/migrations/**/migration.sql`.
+- `prisma/migrations/` **is tracked by git** (33 migrations, latest `20261101120000_evaluation_block3`). `.gitignore` keeps `*.sql` backups ignored but re-includes `prisma/migrations/**/migration.sql`.
 - The container entrypoint runs `prisma migrate deploy` (through `DIRECT_URL`) on every start and refuses to start if it fails.
 - Clinical cases: `ClinicalCasesBootstrapService` inserts the July cases and the `engine-*` base cases on startup when they are missing (insert-only, never updates, so cases with sessions keep their replay). `prisma/seed-clinical-cases.ts` is insert-only as well.
 - Target database: PostgreSQL hosted on Dokploy (the optional `postgres` profile of `docker-compose.yml`, or a Dokploy-managed Postgres).
@@ -143,3 +154,6 @@ Validated at startup by `src/common/infrastructure/config/env.validation.ts` (10
 - **Historic streak is under-counted.** The backfill only knows the first and last timestamps per page, lesson and module, not every active day before Block 2.
 - **An answer aborted before its first token cannot be rated** (no assistant message is saved); answers that fail mid-stream are saved as incomplete.
 - **Immediate reservations** (`POST /api/reservations` with `durationMinutes` and no `startsAt`) start at the current minute and are not aligned to `slotMinutes`, so the calendar can show gaps shorter than one slot.
+- **`AiRatingSurface.EVALUATION_FEEDBACK` cannot be removed** without recreating the enum type (PostgreSQL has no `DROP VALUE`); it is additive and deletes no data.
+- **XP is insert-only:** regrading a passed evaluation down does not take back its XP (documented in `docs/bloque2/reglas-gamificacion.md`).
+- **Revealed answers with several attempts:** a QUIZ or WORKSHOP with `maxAttempts > 1` reveals the correct option of every answered question, which the student can reuse in a later attempt (accepted risk, as in July).

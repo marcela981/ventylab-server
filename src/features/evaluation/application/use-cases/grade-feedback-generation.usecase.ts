@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GenerateGradeFeedbackUseCase
- * Descripción: Genera la retroalimentación de un intento calificado: reserva bajo candado por intento una fila global PENDING (idempotente: omite si ya hay una PENDING o READY, salvo que se complete una reserva de regeneración), arma el contexto sin datos personales, llama a IGradeFeedbackGenerator fuera de toda transacción (con el identificador del intento solo para la telemetría) y guarda en otra transacción la fila global y una por pregunta como READY con origen, proveedor y modelo, solo si la reserva sigue vigente y, tras confirmarse esa transacción, publica GradeFeedbackReadyEvent; ante un error inesperado marca la reserva FAILED y relanza
- * Versión: 1.2
+ * Descripción: Genera la retroalimentación de un intento calificado: reserva bajo candado por intento una fila global PENDING (idempotente: omite si ya hay una READY o una PENDING de menos de 10 minutos, salvo que se complete una reserva de regeneración o que una recalificación pida reemplazar la vigente; las filas anteriores se marcan supersededAt, nunca se borran), arma el contexto sin datos personales, llama a IGradeFeedbackGenerator fuera de toda transacción (con el identificador del intento solo para la telemetría) y guarda en otra transacción la fila global y una por pregunta como READY con origen, proveedor y modelo, solo si la reserva sigue vigente y, tras confirmarse esa transacción, publica GradeFeedbackReadyEvent únicamente si la nota del intento ya está publicada; ante un error inesperado marca la reserva FAILED y relanza
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -73,7 +73,7 @@ export class GenerateGradeFeedbackUseCase {
       return "skipped";
     }
 
-    const pendingId: string | undefined = command.pendingFeedbackId ?? (await this._reserve(attempt.id));
+    const pendingId: string | undefined = command.pendingFeedbackId ?? (await this._reserve(attempt.id, command.replaceCurrent));
 
     if (pendingId === undefined) {
       return "skipped";
@@ -94,9 +94,12 @@ export class GenerateGradeFeedbackUseCase {
       throw error;
     }
 
-    this._eventBus.publish([
-      new GradeFeedbackReadyEvent({ attemptId: attempt.id, evaluationId: attempt.evaluationId, userId: attempt.userId, feedbackId: pendingId }),
-    ]);
+    // The student can only open the feedback of a published grade: notifying earlier leads to a 404
+    if ((await this._attemptsRepository.getById(attempt.id))?.isPublished === true) {
+      this._eventBus.publish([
+        new GradeFeedbackReadyEvent({ attemptId: attempt.id, evaluationId: attempt.evaluationId, userId: attempt.userId, feedbackId: pendingId }),
+      ]);
+    }
 
     return "ready";
   }
@@ -111,17 +114,19 @@ export class GenerateGradeFeedbackUseCase {
     return evaluation;
   }
 
-  private async _reserve(attemptId: string): Promise<string | undefined> {
+  private async _reserve(attemptId: string, replaceCurrent: boolean): Promise<string | undefined> {
     return await this._transactionManager.run(async (transaction: unknown): Promise<string | undefined> => {
       await this._feedbacksRepository.acquireTransactionLock(gradeFeedbackLockKey(attemptId), transaction);
 
-      if (hasActiveGradeFeedback(await this._feedbacksRepository.getByAttempt(attemptId, transaction))) {
+      const now: Date = new Date();
+
+      if (!replaceCurrent && hasActiveGradeFeedback(await this._feedbacksRepository.getByAttempt(attemptId, transaction), now)) {
         return undefined;
       }
 
-      const pending: GradeFeedbackRecord = createPendingGradeFeedback(attemptId, new Date());
+      const pending: GradeFeedbackRecord = createPendingGradeFeedback(attemptId, now);
 
-      await this._feedbacksRepository.replaceForAttempt(attemptId, [pending], transaction);
+      await this._feedbacksRepository.supersedeForAttempt(attemptId, [pending], now, transaction);
 
       return pending.id;
     });
@@ -133,7 +138,7 @@ export class GenerateGradeFeedbackUseCase {
         return false;
       }
 
-      await this._feedbacksRepository.replaceForAttempt(attemptId, buildReadyGradeFeedback(attemptId, pendingId, generated, new Date()), transaction);
+      await this._feedbacksRepository.completePending(pendingId, buildReadyGradeFeedback(attemptId, pendingId, generated, new Date()), transaction);
 
       return true;
     });

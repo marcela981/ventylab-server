@@ -239,6 +239,47 @@ export class InvalidEvaluationAnswerError extends DomainError {
   }
 }
 
+export class EvaluationAttemptInProgressError extends DomainError {
+  public constructor() {
+    super("The student has an attempt in progress, so the attempt cannot be reset now", "evaluation.attempt_in_progress");
+  }
+}
+
+export class EvaluationAssignmentNotActiveError extends DomainError {
+  public readonly assignmentId: string;
+  public readonly startsAt: Date;
+  public readonly endsAt?: Date;
+
+  public constructor({ assignmentId, startsAt, endsAt }: { assignmentId: string; startsAt: Date; endsAt?: Date }) {
+    super("The assignment of the student group is not active: extend its window before resetting the attempt", "evaluation.assignment_not_active");
+    this.assignmentId = assignmentId;
+    this.startsAt = startsAt;
+    this.endsAt = endsAt;
+  }
+
+  // Lets the client offer to extend the window of this assignment
+  public get details(): { assignmentId: string; startsAt: string; endsAt: string | null } {
+    return { assignmentId: this.assignmentId, startsAt: this.startsAt.toISOString(), endsAt: this.endsAt?.toISOString() ?? null };
+  }
+}
+
+export class EvaluationAnswerLockedError extends DomainError {
+  public constructor() {
+    super("The answer was already checked, so it can no longer change", "evaluation.answer_locked");
+  }
+}
+
+export type AnswerCheckUnavailableReason = "evaluation_type" | "question_type";
+
+export class EvaluationAnswerCheckUnavailableError extends DomainError {
+  public readonly reason: AnswerCheckUnavailableReason;
+
+  public constructor(reason: AnswerCheckUnavailableReason) {
+    super(`Immediate feedback is not available: ${reason}`, "evaluation.answer_check_unavailable");
+    this.reason = reason;
+  }
+}
+
 export class GradeFeedbackNotAvailableError extends DomainError {
   public constructor() {
     super("Feedback is available once the grade is published", "evaluation.grade_feedback_not_available");
@@ -248,6 +289,12 @@ export class GradeFeedbackNotAvailableError extends DomainError {
 export class GradeFeedbackAttemptNotGradedError extends DomainError {
   public constructor() {
     super("Feedback can only be generated for a graded attempt", "evaluation.grade_feedback_attempt_not_graded");
+  }
+}
+
+export class GradeFeedbackGenerationInProgressError extends DomainError {
+  public constructor() {
+    super("A feedback generation is already in progress for this attempt", "evaluation.grade_feedback_generation_in_progress");
   }
 }
 

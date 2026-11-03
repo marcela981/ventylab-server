@@ -100,7 +100,7 @@ export class GradeEvaluationAnswerUseCase {
         comment: command.comment,
         graderId: command.actor.id,
         now,
-        publishImmediately: context.evaluation.showResultsImmediately,
+        publishImmediately: context.evaluation.autoPublishesGrades,
         passingGrade: this._gradingConfig.passingGrade,
       });
 

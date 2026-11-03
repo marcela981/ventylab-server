@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Registro de pruebas en cuarentena
   Descripción: Pruebas omitidas de forma explícita (it.skip) para dejar la integración continua en verde sin borrarlas: archivo y nombre, causa conocida o probable, comando exacto para reproducir y criterio de salida de cada una
-  Versión: 1.0
+  Versión: 1.1
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,27 +25,11 @@ El proyecto no usa `eslint-plugin-jest`, por lo que `jest/no-disabled-tests` no 
 
 | # | Suite | Archivo | Prueba | Tipo |
 |---|-------|---------|--------|------|
-| 1 | unit | `src/features/evaluation/infrastructure/events/grade-feedback-events.handlers.spec.ts` | `GradeFeedbackEventsHandlers › stores READY DETERMINISTIC feedback when the language model fails, without affecting the submit result (check 14)` | Intermitente |
-| 2 | integration | `test/integration/groups/groups.integration-spec.ts` | `groups against PostgreSQL › should keep a student in one active student group when 8 additions race` | Falla solo en CI |
-| 3 | integration | `test/integration/concurrency/ventilator-preemption-concurrency.integration-spec.ts` | `ventilator preemption races against PostgreSQL › should let exactly one of 6 teachers preempt the same active reservation` | Falla solo en CI |
-| 4 | e2e | `test/e2e/authorization/authorization-matrix.e2e-spec.ts` | `authorization matrix (e2e) › GET /api/evaluation-grading/students/:userId/grades` | Determinista |
+| 1 | integration | `test/integration/groups/groups.integration-spec.ts` | `groups against PostgreSQL › should keep a student in one active student group when 8 additions race` | Falla solo en CI |
+| 2 | integration | `test/integration/concurrency/ventilator-preemption-concurrency.integration-spec.ts` | `ventilator preemption races against PostgreSQL › should let exactly one of 6 teachers preempt the same active reservation` | Falla solo en CI |
+| 3 | e2e | `test/e2e/authorization/authorization-matrix.e2e-spec.ts` | `authorization matrix (e2e) › GET /api/evaluation-grading/students/:userId/grades` | Determinista |
 
-## 1. Retroalimentación DETERMINISTIC cuando el modelo de lenguaje falla (check 14)
-
-- **Archivo:** `src/features/evaluation/infrastructure/events/grade-feedback-events.handlers.spec.ts`
-- **Prueba:** `GradeFeedbackEventsHandlers › stores READY DETERMINISTIC feedback when the language model fails, without affecting the submit result (check 14)`
-- **Síntoma:** en GitHub Actions falla de forma intermitente en `expect(providers.every((provider) => provider.calls > 0)).toBe(true)` (ejecuciones 40419632718, 40457632987 y 40458179941). Localmente suele pasar.
-- **Causa probable:** condición de carrera en la propia prueba. `waitUntil` espera como máximo 50 vueltas de `setImmediate` y, si la condición no se cumple, retorna en silencio sin fallar. El orquestador de IA reintenta al proveedor `primary` (error 503 reintentable) con `sleep(retryDelayMs * (retry + 1))` sobre `setTimeout` (`retryDelayMs = 1` en la prueba) antes de pasar a `secondary`. Las 50 vueltas de `setImmediate` pueden terminar antes de que venzan esos temporizadores, sobre todo con la CPU compartida de CI y la ejecución con cobertura y dos trabajadores; las aserciones corren entonces cuando `secondary` todavía no ha sido llamado.
-- **Reproducción:**
-
-  ```bash
-  npx jest --config test/jest/jest.unit.config.js src/features/evaluation/infrastructure/events/grade-feedback-events.handlers.spec.ts
-  ```
-
-  Para forzar la contención, repetirlo en bucle o con la suite completa: `npm run test:unit`.
-- **Criterio de salida:** `waitUntil` espera por tiempo real (por ejemplo, sondeo con `setTimeout` hasta un plazo de 2 s) y falla de forma explícita si vence el plazo, o la prueba usa temporizadores falsos y avanza el reloj; la prueba pasa 50 veces seguidas en `npm run test:unit` local y en tres ejecuciones consecutivas de CI.
-
-## 2. Altas simultáneas del mismo estudiante en grupos STUDENT
+## 1. Altas simultáneas del mismo estudiante en grupos STUDENT
 
 - **Archivo:** `test/integration/groups/groups.integration-spec.ts`
 - **Prueba:** `groups against PostgreSQL › should keep a student in one active student group when 8 additions race`
@@ -60,7 +44,7 @@ El proyecto no usa `eslint-plugin-jest`, por lo que `jest/no-disabled-tests` no 
   Requiere Docker (Testcontainers). Para reproducir el fallo hay que ejecutarlo en GitHub Actions o en un entorno con recursos equivalentes (Linux, 4 vCPU).
 - **Criterio de salida:** registrar el motivo de cada rechazo (`results.filter(r => r.status === "rejected").map(r => r.reason)`) en una ejecución de CI, corregir la causa (configuración del pool o del plazo de la transacción, o el caso de uso) y obtener tres ejecuciones consecutivas de CI en verde con la prueba activa.
 
-## 3. Desocupaciones simultáneas de la misma reserva activa
+## 2. Desocupaciones simultáneas de la misma reserva activa
 
 - **Archivo:** `test/integration/concurrency/ventilator-preemption-concurrency.integration-spec.ts`
 - **Prueba:** `ventilator preemption races against PostgreSQL › should let exactly one of 6 teachers preempt the same active reservation`
@@ -75,7 +59,7 @@ El proyecto no usa `eslint-plugin-jest`, por lo que `jest/no-disabled-tests` no 
   Requiere Docker (Testcontainers); el fallo solo se ha observado en GitHub Actions.
 - **Criterio de salida:** el mismo del caso 2: motivo de los rechazos registrado en CI, causa corregida y tres ejecuciones consecutivas de CI en verde con la prueba activa.
 
-## 4. Matriz de autorización: notas de un estudiante vistas por un docente
+## 3. Matriz de autorización: notas de un estudiante vistas por un docente
 
 - **Archivo:** `test/e2e/authorization/authorization-matrix.e2e-spec.ts` (entrada en `test/e2e/authorization/authorization-matrix.ts`)
 - **Prueba:** `authorization matrix (e2e) › GET /api/evaluation-grading/students/:userId/grades`

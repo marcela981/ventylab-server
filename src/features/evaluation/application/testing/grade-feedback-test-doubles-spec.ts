@@ -38,13 +38,35 @@ export class InMemoryGradeFeedbacksRepository implements IGradeFeedbacksReposito
   public async getByAttempt(attemptId: string): Promise<GradeFeedbackRecord[]> {
     await Promise.resolve();
 
-    return this.records.filter((record: GradeFeedbackRecord) => record.attemptId === attemptId).map((record: GradeFeedbackRecord) => ({ ...record }));
+    return this.records
+      .filter((record: GradeFeedbackRecord) => record.attemptId === attemptId && record.supersededAt === undefined)
+      .map((record: GradeFeedbackRecord) => ({ ...record }));
   }
 
-  public async replaceForAttempt(attemptId: string, records: ReadonlyArray<GradeFeedbackRecord>): Promise<void> {
+  public current(): GradeFeedbackRecord[] {
+    return this.records.filter((record: GradeFeedbackRecord) => record.supersededAt === undefined);
+  }
+
+  public async supersedeForAttempt(attemptId: string, records: ReadonlyArray<GradeFeedbackRecord>, now: Date = new Date()): Promise<void> {
     await Promise.resolve();
 
-    this.records = [...this.records.filter((record: GradeFeedbackRecord) => record.attemptId !== attemptId), ...records.map((record: GradeFeedbackRecord) => ({ ...record }))];
+    this.records = [
+      ...this.records.map((record: GradeFeedbackRecord) =>
+        record.attemptId === attemptId && record.supersededAt === undefined ? { ...record, supersededAt: now } : record,
+      ),
+      ...records.map((record: GradeFeedbackRecord) => ({ ...record })),
+    ];
+  }
+
+  public async completePending(pendingId: string, records: ReadonlyArray<GradeFeedbackRecord>): Promise<void> {
+    await Promise.resolve();
+
+    const overall: GradeFeedbackRecord | undefined = records.find((record: GradeFeedbackRecord) => record.id === pendingId);
+
+    this.records = [
+      ...this.records.map((record: GradeFeedbackRecord) => (record.id === pendingId && overall ? { ...overall, createdAt: record.createdAt } : record)),
+      ...records.filter((record: GradeFeedbackRecord) => record.id !== pendingId).map((record: GradeFeedbackRecord) => ({ ...record })),
+    ];
   }
 
   public async updateStatus(id: string, status: GradeFeedbackStatusValue, now: Date): Promise<void> {

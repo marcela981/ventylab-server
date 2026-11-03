@@ -8,12 +8,14 @@
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type GradeFeedbackRatingView } from "@/features/evaluation/application/ports/grade-feedback-ratings-reader.interface";
 import { type GradeFeedbackRegenerationResult, type GradeFeedbackResult } from "@/features/evaluation/application/results/grade-feedback.result";
 import { type GradeFeedbackRecord } from "@/features/evaluation/domain/read-models/grade-feedback.read-model";
 import { READY_FEEDBACK_STATUS } from "@/features/evaluation/domain/value-objects/grade-feedback-status";
 import {
   GradeFeedbackDTO,
   GradeFeedbackItemDTO,
+  GradeFeedbackMyRatingDTO,
   GradeFeedbackRegenerationDTO,
   StudentGradeFeedbackDTO,
   StudentGradeFeedbackItemDTO,
@@ -23,8 +25,8 @@ export class GradeFeedbacksMapper {
   public static toStudentDTO(result: GradeFeedbackResult): StudentGradeFeedbackDTO {
     return new StudentGradeFeedbackDTO({
       attemptId: result.attemptId,
-      overall: result.overall ? GradeFeedbacksMapper.toStudentItemDTO(result.overall) : null,
-      questions: result.questions.map((record: GradeFeedbackRecord) => GradeFeedbacksMapper.toStudentItemDTO(record)),
+      overall: result.overall ? GradeFeedbacksMapper.toStudentItemDTO(result.overall, result.ratings) : null,
+      questions: result.questions.map((record: GradeFeedbackRecord) => GradeFeedbacksMapper.toStudentItemDTO(record, result.ratings)),
     });
   }
 
@@ -40,8 +42,9 @@ export class GradeFeedbacksMapper {
     return new GradeFeedbackRegenerationDTO({ attemptId: result.attemptId, status: result.status });
   }
 
-  private static toStudentItemDTO(record: GradeFeedbackRecord): StudentGradeFeedbackItemDTO {
+  private static toStudentItemDTO(record: GradeFeedbackRecord, ratings: ReadonlyMap<string, GradeFeedbackRatingView>): StudentGradeFeedbackItemDTO {
     const ready: boolean = record.status === READY_FEEDBACK_STATUS;
+    const rating: GradeFeedbackRatingView | undefined = ready ? ratings.get(record.id) : undefined;
 
     return new StudentGradeFeedbackItemDTO({
       id: record.id,
@@ -49,7 +52,24 @@ export class GradeFeedbacksMapper {
       status: record.status,
       source: ready ? record.source : null,
       content: ready ? record.content : null,
+      myRating: rating ? GradeFeedbacksMapper.toMyRatingDTO(rating) : null,
     });
+  }
+
+  private static toMyRatingDTO(rating: GradeFeedbackRatingView): GradeFeedbackMyRatingDTO {
+    return {
+      id: rating.id,
+      surface: rating.surface,
+      helpful: rating.helpful,
+      comment: rating.comment,
+      quality: rating.quality,
+      understanding: rating.understanding,
+      expression: rating.expression,
+      safety: rating.safety,
+      trust: rating.trust,
+      createdAt: rating.createdAt.toISOString(),
+      updatedAt: rating.updatedAt.toISOString(),
+    };
   }
 
   private static toTeacherItemDTO(record: GradeFeedbackRecord): GradeFeedbackItemDTO {
