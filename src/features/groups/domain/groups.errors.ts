@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de dominio de grupos
- * Descripción: Errores de la feature de grupos (grupo inexistente, jerarquía, cupo, membresía, rol admitido por tipo de grupo, estudiante ya asignado, líder, alcance de gestión y supervisión) con sus claves i18n
- * Versión: 1.1
+ * Descripción: Errores de la feature de grupos (grupo inexistente, jerarquía, cupo, membresía, rol admitido por tipo de grupo, estudiante ya asignado, líder, alcance de gestión, supervisión y estudiante fuera del alcance del docente) con sus claves i18n
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -103,5 +103,11 @@ export class GroupSupervisionNotFoundError extends DomainError {
 export class GroupUserNotFoundError extends DomainError {
   public constructor() {
     super("The user does not exist", "groups.user_not_found");
+  }
+}
+
+export class StudentOutOfScopeError extends DomainError {
+  public constructor() {
+    super("The student is not in a group you created or supervise", "groups.student_out_of_scope");
   }
 }

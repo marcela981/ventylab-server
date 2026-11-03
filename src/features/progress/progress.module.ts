@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo ProgressModule
- * Descripción: Registra la feature de progreso (controladores de /api/progress y de progresión en /api/teaching, casos de uso, repositorios Prisma y manejadores de eventos de logros); registra el progreso por páginas (vistas de página, progreso ponderado por lecciones, LearningProgressFacade, con el repositorio de lecturas por lotes para analítica) y el controlador de progreso de estudiantes; registra el registro de actividad de gamificación (repositorio, casos de uso, controlador de gamificación y relleno histórico al arrancar); importa ModulesModule (GetModuleResumeUseCase), CurriculumModule (ComputeCurriculumUnlockUseCase) y UsersModule (GetUserByIdUseCase). v1.4: registra GetContinueLearningUseCase (continueLearning del resumen del usuario a través de LearningProgressFacade)
- * Versión: 1.4
+ * Descripción: Registra la feature de progreso (controladores de /api/progress y de progresión en /api/teaching, casos de uso, repositorios Prisma y manejadores de eventos de logros); registra el progreso por páginas (vistas de página, progreso ponderado por lecciones, LearningProgressFacade, con el repositorio de lecturas por lotes para analítica) y el controlador de progreso de estudiantes; registra el registro de actividad de gamificación (repositorio, casos de uso, controlador de gamificación y relleno histórico al arrancar); importa ModulesModule (GetModuleResumeUseCase), CurriculumModule (ComputeCurriculumUnlockUseCase) y UsersModule (GetUserByIdUseCase). v1.4: registra GetContinueLearningUseCase (continueLearning del resumen del usuario a través de LearningProgressFacade). v1.5: importa GroupsModule para el alcance docente de las rutas de progreso de un estudiante
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { Module } from "@nestjs/common";
 
 import { AuthModule } from "@/features/auth/auth.module";
 import { CurriculumModule } from "@/features/curriculum/curriculum.module";
+import { GroupsModule } from "@/features/groups/groups.module";
 import { ModulesModule } from "@/features/modules/modules.module";
 import { LearningProgressFacade } from "@/features/progress/application/services/learning-progress.facade";
 import { BackfillLearningActivityUseCase } from "@/features/progress/application/use-cases/backfill-learning-activity.usecase";
@@ -60,7 +61,7 @@ import { TeachingProgressController } from "@/features/progress/presentation/con
 import { UsersModule } from "@/features/users/users.module";
 
 @Module({
-  imports: [AuthModule, CurriculumModule, ModulesModule, UsersModule],
+  imports: [AuthModule, CurriculumModule, ModulesModule, UsersModule, GroupsModule],
   controllers: [ProgressController, GamificationController, StudentProgressController, TeachingProgressController],
   providers: [
     ProgressEventsHandlers,

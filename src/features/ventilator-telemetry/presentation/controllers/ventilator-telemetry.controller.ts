@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador VentilatorTelemetryController
- * Descripción: Endpoints de la telemetría del ventilador físico: métricas del pipeline en JSON y CSV de solo lectura (docentes y administradores, permiso ventilator:metrics) y su reinicio (solo administradores, permiso ventilator:metrics_reset), inicio y fin de la grabación de la reserva activa y lectura de la grabación de una reserva (titulares, docentes o administradores)
- * Versión: 1.1
+ * Descripción: Endpoints de la telemetría del ventilador físico: métricas del pipeline en JSON y CSV de solo lectura (docentes y administradores, permiso ventilator:metrics) y su reinicio (solo administradores, permiso ventilator:metrics_reset), inicio y fin de la grabación de la reserva activa y lectura de la grabación de una reserva (titulares, su creador, administradores y los docentes que gestionan al titular)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -138,10 +138,10 @@ export class VentilatorTelemetryController {
   @Get("recordings/:reservationId")
   @RequirePermissions("simulation:read")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Get a telemetry recording", description: "Decompressed frames of a reservation ordered by server time; allowed to the reservation holders, teachers and administrators" })
+  @ApiOperation({ summary: "Get a telemetry recording", description: "Decompressed frames of a reservation ordered by server time; allowed to administrators, the reservation holders and creator, and teachers who manage the holder (a student of, or one of, the groups they created or supervise)" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Recording retrieved successfully", type: TelemetryRecordingDTO })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Not a holder of the reservation" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Not a holder of the reservation nor a teacher who manages it" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Reservation not found" })
   public async getTelemetryRecording(
     @Param("reservationId") reservationId: string,

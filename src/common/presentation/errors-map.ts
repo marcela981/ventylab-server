@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.41
+ * Versión: 1.42
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -148,6 +148,7 @@ import {
   ParentGroupNotFoundError,
   SimulatorLeadNotMemberError,
   StudentAlreadyInGroupError,
+  StudentOutOfScopeError,
 } from "@/features/groups/domain/groups.errors";
 import {
   InactiveModuleLessonCreationError,
@@ -370,6 +371,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [InvalidGroupSupervisionError, HttpStatus.UNPROCESSABLE_ENTITY],
   [GroupSupervisionNotFoundError, HttpStatus.NOT_FOUND],
   [GroupUserNotFoundError, HttpStatus.NOT_FOUND],
+  [StudentOutOfScopeError, HttpStatus.FORBIDDEN],
   [ScoreNotFoundError, HttpStatus.NOT_FOUND],
   [ScoreNotOwnedError, HttpStatus.FORBIDDEN],
   [InvalidScorePointsError, HttpStatus.BAD_REQUEST],

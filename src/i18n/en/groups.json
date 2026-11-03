@@ -14,6 +14,7 @@
   "type_creation_forbidden": "You are not allowed to create this type of group",
   "invalid_supervision": "A supervision must link a teacher group to a student group",
   "supervision_not_found": "The supervision does not exist",
+  "student_out_of_scope": "The student is not in a group you created or supervise",
   "user_not_found": "The user does not exist",
   "groups_retrieved": "Groups retrieved successfully",
   "my_groups_retrieved": "Your groups were retrieved successfully",

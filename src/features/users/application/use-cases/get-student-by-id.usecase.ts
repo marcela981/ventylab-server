@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetStudentByIdUseCase
- * Descripción: Devuelve un estudiante; los docentes solo ven a sus estudiantes asignados
- * Versión: 1.0
+ * Descripción: Devuelve un estudiante; un docente solo ve a los miembros de los grupos que creó o supervisa (puerto IStudentScopeChecker) o, por compatibilidad, a sus estudiantes asignados en TeacherStudent
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { GetStudentByIdCommand } from "@/features/users/application/commands/get-student-by-id.command";
+import { type IStudentScopeChecker, STUDENT_SCOPE_CHECKER_TOKEN } from "@/features/users/application/ports/student-scope-checker.interface";
 import { StudentResult } from "@/features/users/application/results/student.result";
 import { type User } from "@/features/users/domain/entities/user.entity";
 import {
@@ -25,7 +26,7 @@ import { StudentProgressSummary } from "@/features/users/domain/value-objects/us
 /**
  * @throws {UserNotFoundError} If no user exists with the given ID
  * @throws {UserNotStudentError} If the user exists but is not a student
- * @throws {StudentAccessDeniedError} If the requester is a teacher not assigned to the student
+ * @throws {StudentAccessDeniedError} If the requester is a teacher who neither manages a group of the student nor is assigned to them
  */
 @Injectable()
 export class GetStudentByIdUseCase {
@@ -34,6 +35,8 @@ export class GetStudentByIdUseCase {
     private readonly _usersRepository: IUserRepository,
     @Inject(USER_STATISTICS_REPOSITORY_TOKEN)
     private readonly _userStatisticsRepository: IUserStatisticsRepository,
+    @Inject(STUDENT_SCOPE_CHECKER_TOKEN)
+    private readonly _studentScope: IStudentScopeChecker,
   ) {}
 
   public async execute(command: GetStudentByIdCommand): Promise<StudentResult> {
@@ -48,9 +51,11 @@ export class GetStudentByIdUseCase {
     }
 
     if (command.requesterRole === TEACHER_ROLE_VALUE) {
-      const isAssigned: boolean = await this._usersRepository.isStudentAssignedToTeacher(command.requesterId, student.id);
+      const canView: boolean =
+        (await this._studentScope.canViewStudent({ id: command.requesterId, role: command.requesterRole }, student.id)) ||
+        (await this._usersRepository.isStudentAssignedToTeacher(command.requesterId, student.id));
 
-      if (!isAssigned) {
+      if (!canView) {
         throw new StudentAccessDeniedError();
       }
     }

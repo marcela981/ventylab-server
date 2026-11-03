@@ -1,13 +1,14 @@
 /*
  * Funcionalidad: Pruebas de la grabación de telemetría
- * Descripción: Verifica el submuestreo a VENTILATOR_RECORDING_HZ, que la frecuencia quede fija durante una grabación aunque cambie el ajuste, que la escritura del fragmento cada VENTILATOR_RECORDING_FLUSH_SECONDS no se espere en el camino caliente, la detención automática cuando cambia la reserva activa y la lectura de la grabación ordenada con autorización por titularidad o rol
- * Versión: 1.2
+ * Descripción: Verifica el submuestreo a VENTILATOR_RECORDING_HZ, que la frecuencia quede fija durante una grabación aunque cambie el ajuste, que la escritura del fragmento cada VENTILATOR_RECORDING_FLUSH_SECONDS no se espere en el camino caliente, la detención automática cuando cambia la reserva activa y la lectura de la grabación ordenada con autorización por titularidad, rol y alcance docente (solo el docente que gestiona al titular)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type GroupsFacade } from "@/features/groups/application/services/groups.facade";
 import { type ReservationsFacade } from "@/features/reservations/application/services/reservations.facade";
 import { GetTelemetryRecordingCommand } from "@/features/ventilator-telemetry/application/commands/telemetry-recording.command";
 import { type TelemetryRecordingResult } from "@/features/ventilator-telemetry/application/results/telemetry-recording.result";
@@ -175,9 +176,13 @@ describe("TelemetryRecorderService", () => {
 });
 
 describe("GetTelemetryRecordingUseCase", () => {
-  function build(isHolder: boolean): { useCase: GetTelemetryRecordingUseCase; repository: InMemoryTelemetryChunksRepository; recorder: TelemetryRecorderService } {
+  function build(isHolder: boolean, managedStudentIds: readonly string[] = []): { useCase: GetTelemetryRecordingUseCase; repository: InMemoryTelemetryChunksRepository; recorder: TelemetryRecorderService } {
     const repository: InMemoryTelemetryChunksRepository = new InMemoryTelemetryChunksRepository();
     const facade: ReservationsFacade = { isHolder: async (): Promise<boolean> => await Promise.resolve(isHolder) } as unknown as ReservationsFacade;
+    const groups: GroupsFacade = {
+      canViewStudent: async (_actor: unknown, userId: string): Promise<boolean> => await Promise.resolve(managedStudentIds.includes(userId)),
+      getManageableStudentGroupIds: async (): Promise<string[]> => await Promise.resolve([]),
+    } as unknown as GroupsFacade;
     const codec: JsonTelemetryChunkCodec = new JsonTelemetryChunkCodec();
     const recorder: TelemetryRecorderService = new TelemetryRecorderService(buildTelemetrySettings({ recordingHz: 1000 }), repository, codec, new FakeTelemetryClock());
 
@@ -190,7 +195,7 @@ describe("GetTelemetryRecordingUseCase", () => {
       endsAt: new Date(),
     });
 
-    return { useCase: new GetTelemetryRecordingUseCase(new TelemetryRecordingAccessService(facade, repository), repository, codec), repository, recorder };
+    return { useCase: new GetTelemetryRecordingUseCase(new TelemetryRecordingAccessService(facade, repository, groups), repository, codec), repository, recorder };
   }
 
   it("returns the decoded frames ordered by time to a holder", async () => {
@@ -209,13 +214,23 @@ describe("GetTelemetryRecordingUseCase", () => {
     expect(result.frames.map((sample: RecordedTelemetrySample): number => sample.serverTs)).toEqual([2000, 3000]);
   });
 
-  it("rejects a student who is not a holder and allows a teacher", async () => {
-    const { useCase }: { useCase: GetTelemetryRecordingUseCase } = build(false);
+  it("rejects a student who is not a holder and allows a teacher who manages the holder and an administrator", async () => {
+    const { useCase }: { useCase: GetTelemetryRecordingUseCase } = build(false, ["student-1"]);
 
     const forStudent: Promise<TelemetryRecordingResult> = useCase.execute(new GetTelemetryRecordingCommand({ reservationId: "reservation-1", userId: "student-2", role: "STUDENT" }));
     const forTeacher: TelemetryRecordingResult = await useCase.execute(new GetTelemetryRecordingCommand({ reservationId: "reservation-1", userId: "teacher-1", role: "TEACHER" }));
+    const forAdmin: TelemetryRecordingResult = await useCase.execute(new GetTelemetryRecordingCommand({ reservationId: "reservation-1", userId: "admin-1", role: "ADMIN" }));
 
     await expect(forStudent).rejects.toBeInstanceOf(TelemetryRecordingForbiddenError);
     expect(forTeacher.frames).toEqual([]);
+    expect(forAdmin.frames).toEqual([]);
+  });
+
+  it("rejects a teacher who does not manage the holder of the reservation", async () => {
+    const { useCase }: { useCase: GetTelemetryRecordingUseCase } = build(false);
+
+    await expect(
+      useCase.execute(new GetTelemetryRecordingCommand({ reservationId: "reservation-1", userId: "teacher-2", role: "TEACHER" })),
+    ).rejects.toBeInstanceOf(TelemetryRecordingForbiddenError);
   });
 });

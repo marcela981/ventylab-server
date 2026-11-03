@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas e2e de acceso a recursos ajenos (IDOR)
- * Descripción: Con la aplicación completa y recursos creados por fábricas o por la API para un dueño, comprueba que otro usuario con el mismo rol que cambia el identificador en la ruta no pueda leer ni modificar notas, conversaciones del tutor de IA, intentos de evaluación, sesiones de simulación, notificaciones, grupos de los que no es miembro ni paneles de analítica de grupos que no gestiona; espera 403 o 404 según el comportamiento documentado de cada ruta, verifica con el dueño que los identificadores son válidos y que los recursos quedan intactos; las lecturas del dueño, los listados y las respuestas de preparación se validan además contra el esquema de openapi/openapi.json
- * Versión: 1.2
+ * Descripción: Con la aplicación completa y recursos creados por fábricas o por la API para un dueño, comprueba que otro usuario con el mismo rol que cambia el identificador en la ruta no pueda leer ni modificar notas, conversaciones del tutor de IA, intentos de evaluación, sesiones de simulación, notificaciones, grupos de los que no es miembro ni paneles de analítica de grupos que no gestiona, y que un docente solo lea el detalle, el progreso y las grabaciones de los estudiantes de los grupos que creó o supervisa (el docente A recibe 200 y el docente B 403); espera 403 o 404 según el comportamiento documentado de cada ruta, verifica con el dueño que los identificadores son válidos y que los recursos quedan intactos; las lecturas del dueño, los listados y las respuestas de preparación se validan además contra el esquema de openapi/openapi.json
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import {
   createClinicalCase,
   createContentTree,
   createEvaluation,
+  createReservation,
   createStudent,
   createStudentGroup,
   createTeacher,
@@ -73,7 +74,24 @@ interface Fixture {
   readonly attemptId: string;
   readonly questionId: string;
   readonly evaluationId: string;
+  readonly moduleId: string;
+  readonly levelId: string;
+  readonly sectionId: string;
+  readonly reservationId: string;
 }
+
+type StudentDetailPath = readonly [label: string, path: (fixture: Fixture) => string];
+
+// Every staff read of one student's detail; the owner teacher gets 200 and the other teacher 403.
+const STUDENT_DETAIL_PATHS: readonly StudentDetailPath[] = [
+  ["header", (f: Fixture): string => `/api/users/students/${f.ownerStudent.user.id}`],
+  ["progress summary", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/summary`],
+  ["module progress", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/modules/${f.moduleId}`],
+  ["level progress", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/levels/${f.levelId}`],
+  ["section progress", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/sections/${f.sectionId}`],
+  ["dashboard progress", (f: Fixture): string => `/api/admin/students/${f.ownerStudent.user.id}/progress`],
+  ["ventilator recording", (f: Fixture): string => `/api/ventilator/telemetry/recordings/${f.reservationId}`],
+];
 
 type IdorCase = readonly [label: string, actor: "intruderStudent" | "intruderTeacher", method: HttpMethod, path: (fixture: Fixture) => string, body: object | undefined, expected: number];
 
@@ -110,6 +128,8 @@ const IDOR_CASES: readonly IdorCase[] = [
   ["analytics group export", "intruderTeacher", "GET", (f: Fixture): string => `/api/analytics/groups/${f.groupId}/export.csv`, undefined, 403],
   ["analytics student timeline", "intruderTeacher", "GET", (f: Fixture): string => `/api/analytics/students/${f.ownerStudent.user.id}/timeline`, undefined, 403],
   ["analytics evaluation stats", "intruderTeacher", "GET", (f: Fixture): string => `/api/analytics/evaluations/${f.evaluationId}/stats`, undefined, 403],
+  // Student detail (Block 4): a teacher only reads students of the groups they created or supervise (403 otherwise).
+  ...STUDENT_DETAIL_PATHS.map(([label, path]: StudentDetailPath): IdorCase => [`student ${label}`, "intruderTeacher", "GET", path, undefined, 403]),
 ];
 
 type OwnerCase = readonly [label: string, actor: "ownerStudent" | "ownerTeacher", path: (fixture: Fixture) => string];
@@ -123,6 +143,7 @@ const OWNER_CONTROLS: readonly OwnerCase[] = [
   ["analytics group dashboard", "ownerTeacher", (f: Fixture): string => `/api/analytics/groups/${f.groupId}/dashboard`],
   ["analytics student timeline", "ownerTeacher", (f: Fixture): string => `/api/analytics/students/${f.ownerStudent.user.id}/timeline`],
   ["analytics evaluation stats", "ownerTeacher", (f: Fixture): string => `/api/analytics/evaluations/${f.evaluationId}/stats`],
+  ...STUDENT_DETAIL_PATHS.map(([label, path]: StudentDetailPath): OwnerCase => [`student ${label}`, "ownerTeacher", path]),
 ];
 
 describe("IDOR protection (e2e)", () => {
@@ -148,6 +169,7 @@ describe("IDOR protection (e2e)", () => {
       data: SIMULATION_READY_PROFILE,
     });
     const evaluation: EvaluationWithQuestions = await createEvaluation(e2e.prisma, { createdBy: ownerTeacher.user, maxAttempts: 2 });
+    const reservation: { id: string } = await createReservation(e2e.prisma, { user: ownerStudent.user });
     const assignment: EvaluationAssignment = await assignEvaluationToGroup(e2e.prisma, evaluation.evaluation, group, { assignedBy: ownerTeacher.user });
 
     const note: { id: string } = await e2e.prisma.note.create({ data: { userId: ownerStudent.user.id, lessonId: tree.lesson.id, content: NOTE_CONTENT } });
@@ -179,6 +201,10 @@ describe("IDOR protection (e2e)", () => {
       attemptId: (attempt.body as { data: { id: string } }).data.id,
       questionId: evaluation.questions[0].id,
       evaluationId: evaluation.evaluation.id,
+      moduleId: tree.module.id,
+      levelId: tree.level.id,
+      sectionId: tree.section.id,
+      reservationId: reservation.id,
     };
   }
 

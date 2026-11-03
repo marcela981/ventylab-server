@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
- * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad
- * Versión: 1.7
+ * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante
+ * Versión: 1.8
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -66,7 +66,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/admin/ai/providers": ADMIN_ONLY, // settings:manage
   "GET /api/admin/statistics": TEACHER_UP, // admin-statistics:read
   "GET /api/admin/students": TEACHER_UP, // students:read
-  "GET /api/admin/students/:id/progress": TEACHER_UP, // students:read
+  "GET /api/admin/students/:id/progress": { ...TEACHER_UP, teacher: 403 }, // students:read; a teacher only reads students of their groups (403 otherwise)
   "GET /api/admin/teachers": ADMIN_ONLY, // users:read
   "PATCH /api/admin/users/:id/role": ADMIN_ONLY, // users:update_role
 
@@ -345,10 +345,10 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/progress/sections/:sectionId": STUDENT_UP, // progress:read_own
   "GET /api/progress/skills": STUDENT_UP, // progress:read_own
   "GET /api/progress/summary": STUDENT_UP, // progress:read_own
-  "GET /api/progress/users/:userId/levels/:levelId": TEACHER_UP, // progress:read
-  "GET /api/progress/users/:userId/modules/:moduleId": TEACHER_UP, // progress:read
-  "GET /api/progress/users/:userId/sections/:sectionId": TEACHER_UP, // progress:read
-  "GET /api/progress/users/:userId/summary": TEACHER_UP, // progress:read
+  "GET /api/progress/users/:userId/levels/:levelId": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
+  "GET /api/progress/users/:userId/modules/:moduleId": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
+  "GET /api/progress/users/:userId/sections/:sectionId": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
+  "GET /api/progress/users/:userId/summary": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
   "GET /api/teaching/lessons/:lessonId/access": STUDENT_UP, // progress:read_own
   "GET /api/teaching/modules/:moduleId/access": STUDENT_UP, // progress:read_own
   "GET /api/teaching/modules/unlocked": STUDENT_UP, // progress:read_own
