@@ -193,6 +193,7 @@ const MEMBERS: readonly TestMember[] = [
   { groupId: "group-1", userId: "student-2", memberRole: "MEMBER" },
 ];
 
+// Student groups each teacher manages (created or supervised).
 const SUPERVISED: Readonly<Record<string, string[]>> = { "teacher-1": ["group-1"] };
 
 function toAccount(user: TestUser): UserAccount {

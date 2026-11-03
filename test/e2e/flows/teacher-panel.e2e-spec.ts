@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e del panel docente (Bloque 4)
- * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; las respuestas se validan contra openapi/openapi.json
- * Versión: 1.1
+ * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; y que un docente pueda reservar el ventilador para un grupo que creó (no solo para los que supervisa) y no para uno ajeno; las respuestas se validan contra openapi/openapi.json
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,7 +13,7 @@ import { randomUUID } from "node:crypto";
 import { type Reservation, type User } from "@prisma/client";
 import { type Response } from "supertest";
 
-import { createAdmin, createReservation, createStudent, createStudentGroup, createTeacher, createTeacherGroup, type GroupWithMembers } from "../../factories";
+import { createAdmin, createReservation, nextFreeSlot, createStudent, createStudentGroup, createTeacher, createTeacherGroup, type GroupWithMembers } from "../../factories";
 import { mintAccessToken } from "../../support/auth";
 import { contractCaller, type ContractCaller, expectStatus } from "../../support/contract-api";
 import { resetDatabase } from "../../support/database";
@@ -146,6 +146,19 @@ describe("flow: teacher panel", () => {
       expectStatus(response, 200);
       expect(response.body.data).toHaveLength(2);
       expect(response.body.pagination).toEqual(expect.objectContaining({ total: 3, pages: 2 }));
+    });
+  });
+
+  describe("lab reservations for a group", () => {
+    it("lets a teacher reserve for a group they created and refuses a group they do not manage", async () => {
+      const body = (groupId: string): object => {
+        const startsAt: Date = nextFreeSlot();
+
+        return { holderType: "GROUP", groupId, startsAt: startsAt.toISOString(), endsAt: new Date(startsAt.getTime() + 15 * 60_000).toISOString() };
+      };
+
+      expectStatus(await api("POST", "/api/reservations", await tokenOf(fixture.creator), body(fixture.activeGroup.group.id)), 201);
+      expectStatus(await api("POST", "/api/reservations", await tokenOf(fixture.loner), body(fixture.activeGroup.group.id)), 403);
     });
   });
 

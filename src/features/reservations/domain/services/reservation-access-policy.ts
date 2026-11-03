@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Política de acceso a reservas
- * Descripción: Decisiones puras sobre quién puede reservar para un titular, cancelar una reserva, desplazar la reserva de otro titular y controlar el ventilador durante la reserva activa y filtrar el calendario por un grupo (ADMIN cualquiera, TEACHER los que gestiona o supervisa, STUDENT los suyos), y la relación de un usuario con una reserva (titular, líder o miembro del grupo titular, creador o ninguna); controlan el ventilador el usuario titular, el líder del grupo titular, docentes y administradores, a partir del actor y de hechos ya resueltos sobre grupos
- * Versión: 1.3
+ * Descripción: Decisiones puras sobre quién puede reservar para un titular (un docente, para los grupos STUDENT activos que creó o supervisa), cancelar una reserva, desplazar la reserva de otro titular y controlar el ventilador durante la reserva activa y filtrar el calendario por un grupo (ADMIN cualquiera, TEACHER los que gestiona o supervisa, STUDENT los suyos), y la relación de un usuario con una reserva (titular, líder o miembro del grupo titular, creador o ninguna); controlan el ventilador el usuario titular, el líder del grupo titular, docentes y administradores, a partir del actor y de hechos ya resueltos sobre grupos
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,7 +23,7 @@ export interface ReservationActor {
 
 export interface HolderGroupFacts {
   readonly leadsGroup: boolean;
-  readonly supervisesGroup: boolean;
+  readonly managesGroup: boolean;
   readonly isStudentGroup: boolean;
 }
 
@@ -45,7 +45,7 @@ export function canReserveFor(actor: ReservationActor, holder: ReservationHolder
   }
 
   if (actor.role === TEACHER_ACTOR_ROLE) {
-    return facts.supervisesGroup;
+    return facts.managesGroup;
   }
 
   return facts.leadsGroup;
@@ -60,7 +60,7 @@ export function canCancel(actor: ReservationActor, reservation: Reservation, fac
     return false;
   }
 
-  return facts.leadsGroup || (actor.role === TEACHER_ACTOR_ROLE && facts.supervisesGroup);
+  return facts.leadsGroup || (actor.role === TEACHER_ACTOR_ROLE && facts.managesGroup);
 }
 
 export function canPreempt(actor: ReservationActor, holderRole: ReservationPartyRole): boolean {
