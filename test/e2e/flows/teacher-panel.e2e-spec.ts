@@ -1,17 +1,19 @@
 /*
  * Funcionalidad: Prueba e2e del panel docente (Bloque 4)
- * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; las respuestas se validan contra openapi/openapi.json
- * Versión: 1.0
+ * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; las respuestas se validan contra openapi/openapi.json
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { type User } from "@prisma/client";
+import { randomUUID } from "node:crypto";
+
+import { type Reservation, type User } from "@prisma/client";
 import { type Response } from "supertest";
 
-import { createAdmin, createStudent, createStudentGroup, createTeacher, createTeacherGroup, type GroupWithMembers } from "../../factories";
+import { createAdmin, createReservation, createStudent, createStudentGroup, createTeacher, createTeacherGroup, type GroupWithMembers } from "../../factories";
 import { mintAccessToken } from "../../support/auth";
 import { contractCaller, type ContractCaller, expectStatus } from "../../support/contract-api";
 import { resetDatabase } from "../../support/database";
@@ -23,6 +25,12 @@ interface DirectoryRow {
   readonly groupName: string | null;
   readonly groups: { id: string; name: string }[];
   readonly canView: boolean;
+}
+
+interface RecordingItem {
+  readonly reservationId: string;
+  readonly chunkCount: number;
+  readonly sampleRateHz: number | null;
 }
 
 interface Fixture {
@@ -138,6 +146,35 @@ describe("flow: teacher panel", () => {
       expectStatus(response, 200);
       expect(response.body.data).toHaveLength(2);
       expect(response.body.pagination).toEqual(expect.objectContaining({ total: 3, pages: 2 }));
+    });
+  });
+
+  describe("ventilator recordings of a student", () => {
+    async function recordedReservation(holder: { user: User } | { group: GroupWithMembers["group"] }, minutesAgo: number): Promise<Reservation> {
+      const startsAt: Date = new Date(Date.now() - minutesAgo * 60_000);
+      const reservation: Reservation = await createReservation(e2e.prisma, holder, { createdBy: fixture.creator, startsAt, durationMinutes: 15, status: "COMPLETED" });
+
+      await e2e.prisma.telemetryChunk.create({
+        data: { id: randomUUID(), reservationId: reservation.id, startTs: startsAt, endTs: startsAt, sampleCount: 1, sampleRateHz: 20, encoding: "gzip-json", data: new Uint8Array([0]), createdAt: startsAt },
+      });
+
+      return reservation;
+    }
+
+    it("lists the student's own and group reservations with recorded telemetry to the managing teacher", async () => {
+      const own: Reservation = await recordedReservation({ user: fixture.ownStudent }, 120);
+      const group: Reservation = await recordedReservation({ group: fixture.activeGroup.group }, 60);
+
+      await createReservation(e2e.prisma, { user: fixture.ownStudent }, { startsAt: new Date(Date.now() - 30 * 60_000), status: "COMPLETED" });
+
+      const response: Response = await api("GET", `/api/ventilator/telemetry/recordings?userId=${fixture.ownStudent.id}`, await tokenOf(fixture.creator));
+
+      expectStatus(response, 200);
+      expect((response.body.data as RecordingItem[]).map((item: RecordingItem) => [item.reservationId, item.chunkCount, item.sampleRateHz])).toEqual([
+        [group.id, 1, 20],
+        [own.id, 1, 20],
+      ]);
+      expectStatus(await api("GET", `/api/ventilator/telemetry/recordings?userId=${fixture.ownStudent.id}`, await tokenOf(fixture.supervisor)), 403);
     });
   });
 });

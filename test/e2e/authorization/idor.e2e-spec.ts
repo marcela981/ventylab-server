@@ -94,6 +94,7 @@ const STUDENT_DETAIL_PATHS: readonly StudentDetailPath[] = [
   ["achievements", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/achievements`],
   ["dashboard progress", (f: Fixture): string => `/api/admin/students/${f.ownerStudent.user.id}/progress`],
   ["ventilator recording", (f: Fixture): string => `/api/ventilator/telemetry/recordings/${f.reservationId}`],
+  ["ventilator recordings list", (f: Fixture): string => `/api/ventilator/telemetry/recordings?userId=${f.ownerStudent.user.id}`],
 ];
 
 type IdorCase = readonly [label: string, actor: "intruderStudent" | "intruderTeacher", method: HttpMethod, path: (fixture: Fixture) => string, body: object | undefined, expected: number];
@@ -117,6 +118,7 @@ const IDOR_CASES: readonly IdorCase[] = [
   ["simulation session summary", "intruderStudent", "GET", (f: Fixture): string => `/api/simulation/sessions/${f.sessionId}/summary`, undefined, 403],
   ["simulation session replay", "intruderStudent", "GET", (f: Fixture): string => `/api/simulation/sessions/${f.sessionId}/replay`, undefined, 403],
   ["simulation session end", "intruderStudent", "POST", (f: Fixture): string => `/api/simulation/sessions/${f.sessionId}/end`, {}, 403],
+  ["ventilator recordings of another user", "intruderStudent", "GET", (f: Fixture): string => `/api/ventilator/telemetry/recordings?userId=${f.ownerStudent.user.id}`, undefined, 403],
   ["simulation history of another user", "intruderStudent", "GET", (f: Fixture): string => `/api/simulation/sessions/history?userId=${f.ownerStudent.user.id}`, undefined, 403],
   // Notifications: another user's ID responds 404 (documented in CLAUDE.md).
   ["notification mark read", "intruderStudent", "PATCH", (f: Fixture): string => `/api/notifications/${f.notificationId}/read`, undefined, 404],

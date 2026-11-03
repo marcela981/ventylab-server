@@ -5,6 +5,11 @@
   "recording_stopped": "Telemetry recording stopped",
   "recording_retrieved": "Telemetry recording retrieved successfully",
   "no_active_reservation": "There is no active ventilator reservation",
-  "recording_forbidden": "Only the reservation holders, teachers or administrators can access this telemetry recording",
-  "reservation_not_found": "Reservation not found"
+  "recording_forbidden": "Only the reservation holders, the teachers who manage them or administrators can access this telemetry recording",
+  "reservation_not_found": "Reservation not found",
+  "recordings_retrieved": "Telemetry recordings retrieved successfully",
+  "invalid_range": "The date range must start before it ends and span at most 366 days",
+  "validation": {
+    "date_invalid": "The date must be a valid ISO 8601 date"
+  }
 }

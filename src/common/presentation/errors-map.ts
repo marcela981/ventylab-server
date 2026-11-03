@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.42
+ * Versión: 1.43
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -315,6 +315,7 @@ import {
 import {
   TelemetryNoActiveReservationError,
   TelemetryRecordingForbiddenError,
+  TelemetryRecordingRangeInvalidError,
   TelemetryReservationNotFoundError,
 } from "@/features/ventilator-telemetry/domain/ventilator-telemetry.errors";
 
@@ -561,6 +562,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [ReservationConflictError, HttpStatus.CONFLICT],
   [TelemetryNoActiveReservationError, HttpStatus.CONFLICT],
   [TelemetryRecordingForbiddenError, HttpStatus.FORBIDDEN],
+  [TelemetryRecordingRangeInvalidError, HttpStatus.UNPROCESSABLE_ENTITY],
   [TelemetryReservationNotFoundError, HttpStatus.NOT_FOUND],
   [NoActiveVentilatorReservationError, HttpStatus.FORBIDDEN],
   [NotReservationHolderError, HttpStatus.FORBIDDEN],

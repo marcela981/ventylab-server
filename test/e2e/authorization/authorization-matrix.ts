@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
- * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante; gamificación, actividad reciente y logros de un estudiante en solo lectura
+ * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante; gamificación, actividad reciente y logros de un estudiante en solo lectura; listado de grabaciones del ventilador por usuario
  * Versión: 1.8
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -474,6 +474,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   // ventilator-telemetry
   "GET /api/ventilator/telemetry/metrics": TEACHER_UP, // ventilator:metrics
   "GET /api/ventilator/telemetry/metrics.csv": TEACHER_UP, // ventilator:metrics
+  "GET /api/ventilator/telemetry/recordings": STUDENT_UP, // simulation:read; another user's list is scoped in the use case
   "GET /api/ventilator/telemetry/recordings/:reservationId": STUDENT_UP, // simulation:read
   "POST /api/ventilator/telemetry/metrics/reset": ADMIN_ONLY, // ventilator:metrics_reset
   "POST /api/ventilator/telemetry/recordings/start": STUDENT_UP, // simulation:read

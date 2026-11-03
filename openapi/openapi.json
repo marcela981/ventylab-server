@@ -24095,6 +24095,79 @@
         ],
         "type": "object"
       },
+      "TelemetryRecordingSummaryDTO": {
+        "properties": {
+          "chunkCount": {
+            "description": "Number of stored chunks",
+            "example": 12,
+            "type": "number"
+          },
+          "endsAt": {
+            "description": "Reservation end",
+            "example": "2026-10-30T14:30:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "groupId": {
+            "description": "Holder group of a group reservation",
+            "example": "cm5group01",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "holderType": {
+            "description": "Whether the reservation is held by a user or a group",
+            "enum": [
+              "USER",
+              "GROUP"
+            ],
+            "example": "USER",
+            "type": "string"
+          },
+          "reservationId": {
+            "description": "Recorded reservation",
+            "example": "0192f3a4-5b6c-7d8e-9f01-23456789abcd",
+            "type": "string"
+          },
+          "sampleRateHz": {
+            "description": "Recording sample rate in Hz",
+            "example": 20,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "startsAt": {
+            "description": "Reservation start",
+            "example": "2026-10-30T14:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "description": "Reservation status",
+            "enum": [
+              "SCHEDULED",
+              "CANCELLED",
+              "PREEMPTED",
+              "COMPLETED"
+            ],
+            "example": "COMPLETED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reservationId",
+          "holderType",
+          "groupId",
+          "startsAt",
+          "endsAt",
+          "status",
+          "chunkCount",
+          "sampleRateHz"
+        ],
+        "type": "object"
+      },
       "TimelineEntryDTO": {
         "properties": {
           "endedAt": {
@@ -80339,6 +80412,177 @@
         "x-min-role": "ADMIN",
         "x-required-permissions": [
           "ventilator:metrics_reset"
+        ]
+      }
+    },
+    "/api/ventilator/telemetry/recordings": {
+      "get": {
+        "description": "Reservations with recorded telemetry held by the user or by a group they belong to, whose start falls in [from, to) (by default the last 90 days, at most 366), newest first, at most 100; userId defaults to the caller; another user's list is for administrators and for teachers who created or supervise one of the student's groups\n\n**Required access:** bearer token holding `simulation:read`; minimum role STUDENT.",
+        "operationId": "listTelemetryRecordings",
+        "parameters": [
+          {
+            "description": "User whose recordings are listed; defaults to the caller. Staff only for another user (a teacher only for students of the groups they created or supervise)",
+            "in": "query",
+            "name": "userId",
+            "required": false,
+            "schema": {
+              "example": "cm5student01",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Reservation start lower bound (inclusive, ISO 8601); defaults to 90 days before `to`",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "example": "2026-08-01T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Reservation start upper bound (exclusive, ISO 8601); defaults to now. The range spans at most 366 days",
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "example": "2026-11-01T00:00:00Z",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "items": {
+                            "$ref": "#/components/schemas/TelemetryRecordingSummaryDTO"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Recordings retrieved successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ValidationError": {
+                    "$ref": "#/components/examples/ValidationError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ForbiddenError": {
+                    "$ref": "#/components/examples/ForbiddenError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Another user's recordings outside the caller's scope"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnprocessableError": {
+                    "$ref": "#/components/examples/UnprocessableError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The range does not start before it ends or spans more than 366 days"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "List telemetry recordings of a user",
+        "tags": [
+          "Ventilator telemetry"
+        ],
+        "x-min-role": "STUDENT",
+        "x-required-permissions": [
+          "simulation:read"
         ]
       }
     },

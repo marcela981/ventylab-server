@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de la telemetría del ventilador
  * Descripción: Convierte la instantánea de métricas (con los duplicados de secuencia), las tramas grabadas y las muestras de latencia (filas CSV) en sus DTO de respuesta
- * Versión: 1.3
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { type TelemetryRecordingResult } from "@/features/ventilator-telemetry/application/results/telemetry-recording.result";
 import { type TelemetryMetricSample, type TelemetryMetricsSnapshot } from "@/features/ventilator-telemetry/application/services/telemetry-metrics.service";
+import { type TelemetryRecordingSummary } from "@/features/ventilator-telemetry/domain/repositories/telemetry-chunks.repository";
 import { type LatencySummary } from "@/features/ventilator-telemetry/domain/services/latency-ring-buffer";
 import { type RecordedTelemetrySample } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-chunk";
 import {
@@ -17,6 +18,7 @@ import {
   RecordedTelemetryFrameDTO,
   TelemetryMetricsDTO,
   TelemetryRecordingDTO,
+  TelemetryRecordingSummaryDTO,
 } from "@/features/ventilator-telemetry/presentation/dtos/ventilator-telemetry.dto";
 import { type TelemetryMetricCsvRow } from "@/features/ventilator-telemetry/presentation/utils/telemetry-metrics-csv.columns";
 
@@ -47,6 +49,19 @@ export class VentilatorTelemetryMapper {
       valueMs: sample.valueMs,
       recordedAt: new Date(sample.recordedAt).toISOString(),
     }));
+  }
+
+  public static toRecordingSummaryDTO(summary: TelemetryRecordingSummary): TelemetryRecordingSummaryDTO {
+    return new TelemetryRecordingSummaryDTO({
+      reservationId: summary.reservationId,
+      holderType: summary.holderType,
+      groupId: summary.groupId ?? null,
+      startsAt: summary.startsAt,
+      endsAt: summary.endsAt,
+      status: summary.status,
+      chunkCount: summary.chunkCount,
+      sampleRateHz: summary.sampleRateHz ?? null,
+    });
   }
 
   public static toRecordingDTO(result: TelemetryRecordingResult): TelemetryRecordingDTO {

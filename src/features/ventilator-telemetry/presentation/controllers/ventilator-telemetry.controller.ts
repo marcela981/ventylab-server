@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Controlador VentilatorTelemetryController
- * Descripción: Endpoints de la telemetría del ventilador físico: métricas del pipeline en JSON y CSV de solo lectura (docentes y administradores, permiso ventilator:metrics) y su reinicio (solo administradores, permiso ventilator:metrics_reset), inicio y fin de la grabación de la reserva activa y lectura de la grabación de una reserva (titulares, su creador, administradores y los docentes que gestionan al titular)
- * Versión: 1.2
+ * Descripción: Endpoints de la telemetría del ventilador físico: métricas del pipeline en JSON y CSV de solo lectura (docentes y administradores, permiso ventilator:metrics) y su reinicio (solo administradores, permiso ventilator:metrics_reset), inicio y fin de la grabación de la reserva activa, listado de las reservas grabadas de un usuario (el propio, o de un estudiante para el administrador y el docente que lo gestiona) y lectura de la grabación de una reserva (titulares, su creador, administradores y los docentes que gestionan al titular)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, Res, UseGuards } from "@nestjs/common";
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiProduces, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
 import { type Response } from "express";
 import { I18n, I18nContext } from "nestjs-i18n";
@@ -21,9 +21,10 @@ import { CurrentUser } from "@/features/auth/presentation/decorators/current-use
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
 import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard";
 import { PermissionsGuard } from "@/features/auth/presentation/guards/permissions.guard";
-import { GetTelemetryRecordingCommand, TelemetryRecordingCommand } from "@/features/ventilator-telemetry/application/commands/telemetry-recording.command";
+import { GetTelemetryRecordingCommand, ListTelemetryRecordingsCommand, TelemetryRecordingCommand } from "@/features/ventilator-telemetry/application/commands/telemetry-recording.command";
 import { type TelemetryRecordingResult } from "@/features/ventilator-telemetry/application/results/telemetry-recording.result";
 import { GetTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/get-telemetry-recording.usecase";
+import { ListTelemetryRecordingsUseCase } from "@/features/ventilator-telemetry/application/use-cases/list-telemetry-recordings.usecase";
 import { StartTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/start-telemetry-recording.usecase";
 import { StopTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/stop-telemetry-recording.usecase";
 import {
@@ -31,7 +32,9 @@ import {
   GetTelemetryMetricsUseCase,
   ResetTelemetryMetricsUseCase,
 } from "@/features/ventilator-telemetry/application/use-cases/telemetry-metrics.usecases";
-import { TelemetryMetricsDTO, TelemetryRecordingDTO } from "@/features/ventilator-telemetry/presentation/dtos/ventilator-telemetry.dto";
+import { type TelemetryRecordingSummary } from "@/features/ventilator-telemetry/domain/repositories/telemetry-chunks.repository";
+import { ListTelemetryRecordingsQueryDTO } from "@/features/ventilator-telemetry/presentation/dtos/telemetry-recordings-query.dto";
+import { TelemetryMetricsDTO, TelemetryRecordingDTO, TelemetryRecordingSummaryDTO } from "@/features/ventilator-telemetry/presentation/dtos/ventilator-telemetry.dto";
 import { VentilatorTelemetryMapper } from "@/features/ventilator-telemetry/presentation/mappers/ventilator-telemetry.mapper";
 import {
   TELEMETRY_METRIC_CSV_COLUMNS,
@@ -50,6 +53,7 @@ export class VentilatorTelemetryController {
     private readonly _startTelemetryRecordingUseCase: StartTelemetryRecordingUseCase,
     private readonly _stopTelemetryRecordingUseCase: StopTelemetryRecordingUseCase,
     private readonly _getTelemetryRecordingUseCase: GetTelemetryRecordingUseCase,
+    private readonly _listTelemetryRecordingsUseCase: ListTelemetryRecordingsUseCase,
   ) {}
 
   @Get("metrics")
@@ -132,6 +136,40 @@ export class VentilatorTelemetryController {
 
     return new APIResponseBuilder<null>()
       .setMessage(await i18n.t("ventilator-telemetry.recording_stopped"))
+      .build();
+  }
+
+  @Get("recordings")
+  @RequirePermissions("simulation:read")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "List telemetry recordings of a user",
+    description:
+      "Reservations with recorded telemetry held by the user or by a group they belong to, whose start falls in [from, to) (by default the last 90 days, at most 366), newest first, at most 100; userId defaults to the caller; another user's list is for administrators and for teachers who created or supervise one of the student's groups",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Recordings retrieved successfully", type: TelemetryRecordingSummaryDTO, isArray: true })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Another user's recordings outside the caller's scope" })
+  @ApiResponseDoc({ status: HttpStatus.UNPROCESSABLE_ENTITY, description: "The range does not start before it ends or spans more than 366 days" })
+  public async listTelemetryRecordings(
+    @Query() query: ListTelemetryRecordingsQueryDTO,
+    @CurrentUser() currentUser: JwtPayload,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<TelemetryRecordingSummaryDTO[]>> {
+    const recordings: TelemetryRecordingSummary[] = await this._listTelemetryRecordingsUseCase.execute(
+      new ListTelemetryRecordingsCommand({
+        actor: { id: currentUser.sub, role: currentUser.role },
+        userId: query.userId,
+        from: query.from !== undefined ? new Date(query.from) : undefined,
+        to: query.to !== undefined ? new Date(query.to) : undefined,
+        now: new Date(),
+      }),
+    );
+
+    return new APIResponseBuilder<TelemetryRecordingSummaryDTO[]>()
+      .setData(recordings.map((recording: TelemetryRecordingSummary) => VentilatorTelemetryMapper.toRecordingSummaryDTO(recording)))
+      .setMessage(await i18n.t("ventilator-telemetry.recordings_retrieved"))
       .build();
   }
 

@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Módulo VentilatorTelemetryModule
- * Descripción: Registra la telemetría del ventilador físico: conexión MQTT única, decodificador configurable, pipeline por lotes hacia Socket.io, acceso a la sala ventilator, vigilancia de actividad, métricas, grabación en telemetry_chunks y destino InfluxDB opcional (los ajustes VENTILATOR_TELEMETRY_SETTINGS_TOKEN los enlaza la raíz de composición); exporta VentilatorTelemetryFacade y depende de las fachadas de reservas y de grupos (alcance docente de las grabaciones)
+ * Descripción: Registra la telemetría del ventilador físico: conexión MQTT única, decodificador configurable, pipeline por lotes hacia Socket.io, acceso a la sala ventilator, vigilancia de actividad, métricas, grabación en telemetry_chunks (lectura y listado por usuario) y destino InfluxDB opcional (los ajustes VENTILATOR_TELEMETRY_SETTINGS_TOKEN los enlaza la raíz de composición); exporta VentilatorTelemetryFacade y depende de las fachadas de reservas y de grupos (alcance docente de las grabaciones)
  * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -31,6 +31,7 @@ import {
   type VentilatorTelemetrySettings,
 } from "@/features/ventilator-telemetry/application/tokens/ventilator-telemetry-settings.token";
 import { GetTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/get-telemetry-recording.usecase";
+import { ListTelemetryRecordingsUseCase } from "@/features/ventilator-telemetry/application/use-cases/list-telemetry-recordings.usecase";
 import { StartTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/start-telemetry-recording.usecase";
 import { StopTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/stop-telemetry-recording.usecase";
 import {
@@ -87,6 +88,7 @@ function createDecoder(settings: VentilatorTelemetrySettings): TelemetryDecoder 
     StartTelemetryRecordingUseCase,
     StopTelemetryRecordingUseCase,
     GetTelemetryRecordingUseCase,
+    ListTelemetryRecordingsUseCase,
     VentilatorTelemetryEventsHandlers,
     VentilatorTelemetryLifecycleService,
     VentilatorTelemetryFacade,
