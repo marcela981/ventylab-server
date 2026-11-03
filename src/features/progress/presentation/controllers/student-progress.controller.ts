@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Controlador de progreso de estudiantes
- * Descripción: Expone a docentes y administradores (permiso progress:read) el progreso por páginas de un usuario en /api/progress/users/:userId (resumen, módulo, nivel y sección); un docente solo lee a los estudiantes de los grupos que creó o supervisa (GroupsFacade.assertCanViewStudent, 403 fuera de su alcance), luego valida que el usuario exista con GetUserByIdUseCase y delega en LearningProgressFacade
- * Versión: 1.1
+ * Descripción: Expone a docentes y administradores (permiso progress:read) el progreso por páginas de un usuario en /api/progress/users/:userId (resumen, módulo, nivel y sección) y, en solo lectura, su gamificación (XP, nivel y racha), su actividad reciente y sus logros; un docente solo lee a los estudiantes de los grupos que creó o supervisa (GroupsFacade.assertCanViewStudent, 403 fuera de su alcance), luego valida que el usuario exista con GetUserByIdUseCase y delega en LearningProgressFacade
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Controller, Get, HttpCode, HttpStatus, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, HttpCode, HttpStatus, Param, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
 import { I18n, I18nContext } from "nestjs-i18n";
 
@@ -21,19 +21,28 @@ import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard
 import { PermissionsGuard } from "@/features/auth/presentation/guards/permissions.guard";
 import { GroupsFacade } from "@/features/groups/application/services/groups.facade";
 import { LearningProgressFacade } from "@/features/progress/application/services/learning-progress.facade";
+import { GetGamificationStatsUseCase } from "@/features/progress/application/use-cases/get-gamification-stats.usecase";
+import { GetRecentActivityUseCase } from "@/features/progress/application/use-cases/get-recent-activity.usecase";
+import { GetUserAchievementsUseCase } from "@/features/progress/application/use-cases/get-user-achievements.usecase";
+import { type GamificationStats, type RecentActivityItem } from "@/features/progress/domain/read-models/gamification.read-model";
 import {
   type LearningProgressReport,
   type LevelLearningProgress,
   type ModuleLearningProgress,
   type SectionLearningProgress,
 } from "@/features/progress/domain/read-models/learning-progress.read-model";
+import { type UnlockedAchievementView } from "@/features/progress/domain/read-models/progress-views.read-model";
+import { AchievementsDTO } from "@/features/progress/presentation/dtos/achievement.dto";
+import { GamificationStatsDTO, RecentActivityItemDTO, RecentActivityQueryDTO } from "@/features/progress/presentation/dtos/gamification.dto";
 import {
   LearningProgressSummaryDTO,
   LevelLearningProgressDTO,
   ModuleLearningProgressDTO,
   SectionLearningProgressDTO,
 } from "@/features/progress/presentation/dtos/learning-progress.dto";
+import { GamificationMapper } from "@/features/progress/presentation/mappers/gamification.mapper";
 import { LearningProgressMapper } from "@/features/progress/presentation/mappers/learning-progress.mapper";
+import { ProgressMapper } from "@/features/progress/presentation/mappers/progress.mapper";
 import { GetUserByIdUseCase } from "@/features/users/application/use-cases/get-user-by-id.usecase";
 
 @ApiTags("Progress")
@@ -45,6 +54,9 @@ export class StudentProgressController {
     private readonly _learningProgressFacade: LearningProgressFacade,
     private readonly _getUserByIdUseCase: GetUserByIdUseCase,
     private readonly _groupsFacade: GroupsFacade,
+    private readonly _getGamificationStatsUseCase: GetGamificationStatsUseCase,
+    private readonly _getRecentActivityUseCase: GetRecentActivityUseCase,
+    private readonly _getUserAchievementsUseCase: GetUserAchievementsUseCase,
   ) {}
 
   @Get("summary")
@@ -139,6 +151,83 @@ export class StudentProgressController {
     return new APIResponseBuilder<SectionLearningProgressDTO>()
       .setData(LearningProgressMapper.toSectionLearningProgressDTO(progress))
       .setMessage(await i18n.t("progress.section_progress_retrieved"))
+      .build();
+  }
+
+  @Get("gamification")
+  @RequirePermissions("progress:read")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Get a user's gamification statistics",
+    description: "Read-only for staff: XP, level, XP inside the level, the XP of the next level, the current and longest streak (America/Bogota days) and today's XP of the given user",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Gamification statistics retrieved successfully", type: GamificationStatsDTO })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden or the student is outside the teacher's groups" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "User not found" })
+  public async getUserGamification(
+    @Param("userId") userId: string,
+    @CurrentUser() currentUser: JwtPayload,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<GamificationStatsDTO>> {
+    await this._assertCanView(currentUser, userId);
+
+    const stats: GamificationStats = await this._getGamificationStatsUseCase.execute(userId);
+
+    return new APIResponseBuilder<GamificationStatsDTO>()
+      .setData(GamificationMapper.toGamificationStatsDTO(stats))
+      .setMessage(await i18n.t("progress.gamification_retrieved"))
+      .build();
+  }
+
+  @Get("activity/recent")
+  @RequirePermissions("progress:read")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Get a user's recent activity",
+    description: "Read-only for staff: the latest ledger milestones of the given user (lesson and module completions, passed evaluations and unlocked achievements) with the title of the referenced item, newest first",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Recent activity retrieved successfully", type: RecentActivityItemDTO, isArray: true })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden or the student is outside the teacher's groups" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "User not found" })
+  public async getUserRecentActivity(
+    @Param("userId") userId: string,
+    @Query() query: RecentActivityQueryDTO,
+    @CurrentUser() currentUser: JwtPayload,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<RecentActivityItemDTO[]>> {
+    await this._assertCanView(currentUser, userId);
+
+    const items: RecentActivityItem[] = await this._getRecentActivityUseCase.execute(userId, query.limit);
+
+    return new APIResponseBuilder<RecentActivityItemDTO[]>()
+      .setData(items.map((item: RecentActivityItem) => GamificationMapper.toRecentActivityItemDTO(item)))
+      .setMessage(await i18n.t("progress.recent_activity_retrieved"))
+      .build();
+  }
+
+  @Get("achievements")
+  @RequirePermissions("progress:read")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Get a user's achievements", description: "Read-only for staff: the achievements unlocked by the given user, newest first" })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Achievements retrieved successfully", type: AchievementsDTO })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden or the student is outside the teacher's groups" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "User not found" })
+  public async getUserAchievements(
+    @Param("userId") userId: string,
+    @CurrentUser() currentUser: JwtPayload,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<AchievementsDTO>> {
+    await this._assertCanView(currentUser, userId);
+
+    const achievements: UnlockedAchievementView[] = await this._getUserAchievementsUseCase.execute(userId);
+
+    return new APIResponseBuilder<AchievementsDTO>()
+      .setData(ProgressMapper.toAchievementsDTO(achievements))
+      .setMessage(await i18n.t("progress.achievements_retrieved"))
       .build();
   }
 

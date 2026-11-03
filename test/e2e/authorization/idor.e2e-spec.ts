@@ -89,6 +89,9 @@ const STUDENT_DETAIL_PATHS: readonly StudentDetailPath[] = [
   ["module progress", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/modules/${f.moduleId}`],
   ["level progress", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/levels/${f.levelId}`],
   ["section progress", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/sections/${f.sectionId}`],
+  ["gamification", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/gamification`],
+  ["recent activity", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/activity/recent`],
+  ["achievements", (f: Fixture): string => `/api/progress/users/${f.ownerStudent.user.id}/achievements`],
   ["dashboard progress", (f: Fixture): string => `/api/admin/students/${f.ownerStudent.user.id}/progress`],
   ["ventilator recording", (f: Fixture): string => `/api/ventilator/telemetry/recordings/${f.reservationId}`],
 ];
