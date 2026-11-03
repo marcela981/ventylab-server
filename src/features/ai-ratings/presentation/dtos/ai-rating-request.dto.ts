@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de solicitud de valoraciones de IA
  * Descripción: Cuerpo de PUT /api/ai-ratings (objetivo, aiCallId opcional, útil, comentario y escalas QUEST opcionales; el rango 1–5 y la longitud del comentario los valida el dominio con 422), consulta de la valoración propia y consulta de estadísticas y exportación (rango from/to ISO 8601, por defecto los últimos 30 días, y filtros opcionales); superficie y alcance opcionales en la valoración y como filtros de las estadísticas y la exportación
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -46,7 +46,7 @@ export class UpsertAiRatingDTO {
   public aiCallId?: string;
 
   @ApiPropertyOptional({
-    description: "Where the answer was shown: tutor popup, deepen accordion, assistant page or notes analysis (thesis analytics)",
+    description: "Where the answer was shown: tutor popup, deepen accordion, assistant page, notes analysis, evaluation feedback or simulator assistant (thesis analytics)",
     enum: AI_RATING_SURFACE_VALUES,
     example: "POPUP",
   })
@@ -126,7 +126,7 @@ export class GetAiRatingsStatsQueryDTO {
   @IsIn([...AI_RATING_TARGET_TYPE_VALUES], { message: i18nValidationMessage("ai-ratings.validation.target_type_invalid") })
   public targetType?: string;
 
-  @ApiPropertyOptional({ description: "Only ratings given on this surface", enum: AI_RATING_SURFACE_VALUES, example: "POPUP" })
+  @ApiPropertyOptional({ description: "Only ratings given on this surface; a rating stored without one is read with the surface its target type implies", enum: AI_RATING_SURFACE_VALUES, example: "POPUP" })
   @IsOptional()
   @IsIn([...AI_RATING_SURFACE_VALUES], { message: i18nValidationMessage("ai-ratings.validation.surface_invalid") })
   public surface?: string;

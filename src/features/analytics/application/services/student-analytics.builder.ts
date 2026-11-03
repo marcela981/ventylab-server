@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Constructor de analítica por estudiante
- * Descripción: Funciones puras que combinan en memoria los resultados por lotes de las fachadas (progreso, notas publicadas, sesiones de simulación, uso y valoraciones de IA, horas de ventilador y última actividad de progreso y simulación) indexándolos por usuario, sin ninguna lectura adicional: resumen de progreso por sección, nivel y módulo, nota vigente por evaluación (último intento publicado) con su promedio, filas del panel de un grupo con la última actividad (la más reciente de ambas fuentes) y el riesgo de cada estudiante según los umbrales vigentes, progreso agregado por módulo del grupo a partir de esas filas y filas largas del conjunto de datos de investigación con identificadores seudonimizados (usuario y grupo, y las evaluaciones con separación de dominio "evaluation:")
- * Versión: 1.4
+ * Descripción: Funciones puras que combinan en memoria los resultados por lotes de las fachadas (progreso, notas publicadas, sesiones de simulación, uso y valoraciones de IA, horas de ventilador y última actividad de progreso y simulación) indexándolos por usuario, sin ninguna lectura adicional: resumen de progreso por sección, nivel y módulo, nota vigente por evaluación (último intento publicado) con su promedio, filas del panel de un grupo con la última actividad (la más reciente de ambas fuentes) y el riesgo de cada estudiante según los umbrales vigentes, progreso agregado por módulo del grupo a partir de esas filas y filas largas del conjunto de datos de investigación (las valoraciones de IA agrupadas por superficie y caso de uso, item <superficie>/<caso de uso>; en el panel se suman las superficies de cada caso de uso) con identificadores seudonimizados (usuario y grupo, y las evaluaciones con separación de dominio "evaluation:")
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -152,13 +152,22 @@ function toAiUsage(usage: ReadonlyArray<AiUserUseCaseUsage>, ratings: ReadonlyAr
     byUseCase.set(item.useCase, { useCase: item.useCase, calls: item.calls, inputTokens: item.inputTokens, outputTokens: item.outputTokens, ratings: 0, helpfulRate: null });
   }
 
-  for (const rating of ratings) {
-    const current: StudentAiUseCaseUsage = byUseCase.get(rating.useCase) ?? { useCase: rating.useCase, calls: 0, inputTokens: 0, outputTokens: 0, ratings: 0, helpfulRate: null };
+  // Ratings arrive per surface and use case; the dashboard sums the surfaces of each use case.
+  const ratingTotals: Map<string, { ratings: number; helpful: number }> = new Map<string, { ratings: number; helpful: number }>();
 
-    byUseCase.set(rating.useCase, {
+  for (const rating of ratings) {
+    const total: { ratings: number; helpful: number } = ratingTotals.get(rating.useCase) ?? { ratings: 0, helpful: 0 };
+
+    ratingTotals.set(rating.useCase, { ratings: total.ratings + rating.ratings, helpful: total.helpful + rating.helpfulCount });
+  }
+
+  for (const [useCase, total] of ratingTotals) {
+    const current: StudentAiUseCaseUsage = byUseCase.get(useCase) ?? { useCase, calls: 0, inputTokens: 0, outputTokens: 0, ratings: 0, helpfulRate: null };
+
+    byUseCase.set(useCase, {
       ...current,
-      ratings: rating.ratings,
-      helpfulRate: rating.helpfulRate === null ? null : round(rating.helpfulRate * 100, 1),
+      ratings: total.ratings,
+      helpfulRate: total.ratings > 0 ? round((total.helpful / total.ratings) * 100, 1) : null,
     });
   }
 
@@ -280,14 +289,16 @@ export function buildResearchRows(
     }
 
     for (const rating of aiRatings.get(participant.userId) ?? []) {
-      rows.push({ ...base, domain: "ai_ratings", item: rating.useCase, metric: "ratings", value: rating.ratings });
+      const item: string = `${rating.surface}/${rating.useCase}`;
 
-      if (rating.helpfulRate !== null) rows.push({ ...base, domain: "ai_ratings", item: rating.useCase, metric: "helpful_rate", value: round(rating.helpfulRate, 4) });
+      rows.push({ ...base, domain: "ai_ratings", item, metric: "ratings", value: rating.ratings });
+
+      if (rating.helpfulRate !== null) rows.push({ ...base, domain: "ai_ratings", item, metric: "helpful_rate", value: round(rating.helpfulRate, 4) });
 
       for (const dimension of AI_RATING_DIMENSIONS) {
         const mean: number | undefined = rating.dimensions[dimension].mean;
 
-        if (mean !== undefined) rows.push({ ...base, domain: "ai_ratings", item: rating.useCase, metric: `${dimension}_mean`, value: round(mean, 3) });
+        if (mean !== undefined) rows.push({ ...base, domain: "ai_ratings", item, metric: `${dimension}_mean`, value: round(mean, 3) });
       }
     }
 

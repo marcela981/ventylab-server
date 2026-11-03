@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de valoraciones de IA
  * Descripción: Implementa IAiRatingsRepository sobre ai_ratings con PrismaService: lectura por (usuario, tipo de objetivo, objetivo), upsert sobre esa clave única en la transacción activa, agregados con LEFT JOIN a ai_call_logs agrupados por caso de uso, proveedor, modelo y versión de prompt mediante $queryRaw parametrizado y filas de exportación sin identificador de usuario; exporta las columnas SQL de dimensiones y de grupo desconocido que reutiliza el repositorio de analítica; filtra y agrupa también por superficie y alcance (unknown en valoraciones anteriores) y exporta el estado de la llamada
- * Versión: 1.3
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,11 +16,14 @@ import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma
 import { type AiRating } from "@/features/ai-ratings/domain/entities/ai-rating.entity";
 import {
   AI_RATING_DIMENSIONS,
+  AI_RATING_TARGET_DEFAULT_SURFACE,
   type AiRatingDimension,
   type AiRatingExportRow,
   type AiRatingGroupAggregate,
   type AiRatingStatsFilters,
+  type AiRatingSurfaceValue,
   type AiRatingTargetTypeValue,
+  targetTypesDerivingTo,
   UNKNOWN_AI_RATING_GROUP,
 } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { type IAiRatingsRepository } from "@/features/ai-ratings/domain/repositories/ai-ratings.repository";
@@ -32,6 +35,13 @@ import {
 
 // Built only from compile-time constants (the group label and the column names), never from request input.
 export const UNKNOWN_SQL: Prisma.Sql = Prisma.raw(`'${UNKNOWN_AI_RATING_GROUP}'`);
+
+// coalesce(surface, surface implied by the target type): built only from compile-time constants.
+export const DERIVED_SURFACE_SQL: Prisma.Sql = Prisma.raw(
+  `coalesce(r.surface::text, CASE r.target_type::text ${Object.entries(AI_RATING_TARGET_DEFAULT_SURFACE)
+    .map(([targetType, surface]: [string, AiRatingSurfaceValue | undefined]) => `WHEN '${targetType}' THEN '${surface}'`)
+    .join(" ")} END)`,
+);
 
 export const DIMENSION_COLUMNS_SQL: Prisma.Sql = Prisma.join(
   AI_RATING_DIMENSIONS.map((dimension: AiRatingDimension) =>
@@ -82,7 +92,7 @@ export class AiRatingsPrismaRepository implements IAiRatingsRepository {
   public async getStatsGroups(filters: AiRatingStatsFilters): Promise<AiRatingGroupAggregate[]> {
     const rows: RawAiRatingGroup[] = await this._prisma.$queryRaw<RawAiRatingGroup[]>(Prisma.sql`
       SELECT
-        coalesce(r.surface::text, ${UNKNOWN_SQL}) AS surface,
+        coalesce(${DERIVED_SURFACE_SQL}, ${UNKNOWN_SQL}) AS surface,
         coalesce(r.scope::text, ${UNKNOWN_SQL}) AS scope,
         coalesce(l.use_case::text, ${UNKNOWN_SQL}) AS use_case,
         coalesce(l.provider, ${UNKNOWN_SQL}) AS provider,
@@ -113,7 +123,7 @@ export class AiRatingsPrismaRepository implements IAiRatingsRepository {
       where: {
         createdAt: { gte: filters.from, lt: filters.to },
         ...(filters.targetType ? { targetType: filters.targetType } : {}),
-        ...(filters.surface ? { surface: filters.surface } : {}),
+        ...(filters.surface ? { OR: [{ surface: filters.surface }, { surface: null, targetType: { in: targetTypesDerivingTo(filters.surface) } }] } : {}),
         ...(filters.scope ? { scope: filters.scope } : {}),
         ...(Object.keys(callFilter).length > 0 ? { aiCall: callFilter } : {}),
       },
@@ -148,7 +158,7 @@ export class AiRatingsPrismaRepository implements IAiRatingsRepository {
     }
 
     if (filters.surface) {
-      conditions.push(Prisma.sql`r.surface = ${filters.surface}::"AiRatingSurface"`);
+      conditions.push(Prisma.sql`${DERIVED_SURFACE_SQL} = ${filters.surface}`);
     }
 
     if (filters.scope) {

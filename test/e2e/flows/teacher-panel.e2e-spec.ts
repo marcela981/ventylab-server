@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e del panel docente (Bloque 4)
- * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; y que un docente pueda reservar el ventilador para un grupo que creó (no solo para los que supervisa) y no para uno ajeno; y la pestaña Profesores (GET /api/admin/teachers solo ADMIN, con los grupos activos creados o supervisados y los estudiantes distintos); las respuestas se validan contra openapi/openapi.json
- * Versión: 1.3
+ * Descripción: Con la aplicación completa y grupos creados por fábricas (un docente creador con un grupo activo y otro inactivo, un docente que supervisa un grupo ajeno desde su grupo TEACHER y un docente sin grupos) comprueba el directorio GET /api/admin/students: "Mis grupos" con los grupos creados o supervisados y página vacía sin grupos, canView por fila en "Todos", grupos activos, código de estudiante, búsqueda por código y orden por progreso; y el listado de grabaciones del ventilador de un estudiante (reservas propias y de su grupo con fragmentos grabados) para el docente que lo gestiona; y que un docente pueda reservar el ventilador para un grupo que creó (no solo para los que supervisa) y no para uno ajeno; y la pestaña Profesores (GET /api/admin/teachers solo ADMIN, con los grupos activos creados o supervisados y los estudiantes distintos); y la analítica de valoraciones de IA solo para ADMIN con la superficie derivada del tipo de objetivo (SIMULATOR_ASSIST, NOTES_ANALYSIS, EVALUATION_FEEDBACK) en estadísticas y CSV; las respuestas se validan contra openapi/openapi.json
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,6 +18,7 @@ import { mintAccessToken } from "../../support/auth";
 import { contractCaller, type ContractCaller, expectStatus } from "../../support/contract-api";
 import { resetDatabase } from "../../support/database";
 import { createE2eApp, type E2eApp } from "../../support/e2e-app";
+import { callApi } from "../../support/http";
 
 interface DirectoryRow {
   readonly id: string;
@@ -146,6 +147,35 @@ describe("flow: teacher panel", () => {
       expectStatus(response, 200);
       expect(response.body.data).toHaveLength(2);
       expect(response.body.pagination).toEqual(expect.objectContaining({ total: 3, pages: 2 }));
+    });
+  });
+
+  describe("AI ratings analytics", () => {
+    it("derives the surface of ratings stored without one and keeps the analytics for administrators", async () => {
+      const userId: string = fixture.ownStudent.id;
+
+      await e2e.prisma.aiRating.createMany({
+        data: [
+          { userId, targetType: "SIM_ASSIST", targetId: randomUUID(), helpful: true },
+          { userId, targetType: "NOTES_ANALYSIS", targetId: randomUUID(), helpful: false },
+          { userId, targetType: "GRADE_FEEDBACK", targetId: randomUUID(), helpful: true, surface: "EVALUATION_FEEDBACK" },
+          { userId, targetType: "MESSAGE", targetId: randomUUID(), helpful: true, surface: "POPUP", scope: "PAGE" },
+        ],
+      });
+
+      const stats: Response = await api("GET", "/api/admin/ai-ratings/stats?surface=SIMULATOR_ASSIST", await tokenOf(fixture.admin));
+      const all: Response = await api("GET", "/api/admin/ai-ratings/stats", await tokenOf(fixture.admin));
+      const csv: Response = await callApi(e2e.baseUrl, "GET", "/api/admin/ai-ratings/export.csv", await tokenOf(fixture.admin));
+
+      expectStatus(stats, 200);
+      expect((stats.body.data.groups as { surface: string; ratings: number }[]).map((group: { surface: string; ratings: number }) => [group.surface, group.ratings])).toEqual([["SIMULATOR_ASSIST", 1]]);
+      expect(new Set((all.body.data.groups as { surface: string }[]).map((group: { surface: string }) => group.surface))).toEqual(new Set(["SIMULATOR_ASSIST", "NOTES_ANALYSIS", "EVALUATION_FEEDBACK", "POPUP"]));
+      expectStatus(csv, 200);
+      expect(csv.text.split("\r\n")[0]).toBe("targetType,targetId,surface,scope,helpful,quality,understanding,expression,safety,trust,comment,createdAt,useCase,provider,model,promptVersion,callStatus");
+      expect(csv.text).toContain("SIM_ASSIST");
+      expect(csv.text).toContain(",SIMULATOR_ASSIST,");
+      expect(csv.text).toContain(",POPUP,PAGE,");
+      expectStatus(await api("GET", "/api/admin/ai-ratings/stats", await tokenOf(fixture.creator)), 403);
     });
   });
 

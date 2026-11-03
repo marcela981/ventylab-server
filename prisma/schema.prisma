@@ -1882,6 +1882,7 @@ enum AiRatingSurface {
   ASSISTANT
   NOTES_ANALYSIS
   EVALUATION_FEEDBACK
+  SIMULATOR_ASSIST
 }
 
 // Content scope of the rated answer; derived from the conversation for MESSAGE targets.

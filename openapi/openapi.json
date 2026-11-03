@@ -2325,7 +2325,8 @@
               "ACCORDION",
               "ASSISTANT",
               "NOTES_ANALYSIS",
-              "EVALUATION_FEEDBACK"
+              "EVALUATION_FEEDBACK",
+              "SIMULATOR_ASSIST"
             ],
             "example": "POPUP",
             "type": "string"
@@ -25337,13 +25338,14 @@
             "type": "string"
           },
           "surface": {
-            "description": "Where the answer was shown: tutor popup, deepen accordion, assistant page or notes analysis (thesis analytics)",
+            "description": "Where the answer was shown: tutor popup, deepen accordion, assistant page, notes analysis, evaluation feedback or simulator assistant (thesis analytics)",
             "enum": [
               "POPUP",
               "ACCORDION",
               "ASSISTANT",
               "NOTES_ANALYSIS",
-              "EVALUATION_FEEDBACK"
+              "EVALUATION_FEEDBACK",
+              "SIMULATOR_ASSIST"
             ],
             "example": "POPUP",
             "type": "string"
@@ -29186,7 +29188,7 @@
     },
     "/api/admin/ai-ratings/export.csv": {
       "get": {
-        "description": "One RFC 4180 row per rating without user identifiers, oldest first, capped at the export row limit; the X-Export-Truncated header is \"true\" when rows were left out\n\n**Required access:** bearer token holding `ai-ratings:read`; minimum role TEACHER.",
+        "description": "One RFC 4180 row per rating without user identifiers, oldest first, capped at the export row limit; the X-Export-Truncated header is \"true\" when rows were left out\n\n**Required access:** bearer token holding `ai-ratings:read`; minimum role ADMIN.",
         "operationId": "exportAiRatingsCsv",
         "parameters": [
           {
@@ -29226,7 +29228,7 @@
             }
           },
           {
-            "description": "Only ratings given on this surface",
+            "description": "Only ratings given on this surface; a rating stored without one is read with the surface its target type implies",
             "in": "query",
             "name": "surface",
             "required": false,
@@ -29236,7 +29238,8 @@
                 "ACCORDION",
                 "ASSISTANT",
                 "NOTES_ANALYSIS",
-                "EVALUATION_FEEDBACK"
+                "EVALUATION_FEEDBACK",
+                "SIMULATOR_ASSIST"
               ],
               "example": "POPUP",
               "type": "string"
@@ -29421,7 +29424,7 @@
         "tags": [
           "AI ratings"
         ],
-        "x-min-role": "TEACHER",
+        "x-min-role": "ADMIN",
         "x-required-permissions": [
           "ai-ratings:read"
         ]
@@ -29429,7 +29432,7 @@
     },
     "/api/admin/ai-ratings/stats": {
       "get": {
-        "description": "Helpful rate and mean with n per QUEST dimension, grouped by use case, provider, model and prompt version of the linked AI call (\"unknown\" when the rating has no linked call)\n\n**Required access:** bearer token holding `ai-ratings:read`; minimum role TEACHER.",
+        "description": "Helpful rate and mean with n per QUEST dimension, grouped by surface (stored, or implied by the target type when missing), scope, and the use case, provider, model and prompt version of the linked AI call (\"unknown\" when there is no value)\n\n**Required access:** bearer token holding `ai-ratings:read`; minimum role ADMIN.",
         "operationId": "getAiRatingStats",
         "parameters": [
           {
@@ -29469,7 +29472,7 @@
             }
           },
           {
-            "description": "Only ratings given on this surface",
+            "description": "Only ratings given on this surface; a rating stored without one is read with the surface its target type implies",
             "in": "query",
             "name": "surface",
             "required": false,
@@ -29479,7 +29482,8 @@
                 "ACCORDION",
                 "ASSISTANT",
                 "NOTES_ANALYSIS",
-                "EVALUATION_FEEDBACK"
+                "EVALUATION_FEEDBACK",
+                "SIMULATOR_ASSIST"
               ],
               "example": "POPUP",
               "type": "string"
@@ -29678,7 +29682,7 @@
         "tags": [
           "AI ratings"
         ],
-        "x-min-role": "TEACHER",
+        "x-min-role": "ADMIN",
         "x-required-permissions": [
           "ai-ratings:read"
         ]

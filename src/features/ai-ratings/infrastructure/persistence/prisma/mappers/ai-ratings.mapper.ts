@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapeador de persistencia de valoraciones de IA
  * Descripción: Convierte filas de ai_ratings en la entidad AiRating y viceversa (null ↔ undefined), las filas de agregados crudos de $queryRaw (bigint y nulos) en agregados de dominio y las filas de exportación con la llamada enlazada en filas sin identificador de usuario; mapea también los agregados por usuario y caso de uso de analítica; superficie, alcance y estado de la llamada
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import {
   type AiRatingDimensionStats,
   type AiRatingExportRow,
   type AiRatingGroupAggregate,
+  deriveAiRatingSurface,
 } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { type AiRatingUserUseCaseAggregate } from "@/features/ai-ratings/domain/repositories/ai-ratings-analytics.repository";
 import { AiRatingAnswers } from "@/features/ai-ratings/domain/value-objects/ai-rating-answers";
@@ -35,6 +36,7 @@ export type RawAiRatingGroup = {
 
 export type RawAiRatingUserGroup = {
   readonly user_id: string;
+  readonly surface: string;
   readonly use_case: string;
   readonly ratings: bigint | number;
   readonly helpful_count: bigint | number;
@@ -130,7 +132,7 @@ export class AiRatingsMapper {
     return {
       targetType: row.targetType,
       targetId: row.targetId,
-      surface: row.surface ?? undefined,
+      surface: deriveAiRatingSurface(row.surface ?? undefined, row.targetType),
       scope: row.scope ?? undefined,
       helpful: row.helpful,
       quality: row.quality ?? undefined,
@@ -151,6 +153,7 @@ export class AiRatingsMapper {
   public static toUserUseCaseAggregate(row: RawAiRatingUserGroup): AiRatingUserUseCaseAggregate {
     return {
       userId: row.user_id,
+      surface: row.surface,
       useCase: row.use_case,
       ratings: Number(row.ratings),
       helpfulCount: Number(row.helpful_count),

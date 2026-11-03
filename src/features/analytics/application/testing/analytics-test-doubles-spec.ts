@@ -214,6 +214,7 @@ export function buildFakeFacades(students: GroupMemberSummary[]): FakeFacades {
         Promise.resolve(
           userIds.map((userId: string) => ({
             userId,
+            surface: "ASSISTANT",
             useCase: "FREE_CHAT",
             ratings: 3,
             helpfulCount: 2,

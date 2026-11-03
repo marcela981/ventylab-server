@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de las valoraciones de IA
  * Descripción: Tipos de objetivo valorable y dimensiones QUEST (Tam et al. 2024, npj Digital Medicine), casos de uso de IA esperados por tipo de objetivo, filtros y agregados de estadísticas por caso de uso, proveedor, modelo y versión de prompt, y filas exportables sin identificador de usuario; superficie (POPUP, ACCORDION, ASSISTANT, NOTES_ANALYSIS) y alcance (LESSON, MODULE, PAGE, FREE) de la valoración como filtro, grupo y columna de exportación, con el estado de la llamada (ABORTED para respuestas detenidas)
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,9 +14,25 @@ export type AiRatingTargetTypeValue = "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANAL
 
 export const AI_RATING_TARGET_TYPE_VALUES: readonly AiRatingTargetTypeValue[] = ["GRADE_FEEDBACK", "MESSAGE", "NOTES_ANALYSIS", "SIM_ASSIST"] as const;
 
-export type AiRatingSurfaceValue = "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK";
+export type AiRatingSurfaceValue = "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
 
-export const AI_RATING_SURFACE_VALUES: readonly AiRatingSurfaceValue[] = ["POPUP", "ACCORDION", "ASSISTANT", "NOTES_ANALYSIS", "EVALUATION_FEEDBACK"] as const;
+export const AI_RATING_SURFACE_VALUES: readonly AiRatingSurfaceValue[] = ["POPUP", "ACCORDION", "ASSISTANT", "NOTES_ANALYSIS", "EVALUATION_FEEDBACK", "SIMULATOR_ASSIST"] as const;
+
+// Surface a rating without one is read as (no backfill): every target type has a single surface except MESSAGE (popup, accordion or assistant).
+export const AI_RATING_TARGET_DEFAULT_SURFACE: Readonly<Partial<Record<AiRatingTargetTypeValue, AiRatingSurfaceValue>>> = {
+  GRADE_FEEDBACK: "EVALUATION_FEEDBACK",
+  NOTES_ANALYSIS: "NOTES_ANALYSIS",
+  SIM_ASSIST: "SIMULATOR_ASSIST",
+};
+
+export function deriveAiRatingSurface(surface: AiRatingSurfaceValue | undefined, targetType: AiRatingTargetTypeValue): AiRatingSurfaceValue | undefined {
+  return surface ?? AI_RATING_TARGET_DEFAULT_SURFACE[targetType];
+}
+
+// Target types whose ratings without a surface read as the given surface.
+export function targetTypesDerivingTo(surface: AiRatingSurfaceValue): AiRatingTargetTypeValue[] {
+  return AI_RATING_TARGET_TYPE_VALUES.filter((targetType: AiRatingTargetTypeValue) => AI_RATING_TARGET_DEFAULT_SURFACE[targetType] === surface);
+}
 
 export type AiRatingScopeValue = "LESSON" | "MODULE" | "PAGE" | "FREE";
 

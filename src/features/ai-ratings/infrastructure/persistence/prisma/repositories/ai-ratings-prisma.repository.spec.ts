@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del repositorio Prisma de valoraciones de IA
- * Descripción: Verifica con un cliente Prisma simulado el upsert por (usuario, tipo de objetivo, objetivo) en la transacción activa, la lectura de la valoración propia, los agregados por caso de uso, proveedor, modelo y versión de prompt con parámetros enlazados en $queryRaw y las filas de exportación sin identificador de usuario
- * Versión: 1.0
+ * Descripción: Verifica con un cliente Prisma simulado el upsert por (usuario, tipo de objetivo, objetivo) en la transacción activa, la lectura de la valoración propia, los agregados por caso de uso, proveedor, modelo y versión de prompt con parámetros enlazados en $queryRaw y las filas de exportación sin identificador de usuario; la superficie derivada al leer (coalesce con la del tipo de objetivo) en los agregados, el filtro y la exportación, sin reescribir filas
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -198,5 +198,32 @@ describe("AiRatingsPrismaRepository", () => {
     );
     expect(rows[1].useCase).toBeUndefined();
     expect(rows[0]).not.toHaveProperty("userId");
+  });
+
+  it("groups and filters stats by the surface derived from the target type when the rating has none", async () => {
+    prisma.$queryRaw.mockResolvedValue([]);
+
+    await repository.getStatsGroups({ from: FILTERS.from, to: FILTERS.to, surface: "SIMULATOR_ASSIST" });
+
+    const query: Prisma.Sql = prisma.$queryRaw.mock.calls[0][0] as Prisma.Sql;
+
+    expect(query.sql).toContain("coalesce(r.surface::text, CASE r.target_type::text WHEN 'GRADE_FEEDBACK' THEN 'EVALUATION_FEEDBACK' WHEN 'NOTES_ANALYSIS' THEN 'NOTES_ANALYSIS' WHEN 'SIM_ASSIST' THEN 'SIMULATOR_ASSIST' END)");
+    expect(query.values).toEqual([FILTERS.from, FILTERS.to, "SIMULATOR_ASSIST"]);
+  });
+
+  it("exports the derived surface and filters by it including rows stored without one", async () => {
+    prisma.aiRating.findMany.mockResolvedValue([
+      { ...ROW, targetType: "SIM_ASSIST", surface: null, aiCall: null },
+      { ...ROW, id: "rating-2", targetType: "MESSAGE", surface: null, aiCall: null },
+    ]);
+
+    const rows: AiRatingExportRow[] = await repository.getExportRows({ from: FILTERS.from, to: FILTERS.to, surface: "SIMULATOR_ASSIST" }, 10);
+
+    expect(prisma.aiRating.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { createdAt: { gte: FILTERS.from, lt: FILTERS.to }, OR: [{ surface: "SIMULATOR_ASSIST" }, { surface: null, targetType: { in: ["SIM_ASSIST"] } }] },
+      }),
+    );
+    expect(rows.map((row: AiRatingExportRow) => row.surface)).toEqual(["SIMULATOR_ASSIST", undefined]);
   });
 });

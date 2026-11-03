@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
- * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante; gamificación, actividad reciente y logros de un estudiante en solo lectura; listado de grabaciones del ventilador por usuario
+ * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante; gamificación, actividad reciente y logros de un estudiante en solo lectura; listado de grabaciones del ventilador por usuario; ai-ratings:read solo ADMIN
  * Versión: 1.8
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -71,8 +71,8 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "PATCH /api/admin/users/:id/role": ADMIN_ONLY, // users:update_role
 
   // ai-ratings
-  "GET /api/admin/ai-ratings/export.csv": TEACHER_UP, // ai-ratings:read
-  "GET /api/admin/ai-ratings/stats": TEACHER_UP, // ai-ratings:read
+  "GET /api/admin/ai-ratings/export.csv": ADMIN_ONLY, // ai-ratings:read (ADMIN only since Block 4)
+  "GET /api/admin/ai-ratings/stats": ADMIN_ONLY, // ai-ratings:read (ADMIN only since Block 4)
   "GET /api/ai-ratings/mine": STUDENT_UP, // ai-ratings:create_own
   "PUT /api/ai-ratings": STUDENT_UP, // ai-ratings:create_own
 
