@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso UploadMediaUseCase
  * Descripción: Valida MIME y tamaño del archivo, lo sube al almacenamiento bajo media/<tipo>/<id>/<nombre-saneado> y persiste la fila Media; si la persistencia falla, elimina el objeto subido
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,6 +27,7 @@ import { MediaUploadPolicy } from "@/features/media/domain/value-objects/media-u
  * @throws {MediaFileRequiredError} If the file is empty
  * @throws {UnsupportedMediaTypeError} If the MIME type is not in the whitelist
  * @throws {MediaTooLargeError} If the file exceeds the size limit of its kind
+ * @throws {MediaContentMismatchError} If the policy verifies content and the bytes do not match the declared type
  */
 @Injectable()
 export class UploadMediaUseCase {
@@ -45,14 +46,15 @@ export class UploadMediaUseCase {
     private readonly _eventBus: IEventBus,
   ) {}
 
-  public async execute(command: UploadMediaCommand): Promise<string> {
+  public async execute(command: UploadMediaCommand, policy: MediaUploadPolicy = MediaUploadPolicy.create(this._settings.sizeLimits)): Promise<string> {
     if (!this._fileStorage.isAvailable()) {
       throw new MediaStorageUnavailableError();
     }
 
-    const policy: MediaUploadPolicy = MediaUploadPolicy.create(this._settings.sizeLimits);
     const kind: MediaKindValue = policy.resolveKind(command.mimeType, command.sizeBytes);
     const mimeType: string = MediaUploadPolicy.normalizeMimeType(command.mimeType);
+
+    policy.assertContent(mimeType, command.content);
 
     const media: Media = Media.create({
       ownerId: command.performedBy,

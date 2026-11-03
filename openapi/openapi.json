@@ -24852,8 +24852,9 @@
       "UpdateMeDTO": {
         "properties": {
           "image": {
-            "description": "Profile image as an http(s) URL or a base64 image data URL. Send null or an empty string to remove it.",
+            "description": "Profile image as an http(s) URL of at most 2048 characters (upload a photo with PUT /api/users/me/avatar). Send null or an empty string to remove it.",
             "example": "https://example.com/avatar.png",
+            "maxLength": 2048,
             "type": [
               "string",
               "null"
@@ -25638,7 +25639,7 @@
             "type": "string"
           },
           "image": {
-            "description": "Profile image URL",
+            "description": "Profile image URL: a signed URL of the uploaded photo (it expires; read it again instead of storing it), or else the stored image (the Google picture)",
             "example": "https://example.com/avatar.png",
             "type": [
               "string",
@@ -78061,7 +78062,7 @@
         "x-required-permissions": []
       },
       "patch": {
-        "description": "Updates the authenticated user's name or profile image\n\n**Required access:** any authenticated user (bearer token); minimum role STUDENT.",
+        "description": "Updates the authenticated user's name or profile image URL (http(s) only; upload a photo with PUT /api/users/me/avatar)\n\n**Required access:** any authenticated user (bearer token); minimum role STUDENT.",
         "operationId": "updateMe",
         "parameters": [],
         "requestBody": {
@@ -78182,6 +78183,294 @@
           }
         ],
         "summary": "Update own profile",
+        "tags": [
+          "Users"
+        ],
+        "x-min-role": "STUDENT",
+        "x-required-permissions": []
+      }
+    },
+    "/api/users/me/avatar": {
+      "delete": {
+        "description": "Removes the uploaded photo and deletes its file; image falls back to the stored image (the Google picture), if any\n\n**Required access:** any authenticated user (bearer token); minimum role STUDENT.",
+        "operationId": "removeMyAvatar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/UserDTO"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Profile photo removed successfully"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFoundError": {
+                    "$ref": "#/components/examples/NotFoundError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "User not found"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Remove own profile photo",
+        "tags": [
+          "Users"
+        ],
+        "x-min-role": "STUDENT",
+        "x-required-permissions": []
+      },
+      "put": {
+        "description": "Stores the photo after checking its type, size and first bytes, replaces the previous uploaded photo (which is deleted) and returns the profile with the photo's signed URL as image\n\n**Required access:** any authenticated user (bearer token); minimum role STUDENT.",
+        "operationId": "updateMyAvatar",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "description": "Profile photo: png, jpeg or webp of at most 2 MB (the client crops it square and resizes it to 512 px)",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/APIResponseEnvelope"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/UserDTO"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Profile photo updated successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ValidationError": {
+                    "$ref": "#/components/examples/ValidationError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No file or an empty file was sent"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UnauthorizedError": {
+                    "$ref": "#/components/examples/UnauthorizedError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NotFoundError": {
+                    "$ref": "#/components/examples/NotFoundError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "User not found"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GenericError": {
+                    "$ref": "#/components/examples/GenericError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The photo exceeds 2 MB"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "GenericError": {
+                    "$ref": "#/components/examples/GenericError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not a png, jpeg or webp image, or the content does not match its type"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TooManyRequestsError": {
+                    "$ref": "#/components/examples/TooManyRequestsError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ServiceUnavailableError": {
+                    "$ref": "#/components/examples/ServiceUnavailableError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "File storage is not configured"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Upload own profile photo",
         "tags": [
           "Users"
         ],

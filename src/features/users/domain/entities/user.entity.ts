@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad User
  * Descripción: Agregado de usuario con datos de perfil, rol, contraseña, estado activo, vínculo con Google, revocación de refresh tokens y código estudiantil opcional asignado por un administrador, y sus eventos y registros de auditoría
- * Versión: 1.3
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -53,6 +53,7 @@ export class User extends AggregateRoot {
   private _googleId?: string;
   private _refreshTokensRevokedAt?: Date;
   private _studentCode?: string;
+  private _avatarMediaId?: string;
   private _createdAt: Date;
   private _updatedAt: Date;
   private _auditLogs: AuditLog<UserAuditAction>[];
@@ -69,6 +70,7 @@ export class User extends AggregateRoot {
     googleId,
     refreshTokensRevokedAt,
     studentCode,
+    avatarMediaId,
     createdAt,
     updatedAt,
     auditLogs,
@@ -84,6 +86,7 @@ export class User extends AggregateRoot {
     googleId?: string;
     refreshTokensRevokedAt?: Date;
     studentCode?: string;
+    avatarMediaId?: string;
     createdAt: Date;
     updatedAt: Date;
     auditLogs: AuditLog<UserAuditAction>[];
@@ -100,6 +103,7 @@ export class User extends AggregateRoot {
     this._googleId = googleId;
     this._refreshTokensRevokedAt = refreshTokensRevokedAt;
     this._studentCode = studentCode;
+    this._avatarMediaId = avatarMediaId;
     this._createdAt = createdAt;
     this._updatedAt = updatedAt;
     this._auditLogs = auditLogs;
@@ -147,6 +151,10 @@ export class User extends AggregateRoot {
 
   public get studentCode(): string | undefined {
     return this._studentCode;
+  }
+
+  public get avatarMediaId(): string | undefined {
+    return this._avatarMediaId;
   }
 
   public get createdAt(): Date {
@@ -219,6 +227,7 @@ export class User extends AggregateRoot {
     googleId,
     refreshTokensRevokedAt,
     studentCode,
+    avatarMediaId,
     createdAt,
     updatedAt,
     auditLogs,
@@ -234,6 +243,7 @@ export class User extends AggregateRoot {
     googleId?: string;
     refreshTokensRevokedAt?: Date;
     studentCode?: string;
+    avatarMediaId?: string;
     createdAt: Date;
     updatedAt: Date;
     auditLogs: AuditLog<UserAuditAction>[];
@@ -250,6 +260,7 @@ export class User extends AggregateRoot {
       googleId,
       refreshTokensRevokedAt,
       studentCode,
+      avatarMediaId,
       createdAt,
       updatedAt,
       auditLogs,
@@ -290,6 +301,27 @@ export class User extends AggregateRoot {
 
       this.publishEvent(new UserProfileUpdatedEvent({ entity: this, changes, performedBy }));
     }
+  }
+
+  /** Sets (or removes with undefined) the uploaded profile photo and returns the previous one so the caller can delete it. */
+  public changeAvatar({ mediaId, performedBy }: { mediaId?: string; performedBy?: string }): string | undefined {
+    const previous: string | undefined = this._avatarMediaId;
+
+    if (previous === mediaId) {
+      return undefined;
+    }
+
+    this._avatarMediaId = mediaId;
+    this._updatedAt = new Date();
+    this._auditLogs.push(
+      AuditLog.create<UserAuditAction>({
+        action: USER_PROFILE_UPDATED_AUDIT_ACTION,
+        performedByUserId: performedBy,
+        metadata: { changes: { avatarMediaId: { before: previous ?? null, after: mediaId ?? null } } },
+      }),
+    );
+
+    return previous;
   }
 
   // Revokes every refresh token issued so far: the caller reissues the current session's pair if it should stay signed in.

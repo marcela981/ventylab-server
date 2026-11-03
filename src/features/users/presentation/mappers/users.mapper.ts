@@ -17,13 +17,14 @@ import { UserStatsDTO } from "@/features/users/presentation/dtos/user-stats.dto"
 import { UserDTO } from "@/features/users/presentation/dtos/user.dto";
 
 export class UsersMapper {
-  public static toDTO(user: User, superadminEmail: string): UserDTO {
+  // image: the resolved photo (UserImageResolver); defaults to the stored image.
+  public static toDTO(user: User, superadminEmail: string, image: string | undefined = user.image): UserDTO {
     return new UserDTO({
       id: user.id,
       email: user.email,
       name: user.name ?? null,
       role: user.role.value,
-      image: user.image ?? null,
+      image: image ?? null,
       isActive: user.isActive,
       studentCode: user.studentCode ?? null,
       isSuperadmin: isSuperadmin(user.email, superadminEmail),

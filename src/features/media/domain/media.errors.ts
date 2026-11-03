@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de dominio de media
- * Descripción: Define los errores de negocio de la feature de media (no encontrado, en uso, almacenamiento no disponible, tipo MIME no permitido, tamaño excedido y archivo ausente)
- * Versión: 1.0
+ * Descripción: Define los errores de negocio de la feature de media (no encontrado, en uso, almacenamiento no disponible, tipo MIME no permitido, tamaño excedido, archivo ausente y contenido que no corresponde al tipo declarado)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -43,5 +43,11 @@ export class MediaTooLargeError extends DomainError {
 export class MediaFileRequiredError extends DomainError {
   public constructor() {
     super("A non-empty file is required", "media.file_required");
+  }
+}
+
+export class MediaContentMismatchError extends DomainError {
+  public constructor(mimeType: string) {
+    super(`The file content is not a valid ${mimeType} file`, "media.content_mismatch");
   }
 }

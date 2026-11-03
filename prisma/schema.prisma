@@ -27,6 +27,8 @@ model User {
   googleId               String?   @unique
   refreshTokensRevokedAt DateTime? // Refresh tokens issued (iat) before this instant are rejected
   studentCode            String?   @unique @map("student_code") // Institutional student code, set by an admin
+  avatarMediaId          String?   @map("avatar_media_id") // Uploaded profile photo; UserDTO.image falls back to image (Google) without it
+  avatarMedia            Media?    @relation("UserAvatar", fields: [avatarMediaId], references: [id], onDelete: SetNull)
 
   accounts           Account[]
   sessions           Session[]
@@ -89,7 +91,7 @@ model User {
   gradedSubmissions   ActivitySubmission[] @relation("GraderSubmissions")
 
   // Learning features
-  ownedMedia Media[]
+  ownedMedia Media[] @relation("MediaOwner")
   notes      Note[]
 
   // Evaluation feature
@@ -119,6 +121,7 @@ model User {
 
   @@index([role])
   @@index([isActive])
+  @@index([avatarMediaId])
   @@map("users")
 }
 
@@ -1519,7 +1522,8 @@ model Media {
   originalName String    @map("original_name")
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  owner        User          @relation("MediaOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  avatarOf     User[]        @relation("UserAvatar")
   pageSections PageSection[]
 
   evaluationQuestionOptions EvaluationQuestionOption[]

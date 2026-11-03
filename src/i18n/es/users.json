@@ -26,7 +26,8 @@
     "name_must_be_string": "El nombre debe ser una cadena de texto",
     "name_must_not_be_empty": "El nombre no puede estar vacío",
     "name_max_length": "El nombre no puede exceder {constraints.0} caracteres",
-    "image_must_be_valid_url": "La imagen debe ser una URL http(s) válida o una data URL de imagen en base64"
+    "image_must_be_valid_url": "La imagen debe ser una URL http(s) válida",
+    "image_too_long": "La URL de la imagen no debe superar {constraints.0} caracteres"
   },
   "change_password": {
     "current_password_must_be_string": "La contraseña actual debe ser una cadena de texto",
@@ -39,5 +40,8 @@
     "role_invalid": "role debe ser uno de: STUDENT, TEACHER, ADMIN",
     "is_active_boolean": "isActive debe ser un booleano",
     "student_code_invalid": "studentCode debe ser null o tener de 1 a 32 letras, dígitos o guiones"
-  }
+  },
+  "avatar_updated": "Foto de perfil actualizada correctamente",
+  "avatar_removed": "Foto de perfil eliminada correctamente",
+  "avatar_file_required": "Se requiere un archivo de foto de perfil no vacío"
 }

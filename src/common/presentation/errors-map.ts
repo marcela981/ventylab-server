@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.43
+ * Versión: 1.44
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -170,6 +170,7 @@ import {
   PrerequisiteLevelNotFoundError,
 } from "@/features/levels/domain/levels.errors";
 import {
+  MediaContentMismatchError,
   MediaFileRequiredError,
   MediaInUseError,
   MediaNotFoundError,
@@ -286,6 +287,7 @@ import {
   TeacherStudentNotFoundError,
 } from "@/features/teacher-students/domain/teacher-students.errors";
 import {
+  AvatarFileRequiredError,
   CannotChangeOwnRoleError,
   CannotChangeOwnStatusError,
   InvalidCurrentPasswordError,
@@ -392,6 +394,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [SuperadminRoleImmutableError, HttpStatus.FORBIDDEN],
   [SuperadminStatusImmutableError, HttpStatus.FORBIDDEN],
   [CannotChangeOwnStatusError, HttpStatus.BAD_REQUEST],
+  [AvatarFileRequiredError, HttpStatus.BAD_REQUEST],
   [LevelNotFoundError, HttpStatus.NOT_FOUND],
   [PrerequisiteLevelNotFoundError, HttpStatus.NOT_FOUND],
   [ParentLevelNotFoundError, HttpStatus.NOT_FOUND],
@@ -493,6 +496,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [MediaInUseError, HttpStatus.CONFLICT],
   [MediaStorageUnavailableError, HttpStatus.SERVICE_UNAVAILABLE],
   [UnsupportedMediaTypeError, HttpStatus.UNSUPPORTED_MEDIA_TYPE],
+  [MediaContentMismatchError, HttpStatus.UNSUPPORTED_MEDIA_TYPE],
   [MediaTooLargeError, HttpStatus.PAYLOAD_TOO_LARGE],
   [MediaFileRequiredError, HttpStatus.BAD_REQUEST],
   [NoteNotFoundError, HttpStatus.NOT_FOUND],

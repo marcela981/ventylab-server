@@ -25,7 +25,12 @@ export class UserDTO {
   @ApiProperty({ description: "User role", enum: USER_ROLE_VALUES, example: "STUDENT" })
   public role: string;
 
-  @ApiProperty({ description: "Profile image URL", example: "https://example.com/avatar.png", nullable: true, type: String })
+  @ApiProperty({
+    description: "Profile image URL: a signed URL of the uploaded photo (it expires; read it again instead of storing it), or else the stored image (the Google picture)",
+    example: "https://example.com/avatar.png",
+    nullable: true,
+    type: String,
+  })
   public image: string | null;
 
   @ApiProperty({ description: "Whether the account is active", example: true })

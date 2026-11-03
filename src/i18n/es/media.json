@@ -10,6 +10,7 @@
   "unsupported_media_type": "Este tipo de archivo no está permitido",
   "media_too_large": "El archivo supera el tamaño máximo permitido para su tipo",
   "file_required": "Se requiere un archivo no vacío",
+  "content_mismatch": "El contenido del archivo no corresponde a su tipo declarado",
   "validation": {
     "kind_invalid": "El tipo debe ser uno de: IMAGE, VIDEO, FILE"
   }

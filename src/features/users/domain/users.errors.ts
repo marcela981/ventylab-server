@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de usuarios
- * Descripción: Errores de dominio de usuarios: inexistencia, duplicados, contraseñas, acceso a estudiantes restricciones de cambio de rol y de estado de cuenta (incluida la inmutabilidad del superadmin) y código estudiantil inválido o en uso por otro usuario
- * Versión: 1.3
+ * Descripción: Errores de dominio de usuarios: inexistencia, duplicados, contraseñas, acceso a estudiantes restricciones de cambio de rol y de estado de cuenta (incluida la inmutabilidad del superadmin) código estudiantil inválido o en uso por otro usuario y foto de perfil ausente
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -85,5 +85,11 @@ export class SuperadminStatusImmutableError extends DomainError {
 export class CannotChangeOwnStatusError extends DomainError {
   public constructor() {
     super("Users cannot change their own account status", "users.cannot_change_own_status");
+  }
+}
+
+export class AvatarFileRequiredError extends DomainError {
+  public constructor() {
+    super("A non-empty profile photo file is required", "users.avatar_file_required");
   }
 }

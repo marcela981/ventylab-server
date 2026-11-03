@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Módulo UsersModule
- * Descripción: Registra controlador, casos de uso, repositorios (usuarios, estadísticas y membresías de grupo), el correo del superadministrador, el arranque que fuerza su rol ADMIN y los manejadores de eventos de la feature de usuarios; exporta UsersFacade y los proveedores que aún usan otras features
+ * Descripción: Registra controlador, casos de uso, repositorios (usuarios, estadísticas y membresías de grupo), el correo del superadministrador, el arranque que fuerza su rol ADMIN y los manejadores de eventos de la feature de usuarios; exporta UsersFacade y los proveedores que aún usan otras features; la foto de perfil (subir y quitar con el puerto AVATAR_STORAGE_TOKEN que enlaza la raíz de composición, y resolución de la imagen con el resolvedor de URLs de media)
  * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -12,8 +12,10 @@ import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
+import { UserImageResolver } from "@/features/users/application/services/user-image.resolver";
 import { UsersFacade } from "@/features/users/application/services/users.facade";
 import { SUPERADMIN_EMAIL_TOKEN } from "@/features/users/application/tokens/superadmin-email.token";
+import { RemoveAvatarUseCase, UpdateAvatarUseCase } from "@/features/users/application/use-cases/change-avatar.usecase";
 import { ChangePasswordUseCase } from "@/features/users/application/use-cases/change-password.usecase";
 import { ChangeUserRoleUseCase } from "@/features/users/application/use-cases/change-user-role.usecase";
 import { ChangeUserStatusUseCase } from "@/features/users/application/use-cases/change-user-status.usecase";
@@ -71,6 +73,9 @@ import { UsersController } from "@/features/users/presentation/controllers/users
     ChangeUserStudentCodeUseCase,
     FindOrCreateGoogleUserUseCase,
     EnsureSuperadminUseCase,
+    UpdateAvatarUseCase,
+    RemoveAvatarUseCase,
+    UserImageResolver,
     UsersFacade,
     SuperadminBootstrapService,
     UsersEventsHandlers,

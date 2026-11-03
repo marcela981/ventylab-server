@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo MediaModule
- * Descripción: Registra el controlador, los casos de uso, el repositorio Prisma y la configuración de media, configura Multer en memoria con el límite de tamaño máximo e importa el módulo global del resolvedor de URLs
- * Versión: 1.0
+ * Descripción: Registra el controlador, los casos de uso, el repositorio Prisma y la configuración de media, configura Multer en memoria con el límite de tamaño máximo e importa el módulo global del resolvedor de URLs; exporta MediaFacade (fotos de perfil) para la raíz de composición
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { ConfigService } from "@nestjs/config";
 import { MulterModule } from "@nestjs/platform-express";
 
 import { AuthModule } from "@/features/auth/auth.module";
+import { MediaFacade } from "@/features/media/application/services/media.facade";
 import { DeleteMediaUseCase } from "@/features/media/application/use-cases/delete-media.usecase";
 import { GetMediaByIdUseCase } from "@/features/media/application/use-cases/get-media-by-id.usecase";
 import { GetMediaListUseCase } from "@/features/media/application/use-cases/get-media-list.usecase";
@@ -45,6 +46,8 @@ import { MediaController } from "@/features/media/presentation/controllers/media
     GetMediaByIdUseCase,
     GetMediaURLUseCase,
     DeleteMediaUseCase,
+    MediaFacade,
   ],
+  exports: [MediaFacade],
 })
 export class MediaModule {}
