@@ -19,7 +19,7 @@ export type AdminStudentSortByValue = (typeof ADMIN_STUDENT_SORT_BY_VALUES)[numb
 
 export type AdminSortOrderValue = "asc" | "desc";
 
-export interface AdminActor {
+interface AdminActor {
   readonly id: string;
   readonly role: string;
 }

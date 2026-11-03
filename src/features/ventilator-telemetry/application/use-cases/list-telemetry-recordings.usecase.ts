@@ -26,7 +26,7 @@ const DEFAULT_RANGE_DAYS: number = 90;
 
 const MAX_RANGE_DAYS: number = 366;
 
-export const MAX_LISTED_RECORDINGS: number = 100;
+const MAX_LISTED_RECORDINGS: number = 100;
 
 /**
  * @throws {TelemetryRecordingRangeInvalidError} If the range does not start before it ends or spans more than 366 days

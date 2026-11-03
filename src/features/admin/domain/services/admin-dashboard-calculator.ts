@@ -28,14 +28,14 @@ export function startOfBogotaDay(instant: Date): Date {
   return new Date(localDateToUtcMidnight(toBogotaLocalDate(instant)).getTime() + BOGOTA_MIDNIGHT_UTC_OFFSET_MS);
 }
 
-export interface ModuleProgressSummary {
+interface ModuleProgressSummary {
   readonly overallProgress: number;
   readonly completedModules: number;
   readonly totalModules: number;
   readonly lastActivity?: Date;
 }
 
-export function summarizeModuleProgress(records: ModuleProgressRecord[]): ModuleProgressSummary {
+function summarizeModuleProgress(records: ModuleProgressRecord[]): ModuleProgressSummary {
   const totalModules: number = records.length;
   let lastActivity: Date | undefined;
 

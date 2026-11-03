@@ -39,7 +39,7 @@ const IMAGE_SIGNATURES: Readonly<Record<string, readonly { readonly offset: numb
   ],
 };
 
-export function matchesImageSignature(mimeType: string, content: Buffer): boolean {
+function matchesImageSignature(mimeType: string, content: Buffer): boolean {
   const signature: readonly { readonly offset: number; readonly bytes: readonly number[] }[] | undefined = IMAGE_SIGNATURES[mimeType];
 
   return (

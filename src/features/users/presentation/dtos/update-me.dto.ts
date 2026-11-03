@@ -15,7 +15,7 @@ import { i18nValidationMessage } from "nestjs-i18n";
 // Uploaded photos go through PUT /api/users/me/avatar; base64 data URLs are no longer accepted here (rows already stored are kept).
 const IMAGE_URL_REGEX: RegExp = /^https?:\/\/\S+$/;
 
-export const IMAGE_URL_MAX_LENGTH: number = 2048;
+const IMAGE_URL_MAX_LENGTH: number = 2048;
 
 export class UpdateMeDTO {
   @ApiPropertyOptional({
