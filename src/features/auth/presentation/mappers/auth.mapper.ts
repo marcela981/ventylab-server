@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper AuthMapper
- * Descripción: Convierte los resultados de autenticación (usuario autenticado y tokens) en DTOs de respuesta
- * Versión: 1.1
+ * Descripción: Convierte los resultados de autenticación (usuario autenticado y tokens) en DTOs de respuesta; la imagen del usuario llega ya resuelta (foto subida o imagen guardada)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -45,9 +45,10 @@ export class AuthMapper {
     });
   }
 
-  public static toMeResponseDTO(user: User, permissions: string[]): MeResponseDTO {
+  // image: the resolved photo (UsersFacade.resolveImage).
+  public static toMeResponseDTO(user: User, permissions: string[], image: string | undefined): MeResponseDTO {
     return new MeResponseDTO({
-      user: AuthMapper.toAuthUserDTO(toAuthenticatedUser(user)),
+      user: AuthMapper.toAuthUserDTO(toAuthenticatedUser(user, image)),
       permissions,
     });
   }

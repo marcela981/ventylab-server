@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO AuthUserDTO
  * Descripción: Representa el usuario autenticado en las respuestas de autenticación
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,7 +25,12 @@ export class AuthUserDTO {
   @ApiProperty({ description: "User role", enum: USER_ROLE_VALUES, example: "STUDENT" })
   public role: string;
 
-  @ApiProperty({ description: "Profile image URL", example: "https://example.com/avatar.png", nullable: true, type: String })
+  @ApiProperty({
+    description: "Profile image URL, same as UserDTO.image: a signed URL of the uploaded photo (it expires; read it again instead of storing it), or else the stored image (the Google picture)",
+    example: "https://example.com/avatar.png",
+    nullable: true,
+    type: String,
+  })
   public image: string | null;
 
   public constructor({

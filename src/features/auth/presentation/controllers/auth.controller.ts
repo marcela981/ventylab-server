@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador AuthController
- * Descripción: Expone las rutas api/auth de registro, inicio de sesión (local y con Google), refresco, cierre de sesión y perfil, con límites de peticiones estrictos en las rutas que emiten tokens y en el registro. v1.4: se retira la ruta nextauth-token del puente de NextAuth. v1.5: cambio de contraseña propio (5 por minuto) que revoca los refresh tokens y reemite el par de la sesión actual
- * Versión: 1.5
+ * Descripción: Expone las rutas api/auth de registro, inicio de sesión (local y con Google), refresco, cierre de sesión y perfil, con límites de peticiones estrictos en las rutas que emiten tokens y en el registro. v1.4: se retira la ruta nextauth-token del puente de NextAuth. v1.5: cambio de contraseña propio (5 por minuto) que revoca los refresh tokens y reemite el par de la sesión actual. v1.6: la imagen del usuario de sesión (me) es la foto subida resuelta, como en UserDTO
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,6 +37,7 @@ import { RefreshTokenResponseDTO } from "@/features/auth/presentation/dtos/refre
 import { RegisterDTO } from "@/features/auth/presentation/dtos/register.dto";
 import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard";
 import { AuthMapper } from "@/features/auth/presentation/mappers/auth.mapper";
+import { UsersFacade } from "@/features/users/application/services/users.facade";
 import { GetUserByIdUseCase } from "@/features/users/application/use-cases/get-user-by-id.usecase";
 import { User } from "@/features/users/domain/entities/user.entity";
 import { ChangePasswordDTO } from "@/features/users/presentation/dtos/change-password.dto";
@@ -58,6 +59,7 @@ export class AuthController {
     private readonly _googleLoginUseCase: GoogleLoginUseCase,
     private readonly _getUserByIdUseCase: GetUserByIdUseCase,
     private readonly _changeOwnPasswordUseCase: ChangeOwnPasswordUseCase,
+    private readonly _usersFacade: UsersFacade,
   ) {}
 
   @Post("register")
@@ -216,7 +218,7 @@ export class AuthController {
     const user: User = await this._getUserByIdUseCase.execute(currentUser.sub);
 
     return new APIResponseBuilder<MeResponseDTO>()
-      .setData(AuthMapper.toMeResponseDTO(user, currentUser.permissions))
+      .setData(AuthMapper.toMeResponseDTO(user, currentUser.permissions, await this._usersFacade.resolveImage(user)))
       .setMessage(await i18n.t("auth.session_retrieved"))
       .build();
   }

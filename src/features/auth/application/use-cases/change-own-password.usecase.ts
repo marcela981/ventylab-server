@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso ChangeOwnPasswordUseCase
- * Descripción: Cambia la contraseña del usuario autenticado con ChangePasswordUseCase de usuarios (que fija refreshTokensRevokedAt, de modo que todos los refresh tokens emitidos hasta ese segundo dejan de servir) y reemite el par de la sesión actual: el refresh token nuevo lleva iat = floor(revocación) + 1 para quedar después de la revocación; el access token anterior sigue vivo hasta vencer
- * Versión: 1.0
+ * Descripción: Cambia la contraseña del usuario autenticado con ChangePasswordUseCase de usuarios (que fija refreshTokensRevokedAt, de modo que todos los refresh tokens emitidos hasta ese segundo dejan de servir) y reemite el par de la sesión actual: el refresh token nuevo lleva iat = floor(revocación) + 1 para quedar después de la revocación; el access token anterior sigue vivo hasta vencer; la imagen del usuario de la respuesta es la foto subida resuelta (o la imagen guardada)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -57,6 +57,6 @@ export class ChangeOwnPasswordUseCase {
       throw new UserNotFoundError();
     }
 
-    return await issueLoginResult(this._tokenGenerator, user, { refreshIssuedAtSeconds: reissuedRefreshIssuedAt(revokedAt) });
+    return await issueLoginResult(this._tokenGenerator, { ...user, image: await this._usersFacade.resolveImage(user) }, { refreshIssuedAtSeconds: reissuedRefreshIssuedAt(revokedAt) });
   }
 }

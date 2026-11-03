@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GoogleLoginUseCase
- * Descripción: Verifica el inicio de sesión con Google: configuración ausente, token inválido, correo no verificado, dominio no permitido, alta como estudiante, vinculación por correo, usuario inactivo y emisión del par de tokens
- * Versión: 1.0
+ * Descripción: Verifica el inicio de sesión con Google: configuración ausente, token inválido, correo no verificado, dominio no permitido, alta como estudiante, vinculación por correo, usuario inactivo, emisión del par de tokens y la imagen resuelta del usuario (la foto subida tiene prioridad sobre la de Google)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -40,11 +40,13 @@ interface HarnessOptions {
   verifyError?: Error;
   account?: UserAccount;
   allowedDomains?: string[];
+  resolvedImage?: string;
 }
 
 interface Harness {
   useCase: GoogleLoginUseCase;
   findOrCreateFromGoogle: jest.Mock;
+  resolveImage: jest.Mock;
   generateToken: jest.Mock;
   generateRefreshToken: jest.Mock;
 }
@@ -64,14 +66,15 @@ function buildAccount(overrides: Partial<UserAccount>): UserAccount {
   };
 }
 
-function buildHarness({ configured = true, claims = CLAIMS, verifyError, account = buildAccount({}), allowedDomains = [] }: HarnessOptions): Harness {
+function buildHarness({ configured = true, claims = CLAIMS, verifyError, account = buildAccount({}), allowedDomains = [], resolvedImage = account.image }: HarnessOptions): Harness {
   const verify: jest.Mock = verifyError ? jest.fn().mockRejectedValue(verifyError) : jest.fn().mockResolvedValue(claims);
   const findOrCreateFromGoogle: jest.Mock = jest.fn().mockResolvedValue(account);
+  const resolveImage: jest.Mock = jest.fn().mockResolvedValue(resolvedImage);
   const generateToken: jest.Mock = jest.fn().mockResolvedValue("access-token");
   const generateRefreshToken: jest.Mock = jest.fn().mockResolvedValue("refresh-token");
 
   const verifier: IGoogleIdTokenVerifier = { isConfigured: jest.fn().mockReturnValue(configured), verify };
-  const usersFacade: UsersFacade = { findOrCreateFromGoogle } as unknown as UsersFacade;
+  const usersFacade: UsersFacade = { findOrCreateFromGoogle, resolveImage } as unknown as UsersFacade;
   const tokenGenerator: ITokenGenerator = {
     generateToken,
     generateRefreshToken,
@@ -82,6 +85,7 @@ function buildHarness({ configured = true, claims = CLAIMS, verifyError, account
   return {
     useCase: new GoogleLoginUseCase(verifier, usersFacade, tokenGenerator, allowedDomains),
     findOrCreateFromGoogle,
+    resolveImage,
     generateToken,
     generateRefreshToken,
   };
@@ -182,5 +186,16 @@ describe("GoogleLoginUseCase", () => {
     expect(Object.keys(payload).sort()).toEqual(["email", "permissions", "role", "sub"]);
     expect(generateRefreshToken).toHaveBeenCalledWith(payload);
     expect(result).toMatchObject({ accessToken: "access-token", refreshToken: "refresh-token" });
+  });
+
+  it("returns the uploaded profile photo instead of the Google picture as the user image", async () => {
+    const signedPhotoUrl: string = "https://storage.example.com/avatars/U-new.png?token=signed";
+    const account: UserAccount = buildAccount({ avatarMediaId: "media-1" });
+    const { useCase, resolveImage } = buildHarness({ account, resolvedImage: signedPhotoUrl });
+
+    const result: LoginResult = await useCase.execute(COMMAND);
+
+    expect(resolveImage).toHaveBeenCalledWith(account);
+    expect(result.user.image).toBe(signedPhotoUrl);
   });
 });

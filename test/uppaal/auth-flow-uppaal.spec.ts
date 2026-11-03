@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Propiedades UPPAAL del flujo de autenticación como pruebas ejecutables
- * Descripción: Verifica S4, S5, S6, L1, L2, R1, R2 y R4 del modelo ventilab-auth-uppaal.xml (corrected-v2) sobre el código real de inicio de sesión: LoginUseCase con BcryptPasswordHasher, JwtTokenGenerator sobre JwtService, JwtAuthGuard y JwtAccessTokenVerifier; solo el repositorio de usuarios y la configuración son dobles de prueba
- * Versión: 1.0
+ * Descripción: Verifica S4, S5, S6, L1, L2, R1, R2 y R4 del modelo ventilab-auth-uppaal.xml (corrected-v2) sobre el código real de inicio de sesión: LoginUseCase con BcryptPasswordHasher, JwtTokenGenerator sobre JwtService, JwtAuthGuard y JwtAccessTokenVerifier; solo el repositorio de usuarios, la resolución de la foto de perfil (UsersFacade) y la configuración son dobles de prueba
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,7 @@ import { JwtAccessTokenVerifier } from "@/features/auth/infrastructure/jwt/jwt-a
 import { JwtTokenGenerator } from "@/features/auth/infrastructure/jwt/jwt-token-generator";
 import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard";
 import { resolveRolePermissions } from "@/features/authorization/domain/role-permissions";
+import { type UsersFacade } from "@/features/users/application/services/users.facade";
 import { User } from "@/features/users/domain/entities/user.entity";
 import { type IUserRepository } from "@/features/users/domain/repositories/users.repository";
 import { UserRole } from "@/features/users/domain/value-objects/user-role";
@@ -73,7 +74,7 @@ async function buildHarness(): Promise<AuthHarness> {
   const generator: JwtTokenGenerator = new JwtTokenGenerator(jwtService, configService);
 
   return {
-    login: new LoginUseCase(usersRepository, hasher, generator),
+    login: new LoginUseCase(usersRepository, hasher, generator, { resolveImage: (user: User): Promise<string | undefined> => Promise.resolve(user.image) } as unknown as UsersFacade),
     generator,
     guard: new JwtAuthGuard(generator),
     verifier: new JwtAccessTokenVerifier(generator),

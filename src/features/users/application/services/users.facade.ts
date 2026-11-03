@@ -1,16 +1,17 @@
 /*
  * Funcionalidad: Fachada UsersFacade
- * Descripción: API pública de la feature de usuarios para otras features (auth, grupos): consulta de cuentas por ID, detección del superadmin, comparación jerárquica de roles (STUDENT < TEACHER < ADMIN) y alta o vinculación con Google; devuelve el modelo de lectura UserAccount (con el código de estudiante)
- * Versión: 1.1
+ * Descripción: API pública de la feature de usuarios para otras features (auth, grupos): consulta de cuentas por ID, detección del superadmin, comparación jerárquica de roles (STUDENT < TEACHER < ADMIN), alta o vinculación con Google y la imagen que se muestra del usuario (foto subida o imagen guardada); devuelve el modelo de lectura UserAccount (con el código de estudiante)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { FindOrCreateGoogleUserCommand } from "@/features/users/application/commands/find-or-create-google-user.command";
+import { UserImageResolver, type UserImageSource } from "@/features/users/application/services/user-image.resolver";
 import { SUPERADMIN_EMAIL_TOKEN } from "@/features/users/application/tokens/superadmin-email.token";
 import { FindOrCreateGoogleUserUseCase } from "@/features/users/application/use-cases/find-or-create-google-user.usecase";
 import { type User } from "@/features/users/domain/entities/user.entity";
@@ -29,13 +30,27 @@ export interface GoogleProfile {
 
 @Injectable()
 export class UsersFacade {
+  private readonly _logger: Logger = new Logger(UsersFacade.name);
+
   public constructor(
     @Inject(USERS_REPOSITORY_TOKEN)
     private readonly _usersRepository: IUserRepository,
     private readonly _findOrCreateGoogleUserUseCase: FindOrCreateGoogleUserUseCase,
     @Inject(SUPERADMIN_EMAIL_TOKEN)
     private readonly _superadminEmail: string,
+    private readonly _userImageResolver: UserImageResolver,
   ) {}
+
+  // The image shown for the user, same rule as UserDTO.image. Signing in must not fail because the photo cannot be signed, so an error falls back to the stored image.
+  public async resolveImage(user: UserImageSource): Promise<string | undefined> {
+    try {
+      return await this._userImageResolver.resolveOne(user);
+    } catch (error: unknown) {
+      this._logger.warn(`Profile photo of user ${user.id} could not be resolved: ${error instanceof Error ? error.message : String(error)}`);
+
+      return user.image;
+    }
+  }
 
   public async getUserById(id: string): Promise<UserAccount | undefined> {
     const user: User | undefined = await this._usersRepository.getById(id);
@@ -79,6 +94,7 @@ export class UsersFacade {
       name: user.name,
       role: user.role.value,
       image: user.image,
+      avatarMediaId: user.avatarMediaId,
       isActive: user.isActive,
       googleId: user.googleId,
       hasPassword: user.passwordHash !== undefined,

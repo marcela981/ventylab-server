@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e de la foto de perfil
- * Descripción: Con la aplicación completa y el almacenamiento en disco local (sin Supabase y fuera de producción), un estudiante sube su foto con PUT /api/users/me/avatar y la ve como imagen de su perfil; comprueba 415 para un tipo no permitido o bytes que no corresponden al tipo, 413 para más de 2 MB, que reemplazar la foto borre la media anterior, que DELETE quite la foto y su media y vuelva a la imagen de Google, y que PATCH /api/users/me solo acepte URLs http(s) de hasta 2048 caracteres sin tocar una imagen base64 ya guardada; las respuestas se validan contra openapi/openapi.json
- * Versión: 1.0
+ * Descripción: Con la aplicación completa y el almacenamiento en disco local (sin Supabase y fuera de producción), un estudiante sube su foto con PUT /api/users/me/avatar y la ve como imagen de su perfil; comprueba 415 para un tipo no permitido o bytes que no corresponden al tipo, 413 para más de 2 MB, que reemplazar la foto borre la media anterior, que DELETE quite la foto y su media y vuelva a la imagen de Google, que la sesión (login, GET /api/auth/me y change-password) muestre la misma foto que el perfil, y que PATCH /api/users/me solo acepte URLs http(s) de hasta 2048 caracteres sin tocar una imagen base64 ya guardada; las respuestas se validan contra openapi/openapi.json
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,7 +13,7 @@ import request, { type Response } from "supertest";
 
 import { AVATAR_MAX_BYTES } from "@/common/domain/value-objects/avatar-upload-rules";
 
-import { createStudent } from "../../factories";
+import { createStudent, TEST_USER_PASSWORD } from "../../factories";
 import { mintAccessToken } from "../../support/auth";
 import { contractCaller, type ContractCaller, expectStatus } from "../../support/contract-api";
 import { resetDatabase } from "../../support/database";
@@ -76,6 +76,31 @@ describe("flow: a user uploads, replaces and removes the profile photo", () => {
     expect(removed.body.data.image).toBe(GOOGLE_PICTURE);
     expect(await e2e.prisma.media.count({ where: { ownerId: student.id } })).toBe(0);
     expect((await e2e.prisma.user.findUniqueOrThrow({ where: { id: student.id } })).avatarMediaId).toBeNull();
+  });
+
+  it("should show the uploaded photo as the session user image in login, auth/me and change-password, and the Google picture after removal", async () => {
+    const photo: string = `data:image/png;base64,${PNG.toString("base64")}`;
+
+    expectStatus(await upload(PNG, "image/png", "photo.png"), 200);
+
+    const login: Response = await api("POST", "/api/auth/login", undefined, { email: student.email, password: TEST_USER_PASSWORD });
+
+    expectStatus(login, 200);
+    expect(login.body.data.user.image).toBe(photo);
+
+    const sessionToken: string = login.body.data.accessToken as string;
+    const me: Response = await api("GET", "/api/auth/me", sessionToken);
+
+    expectStatus(me, 200);
+    expect(me.body.data.user.image).toBe(photo);
+
+    const changed: Response = await api("POST", "/api/auth/change-password", sessionToken, { currentPassword: TEST_USER_PASSWORD, newPassword: "Another-Pass-2" });
+
+    expectStatus(changed, 200);
+    expect(changed.body.data.user.image).toBe(photo);
+
+    expectStatus(await api("DELETE", "/api/users/me/avatar", token), 200);
+    expect((await api("GET", "/api/auth/me", token)).body.data.user.image).toBe(GOOGLE_PICTURE);
   });
 
   it.each([
