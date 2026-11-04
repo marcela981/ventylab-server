@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Orquestador de proveedores de IA
- * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada; v1.4: resuelve el identificador heredado custom como external (sin repetir un proveedor en la cadena) y el modelo "default" o ausente con el modelo por defecto del proveedor; v1.5: la respuesta de respaldo del consumidor se registra como FALLBACK con el proveedor deterministic; v1.6: opciones con sujeto de cuota separado de la atribución (quotaUserId, quotaUserRole)
- * Versión: 1.6
+ * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada; v1.4: resuelve el identificador heredado custom como external (sin repetir un proveedor en la cadena) y el modelo "default" o ausente con el modelo por defecto del proveedor; v1.5: la respuesta de respaldo del consumidor se registra como FALLBACK con el proveedor deterministic; v1.6: opciones con sujeto de cuota separado de la atribución (quotaUserId, quotaUserRole); v1.7: telemetría por llamada con idioma, temperatura y máximo de tokens de salida usados, motivo de fin normalizado (error si la llamada falla), id de petición del proveedor, rastro de cada intento (proveedor, modelo, resultado, código y latencia; fallback con el proveedor deterministic) y TTFT también en llamadas sin stream (igual a la latencia total hasta la respuesta)
+ * Versión: 1.7
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,9 +36,11 @@ import {
   AiStreamInterruptedError,
 } from "@/features/ai/domain/ai.errors";
 import { type BuiltPrompt } from "@/features/ai/domain/prompts/prompt-template";
+import { type AiAttemptOutcome, type AiAttemptTrailEntry } from "@/features/ai/domain/results/ai-attempt-trail";
 import { type AiProbeResult, type AiProviderCatalogEntry, type AiProviderHealth } from "@/features/ai/domain/results/ai-provider-health";
 import { type AiCallStatus, type AiResult, type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
 import { classifyAiError } from "@/features/ai/domain/services/ai-error-classification";
+import { type AiFinishReason, ERROR_FINISH_REASON, UNKNOWN_FINISH_REASON } from "@/features/ai/domain/services/ai-finish-reason";
 import {
   AI_PROVIDER_ID_VALUES,
   normalizeAiProviderId,
@@ -81,6 +83,8 @@ export interface AiOrchestrationRequest {
   readonly prompt: BuiltPrompt;
   readonly promptVersion: string;
   readonly promptHash: string;
+  // Language the prompt asks the answer in, recorded in the telemetry.
+  readonly language?: string;
   readonly options: AiCallOptions;
 }
 
@@ -98,18 +102,21 @@ interface CallTracker {
   ttftMs?: number;
   errorCode?: string;
   recorded: boolean;
+  temperature?: number;
+  maxOutputTokens?: number;
+  readonly trail: AiAttemptTrailEntry[];
 }
 
 interface RecordOutcome {
   readonly status: AiCallStatus;
-  readonly inputTokens?: number;
-  readonly outputTokens?: number;
+  readonly completion?: LlmCompletion;
 }
 
 interface OpenedStream {
   readonly scope: AttemptScope;
   readonly iterator: AsyncIterator<LlmChunk>;
   readonly first: IteratorResult<LlmChunk>;
+  readonly startedAt: number;
 }
 
 class AttemptScope {
@@ -234,8 +241,8 @@ export class AiOrchestrator {
   ) {}
 
   public async complete(request: AiOrchestrationRequest): Promise<AiResult> {
-    const tracker: CallTracker = this._startTracker();
     const settings: AiUseCaseSettings = this._settings.getUseCaseSettings(request.useCase);
+    const tracker: CallTracker = this._startTracker(settings);
 
     for (const target of this._targets(settings)) {
       if (this._isCallerAborted(request)) {
@@ -247,13 +254,15 @@ export class AiOrchestrator {
       tracker.model = target.model;
 
       try {
-        const completion: LlmCompletion = await this._completeWithRetry(target, request, settings);
+        const completion: LlmCompletion = await this._completeWithRetry(target, request, settings, tracker);
 
         this._breaker.recordSuccess(target.provider.id);
         tracker.model = completion.model || target.model;
         tracker.errorCode = undefined;
+        // Without streaming the first token arrives with the whole answer, so TTFT equals the latency until the response.
+        tracker.ttftMs = Date.now() - tracker.startedAt;
 
-        this._record(request, tracker, { status: "SUCCESS", inputTokens: completion.inputTokens, outputTokens: completion.outputTokens });
+        this._record(request, tracker, { status: "SUCCESS", completion });
 
         return { content: completion.text, source: "LLM", provider: target.provider.id, model: tracker.model, aiCallId: tracker.id };
       } catch (error: unknown) {
@@ -316,11 +325,11 @@ export class AiOrchestrator {
       throw new AiProviderNotRegisteredError(providerId);
     }
 
-    const tracker: CallTracker = this._startTracker();
+    const tracker: CallTracker = this._startTracker({ temperature: 0, maxOutputTokens: limits.maxOutputTokens });
     const scope: AttemptScope = new AttemptScope(limits.timeoutMs, request.options.signal);
 
     tracker.attempts = 1;
-    tracker.provider = providerId;
+    tracker.provider = provider.id;
     tracker.model = model;
 
     try {
@@ -333,12 +342,15 @@ export class AiOrchestrator {
 
       this._breaker.recordSuccess(providerId);
       tracker.model = completion.model || model;
-      this._record(request, tracker, { status: "SUCCESS", inputTokens: completion.inputTokens, outputTokens: completion.outputTokens });
+      tracker.ttftMs = Date.now() - tracker.startedAt;
+      this._pushTrail(tracker, { provider: provider.id, model: tracker.model, outcome: "success", latencyMs: tracker.ttftMs });
+      this._record(request, tracker, { status: "SUCCESS", completion });
 
       return { provider: providerId, model: tracker.model, ok: true, latencyMs: Date.now() - tracker.startedAt, aiCallId: tracker.id };
     } catch (error: unknown) {
       tracker.errorCode = classifyAiError(error);
       this._breaker.recordFailure(providerId, this._settings.getBreakerSettings(), tracker.errorCode);
+      this._pushTrail(tracker, { provider: provider.id, model, outcome: "error", errorCode: tracker.errorCode, latencyMs: Date.now() - tracker.startedAt });
       this._record(request, tracker, { status: "ERROR" });
 
       return { provider: providerId, model, ok: false, latencyMs: Date.now() - tracker.startedAt, errorCode: tracker.errorCode, aiCallId: tracker.id };
@@ -348,7 +360,7 @@ export class AiOrchestrator {
   }
 
   public recordBlocked(request: AiOrchestrationRequest): string {
-    const tracker: CallTracker = this._startTracker();
+    const tracker: CallTracker = this._startTracker(this._settings.getUseCaseSettings(request.useCase));
 
     tracker.errorCode = OFF_TOPIC_CODE;
     this._record(request, tracker, { status: "BLOCKED_OFFTOPIC" });
@@ -357,8 +369,8 @@ export class AiOrchestrator {
   }
 
   public async *stream(request: AiOrchestrationRequest): AsyncGenerator<AiStreamChunk> {
-    const tracker: CallTracker = this._startTracker();
     const settings: AiUseCaseSettings = this._settings.getUseCaseSettings(request.useCase);
+    const tracker: CallTracker = this._startTracker(settings);
     let opened: OpenedStream | undefined;
     let target: ProviderTarget | undefined;
 
@@ -373,7 +385,7 @@ export class AiOrchestrator {
         tracker.model = candidate.model;
 
         try {
-          opened = await this._openStreamWithRetry(candidate, request, settings);
+          opened = await this._openStreamWithRetry(candidate, request, settings, tracker);
           target = candidate;
           tracker.errorCode = undefined;
 
@@ -441,6 +453,7 @@ export class AiOrchestrator {
         next = await scope.race(iterator.next());
       } catch (error: unknown) {
         if (this._isCallerAborted(request)) {
+          this._pushTrail(tracker, { provider: target.provider.id, model: target.model, outcome: "aborted", latencyMs: Date.now() - opened.startedAt });
           this._record(request, tracker, { status: "ABORTED" });
 
           return;
@@ -449,6 +462,7 @@ export class AiOrchestrator {
         tracker.errorCode = classifyAiError(error);
         this._breaker.recordFailure(target.provider.id, this._settings.getBreakerSettings(), tracker.errorCode);
         this._logger.warn(`AI stream from ${target.provider.id} interrupted (${tracker.errorCode})`);
+        this._pushTrail(tracker, { provider: target.provider.id, model: target.model, outcome: "error", errorCode: tracker.errorCode, latencyMs: Date.now() - opened.startedAt });
         this._record(request, tracker, { status: "ERROR" });
 
         throw new AiStreamInterruptedError();
@@ -462,18 +476,25 @@ export class AiOrchestrator {
 
     tracker.model = final?.model || target.model;
 
-    this._record(request, tracker, { status: "SUCCESS", inputTokens: final?.inputTokens, outputTokens: final?.outputTokens });
+    this._pushTrail(tracker, { provider: target.provider.id, model: tracker.model, outcome: "success", latencyMs: Date.now() - opened.startedAt });
+    this._record(request, tracker, { status: "SUCCESS", completion: final ?? { text: content, model: tracker.model } });
 
     yield { type: "done", result: { content, source: "LLM", provider: target.provider.id, model: tracker.model, aiCallId: tracker.id } };
   }
 
-  private async _completeWithRetry(target: ProviderTarget, request: AiOrchestrationRequest, settings: AiUseCaseSettings): Promise<LlmCompletion> {
+  private async _completeWithRetry(target: ProviderTarget, request: AiOrchestrationRequest, settings: AiUseCaseSettings, tracker: CallTracker): Promise<LlmCompletion> {
     for (let retry: number = 0; ; retry++) {
       const scope: AttemptScope = new AttemptScope(settings.timeoutMs, request.options.signal);
+      const attemptStartedAt: number = Date.now();
 
       try {
-        return await scope.race(target.provider.complete(this._buildLlmRequest(target, request, settings), scope.signal));
+        const completion: LlmCompletion = await scope.race(target.provider.complete(this._buildLlmRequest(target, request, settings), scope.signal));
+
+        this._pushTrail(tracker, { provider: target.provider.id, model: completion.model || target.model, outcome: "success", latencyMs: Date.now() - attemptStartedAt });
+
+        return completion;
       } catch (error: unknown) {
+        this._pushFailedAttempt(tracker, target, request, error, attemptStartedAt);
         await this._beforeRetry(error, retry, target, request);
       } finally {
         scope.dispose(false);
@@ -481,9 +502,10 @@ export class AiOrchestrator {
     }
   }
 
-  private async _openStreamWithRetry(target: ProviderTarget, request: AiOrchestrationRequest, settings: AiUseCaseSettings): Promise<OpenedStream> {
+  private async _openStreamWithRetry(target: ProviderTarget, request: AiOrchestrationRequest, settings: AiUseCaseSettings, tracker: CallTracker): Promise<OpenedStream> {
     for (let retry: number = 0; ; retry++) {
       const scope: AttemptScope = new AttemptScope(settings.timeoutMs, request.options.signal);
+      const attemptStartedAt: number = Date.now();
       let iterator: AsyncIterator<LlmChunk> | undefined;
 
       try {
@@ -493,10 +515,11 @@ export class AiOrchestrator {
 
         scope.disarm();
 
-        return { scope, iterator, first };
+        return { scope, iterator, first, startedAt: attemptStartedAt };
       } catch (error: unknown) {
         scope.dispose(true);
         iterator?.return?.().catch(() => undefined);
+        this._pushFailedAttempt(tracker, target, request, error, attemptStartedAt);
 
         await this._beforeRetry(error, retry, target, request);
       }
@@ -533,10 +556,12 @@ export class AiOrchestrator {
     }
 
     try {
+      const fallbackStartedAt: number = Date.now();
       const content: string = await fallback();
 
       tracker.provider = DETERMINISTIC_PROVIDER;
       tracker.model = undefined;
+      this._pushTrail(tracker, { provider: DETERMINISTIC_PROVIDER, outcome: "fallback", latencyMs: Date.now() - fallbackStartedAt });
 
       this._record(request, tracker, { status: "FALLBACK" });
 
@@ -622,8 +647,40 @@ export class AiOrchestrator {
     return request.options.signal?.aborted === true;
   }
 
-  private _startTracker(): CallTracker {
-    return { id: generateId(), startedAt: Date.now(), attempts: 0, recorded: false };
+  private _startTracker(generation?: { readonly temperature: number; readonly maxOutputTokens: number }): CallTracker {
+    return {
+      id: generateId(),
+      startedAt: Date.now(),
+      attempts: 0,
+      recorded: false,
+      temperature: generation?.temperature,
+      maxOutputTokens: generation?.maxOutputTokens,
+      trail: [],
+    };
+  }
+
+  private _pushTrail(tracker: CallTracker, entry: AiAttemptTrailEntry): void {
+    tracker.trail.push(entry);
+  }
+
+  private _pushFailedAttempt(tracker: CallTracker, target: ProviderTarget, request: AiOrchestrationRequest, error: unknown, attemptStartedAt: number): void {
+    const outcome: AiAttemptOutcome = this._isCallerAborted(request) ? "aborted" : "error";
+
+    this._pushTrail(tracker, {
+      provider: target.provider.id,
+      model: target.model,
+      outcome,
+      errorCode: outcome === "error" ? classifyAiError(error) : undefined,
+      latencyMs: Date.now() - attemptStartedAt,
+    });
+  }
+
+  private _finishReasonFor(outcome: RecordOutcome): AiFinishReason | undefined {
+    if (outcome.status === "SUCCESS") {
+      return outcome.completion?.finishReason ?? UNKNOWN_FINISH_REASON;
+    }
+
+    return outcome.status === "ERROR" ? ERROR_FINISH_REASON : undefined;
   }
 
   private _errorCodeFor(status: AiCallStatus, tracker: CallTracker): string | undefined {
@@ -648,14 +705,20 @@ export class AiOrchestrator {
       model: tracker.model,
       promptVersion: request.promptVersion,
       promptHash: request.promptHash,
-      inputTokens: outcome.inputTokens,
-      outputTokens: outcome.outputTokens,
+      inputTokens: outcome.completion?.inputTokens,
+      outputTokens: outcome.completion?.outputTokens,
       latencyMs: Date.now() - tracker.startedAt,
       ttftMs: tracker.ttftMs,
       status: outcome.status,
       errorCode: this._errorCodeFor(outcome.status, tracker),
       attempts: tracker.attempts,
       createdAt: new Date(tracker.startedAt),
+      language: request.language,
+      finishReason: this._finishReasonFor(outcome),
+      temperature: tracker.temperature,
+      maxOutputTokens: tracker.maxOutputTokens,
+      attemptTrail: [...tracker.trail],
+      providerRequestId: outcome.completion?.providerRequestId,
     };
 
     try {

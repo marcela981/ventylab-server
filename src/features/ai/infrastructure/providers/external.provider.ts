@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Proveedor externo de terceros
- * Descripción: Implementa ILlmProvider contra el modelo de un tercero (por ejemplo, un modelo entrenado por otro grupo de investigación) configurado solo por variables de entorno: formato openai (endpoint compatible con /chat/completions, stream SSE, reutiliza OpenAIProvider) o simple (POST JSON {model, system, messages, maxTokens, temperature, responseFormat} → {text, model?, usage?}, sin stream: emite la respuesta completa como un solo fragmento); cabecera de autenticación configurable (Authorization lleva "Bearer <clave>", cualquier otra la clave tal cual, sin clave no se envía), modelo por defecto de la configuración y tiempo máximo propio opcional que aborta la petición como TIMEOUT
- * Versión: 1.0
+ * Descripción: Implementa ILlmProvider contra el modelo de un tercero (por ejemplo, un modelo entrenado por otro grupo de investigación) configurado solo por variables de entorno: formato openai (endpoint compatible con /chat/completions, stream SSE, reutiliza OpenAIProvider) o simple (POST JSON {model, system, messages, maxTokens, temperature, responseFormat} → {text, model?, usage?}, sin stream: emite la respuesta completa como un solo fragmento); cabecera de autenticación configurable (Authorization lleva "Bearer <clave>", cualquier otra la clave tal cual, sin clave no se envía), modelo por defecto de la configuración y tiempo máximo propio opcional que aborta la petición como TIMEOUT; v1.1: formato simple con finishReason opcional (normalizado) e id de petición (cabecera x-request-id o id del cuerpo)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,8 +11,9 @@
 import { type ILlmProvider, type LlmChunk, type LlmCompletion, type LlmRequest } from "@/features/ai/application/ports/llm-provider.interface";
 import { AiProviderError } from "@/features/ai/domain/ai.errors";
 import { type AiMessage } from "@/features/ai/domain/prompts/prompt-template";
+import { normalizeFinishReason } from "@/features/ai/domain/services/ai-finish-reason";
 import { EXTERNAL_PROVIDER_ID, PROVIDER_DEFAULT_MODEL } from "@/features/ai/domain/value-objects/ai-provider-id";
-import { asNumber, asRecord, postJson, readJson } from "@/features/ai/infrastructure/providers/http-provider-utils";
+import { asNumber, asRecord, postJson, readJson, readProviderRequestId } from "@/features/ai/infrastructure/providers/http-provider-utils";
 import { OpenAIProvider } from "@/features/ai/infrastructure/providers/openai.provider";
 
 export type ExternalProviderFormat = "openai" | "simple";
@@ -119,6 +120,8 @@ export class ExternalProvider implements ILlmProvider {
       model: typeof payload.model === "string" && payload.model.length > 0 ? payload.model : request.model,
       inputTokens: asNumber(usage?.inputTokens),
       outputTokens: asNumber(usage?.outputTokens),
+      finishReason: normalizeFinishReason(payload.finishReason ?? payload.finish_reason),
+      providerRequestId: readProviderRequestId(response, payload),
     };
   }
 

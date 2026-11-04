@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de la bitácora de llamadas de IA
- * Descripción: Implementa IAiCallLogsRepository sobre ai_call_logs con PrismaService: inserción con el id del llamador, consumo por usuario y caso de uso, agregados con percentile_cont (totales, por día UTC y por proveedor con p95 de latencia y tasa de error desde un instante) mediante $queryRaw parametrizado, filas para exportar, resumen de una llamada y la última llamada enlazada a una referencia (refType/refId) con ciertos estados; el consumo, los agregados y la exportación excluyen las sondas de salud de los proveedores, que sí cuentan en las métricas por proveedor; v1.4: las métricas por proveedor excluyen el proveedor deterministic de las respuestas de respaldo
- * Versión: 1.4
+ * Descripción: Implementa IAiCallLogsRepository sobre ai_call_logs con PrismaService: inserción con el id del llamador, consumo por usuario y caso de uso, agregados con percentile_cont (totales, por día UTC y por proveedor con p95 de latencia y tasa de error desde un instante) mediante $queryRaw parametrizado, filas para exportar, resumen de una llamada y la última llamada enlazada a una referencia (refType/refId) con ciertos estados; el consumo, los agregados y la exportación excluyen las sondas de salud de los proveedores, que sí cuentan en las métricas por proveedor; v1.4: las métricas por proveedor excluyen el proveedor deterministic de las respuestas de respaldo; v1.5: la exportación incluye idioma, motivo de fin, temperatura, máximo de tokens de salida, rastro de intentos e id de petición del proveedor
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -90,6 +90,12 @@ const ROW_SELECT: Record<keyof AiCallLogRowModel, true> = {
   costEstimateUsd: true,
   refType: true,
   refId: true,
+  language: true,
+  finishReason: true,
+  temperature: true,
+  maxOutputTokens: true,
+  attemptTrail: true,
+  providerRequestId: true,
 };
 
 @Injectable()

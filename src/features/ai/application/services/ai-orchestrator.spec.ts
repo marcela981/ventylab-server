@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AiOrchestrator
- * Descripción: Verifica la cadena de proveedores del gateway de IA: reintento ante errores transitorios, paso al siguiente proveedor, tiempo límite por intento, cortocircuito, respaldo determinista, 503 sin respaldo, abortos y medición de TTFT en streams; v1.1: resolución del identificador heredado custom como external con su modelo por defecto
- * Versión: 1.1
+ * Descripción: Verifica la cadena de proveedores del gateway de IA: reintento ante errores transitorios, paso al siguiente proveedor, tiempo límite por intento, cortocircuito, respaldo determinista, 503 sin respaldo, abortos y medición de TTFT en streams; v1.1: resolución del identificador heredado custom como external con su modelo por defecto; telemetría de detalle: rastro de intentos, ajustes de generación, idioma, TTFT sin stream y motivo de fin
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -364,5 +364,59 @@ describe("AiOrchestrator provider resolution", () => {
     const orchestrator: AiOrchestrator = new AiOrchestrator(providerRegistry(external), settings, new InMemoryAiCallRecorder());
 
     await expect(orchestrator.probe(buildRequest(), "custom", { timeoutMs: 1000, maxOutputTokens: 8 })).resolves.toMatchObject({ ok: true, model: "classmate-model" });
+  });
+});
+
+describe("AiOrchestrator call details telemetry", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("should record the attempt trail with the retry, the generation settings, the language, TTFT for a non-streamed call and the finish reason", async () => {
+    const first: FakeLlmProvider = new FakeLlmProvider("first", { kind: "error", error: httpStatusError(503) });
+    const second: FakeLlmProvider = new FakeLlmProvider("second", { kind: "text", text: "ok", inputTokens: 3, outputTokens: 1 });
+    const { orchestrator, recorder } = buildOrchestrator([first, second]);
+
+    await settle(orchestrator.complete({ ...buildRequest(), language: "en" }));
+
+    const record: AiCallRecord | undefined = recorder.last;
+
+    expect(record).toMatchObject({ status: "SUCCESS", language: "en", temperature: 0.3, maxOutputTokens: 512, finishReason: "unknown" });
+    expect(record?.ttftMs).toEqual(record?.latencyMs);
+    expect(record?.attemptTrail.map((entry: { provider: string; outcome: string; errorCode?: string }) => [entry.provider, entry.outcome, entry.errorCode])).toEqual([
+      ["first", "error", "SERVER"],
+      ["first", "error", "SERVER"],
+      ["second", "success", undefined],
+    ]);
+  });
+
+  it("should record finish reason error and the fallback entry of the trail", async () => {
+    const failing: FakeLlmProvider = new FakeLlmProvider("failing", { kind: "error", error: httpStatusError(400) });
+    const { orchestrator, recorder } = buildOrchestrator([failing]);
+
+    await settle(orchestrator.complete(buildRequest({ fallback: () => "respaldo" })));
+
+    expect(recorder.last?.finishReason).toBeUndefined();
+    expect(recorder.last?.attemptTrail.map((entry: { provider: string; outcome: string }) => [entry.provider, entry.outcome])).toEqual([
+      ["failing", "error"],
+      ["deterministic", "fallback"],
+    ]);
+
+    await expect(settle(orchestrator.complete(buildRequest()))).rejects.toBeInstanceOf(AiProvidersUnavailableError);
+    expect(recorder.last).toMatchObject({ status: "ERROR", finishReason: "error" });
+  });
+
+  it("should record the trail of a streamed answer", async () => {
+    const provider: FakeLlmProvider = new FakeLlmProvider("streamer", { kind: "stream", chunks: ["a", "b"] });
+    const { orchestrator, recorder } = buildOrchestrator([provider]);
+
+    await settle(collect(orchestrator.stream(buildRequest())));
+
+    expect(recorder.last?.attemptTrail).toEqual([{ provider: "streamer", model: "streamer-model", outcome: "success", latencyMs: expect.any(Number) }]);
+    expect(recorder.last?.finishReason).toBe("unknown");
   });
 });

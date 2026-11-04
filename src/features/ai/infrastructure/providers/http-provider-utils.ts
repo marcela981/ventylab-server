@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Utilidades HTTP de proveedores de IA
- * Descripción: Envía peticiones JSON con fetch y AbortSignal, convierte respuestas HTTP no exitosas y fallos de red en AiProviderError clasificados y lee flujos Server-Sent Events línea por línea
- * Versión: 1.0
+ * Descripción: Envía peticiones JSON con fetch y AbortSignal, convierte respuestas HTTP no exitosas y fallos de red en AiProviderError clasificados y lee flujos Server-Sent Events línea por línea; v1.1: lectura del id de petición del proveedor (cabeceras x-request-id o request-id, o el id del cuerpo)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -133,6 +133,20 @@ export function parseSseJson(providerId: string, data: string): Record<string, u
 
 export function asRecord(value: unknown): Record<string, unknown> | undefined {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+}
+
+const REQUEST_ID_HEADERS: readonly string[] = ["x-request-id", "request-id"];
+
+export function readProviderRequestId(response: Response, payload?: Record<string, unknown>): string | undefined {
+  for (const header of REQUEST_ID_HEADERS) {
+    const value: string | null = response.headers.get(header);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return typeof payload?.id === "string" && payload.id.length > 0 ? payload.id : undefined;
 }
 
 export function asNumber(value: unknown): number | undefined {

@@ -29768,7 +29768,7 @@
     },
     "/api/admin/ai-telemetry/export.csv": {
       "get": {
-        "description": "One RFC 4180 row per AI call (no prompt or response text), oldest first, capped at the export row limit; the X-Export-Truncated header is \"true\" when rows were left out\n\n**Required access:** bearer token holding `ai-telemetry:read`; minimum role ADMIN.",
+        "description": "One RFC 4180 row per AI call (no prompt or response text), oldest first, capped at the export row limit; the X-Export-Truncated header is \"true\" when rows were left out. Columns: id, createdAt, useCase, provider (deterministic for a non-AI fallback), model, promptVersion, status, errorCode, attempts, inputTokens, outputTokens, latencyMs, ttftMs (equal to latencyMs for non-streamed calls), costEstimateUsd, refType, refId, language, finishReason (stop, length, content_filter, error or unknown), temperature, maxOutputTokens, attemptTrail (JSON array of {provider, model, outcome, errorCode, latencyMs}) and providerRequestId\n\n**Required access:** bearer token holding `ai-telemetry:read`; minimum role ADMIN.",
         "operationId": "exportAiCallLogsCsv",
         "parameters": [
           {

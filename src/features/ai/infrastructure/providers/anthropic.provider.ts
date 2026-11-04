@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Proveedor Anthropic
- * Descripción: Implementa ILlmProvider sobre la API REST Messages de Anthropic con fetch (sin SDK): respuesta completa, stream SSE (message_start, content_block_delta, message_delta, error), uso de tokens, rechazos, AbortSignal y URL base configurable
- * Versión: 1.0
+ * Descripción: Implementa ILlmProvider sobre la API REST Messages de Anthropic con fetch (sin SDK): respuesta completa, stream SSE (message_start, content_block_delta, message_delta, error), uso de tokens, rechazos, AbortSignal y URL base configurable; motivo de fin normalizado (stop_reason) e id de la petición
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { type ILlmProvider, type LlmChunk, type LlmCompletion, type LlmRequest } from "@/features/ai/application/ports/llm-provider.interface";
 import { AiProviderError } from "@/features/ai/domain/ai.errors";
 import { type AiMessage } from "@/features/ai/domain/prompts/prompt-template";
+import { type AiFinishReason, normalizeFinishReason } from "@/features/ai/domain/services/ai-finish-reason";
 import {
   asNumber,
   asRecord,
@@ -18,6 +19,7 @@ import {
   parseSseJson,
   postJson,
   readJson,
+  readProviderRequestId,
   readSseEvents,
   type SseEvent,
 } from "@/features/ai/infrastructure/providers/http-provider-utils";
@@ -73,6 +75,8 @@ export class AnthropicProvider implements ILlmProvider {
       model: typeof payload.model === "string" ? payload.model : request.model,
       inputTokens: asNumber(usage?.input_tokens),
       outputTokens: asNumber(usage?.output_tokens),
+      finishReason: normalizeFinishReason(payload.stop_reason),
+      providerRequestId: readProviderRequestId(response, payload),
     };
   }
 
@@ -82,6 +86,8 @@ export class AnthropicProvider implements ILlmProvider {
     let model: string = request.model;
     let inputTokens: number | undefined;
     let outputTokens: number | undefined;
+    let finishReason: AiFinishReason | undefined;
+    let providerRequestId: string | undefined = readProviderRequestId(response);
 
     for await (const event of readSseEvents(response.body) as AsyncIterable<SseEvent>) {
       const payload: Record<string, unknown> = parseSseJson(this.id, event.data);
@@ -96,6 +102,7 @@ export class AnthropicProvider implements ILlmProvider {
 
         model = typeof message?.model === "string" ? message.model : model;
         inputTokens = asNumber(asRecord(message?.usage)?.input_tokens);
+        providerRequestId = providerRequestId ?? (message ? readProviderRequestId(response, message) : undefined);
       } else if (type === "content_block_delta") {
         const delta: Record<string, unknown> | undefined = asRecord(payload.delta);
 
@@ -109,13 +116,15 @@ export class AnthropicProvider implements ILlmProvider {
           throw refusalError();
         }
 
+        finishReason = normalizeFinishReason(asRecord(payload.delta)?.stop_reason) ?? finishReason;
+
         outputTokens = asNumber(asRecord(payload.usage)?.output_tokens) ?? outputTokens;
       } else if (type === "message_stop") {
         break;
       }
     }
 
-    yield { type: "final", completion: { text, model, inputTokens, outputTokens } };
+    yield { type: "final", completion: { text, model, inputTokens, outputTokens, finishReason, providerRequestId } };
   }
 
   private get _url(): string {

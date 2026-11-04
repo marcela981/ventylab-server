@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los proveedores LLM
- * Descripción: Verifica con fetch y SDK simulados las peticiones y respuestas de OpenAI, Anthropic, Gemini y el registro del proveedor externo (completar, stream SSE, uso de tokens, errores HTTP clasificados, rechazos, AbortSignal) y el registro de proveedores según la configuración
- * Versión: 1.1
+ * Descripción: Verifica con fetch y SDK simulados las peticiones y respuestas de OpenAI, Anthropic, Gemini y el registro del proveedor externo (completar, stream SSE, uso de tokens, errores HTTP clasificados, rechazos, AbortSignal) y el registro de proveedores según la configuración; motivo de fin normalizado e id de petición del proveedor
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -63,12 +63,14 @@ describe("LLM providers", () => {
 
   describe("OpenAIProvider", () => {
     it("should call chat completions with the system prompt, JSON format and signal", async () => {
-      fetchMock.mockResolvedValue(jsonResponse({ model: "gpt-x", choices: [{ message: { content: "{}" } }], usage: { prompt_tokens: 12, completion_tokens: 3 } }));
+      fetchMock.mockResolvedValue(
+        jsonResponse({ id: "chatcmpl-1", model: "gpt-x", choices: [{ message: { content: "{}" }, finish_reason: "length" }], usage: { prompt_tokens: 12, completion_tokens: 3 } }),
+      );
       const signal: AbortSignal = new AbortController().signal;
 
       const result: LlmCompletion = await new OpenAIProvider("test-key", "https://proxy.local/v1/").complete(REQUEST, signal);
 
-      expect(result).toEqual({ text: "{}", model: "gpt-x", inputTokens: 12, outputTokens: 3 });
+      expect(result).toEqual({ text: "{}", model: "gpt-x", inputTokens: 12, outputTokens: 3, finishReason: "length", providerRequestId: "chatcmpl-1" });
       expect(fetchMock.mock.calls[0][0]).toBe("https://proxy.local/v1/chat/completions");
       expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
       expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ authorization: "Bearer test-key" });
@@ -85,7 +87,7 @@ describe("LLM providers", () => {
       fetchMock.mockResolvedValue(
         sseResponse([
           "data: {\"model\":\"gpt-x\",\"choices\":[{\"delta\":{\"content\":\"Ho\"}}]}\n\n",
-          "data: {\"choices\":[{\"delta\":{\"content\":\"la\"}}]}\r\n\r\n",
+          "data: {\"choices\":[{\"delta\":{\"content\":\"la\"},\"finish_reason\":\"stop\"}]}\r\n\r\n",
           "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2}}\n\n",
           "data: [DONE]\n\n",
         ]),
@@ -96,7 +98,7 @@ describe("LLM providers", () => {
       expect(chunks).toEqual([
         { type: "delta", text: "Ho" },
         { type: "delta", text: "la" },
-        { type: "final", completion: { text: "Hola", model: "gpt-x", inputTokens: 5, outputTokens: 2 } },
+        { type: "final", completion: { text: "Hola", model: "gpt-x", inputTokens: 5, outputTokens: 2, finishReason: "stop" } },
       ]);
       expect(lastFetchBody(fetchMock)).toMatchObject({ stream: true, stream_options: { include_usage: true } });
     });
@@ -124,7 +126,7 @@ describe("LLM providers", () => {
 
       const result: LlmCompletion = await new AnthropicProvider("key").complete(REQUEST, new AbortController().signal);
 
-      expect(result).toEqual({ text: "Hola", model: "claude-x", inputTokens: 9, outputTokens: 4 });
+      expect(result).toEqual({ text: "Hola", model: "claude-x", inputTokens: 9, outputTokens: 4, finishReason: "stop" });
       expect(fetchMock.mock.calls[0][0]).toBe("https://api.anthropic.com/v1/messages");
       expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ "x-api-key": "key", "anthropic-version": "2023-06-01" });
 
@@ -155,7 +157,7 @@ describe("LLM providers", () => {
 
       expect(chunks).toEqual([
         { type: "delta", text: "Hola" },
-        { type: "final", completion: { text: "Hola", model: "claude-x", inputTokens: 7, outputTokens: 3 } },
+        { type: "final", completion: { text: "Hola", model: "claude-x", inputTokens: 7, outputTokens: 3, finishReason: "stop" } },
       ]);
     });
 

@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Flujo e2e con todos los proveedores de IA caídos
- * Descripción: Arranca la aplicación con proveedores falsos que responden 5xx o agotan el tiempo (tiempos de espera cortos por caso de uso) y verifica que la retroalimentación de evaluaciones y el asesor de simulación responden con el respaldo determinista y que la telemetría de IA registra FALLBACK; v1.1: el análisis de notas (BUG-11, cerrado) y la profundización de páginas del tutor también responden su respaldo determinista marcado source DETERMINISTIC con telemetría FALLBACK y proveedor deterministic
- * Versión: 1.1
+ * Descripción: Arranca la aplicación con proveedores falsos que responden 5xx o agotan el tiempo (tiempos de espera cortos por caso de uso) y verifica que la retroalimentación de evaluaciones y el asesor de simulación responden con el respaldo determinista y que la telemetría de IA registra FALLBACK; v1.1: el análisis de notas (BUG-11, cerrado) y la profundización de páginas del tutor también responden su respaldo determinista marcado source DETERMINISTIC con telemetría FALLBACK y proveedor deterministic; v1.2: la fila FALLBACK guarda idioma, versión del prompt, máximo de tokens, rastro de intentos y costo 0
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { type ClinicalCase, type EvaluationAssignment, type User } from "@prisma/client";
+import { type AiCallLog, type ClinicalCase, type EvaluationAssignment, type User } from "@prisma/client";
 import { type Response } from "supertest";
 
 import { scenarioLlmProvider } from "@/features/ai/application/testing/ai-provider-scenarios-test-doubles-spec";
@@ -155,6 +155,12 @@ describe("flow: every AI provider is down", () => {
     expectStatus(analysis, 200);
     expect(analysis.body.data).toMatchObject({ source: "DETERMINISTIC", model: "", keyConcepts: expect.arrayContaining(["PEEP"]) });
     await waitUntil((): Promise<number> => fallbackRows("NOTES_ANALYSIS"), (count: number): boolean => count > 0, { description: "NOTES_ANALYSIS FALLBACK telemetry" });
+
+    const row: AiCallLog = await harness.e2e.prisma.aiCallLog.findFirstOrThrow({ where: { useCase: "NOTES_ANALYSIS", status: "FALLBACK" } });
+
+    expect(row).toMatchObject({ language: "en", promptVersion: "2.0.0", maxOutputTokens: 2048, finishReason: null });
+    expect(Number(row.costEstimateUsd)).toBe(0);
+    expect((row.attemptTrail as { provider: string; outcome: string }[]).map((entry: { provider: string; outcome: string }) => entry.outcome)).toContain("fallback");
   });
 
   it("should deepen a page with its key points labelled as non-AI over SSE", async () => {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Proveedor Gemini
- * Descripción: Implementa ILlmProvider con el SDK @google/generative-ai (generateContent y generateContentStream) pasando el AbortSignal del intento, el prompt de sistema como systemInstruction, el formato JSON cuando se pide y el uso de tokens de usageMetadata
- * Versión: 1.0
+ * Descripción: Implementa ILlmProvider con el SDK @google/generative-ai (generateContent y generateContentStream) pasando el AbortSignal del intento, el prompt de sistema como systemInstruction, el formato JSON cuando se pide y el uso de tokens de usageMetadata; motivo de fin normalizado (finishReason del primer candidato)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,6 +21,7 @@ import {
 import { type ILlmProvider, type LlmChunk, type LlmCompletion, type LlmRequest } from "@/features/ai/application/ports/llm-provider.interface";
 import { AiProviderError } from "@/features/ai/domain/ai.errors";
 import { type AiMessage } from "@/features/ai/domain/prompts/prompt-template";
+import { type AiFinishReason, normalizeFinishReason } from "@/features/ai/domain/services/ai-finish-reason";
 
 export const GEMINI_PROVIDER_ID: string = "gemini";
 
@@ -34,6 +35,10 @@ function readText(response: EnhancedGenerateContentResponse): string {
   } catch {
     throw new AiProviderError("INVALID_RESPONSE", "gemini returned a blocked or empty response");
   }
+}
+
+function readFinishReason(response: EnhancedGenerateContentResponse): AiFinishReason | undefined {
+  return normalizeFinishReason(response.candidates?.[0]?.finishReason);
 }
 
 function rethrow(error: unknown, signal: AbortSignal): never {
@@ -68,6 +73,7 @@ export class GeminiProvider implements ILlmProvider {
       model: request.model,
       inputTokens: usage?.promptTokenCount,
       outputTokens: usage?.candidatesTokenCount,
+      finishReason: readFinishReason(result.response),
     };
   }
 
@@ -82,12 +88,14 @@ export class GeminiProvider implements ILlmProvider {
 
     let text: string = "";
     let usage: UsageMetadata | undefined;
+    let finishReason: AiFinishReason | undefined;
 
     try {
       for await (const chunk of result.stream) {
         const delta: string = readText(chunk);
 
         usage = chunk.usageMetadata ?? usage;
+        finishReason = readFinishReason(chunk) ?? finishReason;
 
         if (delta.length > 0) {
           text += delta;
@@ -99,7 +107,7 @@ export class GeminiProvider implements ILlmProvider {
       rethrow(error, signal);
     }
 
-    yield { type: "final", completion: { text, model: request.model, inputTokens: usage?.promptTokenCount, outputTokens: usage?.candidatesTokenCount } };
+    yield { type: "final", completion: { text, model: request.model, inputTokens: usage?.promptTokenCount, outputTokens: usage?.candidatesTokenCount, finishReason } };
   }
 
   private _model(request: LlmRequest): GenerativeModel {

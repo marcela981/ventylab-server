@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Gateway de IA
- * Descripción: Fachada pública de la feature ai: construye el prompt versionado del caso de uso, elimina correos del contenido saliente, calcula su hash, verifica la cuota del usuario (con versión y hash para registrar el rechazo) y delega en AiOrchestrator para completar o transmitir la respuesta con respaldo determinista opcional; registra sin llamar a ningún proveedor ni consultar la cuota las llamadas que el consumidor bloquea por estar fuera de tema, expone los ajustes del tutor (ventana de historial y presupuesto de contexto), la salud de solo lectura de cada proveedor y el catálogo de proveedores con sus modelos conocidos (sin llamar a ninguno ni exponer credenciales) y la sonda manual de un proveedor con el prompt mínimo versionado, sin cuota y registrada en la telemetría con la referencia health_probe; v1.5: la sonda acepta el identificador heredado custom como external; v1.6: la versión registrada es la de la variante de plantilla construida y la cuota se verifica para quotaUserId/quotaUserRole cuando el consumidor separa quién solicita de a quién se atribuye la llamada
- * Versión: 1.6
+ * Descripción: Fachada pública de la feature ai: construye el prompt versionado del caso de uso, elimina correos del contenido saliente, calcula su hash, verifica la cuota del usuario (con versión y hash para registrar el rechazo) y delega en AiOrchestrator para completar o transmitir la respuesta con respaldo determinista opcional; registra sin llamar a ningún proveedor ni consultar la cuota las llamadas que el consumidor bloquea por estar fuera de tema, expone los ajustes del tutor (ventana de historial y presupuesto de contexto), la salud de solo lectura de cada proveedor y el catálogo de proveedores con sus modelos conocidos (sin llamar a ninguno ni exponer credenciales) y la sonda manual de un proveedor con el prompt mínimo versionado, sin cuota y registrada en la telemetría con la referencia health_probe; v1.5: la sonda acepta el identificador heredado custom como external; v1.6: la versión registrada es la de la variante de plantilla construida y la cuota se verifica para quotaUserId/quotaUserRole cuando el consumidor separa quién solicita de a quién se atribuye la llamada; v1.7: registra el idioma de la respuesta pedido al prompt (español por defecto, como el prompt de sistema común)
+ * Versión: 1.7
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { Inject, Injectable } from "@nestjs/common";
 
+import { ES_LANGUAGE_VALUE } from "@/common/domain/value-objects/language";
 import { AI_QUOTA_GUARD_TOKEN, type IAiQuotaGuard } from "@/features/ai/application/ports/ai-quota-guard.interface";
 import { type AiTutorSettings } from "@/features/ai/application/ports/ai-settings-provider.interface";
 import { type AiCallOptions, AiOrchestrator, type AiOrchestrationRequest } from "@/features/ai/application/services/ai-orchestrator";
@@ -32,6 +33,9 @@ import { isKnownAiProviderId, normalizeAiProviderId } from "@/features/ai/domain
 import { type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 
 export { type AiCallOptions } from "@/features/ai/application/services/ai-orchestrator";
+
+// The common system prompt answers in Spanish unless the input asks for another language.
+const DEFAULT_PROMPT_LANGUAGE: string = ES_LANGUAGE_VALUE;
 
 @Injectable()
 export class AiGateway {
@@ -116,9 +120,12 @@ export class AiGateway {
       responseFormat: built.responseFormat,
     };
 
+    const language: unknown = (input as { readonly language?: unknown }).language;
+
     return {
       useCase,
       prompt,
+      language: typeof language === "string" ? language : DEFAULT_PROMPT_LANGUAGE,
       promptVersion: template.versionFor?.(input) ?? template.version,
       promptHash: computePromptHash(prompt.system, prompt.messages),
       options,
