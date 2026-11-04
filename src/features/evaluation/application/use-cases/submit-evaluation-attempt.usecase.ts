@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso SubmitEvaluationAttemptUseCase
- * Descripción: Entrega idempotente del intento propio: bajo el candado por evaluación y usuario y el compartido de estructura (pg_advisory_xact_lock_shared, para que el editor no cambie preguntas mientras se califica) devuelve el mismo resultado sin escribir si ya está cerrado; si el plazo efectivo más 30 s venció ignora las respuestas del cuerpo y cierra con lo autoguardado al plazo; si no, aplica las respuestas finales y cierra ahora; calcula la calificación automática, publica según showResultsImmediately y emite los eventos tras confirmar; la nota solo se devuelve si está publicada
- * Versión: 1.0
+ * Descripción: Entrega idempotente del intento propio: bajo el candado por evaluación y usuario y el compartido de estructura (pg_advisory_xact_lock_shared, para que el editor no cambie preguntas mientras se califica) devuelve el mismo resultado sin escribir si ya está cerrado; si el plazo efectivo más 30 s venció ignora las respuestas del cuerpo y cierra con lo autoguardado al plazo; si no, aplica las respuestas finales y cierra ahora; calcula la calificación automática, publica según showResultsImmediately y emite los eventos tras confirmar; la nota solo se devuelve si está publicada; la entrega lleva al estudiante como solicitante de la retroalimentación (rol e idioma activo)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,6 +24,7 @@ import {
   type IStudentEvaluationAttemptsRepository,
   STUDENT_EVALUATION_ATTEMPTS_REPOSITORY_TOKEN,
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
+import { type GradeFeedbackRequester } from "@/features/evaluation/domain/value-objects/grade-feedback-requester";
 
 interface SubmitOutcome {
   readonly attempt: StudentEvaluationAttempt;
@@ -91,7 +92,7 @@ export class SubmitEvaluationAttemptUseCase {
         }
       }
 
-      await this._closer.close(attempt, context.evaluation, now, now);
+      await this._closer.close(attempt, context.evaluation, now, now, this._requester(command));
       await this._attemptsRepository.save(attempt, transaction);
 
       return { attempt, events: attempt.getEvents() };
@@ -100,5 +101,9 @@ export class SubmitEvaluationAttemptUseCase {
     this._eventBus.publish(outcome.events);
 
     return new SubmitEvaluationAttemptResult(outcome.attempt, this._gradingConfig.passingGrade);
+  }
+
+  private _requester(command: SubmitEvaluationAttemptCommand): GradeFeedbackRequester | undefined {
+    return command.userRole && command.language ? { userId: command.userId, role: command.userRole, language: command.language } : undefined;
   }
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del adaptador AITextNotesAnalyzer
- * Descripción: Verifica que el análisis de notas use el gateway de IA (caso NOTES_ANALYSIS con el prompt del consumidor, idioma, usuario y rol para cuotas y telemetría, sin respaldo determinista), devuelva el id de la llamada para calificarla y propague los errores de proveedores y de respuesta inválida
- * Versión: 1.0
+ * Descripción: Verifica que el análisis de notas use el gateway de IA (caso NOTES_ANALYSIS con idioma, usuario y rol para cuotas y telemetría y respaldo determinista), devuelva el id de la llamada para calificarla, entregue el análisis por reglas sin IA (source DETERMINISTIC) cuando no responde ningún proveedor y propague la respuesta inválida; v1.2: entrada estructurada del prompt del registro y nombre y correo del autor eliminados de las notas
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,20 +9,29 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type AiCallOptions, type AiGateway } from "@/features/ai/application/services/ai-gateway";
-import { AiProvidersUnavailableError } from "@/features/ai/domain/ai.errors";
+import { type NotesAnalysisPromptInput } from "@/features/ai/domain/prompts/notes-analysis-prompt";
+import { REDACTED_EMAIL, REDACTED_NAME } from "@/features/ai/domain/prompts/personal-data-guard";
 import { type AiResult } from "@/features/ai/domain/results/ai-result";
 import { type NotesAnalysisContext, type NotesAnalysisNote } from "@/features/notes/application/ports/notes-analyzer.interface";
 import { NotesAnalysisInvalidResponseError } from "@/features/notes/domain/notes.errors";
 import { type NotesAnalysis } from "@/features/notes/domain/read-models/notes-analysis.read-model";
 import { AITextNotesAnalyzer } from "@/features/notes/infrastructure/ai/ai-text-notes-analyzer";
-import { buildNotesAnalysisPrompt } from "@/features/notes/infrastructure/ai/notes-analysis-prompt";
+import { type UsersFacade } from "@/features/users/application/services/users.facade";
 
-const NOTES: NotesAnalysisNote[] = [{ lessonTitle: "PEEP", moduleTitle: "Fundamentos", text: "La PEEP evita el colapso alveolar." }];
+const NOTES: NotesAnalysisNote[] = [{ lessonTitle: "PEEP", moduleTitle: "Fundamentos", text: "Notas de Laura Gómez (laura@correo.co): la PEEP evita el colapso alveolar." }];
 const CONTEXT: NotesAnalysisContext = { scope: "lesson", lessonTitle: "PEEP", moduleTitle: "Fundamentos", language: "en", userId: "user-1", userRole: "STUDENT" };
 const VALID_RESPONSE: string = JSON.stringify({ summary: "Resumen", keyConcepts: ["PEEP"], gaps: [], suggestions: ["Repasar"] });
 
+const USERS: UsersFacade = {
+  getUserById: (id: string) => Promise.resolve(id === "user-1" ? { id, name: "Laura Gómez", email: "laura@correo.co" } : undefined),
+} as unknown as UsersFacade;
+
 function buildGateway(complete: jest.Mock): jest.Mocked<Pick<AiGateway, "complete">> {
   return { complete } as jest.Mocked<Pick<AiGateway, "complete">>;
+}
+
+function buildAnalyzer(gateway: jest.Mocked<Pick<AiGateway, "complete">>): AITextNotesAnalyzer {
+  return new AITextNotesAnalyzer(gateway as unknown as AiGateway, USERS);
 }
 
 function llmResult(content: string): AiResult {
@@ -32,37 +41,40 @@ function llmResult(content: string): AiResult {
 describe("AITextNotesAnalyzer", () => {
   it("should analyze the notes through NOTES_ANALYSIS and return the call id", async () => {
     const gateway: jest.Mocked<Pick<AiGateway, "complete">> = buildGateway(jest.fn().mockResolvedValue(llmResult(VALID_RESPONSE)));
-    const analyzer: AITextNotesAnalyzer = new AITextNotesAnalyzer(gateway as unknown as AiGateway);
 
-    const analysis: NotesAnalysis = await analyzer.analyze(NOTES, CONTEXT);
+    const analysis: NotesAnalysis = await buildAnalyzer(gateway).analyze(NOTES, CONTEXT);
 
-    expect(analysis).toEqual({ summary: "Resumen", keyConcepts: ["PEEP"], gaps: [], suggestions: ["Repasar"], model: "gemini-2.5-flash", aiCallId: "call-1" });
+    expect(analysis).toEqual({ summary: "Resumen", keyConcepts: ["PEEP"], gaps: [], suggestions: ["Repasar"], model: "gemini-2.5-flash", aiCallId: "call-1", source: "LLM" });
   });
 
-  it("should send the consumer prompt with language, user and role and no fallback", async () => {
+  it("should send the structured input with language, user, role, a deterministic fallback and the author's name and email removed", async () => {
     const gateway: jest.Mocked<Pick<AiGateway, "complete">> = buildGateway(jest.fn().mockResolvedValue(llmResult(VALID_RESPONSE)));
-    const analyzer: AITextNotesAnalyzer = new AITextNotesAnalyzer(gateway as unknown as AiGateway);
 
-    await analyzer.analyze(NOTES, CONTEXT);
+    await buildAnalyzer(gateway).analyze(NOTES, CONTEXT);
 
-    const [useCase, input, options] = gateway.complete.mock.calls[0] as [string, { userPrompt: string; language?: string }, AiCallOptions];
+    const [useCase, input, options] = gateway.complete.mock.calls[0] as unknown as [string, NotesAnalysisPromptInput, AiCallOptions];
 
     expect(useCase).toBe("NOTES_ANALYSIS");
-    expect(input).toEqual({ userPrompt: buildNotesAnalysisPrompt(NOTES, CONTEXT), language: "en" });
-    expect(options).toEqual({ userId: "user-1", userRole: "STUDENT", refType: "notes_analysis" });
+    expect(input).toMatchObject({ scope: "lesson", lessonTitle: "PEEP", moduleTitle: "Fundamentos", language: "en" });
+    expect(input.notes[0].text).toBe(`Notas de ${REDACTED_NAME} (${REDACTED_EMAIL}): la PEEP evita el colapso alveolar.`);
+    expect(options).toMatchObject({ userId: "user-1", userRole: "STUDENT", refType: "notes_analysis" });
+    expect(JSON.parse(String(await options.fallback?.()))).toMatchObject({ keyConcepts: ["PEEP"] });
   });
 
-  it("should propagate the unavailable error when every provider fails", async () => {
-    const gateway: jest.Mocked<Pick<AiGateway, "complete">> = buildGateway(jest.fn().mockRejectedValue(new AiProvidersUnavailableError()));
-    const analyzer: AITextNotesAnalyzer = new AITextNotesAnalyzer(gateway as unknown as AiGateway);
+  it("should return the rule-based analysis marked DETERMINISTIC when every provider fails", async () => {
+    const gateway: jest.Mocked<Pick<AiGateway, "complete">> = buildGateway(
+      jest.fn().mockResolvedValue({ content: "{}", source: "DETERMINISTIC", provider: "deterministic", model: undefined, aiCallId: "call-2" }),
+    );
 
-    await expect(analyzer.analyze(NOTES, CONTEXT)).rejects.toBeInstanceOf(AiProvidersUnavailableError);
+    const analysis: NotesAnalysis = await buildAnalyzer(gateway).analyze(NOTES, CONTEXT);
+
+    expect(analysis).toMatchObject({ source: "DETERMINISTIC", model: "", aiCallId: "call-2", keyConcepts: ["PEEP"] });
+    expect(analysis.summary).toMatch(/^Automatic analysis, not generated by AI/);
   });
 
   it("should reject a response that cannot be parsed into an analysis", async () => {
     const gateway: jest.Mocked<Pick<AiGateway, "complete">> = buildGateway(jest.fn().mockResolvedValue(llmResult("not json")));
-    const analyzer: AITextNotesAnalyzer = new AITextNotesAnalyzer(gateway as unknown as AiGateway);
 
-    await expect(analyzer.analyze(NOTES, CONTEXT)).rejects.toBeInstanceOf(NotesAnalysisInvalidResponseError);
+    await expect(buildAnalyzer(gateway).analyze(NOTES, CONTEXT)).rejects.toBeInstanceOf(NotesAnalysisInvalidResponseError);
   });
 });

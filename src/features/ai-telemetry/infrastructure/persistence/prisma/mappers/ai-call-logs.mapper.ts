@@ -1,16 +1,17 @@
 /*
  * Funcionalidad: Mapeador de persistencia de la bitácora de llamadas de IA
- * Descripción: Convierte entre las filas Prisma de ai_call_logs (y las filas crudas de los agregados con percentiles) y los modelos de lectura de la telemetría: nulos a undefined, bigint y Decimal a number
- * Versión: 1.0
+ * Descripción: Convierte entre las filas Prisma de ai_call_logs (y las filas crudas de los agregados con percentiles) y los modelos de lectura de la telemetría: nulos a undefined, bigint y Decimal a number; v1.1: idioma, motivo de fin, temperatura, máximo de tokens de salida, rastro de intentos (JSON) e id de petición del proveedor
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { type AiCallLog as AiCallLogModel, type Prisma } from "@prisma/client";
+import { type AiCallLog as AiCallLogModel, Prisma } from "@prisma/client";
 
 import {
+  type AiCallAttemptTrailEntry,
   type AiCallLogEntry,
   type AiCallLogRow,
   type AiCallSummary,
@@ -86,6 +87,12 @@ export class AiCallLogsMapper {
       costEstimateUsd: entry.costEstimateUsd ?? null,
       refType: entry.refType ?? null,
       refId: entry.refId ?? null,
+      language: entry.language ?? null,
+      finishReason: entry.finishReason ?? null,
+      temperature: entry.temperature ?? null,
+      maxOutputTokens: entry.maxOutputTokens ?? null,
+      attemptTrail: entry.attemptTrail ? (entry.attemptTrail as unknown as Prisma.InputJsonArray) : Prisma.DbNull,
+      providerRequestId: entry.providerRequestId ?? null,
       ...(entry.createdAt ? { createdAt: entry.createdAt } : {}),
     };
   }
@@ -124,6 +131,12 @@ export class AiCallLogsMapper {
       costEstimateUsd: toOptionalNumber(row.costEstimateUsd),
       refType: row.refType ?? undefined,
       refId: row.refId ?? undefined,
+      language: row.language ?? undefined,
+      finishReason: row.finishReason ?? undefined,
+      temperature: row.temperature ?? undefined,
+      maxOutputTokens: row.maxOutputTokens ?? undefined,
+      attemptTrail: Array.isArray(row.attemptTrail) ? (row.attemptTrail as unknown as AiCallAttemptTrailEntry[]) : undefined,
+      providerRequestId: row.providerRequestId ?? undefined,
     };
   }
 

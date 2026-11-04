@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de turnos del tutor
- * Descripción: Ejecuta un turno de conversación con el tutor de IA (las conversaciones de módulo usan el caso de uso MODULE_QA y las de lección LESSON_QA; emite start con el id del mensaje antes de los fragmentos): redacta correo y nombre del texto saliente, arma el historial y el contexto, verifica el tema del chat libre con TOPIC_CHECK (respaldo por lista de términos) salvo que la verificación esté desactivada en los ajustes del tutor y responde con el rechazo fijo registrando BLOCKED_OFFTOPIC, abre el stream del gateway (cuota verificada antes de persistir), guarda el mensaje del usuario antes de llamar al modelo y la respuesta completa con su aiCallId o la parcial como incompleta si el stream se corta
- * Versión: 1.2
+ * Descripción: Ejecuta un turno de conversación con el tutor de IA (las conversaciones de módulo usan el caso de uso MODULE_QA y las de lección LESSON_QA; emite start con el id del mensaje antes de los fragmentos): redacta correo y nombre del texto saliente, arma el historial y el contexto, verifica el tema del chat libre con TOPIC_CHECK (respaldo por lista de términos) salvo que la verificación esté desactivada en los ajustes del tutor y responde con el rechazo fijo registrando BLOCKED_OFFTOPIC, abre el stream del gateway (cuota verificada antes de persistir), guarda el mensaje del usuario antes de llamar al modelo y la respuesta completa con su aiCallId o la parcial como incompleta si el stream se corta; v1.3: cuando ningún proveedor responde, el chat libre y las preguntas de lección o módulo responden un aviso determinista marcado como sin IA (respaldo del consumidor, telemetría FALLBACK) y el evento done lleva source (LLM o DETERMINISTIC; el rechazo fuera de tema es DETERMINISTIC)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,7 +15,7 @@ import { type AiCallOptions, AiGateway } from "@/features/ai/application/service
 import { redactPersonalData } from "@/features/ai/domain/prompts/personal-data-guard";
 import { type AiPromptInputs, type ConversationPromptInput } from "@/features/ai/domain/prompts/prompt-registry";
 import { type AiMessage } from "@/features/ai/domain/prompts/prompt-template";
-import { type AiResult, type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
+import { type AiResult, type AiStreamChunk, DETERMINISTIC_RESULT_SOURCE } from "@/features/ai/domain/results/ai-result";
 import { type TutorCaller } from "@/features/ai-tutor/application/commands/tutor-caller";
 import { type ITutorPersonalData, TUTOR_PERSONAL_DATA_TOKEN } from "@/features/ai-tutor/application/ports/tutor-personal-data.interface";
 import { TutorStreamResult, type TutorStreamEvent } from "@/features/ai-tutor/application/results/tutor-stream.result";
@@ -25,6 +25,7 @@ import { type AiConversationMessage } from "@/features/ai-tutor/domain/read-mode
 import { AI_CONVERSATIONS_REPOSITORY_TOKEN, type IAiConversationsRepository } from "@/features/ai-tutor/domain/repositories/ai-conversations.repository";
 import { OFF_TOPIC_REPLY, parseTopicCheckResponse, termListCheck } from "@/features/ai-tutor/domain/services/topic-guard";
 import { buildHistoryWindow } from "@/features/ai-tutor/domain/services/tutor-context";
+import { buildContentQuestionFallback, buildFreeChatFallback } from "@/features/ai-tutor/domain/services/tutor-fallback";
 import { FREE_CONVERSATION_SCOPE, MODULE_CONVERSATION_SCOPE } from "@/features/ai-tutor/domain/value-objects/ai-conversation-scope";
 
 export const AI_MESSAGE_REF_TYPE: string = "ai_message";
@@ -41,6 +42,8 @@ export interface TutorTurn<U extends TutorStreamUseCase> {
   readonly useCase: U;
   readonly input: AiPromptInputs[U];
   readonly signal?: AbortSignal;
+  // Deterministic, clearly labelled non-AI answer used when no provider answers.
+  readonly fallback?: () => string;
 }
 
 export interface TutorConversationTurn {
@@ -108,7 +111,7 @@ export class TutorTurnService {
         return await this._refuseOffTopic(turn, input);
       }
 
-      return await this.streamTurn({ ...this._turnBase(turn), useCase: "FREE_CHAT", input });
+      return await this.streamTurn({ ...this._turnBase(turn), useCase: "FREE_CHAT", input, fallback: () => buildFreeChatFallback(caller.language) });
     }
 
     const context: TutorConversationContext = await this._contextAssembler.forConversation({
@@ -123,12 +126,16 @@ export class TutorTurnService {
       ...this._turnBase(turn),
       useCase: conversation.scope === MODULE_CONVERSATION_SCOPE ? "MODULE_QA" : "LESSON_QA",
       input: { history, question, contextTitle: context.contextTitle, context: context.context, language: caller.language },
+      fallback: () => buildContentQuestionFallback(context.contextTitle, caller.language),
     });
   }
 
   public async streamTurn<U extends TutorStreamUseCase>(turn: TutorTurn<U>): Promise<TutorStreamResult> {
     const target: AssistantTarget = { conversationId: turn.conversation.id, messageId: generateId() };
-    const chunks: AsyncIterable<AiStreamChunk> = await this._gateway.stream(turn.useCase, turn.input, this._callOptions(turn.caller, target, turn.signal));
+    const chunks: AsyncIterable<AiStreamChunk> = await this._gateway.stream(turn.useCase, turn.input, {
+      ...this._callOptions(turn.caller, target, turn.signal),
+      fallback: turn.fallback,
+    });
 
     await this._persistUserMessage(turn.conversation, turn.isNewConversation, turn.userText);
 
@@ -188,7 +195,7 @@ export class TutorTurnService {
     const events: TutorStreamEvent[] = [
       { type: "start", conversationId: target.conversationId, messageId: target.messageId },
       { type: "delta", text: OFF_TOPIC_REPLY },
-      { type: "done", aiCallId, messageId: target.messageId, conversationId: target.conversationId },
+      { type: "done", aiCallId, messageId: target.messageId, conversationId: target.conversationId, source: DETERMINISTIC_RESULT_SOURCE },
     ];
 
     return new TutorStreamResult({ conversationId: target.conversationId, events: emitAll(events) });
@@ -230,7 +237,7 @@ export class TutorTurnService {
           isIncomplete: false,
         });
 
-        yield { type: "done", aiCallId: chunk.result.aiCallId, messageId: target.messageId, conversationId: target.conversationId };
+        yield { type: "done", aiCallId: chunk.result.aiCallId, messageId: target.messageId, conversationId: target.conversationId, source: chunk.result.source };
       }
     } finally {
       if (!persisted) {

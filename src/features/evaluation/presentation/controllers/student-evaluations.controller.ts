@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de evaluaciones del estudiante
- * Descripción: Rutas del estudiante con el permiso evaluations:attempt: /api/my-evaluations (asignaciones de su grupo con sus intentos e inicio idempotente de un intento, 201 nuevo o 200 el que está en curso) y /api/evaluation-attempts/:attemptId (detalle sin respuestas correctas hasta la publicación salvo las revisadas, autoguardado por pregunta y entrega idempotente con calificación automática); retroalimentación inmediata de una pregunta de selección (POST /api/my-evaluations/attempts/:attemptId/answers/:questionId/check, solo QUIZ y WORKSHOP, bloquea la respuesta); notas publicadas propias (GET /api/my-evaluations/grades vía EvaluationFacade, incluidas las heredadas)
- * Versión: 1.2
+ * Descripción: Rutas del estudiante con el permiso evaluations:attempt: /api/my-evaluations (asignaciones de su grupo con sus intentos e inicio idempotente de un intento, 201 nuevo o 200 el que está en curso) y /api/evaluation-attempts/:attemptId (detalle sin respuestas correctas hasta la publicación salvo las revisadas, autoguardado por pregunta y entrega idempotente con calificación automática); retroalimentación inmediata de una pregunta de selección (POST /api/my-evaluations/attempts/:attemptId/answers/:questionId/check, solo QUIZ y WORKSHOP, bloquea la respuesta); notas publicadas propias (GET /api/my-evaluations/grades vía EvaluationFacade, incluidas las heredadas); la entrega pasa el rol y el idioma activo para la retroalimentación con IA
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { type Response } from "express";
 import { I18n, I18nContext } from "nestjs-i18n";
 
+import { Language } from "@/common/domain/value-objects/language";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
@@ -262,6 +263,8 @@ export class StudentEvaluationsController {
       new SubmitEvaluationAttemptCommand({
         attemptId,
         userId: currentUser.sub,
+        userRole: currentUser.role,
+        language: Language.createOrDefault(i18n.lang).value,
         answers: dto.answers?.map((answer: SubmitEvaluationAnswerDTO) => ({
           questionId: answer.questionId,
           selectedOptionIds: answer.selectedOptionIds,

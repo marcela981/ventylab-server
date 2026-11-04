@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Proveedor OpenAI
- * Descripción: Implementa ILlmProvider sobre la API REST de chat completions de OpenAI con fetch (sin SDK): respuesta completa, stream SSE con uso de tokens, AbortSignal y URL base configurable
- * Versión: 1.0
+ * Descripción: Implementa ILlmProvider sobre la API REST de chat completions de OpenAI con fetch (sin SDK): respuesta completa, stream SSE con uso de tokens, AbortSignal y URL base configurable; v1.1: identificador y cabeceras de autenticación configurables para reutilizarlo con endpoints compatibles con OpenAI (proveedor externo); v1.2: motivo de fin normalizado (finish_reason) e id de la petición
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,8 @@
 import { type ILlmProvider, type LlmChunk, type LlmCompletion, type LlmRequest } from "@/features/ai/application/ports/llm-provider.interface";
 import { AiProviderError } from "@/features/ai/domain/ai.errors";
 import { type AiMessage } from "@/features/ai/domain/prompts/prompt-template";
+import { type AiFinishReason } from "@/features/ai/domain/services/ai-finish-reason";
+import { normalizeFinishReason } from "@/features/ai/domain/services/ai-finish-reason";
 import {
   asNumber,
   asRecord,
@@ -18,6 +20,7 @@ import {
   parseSseJson,
   postJson,
   readJson,
+  readProviderRequestId,
   readSseEvents,
   type SseEvent,
 } from "@/features/ai/infrastructure/providers/http-provider-utils";
@@ -41,25 +44,41 @@ function readChoice(payload: Record<string, unknown>): Record<string, unknown> |
   return Array.isArray(payload.choices) ? asRecord(payload.choices[0]) : undefined;
 }
 
+export interface OpenAICompatibleOptions {
+  readonly id?: string;
+  // Replaces the default "authorization: Bearer <apiKey>" header (an OpenAI-compatible endpoint may use another header or none).
+  readonly headers?: Record<string, string>;
+}
+
 export class OpenAIProvider implements ILlmProvider {
-  public readonly id: string = OPENAI_PROVIDER_ID;
+  public readonly id: string;
 
   public constructor(
     private readonly _apiKey: string,
     private readonly _baseUrl: string = DEFAULT_OPENAI_BASE_URL,
-  ) {}
+    private readonly _options: OpenAICompatibleOptions = {},
+  ) {
+    this.id = _options.id ?? OPENAI_PROVIDER_ID;
+  }
 
   public async complete(request: LlmRequest, signal: AbortSignal): Promise<LlmCompletion> {
     const response: Response = await postJson(this.id, this._url, this._headers, this._body(request, false), signal);
     const payload: Record<string, unknown> | undefined = asRecord(await readJson(this.id, response));
-    const message: Record<string, unknown> | undefined = asRecord(payload ? readChoice(payload)?.message : undefined);
+    const choice: Record<string, unknown> | undefined = payload ? readChoice(payload) : undefined;
+    const message: Record<string, unknown> | undefined = asRecord(choice?.message);
     const text: unknown = message?.content;
 
     if (!payload || typeof text !== "string") {
-      throw new AiProviderError("INVALID_RESPONSE", "openai returned no message content");
+      throw new AiProviderError("INVALID_RESPONSE", `${this.id} returned no message content`);
     }
 
-    return { text, model: typeof payload.model === "string" ? payload.model : request.model, ...readUsage(payload) };
+    return {
+      text,
+      model: typeof payload.model === "string" ? payload.model : request.model,
+      ...readUsage(payload),
+      finishReason: normalizeFinishReason(choice?.finish_reason),
+      providerRequestId: readProviderRequestId(response, payload),
+    };
   }
 
   public async *stream(request: LlmRequest, signal: AbortSignal): AsyncIterable<LlmChunk> {
@@ -67,6 +86,8 @@ export class OpenAIProvider implements ILlmProvider {
     let text: string = "";
     let model: string = request.model;
     let usage: OpenAIUsage = {};
+    let finishReason: AiFinishReason | undefined;
+    let providerRequestId: string | undefined = readProviderRequestId(response);
 
     for await (const event of readSseEvents(response.body) as AsyncIterable<SseEvent>) {
       if (event.data === "[DONE]") {
@@ -74,7 +95,11 @@ export class OpenAIProvider implements ILlmProvider {
       }
 
       const payload: Record<string, unknown> = parseSseJson(this.id, event.data);
-      const delta: unknown = asRecord(readChoice(payload)?.delta)?.content;
+      const choice: Record<string, unknown> | undefined = readChoice(payload);
+      const delta: unknown = asRecord(choice?.delta)?.content;
+
+      finishReason = normalizeFinishReason(choice?.finish_reason) ?? finishReason;
+      providerRequestId = providerRequestId ?? readProviderRequestId(response, payload);
 
       if (typeof payload.model === "string") {
         model = payload.model;
@@ -91,7 +116,7 @@ export class OpenAIProvider implements ILlmProvider {
       }
     }
 
-    yield { type: "final", completion: { text, model, ...usage } };
+    yield { type: "final", completion: { text, model, ...usage, finishReason, providerRequestId } };
   }
 
   private get _url(): string {
@@ -99,7 +124,7 @@ export class OpenAIProvider implements ILlmProvider {
   }
 
   private get _headers(): Record<string, string> {
-    return { authorization: `Bearer ${this._apiKey}` };
+    return this._options.headers ?? { authorization: `Bearer ${this._apiKey}` };
   }
 
   private _body(request: LlmRequest, stream: boolean): Record<string, unknown> {

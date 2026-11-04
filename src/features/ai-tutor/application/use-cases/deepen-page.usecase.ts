@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso DeepenPage
- * Descripción: Profundiza una página con el tutor de IA: carga la página solo si es visible para el lector (borrador para estudiante responde 404), valida la conversación de página indicada o crea una nueva por solicitud, arma el contexto con lección, módulo y fuente de conocimiento y abre el stream de PAGE_DEEPEN
- * Versión: 1.0
+ * Descripción: Profundiza una página con el tutor de IA: carga la página solo si es visible para el lector (borrador para estudiante responde 404), valida la conversación de página indicada o crea una nueva por solicitud, arma el contexto con lección, módulo y fuente de conocimiento y abre el stream de PAGE_DEEPEN; v1.1: sin proveedor disponible responde los puntos clave de la página marcados como respuesta sin IA
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,6 +22,7 @@ import { type TextRedactor, TutorTurnService } from "@/features/ai-tutor/applica
 import { AiConversationNotFoundError, AiConversationPageMismatchError } from "@/features/ai-tutor/domain/ai-tutor.errors";
 import { AiConversation } from "@/features/ai-tutor/domain/entities/ai-conversation.entity";
 import { AI_CONVERSATIONS_REPOSITORY_TOKEN, type IAiConversationsRepository } from "@/features/ai-tutor/domain/repositories/ai-conversations.repository";
+import { buildPageDeepenFallback } from "@/features/ai-tutor/domain/services/tutor-fallback";
 import { PAGE_CONVERSATION_SCOPE } from "@/features/ai-tutor/domain/value-objects/ai-conversation-scope";
 
 /**
@@ -63,6 +64,7 @@ export class DeepenPageUseCase {
       useCase: "PAGE_DEEPEN",
       input: { pageTitle: page.title, pageContent, question: question ? redact(question) : undefined, language: caller.language },
       signal: command.signal,
+      fallback: () => buildPageDeepenFallback(page.title, page.text, caller.language),
     });
   }
 

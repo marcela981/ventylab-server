@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AiOrchestrator
- * Descripción: Verifica la cadena de proveedores del gateway de IA: reintento ante errores transitorios, paso al siguiente proveedor, tiempo límite por intento, cortocircuito, respaldo determinista, 503 sin respaldo, abortos y medición de TTFT en streams
- * Versión: 1.0
+ * Descripción: Verifica la cadena de proveedores del gateway de IA: reintento ante errores transitorios, paso al siguiente proveedor, tiempo límite por intento, cortocircuito, respaldo determinista, 503 sin respaldo, abortos y medición de TTFT en streams; v1.1: resolución del identificador heredado custom como external con su modelo por defecto; telemetría de detalle: rastro de intentos, ajustes de generación, idioma, TTFT sin stream y motivo de fin; espera del Retry-After del proveedor y su propagación cuando todos limitan la tasa
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,7 +18,7 @@ import {
   providerRegistry,
   StaticAiSettingsProvider,
 } from "@/features/ai/application/testing/ai-test-doubles-spec";
-import { AiCallAbortedError, AiProvidersUnavailableError, AiStreamInterruptedError } from "@/features/ai/domain/ai.errors";
+import { AiCallAbortedError, AiProviderError, AiProvidersUnavailableError, AiStreamInterruptedError } from "@/features/ai/domain/ai.errors";
 import { type AiResult, type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
 
 const TIMEOUT_MS: number = 1000;
@@ -136,7 +136,7 @@ describe("AiOrchestrator", () => {
       const result: AiResult = await settle(orchestrator.complete(buildRequest({ fallback: () => "respaldo determinista" })));
 
       expect(result).toMatchObject({ content: "respaldo determinista", source: "DETERMINISTIC" });
-      expect(recorder.last).toMatchObject({ id: result.aiCallId, status: "FALLBACK", attempts: 2, errorCode: "CLIENT" });
+      expect(recorder.last).toMatchObject({ id: result.aiCallId, status: "FALLBACK", attempts: 2, errorCode: "CLIENT", provider: "deterministic", model: undefined });
     });
 
     it("should throw AiProvidersUnavailableError when every provider fails without fallback", async () => {
@@ -310,7 +310,7 @@ describe("AiOrchestrator", () => {
         { type: "delta", text: "respaldo" },
         { type: "done", result: expect.objectContaining({ content: "respaldo", source: "DETERMINISTIC" }) as unknown },
       ]);
-      expect(recorder.last).toMatchObject({ status: "FALLBACK" });
+      expect(recorder.last).toMatchObject({ status: "FALLBACK", provider: "deterministic" });
     });
 
     it("should end silently with ABORTED when the caller aborts mid-stream", async () => {
@@ -334,5 +334,129 @@ describe("AiOrchestrator", () => {
       expect(received).toEqual([{ type: "delta", text: "a" }]);
       expect(recorder.last).toMatchObject({ status: "ABORTED", ttftMs: 100 });
     });
+  });
+});
+
+describe("AiOrchestrator provider resolution", () => {
+  it("should resolve the legacy custom chain entry as external with its default model and skip a repeated provider", async () => {
+    const external: FakeLlmProvider = Object.assign(new FakeLlmProvider("external", { kind: "text", text: "externo" }), { defaultModel: "classmate-model" });
+    const settings: StaticAiSettingsProvider = new StaticAiSettingsProvider({
+      providerChain: ["custom", "external"],
+      models: { custom: "default" },
+      timeoutMs: TIMEOUT_MS,
+      maxOutputTokens: 64,
+      temperature: 0,
+    });
+    const recorder: InMemoryAiCallRecorder = new InMemoryAiCallRecorder();
+    const orchestrator: AiOrchestrator = new AiOrchestrator(providerRegistry(external), settings, recorder);
+
+    const result: AiResult = await orchestrator.complete(buildRequest());
+
+    expect(result).toMatchObject({ content: "externo", provider: "external", model: "classmate-model" });
+    expect(external.requests.map((request: { model: string }) => request.model)).toEqual(["classmate-model"]);
+    expect(recorder.last).toMatchObject({ provider: "external", model: "classmate-model", attempts: 1 });
+    expect(orchestrator.getProviderCatalog().find((entry: { provider: string }) => entry.provider === "external")).toMatchObject({ configured: true, models: ["classmate-model"] });
+  });
+
+  it("should probe the external provider through the legacy id with its default model", async () => {
+    const external: FakeLlmProvider = Object.assign(new FakeLlmProvider("external", { kind: "text", text: "OK" }), { defaultModel: "classmate-model" });
+    const settings: StaticAiSettingsProvider = new StaticAiSettingsProvider({ providerChain: ["gemini"], models: { gemini: "g" }, timeoutMs: TIMEOUT_MS, maxOutputTokens: 8, temperature: 0 });
+    const orchestrator: AiOrchestrator = new AiOrchestrator(providerRegistry(external), settings, new InMemoryAiCallRecorder());
+
+    await expect(orchestrator.probe(buildRequest(), "custom", { timeoutMs: 1000, maxOutputTokens: 8 })).resolves.toMatchObject({ ok: true, model: "classmate-model" });
+  });
+});
+
+describe("AiOrchestrator call details telemetry", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("should record the attempt trail with the retry, the generation settings, the language, TTFT for a non-streamed call and the finish reason", async () => {
+    const first: FakeLlmProvider = new FakeLlmProvider("first", { kind: "error", error: httpStatusError(503) });
+    const second: FakeLlmProvider = new FakeLlmProvider("second", { kind: "text", text: "ok", inputTokens: 3, outputTokens: 1 });
+    const { orchestrator, recorder } = buildOrchestrator([first, second]);
+
+    await settle(orchestrator.complete({ ...buildRequest(), language: "en" }));
+
+    const record: AiCallRecord | undefined = recorder.last;
+
+    expect(record).toMatchObject({ status: "SUCCESS", language: "en", temperature: 0.3, maxOutputTokens: 512, finishReason: "unknown" });
+    expect(record?.ttftMs).toEqual(record?.latencyMs);
+    expect(record?.attemptTrail.map((entry: { provider: string; outcome: string; errorCode?: string }) => [entry.provider, entry.outcome, entry.errorCode])).toEqual([
+      ["first", "error", "SERVER"],
+      ["first", "error", "SERVER"],
+      ["second", "success", undefined],
+    ]);
+  });
+
+  it("should record finish reason error and the fallback entry of the trail", async () => {
+    const failing: FakeLlmProvider = new FakeLlmProvider("failing", { kind: "error", error: httpStatusError(400) });
+    const { orchestrator, recorder } = buildOrchestrator([failing]);
+
+    await settle(orchestrator.complete(buildRequest({ fallback: () => "respaldo" })));
+
+    expect(recorder.last?.finishReason).toBeUndefined();
+    expect(recorder.last?.attemptTrail.map((entry: { provider: string; outcome: string }) => [entry.provider, entry.outcome])).toEqual([
+      ["failing", "error"],
+      ["deterministic", "fallback"],
+    ]);
+
+    await expect(settle(orchestrator.complete(buildRequest()))).rejects.toBeInstanceOf(AiProvidersUnavailableError);
+    expect(recorder.last).toMatchObject({ status: "ERROR", finishReason: "error" });
+  });
+
+  it("should record the trail of a streamed answer", async () => {
+    const provider: FakeLlmProvider = new FakeLlmProvider("streamer", { kind: "stream", chunks: ["a", "b"] });
+    const { orchestrator, recorder } = buildOrchestrator([provider]);
+
+    await settle(collect(orchestrator.stream(buildRequest())));
+
+    expect(recorder.last?.attemptTrail).toEqual([{ provider: "streamer", model: "streamer-model", outcome: "success", latencyMs: expect.any(Number) }]);
+    expect(recorder.last?.finishReason).toBe("unknown");
+  });
+});
+
+describe("AiOrchestrator rate limits", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("should honor the provider's Retry-After before retrying and propagate it when every provider is rate limited", async () => {
+    const limited: FakeLlmProvider = new FakeLlmProvider("limited", { kind: "error", error: new AiProviderError("RATE_LIMIT", "429", 429, 2000) });
+    const { orchestrator, recorder } = buildOrchestrator([limited]);
+    const startedAt: number = Date.now();
+
+    const outcome: Promise<unknown> = orchestrator.complete(buildRequest()).catch((error: unknown) => error);
+
+    await jest.advanceTimersByTimeAsync(1999);
+    expect(limited.calls).toBe(1);
+    await jest.advanceTimersByTimeAsync(1);
+    expect(limited.calls).toBe(2);
+
+    const error: unknown = await outcome;
+
+    expect(error).toBeInstanceOf(AiProvidersUnavailableError);
+    expect((error as AiProvidersUnavailableError).retryAt?.getTime()).toBe(startedAt + 2000 + 2000);
+    expect(recorder.last?.attemptTrail.map((entry: { errorCode?: string }) => entry.errorCode)).toEqual(["RATE_LIMIT", "RATE_LIMIT"]);
+  });
+
+  it("should not propagate a retry time when another provider failed for a different reason", async () => {
+    const limited: FakeLlmProvider = new FakeLlmProvider("limited", { kind: "error", error: new AiProviderError("RATE_LIMIT", "429", 429, 1000) });
+    const broken: FakeLlmProvider = new FakeLlmProvider("broken", { kind: "error", error: httpStatusError(400) });
+    const { orchestrator } = buildOrchestrator([limited, broken]);
+
+    const error: unknown = await settle(orchestrator.complete(buildRequest()).catch((caught: unknown) => caught));
+
+    expect(error).toBeInstanceOf(AiProvidersUnavailableError);
+    expect((error as AiProvidersUnavailableError).retryAt).toBeUndefined();
   });
 });

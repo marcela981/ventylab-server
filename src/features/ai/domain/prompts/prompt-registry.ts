@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registro de plantillas de prompt de IA
- * Descripción: Define una plantilla versionada (semver) por caso de uso de IA con su entrada tipada (LESSON_QA y MODULE_QA comparten la plantilla de preguntas sobre contenido); GRADE_FEEDBACK y NOTES_ANALYSIS reciben el prompt ya construido por el consumidor y solo le anteponen el prompt de sistema común, el resto delimita el contenido externo; SIM_ASSIST guía al estudiante (qué va bien, qué revisar y por qué) sin dictar valores y, sin pregunta, analiza el estado actual
- * Versión: 1.2
+ * Descripción: Define una plantilla versionada (semver) por caso de uso de IA con su entrada tipada (LESSON_QA y MODULE_QA comparten la plantilla de preguntas sobre contenido); el contenido externo va siempre delimitado; SIM_ASSIST guía al estudiante (qué va bien, qué revisar y por qué) sin dictar valores y, sin pregunta, analiza el estado actual; v1.3: GRADE_FEEDBACK de evaluaciones y NOTES_ANALYSIS (2.0.0) se arman aquí con entrada estructurada e idioma en lugar de recibir el prompt del consumidor, así promptVersion sigue el texto real; la retroalimentación de casos clínicos sigue enviando su prompt de consumidor (variante 1.0.0 de GRADE_FEEDBACK)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,8 @@
 import { type LanguageValue } from "@/common/domain/value-objects/language";
 import { buildCommonSystemPrompt, withCommonSystemPrompt } from "@/features/ai/domain/prompts/common-system-prompt";
 import { delimit } from "@/features/ai/domain/prompts/delimit";
+import { buildGradeFeedbackPrompt, GRADE_FEEDBACK_PROMPT_VERSION, type GradeFeedbackPromptInput } from "@/features/ai/domain/prompts/grade-feedback-prompt";
+import { buildNotesAnalysisPrompt, NOTES_ANALYSIS_PROMPT_VERSION, type NotesAnalysisPromptInput } from "@/features/ai/domain/prompts/notes-analysis-prompt";
 import { type AiMessage, type BuiltPrompt, type PromptTemplate } from "@/features/ai/domain/prompts/prompt-template";
 import { type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 
@@ -30,9 +32,20 @@ const SIM_ASSIST_INSTRUCTIONS: string = [
   "Sé breve. Usa solo los datos del estado de la simulación y dilo cuando falte información. No des indicaciones para pacientes reales.",
 ].join("\n");
 
+// Prompt built by the consumer (clinical case evaluation feedback); only the common system prompt is added.
 export interface ConsumerPromptInput {
   readonly userPrompt: string;
   readonly language?: LanguageValue;
+}
+
+export const CONSUMER_PROMPT_VERSION: string = "1.0.0";
+
+export function isConsumerPromptInput(input: object): input is ConsumerPromptInput {
+  return typeof (input as Partial<ConsumerPromptInput>).userPrompt === "string";
+}
+
+function consumerPrompt(input: ConsumerPromptInput): BuiltPrompt {
+  return { system: buildCommonSystemPrompt(input.language), messages: [{ role: "user", content: input.userPrompt }], responseFormat: "json" };
 }
 
 export interface PageDeepenPromptInput {
@@ -61,8 +74,8 @@ export interface SimAssistPromptInput {
 }
 
 export interface AiPromptInputs {
-  GRADE_FEEDBACK: ConsumerPromptInput;
-  NOTES_ANALYSIS: ConsumerPromptInput;
+  GRADE_FEEDBACK: GradeFeedbackPromptInput | ConsumerPromptInput;
+  NOTES_ANALYSIS: NotesAnalysisPromptInput;
   PAGE_DEEPEN: PageDeepenPromptInput;
   LESSON_QA: ConversationPromptInput;
   MODULE_QA: ConversationPromptInput;
@@ -97,21 +110,14 @@ function contentQuestionPrompt(input: ConversationPromptInput): BuiltPrompt {
 export const AI_PROMPT_TEMPLATES: AiPromptTemplates = {
   GRADE_FEEDBACK: {
     id: "GRADE_FEEDBACK",
-    version: "1.0.0",
-    build: (input: ConsumerPromptInput): BuiltPrompt => ({
-      system: buildCommonSystemPrompt(input.language),
-      messages: [{ role: "user", content: input.userPrompt }],
-      responseFormat: "json",
-    }),
+    version: GRADE_FEEDBACK_PROMPT_VERSION,
+    versionFor: (input: GradeFeedbackPromptInput | ConsumerPromptInput): string => (isConsumerPromptInput(input) ? CONSUMER_PROMPT_VERSION : GRADE_FEEDBACK_PROMPT_VERSION),
+    build: (input: GradeFeedbackPromptInput | ConsumerPromptInput): BuiltPrompt => (isConsumerPromptInput(input) ? consumerPrompt(input) : buildGradeFeedbackPrompt(input)),
   },
   NOTES_ANALYSIS: {
     id: "NOTES_ANALYSIS",
-    version: "1.0.0",
-    build: (input: ConsumerPromptInput): BuiltPrompt => ({
-      system: buildCommonSystemPrompt(input.language),
-      messages: [{ role: "user", content: input.userPrompt }],
-      responseFormat: "json",
-    }),
+    version: NOTES_ANALYSIS_PROMPT_VERSION,
+    build: buildNotesAnalysisPrompt,
   },
   PAGE_DEEPEN: {
     id: "PAGE_DEEPEN",

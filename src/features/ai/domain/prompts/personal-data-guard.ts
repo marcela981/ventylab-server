@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Protección de datos personales en prompts
- * Descripción: Funciones puras que eliminan correos electrónicos y los nombres indicados por el consumidor (como palabras completas con límites Unicode, sin distinguir mayúsculas, del más largo al más corto) del texto que se envía a los proveedores de IA
- * Versión: 1.1
+ * Descripción: Funciones puras que eliminan correos electrónicos y los nombres indicados por el consumidor (como palabras completas con límites Unicode, sin distinguir mayúsculas, del más largo al más corto) del texto que se envía a los proveedores de IA; v1.2: nombres redactables de una persona (nombre completo y cada palabra de al menos tres letras), compartidos por el tutor y la retroalimentación de evaluaciones
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,6 +18,19 @@ const MIN_REDACTED_NAME_LENGTH: number = 3;
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// The guard matches whole words only, so given names and surnames can be redacted without touching longer words; tokens under three characters ("de", "la") are skipped.
+export function redactableNameTokens(fullName: string | undefined): string[] {
+  const normalized: string = (fullName ?? "").trim().split(/\s+/u).filter((token: string) => token.length > 0).join(" ");
+
+  if (normalized.length === 0) {
+    return [];
+  }
+
+  const tokens: string[] = normalized.split(" ").filter((token: string) => token.length >= MIN_REDACTED_NAME_LENGTH && token !== normalized);
+
+  return [...new Set([normalized, ...tokens])];
 }
 
 export function stripEmails(text: string): string {

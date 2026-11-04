@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AiGateway
- * Descripción: Verifica que el gateway de IA construya el prompt versionado del caso de uso, consulte la cuota antes de llamar al proveedor, registre versión y hash del prompt, no envíe correos ni nombres al proveedor (captura del payload), registre llamadas bloqueadas sin proveedor y exponga los ajustes del tutor
- * Versión: 1.2
+ * Descripción: Verifica que el gateway de IA construya el prompt versionado del caso de uso, consulte la cuota antes de llamar al proveedor, registre versión y hash del prompt, no envíe correos ni nombres al proveedor (captura del payload), registre llamadas bloqueadas sin proveedor y exponga los ajustes del tutor; sujeto de cuota separado de la atribución y versión de la variante de plantilla
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -137,5 +137,27 @@ describe("AiGateway", () => {
     const settings: AiTutorSettings = gateway.getTutorSettings();
 
     expect(settings).toEqual({ historyWindow: 10, contextTokenBudget: 4000 });
+  });
+});
+
+describe("AiGateway quota subject and prompt variants", () => {
+  it("should check the quota of quotaUserId/quotaUserRole while attributing the call to userId", async () => {
+    const provider: FakeLlmProvider = new FakeLlmProvider("fake", { kind: "text", text: "{}" });
+    const quotaGuard: AllowAllAiQuotaGuard = new AllowAllAiQuotaGuard();
+    const { gateway, recorder } = buildGateway(provider, quotaGuard);
+
+    await gateway.complete("GRADE_FEEDBACK", { userPrompt: "caso clínico" }, { userId: "student-1", quotaUserId: "teacher-1", quotaUserRole: "TEACHER" });
+
+    expect(quotaGuard.checks).toEqual([{ userId: "teacher-1", role: "TEACHER", useCase: "GRADE_FEEDBACK" }]);
+    expect(recorder.last).toMatchObject({ userId: "student-1", promptVersion: "1.0.0" });
+  });
+
+  it("should record the version of the structured GRADE_FEEDBACK variant", async () => {
+    const provider: FakeLlmProvider = new FakeLlmProvider("fake", { kind: "text", text: "{}" });
+    const { gateway, recorder } = buildGateway(provider);
+
+    await gateway.complete("GRADE_FEEDBACK", { evaluationType: "QUIZ", evaluationTitle: "Q", grade: 4, maxGrade: 5, passingGrade: 3, questions: [] }, { userId: "student-1" });
+
+    expect(recorder.last).toMatchObject({ promptVersion: "2.0.0" });
   });
 });

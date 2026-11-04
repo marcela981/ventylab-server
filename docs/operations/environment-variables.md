@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Referencia de variables de entorno
-  Descripción: Lista cada variable que valida env.validation.ts, las que se leen antes del arranque de Nest (Sentry), las de pruebas y herramientas, las de interpolación de docker-compose y los argumentos de construcción de la imagen (GIT_SHA, BUILD_DATE), con obligatoriedad, valor por defecto, descripción y ejemplo no real
-  Versión: 1.3
+  Descripción: Lista cada variable que valida env.validation.ts, las que se leen antes del arranque de Nest (Sentry), las de pruebas y herramientas, las de interpolación de docker-compose y los argumentos de construcción de la imagen (GIT_SHA, BUILD_DATE), con obligatoriedad, valor por defecto, descripción y ejemplo no real; v1.4: proveedor externo de terceros AI_EXTERNAL_* en lugar de AI_CUSTOM_HTTP_*; v1.5: notas de reintentos, Retry-After y cuota de tokens
+  Versión: 1.5
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -153,7 +153,7 @@ When a topic changes, update `deploy/mosquitto/acl` too.
 
 ## AI gateway
 
-Providers: `gemini`, `openai`, `anthropic`, `custom`. Use cases: `GRADE_FEEDBACK`, `NOTES_ANALYSIS`, `PAGE_DEEPEN`, `LESSON_QA`, `FREE_CHAT`, `TOPIC_CHECK`, `SIM_ASSIST`. These values are the defaults of admin-editable platform settings.
+Providers: `gemini`, `openai`, `anthropic`, `external` (the retired id `custom` is still accepted in stored chains and models and resolves to `external`). Use cases: `GRADE_FEEDBACK`, `NOTES_ANALYSIS`, `PAGE_DEEPEN`, `LESSON_QA`, `MODULE_QA`, `FREE_CHAT`, `TOPIC_CHECK`, `SIM_ASSIST`. These values are the defaults of admin-editable platform settings.
 
 | Variable | Required | Default | Description | Example |
 |---|---|---|---|---|
@@ -162,9 +162,14 @@ Providers: `gemini`, `openai`, `anthropic`, `custom`. Use cases: `GRADE_FEEDBACK
 | `OPENAI_BASE_URL` | no | provider default | OpenAI-compatible base URL. | `https://api.openai.example.com/v1` |
 | `ANTHROPIC_API_KEY` | no | — | Anthropic key. | `change-me` |
 | `ANTHROPIC_BASE_URL` | no | provider default | Anthropic base URL. | `https://api.anthropic.example.com` |
-| `AI_CUSTOM_HTTP_ENDPOINT` | no | — | Custom HTTP provider endpoint. | `http://llm.internal:8080/v1/complete` |
-| `AI_CUSTOM_HTTP_AUTH_HEADER` | no | — | Header name sent to the custom provider. | `Authorization` |
-| `AI_CUSTOM_HTTP_AUTH_VALUE` | no | — | Header value sent to the custom provider. | `Bearer change-me` |
+| `AI_EXTERNAL_BASE_URL` | no | — | External third-party model (see `docs/cierre/ia-terceros.md`). `openai` format: base URL, `/chat/completions` is appended; `simple` format: the full endpoint. The provider is registered only when this and `AI_EXTERNAL_MODEL` are set. | `http://llm.internal:8080/v1` |
+| `AI_EXTERNAL_API_KEY` | no | — | Key of the external model; without it no auth header is sent. | `change-me` |
+| `AI_EXTERNAL_AUTH_HEADER` | no | `Authorization` | Header that carries the key: `Authorization` sends `Bearer <key>`, any other header sends the key as is. | `x-api-key` |
+| `AI_EXTERNAL_MODEL` | no | — | Model sent to the external endpoint; the model `default` in the use case settings resolves to it. | `classmate-model` |
+| `AI_EXTERNAL_FORMAT` | no | `openai` | `openai` (OpenAI-compatible chat completions with SSE streaming) or `simple` (`POST {model, system, messages, maxTokens, temperature, responseFormat}` → `{text, model?, usage?}`, no streaming). | `simple` |
+| `AI_EXTERNAL_TIMEOUT_MS` | no | `0` (0–600000) | Provider-level limit of a whole request (stream included); `0` leaves only the per-use-case timeout. | `45000` |
+| `AI_EXTERNAL_PRICE_INPUT_PER_MTOK` | no | `0` (0–1000) | USD per million input tokens, default price of `external:<AI_EXTERNAL_MODEL>`. | `0.5` |
+| `AI_EXTERNAL_PRICE_OUTPUT_PER_MTOK` | no | `0` (0–1000) | USD per million output tokens. | `1.5` |
 | `AI_USE_CASE_SETTINGS` | no | code defaults | JSON per use case: `providerChain` (array of provider ids), `models` (provider → model), `timeoutMs`, `maxOutputTokens`, `temperature` (0–2). | `{"FREE_CHAT":{"timeoutMs":20000}}` |
 | `AI_QUOTAS` | no | code defaults | JSON daily quotas: role (`STUDENT`, `TEACHER`, `ADMIN`) → use case or `*` → limit. | `{"STUDENT":{"*":50}}` |
 | `AI_PRICES` | no | code defaults | JSON prices: provider → model → `{inputPer1kUsd, outputPer1kUsd}`. | `{"openai":{"example-model":{"inputPer1kUsd":0.001,"outputPer1kUsd":0.002}}}` |
@@ -172,6 +177,8 @@ Providers: `gemini`, `openai`, `anthropic`, `custom`. Use cases: `GRADE_FEEDBACK
 | `AI_BREAKER_OPEN_SECONDS` | no | `60` | Open-circuit duration. | `60` |
 | `AI_TUTOR_HISTORY_WINDOW` | no | `10` | Messages of history sent to the tutor. | `10` |
 | `AI_TUTOR_CONTEXT_TOKEN_BUDGET` | no | `6000` (≥100) | Tutor context token budget. | `6000` |
+
+Retries are not configurable by environment: one retry per provider for 429, 5xx and network errors, after a full-jitter exponential backoff (base 500 ms, cap 4 s) or the provider's `Retry-After` (at most 5 s); a 503 caused by rate limits on every provider carries `Retry-After` (at most 60 s). `AI_QUOTAS` token limits are checked against the tokens already spent, so the call that crosses the limit is still admitted.
 
 A malformed JSON value stops startup with an error naming the variable and the offending path.
 

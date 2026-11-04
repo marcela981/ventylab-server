@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo NotesModule
- * Descripción: Registra la feature de notas privadas (controlador, casos de uso, repositorio Prisma y analizador de notas sobre el gateway de IA de AiModule) y exporta NotesFacade
- * Versión: 1.3
+ * Descripción: Registra la feature de notas privadas (controlador, casos de uso, repositorio Prisma y analizador de notas sobre el gateway de IA de AiModule) y exporta NotesFacade; importa UsersModule para eliminar el nombre del autor de las notas enviadas al proveedor de IA
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,9 +25,10 @@ import { NOTES_REPOSITORY_TOKEN } from "@/features/notes/domain/repositories/not
 import { AITextNotesAnalyzer } from "@/features/notes/infrastructure/ai/ai-text-notes-analyzer";
 import { NotesPrismaRepository } from "@/features/notes/infrastructure/persistence/prisma/repositories/notes-prisma.repository";
 import { NotesController } from "@/features/notes/presentation/controllers/notes.controller";
+import { UsersModule } from "@/features/users/users.module";
 
 @Module({
-  imports: [AuthModule, AiModule],
+  imports: [AuthModule, AiModule, UsersModule],
   controllers: [NotesController],
   providers: [
     {

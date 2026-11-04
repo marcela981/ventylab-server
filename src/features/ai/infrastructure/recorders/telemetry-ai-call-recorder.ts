@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registrador de llamadas de IA en la telemetría
- * Descripción: Implementa IAiCallRecorder sobre AiTelemetryFacade.record (sin texto del prompt ni de la respuesta): estima el costo con los precios por mil tokens de la configuración del gateway, que es la única fuente de precios, y suma al consumo diario en caché del usuario las llamadas que llegan a un proveedor (las bloqueadas por tema no cuentan, igual que en la telemetría)
- * Versión: 1.1
+ * Descripción: Implementa IAiCallRecorder sobre AiTelemetryFacade.record (sin texto del prompt ni de la respuesta): estima el costo con los precios por mil tokens de la configuración del gateway, que es la única fuente de precios, y suma al consumo diario en caché del usuario las llamadas que llegan a un proveedor (las bloqueadas por tema no cuentan, igual que en la telemetría); v1.2: registra idioma, motivo de fin, temperatura, máximo de tokens de salida, rastro de intentos e id de petición del proveedor; la respuesta de respaldo determinista cuesta 0
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,7 +19,7 @@ import {
 import { estimateAiCostUsd } from "@/features/ai/domain/services/ai-cost-estimation";
 import { AiUsageCache } from "@/features/ai/infrastructure/quota/ai-usage-cache";
 import { AiTelemetryFacade } from "@/features/ai-telemetry/application/ai-telemetry.facade";
-import { type AiCallLogEntry } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
+import { type AiCallLogEntry, DETERMINISTIC_PROVIDER } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
 
 @Injectable()
 export class TelemetryAiCallRecorder implements IAiCallRecorder {
@@ -59,10 +59,16 @@ export class TelemetryAiCallRecorder implements IAiCallRecorder {
       status: entry.status,
       errorCode: entry.errorCode,
       attempts: entry.attempts,
-      costEstimateUsd: estimateAiCostUsd(price, entry.inputTokens, entry.outputTokens),
+      costEstimateUsd: entry.provider === DETERMINISTIC_PROVIDER ? 0 : estimateAiCostUsd(price, entry.inputTokens, entry.outputTokens),
       refType: entry.refType,
       refId: entry.refId,
       createdAt: entry.createdAt,
+      language: entry.language,
+      finishReason: entry.finishReason,
+      temperature: entry.temperature,
+      maxOutputTokens: entry.maxOutputTokens,
+      attemptTrail: entry.attemptTrail,
+      providerRequestId: entry.providerRequestId,
     };
   }
 }

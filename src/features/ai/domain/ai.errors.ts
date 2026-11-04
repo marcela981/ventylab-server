@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores del gateway de IA
- * Descripción: Errores de dominio del gateway de IA (proveedores no disponibles → 503, cuota excedida → 429 con hora de reinicio en el mensaje traducido y en Retry-After, mapeo HTTP personalizado sin configurar, proveedor desconocido → 404 y proveedor sin configuración → 422 para la sonda manual) y el error interno de proveedor con su clasificación
- * Versión: 1.2
+ * Descripción: Errores de dominio del gateway de IA (proveedores no disponibles → 503, cuota excedida → 429 con hora de reinicio en el mensaje traducido y en Retry-After, proveedor desconocido → 404 y proveedor sin configuración → 422 para la sonda manual) y el error interno de proveedor con su clasificación; v1.3: sin el error del mapeo HTTP personalizado retirado; v1.4: el error de proveedor lleva el Retry-After del proveedor y el de proveedores no disponibles una hora de reintento opcional (Retry-After en la respuesta) cuando todos los proveedores limitaron la tasa
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,8 +11,16 @@
 import { DomainError } from "@/common/domain/errors/domain-error";
 
 export class AiProvidersUnavailableError extends DomainError {
-  public constructor() {
+  // Set when every provider answered 429 with a Retry-After: the client is told when to try again.
+  private readonly _retryAt?: Date;
+
+  public constructor(retryAt?: Date) {
     super("No AI provider is available right now", "ai.providers_unavailable");
+    this._retryAt = retryAt;
+  }
+
+  public get retryAt(): Date | undefined {
+    return this._retryAt;
   }
 }
 
@@ -66,23 +74,19 @@ export class AiCallAbortedError extends Error {
   }
 }
 
-export class CustomHttpMappingNotConfiguredError extends Error {
-  public constructor() {
-    super("The custom HTTP provider mapping is not configured");
-    this.name = CustomHttpMappingNotConfiguredError.name;
-  }
-}
-
 export type AiProviderErrorKind = "TIMEOUT" | "RATE_LIMIT" | "SERVER" | "NETWORK" | "CLIENT" | "INVALID_RESPONSE" | "ABORTED";
 
 export class AiProviderError extends Error {
   public readonly kind: AiProviderErrorKind;
   public readonly statusCode?: number;
+  // Wait the provider asked for (Retry-After), already bounded.
+  public readonly retryAfterMs?: number;
 
-  public constructor(kind: AiProviderErrorKind, message: string, statusCode?: number) {
+  public constructor(kind: AiProviderErrorKind, message: string, statusCode?: number, retryAfterMs?: number) {
     super(message);
     this.name = AiProviderError.name;
     this.kind = kind;
     this.statusCode = statusCode;
+    this.retryAfterMs = retryAfterMs;
   }
 }

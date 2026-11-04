@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de respaldo determinista de AiGateway
- * Descripción: Con los proveedores falsos de escenarios (error 5xx, tiempo límite, stream parcial) verifica que el gateway entregue el respaldo determinista del consumidor en complete y stream, que el resultado sea idéntico entre ejecuciones, que pase al siguiente proveedor de la cadena antes de recurrir al respaldo y que un stream cortado después de entregar contenido termine en AiStreamInterruptedError sin respaldo
- * Versión: 1.0
+ * Descripción: Con los proveedores falsos de escenarios (error 5xx, tiempo límite, stream parcial) verifica que el gateway entregue el respaldo determinista del consumidor en complete y stream, que el resultado sea idéntico entre ejecuciones, que pase al siguiente proveedor de la cadena antes de recurrir al respaldo y que un stream cortado después de entregar contenido termine en AiStreamInterruptedError sin respaldo; v1.1: el respaldo se registra con el proveedor deterministic
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -82,7 +82,7 @@ describe("AiGateway deterministic fallback with scenario providers", () => {
     expect(result).toEqual({ content: FALLBACK_TEXT, source: "DETERMINISTIC", aiCallId: expect.any(String) });
     expect(provider.calls).toBe(expectedCalls);
     expect(recorder.last).toMatchObject({ status: "FALLBACK", errorCode, attempts: 1 });
-    expect(recorder.last?.provider).toBeUndefined();
+    expect(recorder.last?.provider).toBe("deterministic");
   });
 
   it.each<[AiProviderScenario]>([["server-error"], ["timeout"]])("should stream the deterministic fallback when the provider scenario is %s before the first chunk", async (scenario: AiProviderScenario) => {

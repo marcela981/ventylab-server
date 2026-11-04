@@ -439,7 +439,7 @@ export interface paths {
         };
         /**
          * Export AI calls as CSV
-         * @description One RFC 4180 row per AI call (no prompt or response text), oldest first, capped at the export row limit; the X-Export-Truncated header is "true" when rows were left out
+         * @description One RFC 4180 row per AI call (no prompt or response text), oldest first, capped at the export row limit; the X-Export-Truncated header is "true" when rows were left out. Columns: id, createdAt, useCase, provider (deterministic for a non-AI fallback), model, promptVersion, status, errorCode, attempts, inputTokens, outputTokens, latencyMs, ttftMs (equal to latencyMs for non-streamed calls), costEstimateUsd, refType, refId, language, finishReason (stop, length, content_filter, error or unknown), temperature, maxOutputTokens, attemptTrail (JSON array of {provider, model, outcome, errorCode, latencyMs}) and providerRequestId
          *
          *     **Required access:** bearer token holding `ai-telemetry:read`; minimum role ADMIN.
          */
@@ -3975,7 +3975,7 @@ export interface paths {
         put?: never;
         /**
          * Analyze my notes with AI
-         * @description Analyzes the caller's 50 most recent notes of a lesson, a module or all lessons with the language model and returns a summary, key concepts, gaps and suggestions. Send at most one of lessonId and moduleId.
+         * @description Analyzes the caller's 50 most recent notes of a lesson, a module or all lessons with the language model and returns a summary, key concepts, gaps and suggestions. Send at most one of lessonId and moduleId. When no AI provider answers, a rule-based analysis (note and word counts, glossary concepts found, coverage of the lesson or module title) is returned with source DETERMINISTIC and an empty model; show it as a non-AI analysis.
          *
          *     **Required access:** bearer token holding `notes:read_own`; minimum role STUDENT.
          */
@@ -6440,7 +6440,7 @@ export interface paths {
         put?: never;
         /**
          * Start an AI tutor conversation
-         * @description Starts a LESSON, MODULE or FREE conversation and streams the first answer. Lesson and module answers use that content (current page first, then the other pages, then the module summary) within the configured token budget. Free chat is restricted to mechanical ventilation and related clinical topics; off-topic messages get a fixed refusal. Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, messageId, conversationId}`, or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 429 with Retry-After, 503) use the regular JSON error envelope. Closing the connection cancels the AI call and the received part is saved as incomplete.
+         * @description Starts a LESSON, MODULE or FREE conversation and streams the first answer. Lesson and module answers use that content (current page first, then the other pages, then the module summary) within the configured token budget. Free chat is restricted to mechanical ventilation and related clinical topics; off-topic messages get a fixed refusal. Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, messageId, conversationId, source}` (`source` is LLM, or DETERMINISTIC for the labelled non-AI answer sent when no AI provider answers and for the off-topic refusal), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 429 with Retry-After) use the regular JSON error envelope. Closing the connection cancels the AI call and the received part is saved as incomplete.
          *
          *     **Required access:** bearer token holding `ai-tutor:use`; minimum role STUDENT.
          */
@@ -6496,7 +6496,7 @@ export interface paths {
         put?: never;
         /**
          * Send a message to an AI tutor conversation
-         * @description Streams the answer to a new message in one of the caller's conversations, with the configured window of previous messages. Another user's conversation answers 404. Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, messageId, conversationId}`, or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 429 with Retry-After, 503) use the regular JSON error envelope. Closing the connection cancels the AI call and the received part is saved as incomplete.
+         * @description Streams the answer to a new message in one of the caller's conversations, with the configured window of previous messages. Another user's conversation answers 404. Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, messageId, conversationId, source}` (`source` is LLM, or DETERMINISTIC for the labelled non-AI answer sent when no AI provider answers and for the off-topic refusal), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 429 with Retry-After) use the regular JSON error envelope. Closing the connection cancels the AI call and the received part is saved as incomplete.
          *
          *     **Required access:** bearer token holding `ai-tutor:use`; minimum role STUDENT.
          */
@@ -6518,7 +6518,7 @@ export interface paths {
         put?: never;
         /**
          * Deepen a page with the AI tutor
-         * @description Explains the page in more depth (or answers a question about it) using its content, lesson and module. Students only reach published pages. Creates a new page conversation unless conversationId is given. Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, messageId, conversationId}`, or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 429 with Retry-After, 503) use the regular JSON error envelope. Closing the connection cancels the AI call and the received part is saved as incomplete.
+         * @description Explains the page in more depth (or answers a question about it) using its content, lesson and module. Students only reach published pages. Creates a new page conversation unless conversationId is given. Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, messageId, conversationId, source}` (`source` is LLM, or DETERMINISTIC for the labelled non-AI answer sent when no AI provider answers and for the off-topic refusal), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 429 with Retry-After) use the regular JSON error envelope. Closing the connection cancels the AI call and the received part is saved as incomplete.
          *
          *     **Required access:** bearer token holding `ai-tutor:use`; minimum role STUDENT.
          */
@@ -16717,7 +16717,7 @@ export interface components {
              */
             lessonId: string | null;
             /**
-             * @description AI model that produced the analysis
+             * @description AI model that produced the analysis; empty for a deterministic analysis
              * @example gemini-2.0-flash
              */
             model: string;
@@ -16737,6 +16737,12 @@ export interface components {
              * @enum {string}
              */
             scope: "lesson" | "module" | "all";
+            /**
+             * @description Origin of the analysis: LLM, or DETERMINISTIC when no AI provider answered and a rule-based analysis (word count, glossary and title coverage) was returned instead; label it as non-AI
+             * @example LLM
+             * @enum {string}
+             */
+            source: "LLM" | "DETERMINISTIC";
             /**
              * @description Study suggestions
              * @example [
@@ -17679,7 +17685,7 @@ export interface components {
              *       "gemini",
              *       "openai",
              *       "anthropic",
-             *       "custom"
+             *       "external"
              *     ]
              */
             allowedKeys: string[] | null;
@@ -39345,15 +39351,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description The AI service is not available */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
         };
     };
     getLessonNotes: {
@@ -49050,15 +49047,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description The AI service is not available */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
         };
     };
     getConversation: {
@@ -49377,15 +49365,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description The AI service is not available */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
         };
     };
     deepenPage: {
@@ -49459,15 +49438,6 @@ export interface operations {
             };
             /** @description Unexpected server error */
             500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description The AI service is not available */
-            503: {
                 headers: {
                     [name: string]: unknown;
                 };

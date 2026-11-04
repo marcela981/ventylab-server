@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Proveedor de configuración del gateway de IA
- * Descripción: Lectores puros de la configuración del gateway de IA desde ConfigService, usados como valores por defecto de los ajustes de la plataforma y como base de IAiSettingsProvider: valores por defecto de cadena de proveedores, modelos, tiempos límite, tokens y temperatura por caso de uso, sobrescrituras JSON (AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES) validadas al arrancar, cortocircuito, ajustes del tutor, modelos con precio por proveedor y resolución de la cuota por caso de uso antes del comodín
- * Versión: 1.3
+ * Descripción: Lectores puros de la configuración del gateway de IA desde ConfigService, usados como valores por defecto de los ajustes de la plataforma y como base de IAiSettingsProvider: valores por defecto de cadena de proveedores, modelos, tiempos límite, tokens y temperatura por caso de uso, sobrescrituras JSON (AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES) validadas al arrancar, cortocircuito, ajustes del tutor, modelos con precio por proveedor y resolución de la cuota por caso de uso antes del comodín; v1.4: el proveedor externo (external, modelo "default" = AI_EXTERNAL_MODEL) reemplaza a custom en la cadena por defecto y su precio por defecto sale de AI_EXTERNAL_PRICE_INPUT_PER_MTOK/_OUTPUT_PER_MTOK (convertido a USD por mil tokens)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import {
   type AiUseCaseSettings,
   type IAiSettingsProvider,
 } from "@/features/ai/application/ports/ai-settings-provider.interface";
+import { EXTERNAL_PROVIDER_ID, PROVIDER_DEFAULT_MODEL } from "@/features/ai/domain/value-objects/ai-provider-id";
 import { AI_USE_CASE_VALUES, type AiUseCaseValue, isAiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 
 export const AI_RETRY_DELAY_MS: number = 500;
@@ -27,20 +28,22 @@ export const QUOTA_ANY_USE_CASE: string = "*";
 
 const KNOWN_ROLES: readonly string[] = ["STUDENT", "TEACHER", "ADMIN"];
 
-const DEFAULT_PROVIDER_CHAIN: readonly string[] = ["gemini", "openai", "anthropic", "custom"];
+const DEFAULT_PROVIDER_CHAIN: readonly string[] = ["gemini", "openai", "anthropic", EXTERNAL_PROVIDER_ID];
+
+const TOKENS_PER_MILLION_IN_THOUSANDS: number = 1000;
 
 const DEFAULT_MODELS: Readonly<Record<string, string>> = {
   gemini: "gemini-2.5-flash",
   openai: "gpt-4o-mini",
   anthropic: "claude-opus-5-5",
-  custom: "default",
+  [EXTERNAL_PROVIDER_ID]: PROVIDER_DEFAULT_MODEL,
 };
 
 const CHEAPEST_MODELS: Readonly<Record<string, string>> = {
   gemini: "gemini-2.0-flash",
   openai: "gpt-4o-mini",
   anthropic: "claude-haiku-4-5",
-  custom: "default",
+  [EXTERNAL_PROVIDER_ID]: PROVIDER_DEFAULT_MODEL,
 };
 
 const DEFAULT_USE_CASE_SETTINGS: Readonly<Record<AiUseCaseValue, AiUseCaseSettings>> = {
@@ -90,6 +93,9 @@ export interface AiSettingsSource {
   readonly breakerOpenSeconds: number;
   readonly tutorHistoryWindow: number;
   readonly tutorContextTokenBudget: number;
+  readonly externalModel?: string;
+  readonly externalPriceInputPerMTok?: number;
+  readonly externalPriceOutputPerMTok?: number;
 }
 
 class AiSettingsConfigError extends Error {
@@ -236,11 +242,27 @@ function parseQuotas(json: string | undefined): Record<string, Record<string, Ai
   return result;
 }
 
-function parsePrices(json: string | undefined): Record<string, Record<string, AiModelPrice>> {
+// The external model is priced from its own environment variables (USD per million tokens), 0 by default, so its calls always get a cost.
+function externalDefaultPrices(source: AiSettingsSource): Record<string, Record<string, AiModelPrice>> {
+  if (!source.externalModel) {
+    return {};
+  }
+
+  return {
+    [EXTERNAL_PROVIDER_ID]: {
+      [source.externalModel]: {
+        inputPer1kUsd: (source.externalPriceInputPerMTok ?? 0) / TOKENS_PER_MILLION_IN_THOUSANDS,
+        outputPer1kUsd: (source.externalPriceOutputPerMTok ?? 0) / TOKENS_PER_MILLION_IN_THOUSANDS,
+      },
+    },
+  };
+}
+
+function parsePrices(json: string | undefined, defaults: Readonly<Record<string, Readonly<Record<string, AiModelPrice>>>>): Record<string, Record<string, AiModelPrice>> {
   const variable: string = "AI_PRICES";
   const overrides: Record<string, unknown> = parseObject(variable, json);
   const result: Record<string, Record<string, AiModelPrice>> = Object.fromEntries(
-    Object.entries(DEFAULT_PRICES).map(([provider, models]: [string, Readonly<Record<string, AiModelPrice>>]) => [provider, { ...models }]),
+    Object.entries(defaults).map(([provider, models]: [string, Readonly<Record<string, AiModelPrice>>]) => [provider, { ...models }]),
   );
 
   for (const [provider, models] of Object.entries(overrides)) {
@@ -283,7 +305,7 @@ export function buildAiSettingsSnapshot(source: AiSettingsSource): AiSettingsSna
   return {
     useCases: parseUseCaseSettings(source.useCaseSettingsJson),
     quotas: parseQuotas(source.quotasJson),
-    prices: parsePrices(source.pricesJson),
+    prices: parsePrices(source.pricesJson, { ...DEFAULT_PRICES, ...externalDefaultPrices(source) }),
     breaker: { failureThreshold: source.breakerFailureThreshold, openSeconds: source.breakerOpenSeconds },
     tutor: { historyWindow: source.tutorHistoryWindow, contextTokenBudget: source.tutorContextTokenBudget },
     retryDelayMs: AI_RETRY_DELAY_MS,
@@ -331,5 +353,8 @@ export function readAiSettingsSource(configService: ConfigService<EnvironmentVar
     breakerOpenSeconds: configService.get("AI_BREAKER_OPEN_SECONDS", { infer: true }),
     tutorHistoryWindow: configService.get("AI_TUTOR_HISTORY_WINDOW", { infer: true }),
     tutorContextTokenBudget: configService.get("AI_TUTOR_CONTEXT_TOKEN_BUDGET", { infer: true }),
+    externalModel: configService.get("AI_EXTERNAL_MODEL", { infer: true }),
+    externalPriceInputPerMTok: configService.get("AI_EXTERNAL_PRICE_INPUT_PER_MTOK", { infer: true }),
+    externalPriceOutputPerMTok: configService.get("AI_EXTERNAL_PRICE_OUTPUT_PER_MTOK", { infer: true }),
   };
 }

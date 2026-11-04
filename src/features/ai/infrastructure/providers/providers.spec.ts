@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los proveedores LLM
- * Descripción: Verifica con fetch y SDK simulados las peticiones y respuestas de OpenAI, Anthropic, Gemini y el proveedor HTTP personalizado (completar, stream SSE, uso de tokens, errores HTTP clasificados, rechazos, AbortSignal) y el registro de proveedores según la configuración
- * Versión: 1.0
+ * Descripción: Verifica con fetch y SDK simulados las peticiones y respuestas de OpenAI, Anthropic, Gemini y el registro del proveedor externo (completar, stream SSE, uso de tokens, errores HTTP clasificados, rechazos, AbortSignal) y el registro de proveedores según la configuración; motivo de fin normalizado e id de petición del proveedor; Retry-After de un 429 en el error
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,10 +11,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import { type AiProviderRegistry, type LlmChunk, type LlmCompletion, type LlmRequest } from "@/features/ai/application/ports/llm-provider.interface";
-import { AiProviderError, CustomHttpMappingNotConfiguredError } from "@/features/ai/domain/ai.errors";
+import { AiProviderError } from "@/features/ai/domain/ai.errors";
 import { buildAiProviderRegistry } from "@/features/ai/infrastructure/providers/ai-providers.factory";
 import { AnthropicProvider } from "@/features/ai/infrastructure/providers/anthropic.provider";
-import { CustomHttpProvider } from "@/features/ai/infrastructure/providers/custom-http.provider";
 import { GeminiProvider } from "@/features/ai/infrastructure/providers/gemini.provider";
 import { OpenAIProvider } from "@/features/ai/infrastructure/providers/openai.provider";
 
@@ -64,12 +63,14 @@ describe("LLM providers", () => {
 
   describe("OpenAIProvider", () => {
     it("should call chat completions with the system prompt, JSON format and signal", async () => {
-      fetchMock.mockResolvedValue(jsonResponse({ model: "gpt-x", choices: [{ message: { content: "{}" } }], usage: { prompt_tokens: 12, completion_tokens: 3 } }));
+      fetchMock.mockResolvedValue(
+        jsonResponse({ id: "chatcmpl-1", model: "gpt-x", choices: [{ message: { content: "{}" }, finish_reason: "length" }], usage: { prompt_tokens: 12, completion_tokens: 3 } }),
+      );
       const signal: AbortSignal = new AbortController().signal;
 
       const result: LlmCompletion = await new OpenAIProvider("test-key", "https://proxy.local/v1/").complete(REQUEST, signal);
 
-      expect(result).toEqual({ text: "{}", model: "gpt-x", inputTokens: 12, outputTokens: 3 });
+      expect(result).toEqual({ text: "{}", model: "gpt-x", inputTokens: 12, outputTokens: 3, finishReason: "length", providerRequestId: "chatcmpl-1" });
       expect(fetchMock.mock.calls[0][0]).toBe("https://proxy.local/v1/chat/completions");
       expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBe(signal);
       expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ authorization: "Bearer test-key" });
@@ -86,7 +87,7 @@ describe("LLM providers", () => {
       fetchMock.mockResolvedValue(
         sseResponse([
           "data: {\"model\":\"gpt-x\",\"choices\":[{\"delta\":{\"content\":\"Ho\"}}]}\n\n",
-          "data: {\"choices\":[{\"delta\":{\"content\":\"la\"}}]}\r\n\r\n",
+          "data: {\"choices\":[{\"delta\":{\"content\":\"la\"},\"finish_reason\":\"stop\"}]}\r\n\r\n",
           "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":2}}\n\n",
           "data: [DONE]\n\n",
         ]),
@@ -97,7 +98,7 @@ describe("LLM providers", () => {
       expect(chunks).toEqual([
         { type: "delta", text: "Ho" },
         { type: "delta", text: "la" },
-        { type: "final", completion: { text: "Hola", model: "gpt-x", inputTokens: 5, outputTokens: 2 } },
+        { type: "final", completion: { text: "Hola", model: "gpt-x", inputTokens: 5, outputTokens: 2, finishReason: "stop" } },
       ]);
       expect(lastFetchBody(fetchMock)).toMatchObject({ stream: true, stream_options: { include_usage: true } });
     });
@@ -125,7 +126,7 @@ describe("LLM providers", () => {
 
       const result: LlmCompletion = await new AnthropicProvider("key").complete(REQUEST, new AbortController().signal);
 
-      expect(result).toEqual({ text: "Hola", model: "claude-x", inputTokens: 9, outputTokens: 4 });
+      expect(result).toEqual({ text: "Hola", model: "claude-x", inputTokens: 9, outputTokens: 4, finishReason: "stop" });
       expect(fetchMock.mock.calls[0][0]).toBe("https://api.anthropic.com/v1/messages");
       expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ "x-api-key": "key", "anthropic-version": "2023-06-01" });
 
@@ -156,7 +157,7 @@ describe("LLM providers", () => {
 
       expect(chunks).toEqual([
         { type: "delta", text: "Hola" },
-        { type: "final", completion: { text: "Hola", model: "claude-x", inputTokens: 7, outputTokens: 3 } },
+        { type: "final", completion: { text: "Hola", model: "claude-x", inputTokens: 7, outputTokens: 3, finishReason: "stop" } },
       ]);
     });
 
@@ -205,57 +206,35 @@ describe("LLM providers", () => {
     });
   });
 
-  describe("CustomHttpProvider", () => {
-    it("should throw while the mapping is not configured", async () => {
-      const provider: CustomHttpProvider = new CustomHttpProvider({ endpoint: "https://custom.local/ai", authHeader: "x-key", authValue: "secret" });
-
-      await expect(provider.complete(REQUEST, new AbortController().signal)).rejects.toBeInstanceOf(CustomHttpMappingNotConfiguredError);
-      expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it("should use the injected mapping and auth header and stream a single chunk", async () => {
-      fetchMock.mockResolvedValue(jsonResponse({ answer: "ok" }));
-      const provider: CustomHttpProvider = new CustomHttpProvider({
-        endpoint: "https://custom.local/ai",
-        authHeader: "x-key",
-        authValue: "secret",
-        toRequest: (request: LlmRequest): unknown => ({ prompt: request.messages[request.messages.length - 1].content }),
-        fromResponse: (json: unknown, request: LlmRequest): LlmCompletion => ({ text: String((json as { answer: string }).answer), model: request.model }),
-      });
-
-      const chunks: LlmChunk[] = await collect(provider.stream(REQUEST, new AbortController().signal));
-
-      expect(chunks).toEqual([{ type: "delta", text: "ok" }, { type: "final", completion: { text: "ok", model: "test-model" } }]);
-      expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ "x-key": "secret" });
-      expect(lastFetchBody(fetchMock)).toEqual({ prompt: "PEEP" });
-    });
-  });
-
   describe("buildAiProviderRegistry", () => {
     it("should register only the providers whose credentials are configured", () => {
       const registry: AiProviderRegistry = buildAiProviderRegistry({
         geminiApiKey: "g",
         anthropicApiKey: "a",
-        customEndpoint: "https://custom.local",
-        customAuthHeader: "x-key",
-        customAuthValue: "v",
-        customMappingConfigured: false,
+        externalBaseUrl: "https://external.local/v1",
       });
 
       expect([...registry.keys()]).toEqual(["gemini", "anthropic"]);
     });
 
-    it("should register the custom provider only with endpoint, auth and mapping", () => {
-      const registry: AiProviderRegistry = buildAiProviderRegistry({
-        openaiApiKey: "o",
-        customEndpoint: "https://custom.local",
-        customAuthHeader: "x-key",
-        customAuthValue: "v",
-        customMappingConfigured: true,
-      });
+    it("should register the external provider only with a base URL and a model, exposing the model as its default", () => {
+      const registry: AiProviderRegistry = buildAiProviderRegistry({ openaiApiKey: "o", externalBaseUrl: "https://external.local/v1", externalModel: "classmate-model" });
 
-      expect([...registry.keys()]).toEqual(["openai", "custom"]);
-      expect(buildAiProviderRegistry({ customMappingConfigured: false }).size).toBe(0);
+      expect([...registry.keys()]).toEqual(["openai", "external"]);
+      expect(registry.get("external")?.defaultModel).toBe("classmate-model");
+      expect(buildAiProviderRegistry({ externalModel: "classmate-model" }).size).toBe(0);
     });
+  });
+});
+
+describe("HTTP provider Retry-After", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should carry the Retry-After of a 429 into the provider error", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 429, headers: { "retry-after": "3" } }));
+
+    await expect(new OpenAIProvider("test-key").complete(REQUEST, new AbortController().signal)).rejects.toMatchObject({ kind: "RATE_LIMIT", retryAfterMs: 3000 });
   });
 });

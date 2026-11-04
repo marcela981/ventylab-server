@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de TelemetryAiCallRecorder
- * Descripción: Verifica que cada llamada completada o transmitida por el gateway de IA produzca exactamente un registro de telemetría (versión del prompt, tokens, latencia y TTFT en streams), el costo estimado con los precios de la configuración y el incremento local del consumo en caché
- * Versión: 1.0
+ * Descripción: Verifica que cada llamada completada o transmitida por el gateway de IA produzca exactamente un registro de telemetría (versión del prompt, tokens, latencia y TTFT en streams), el costo estimado con los precios de la configuración y el incremento local del consumo en caché; entrada estructurada de NOTES_ANALYSIS; detalles de la llamada y costo cero del respaldo determinista
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -66,7 +66,7 @@ describe("TelemetryAiCallRecorder", () => {
     const provider: FakeLlmProvider = new FakeLlmProvider("fake", { kind: "text", text: "{}", inputTokens: 1000, outputTokens: 500 });
     const { gateway, telemetry } = buildHarness(provider);
 
-    const result: AiResult = await gateway.complete("NOTES_ANALYSIS", { userPrompt: "Analiza" }, { userId: "user-1", userRole: "STUDENT", refType: "notes_analysis" });
+    const result: AiResult = await gateway.complete("NOTES_ANALYSIS", { scope: "all", notes: [{ lessonTitle: "L", moduleTitle: "M", text: "Analiza" }] }, { userId: "user-1", userRole: "STUDENT", refType: "notes_analysis" });
     await flushRecords();
 
     const entries: AiCallLogEntry[] = recordedEntries(telemetry);
@@ -124,6 +124,7 @@ describe("TelemetryAiCallRecorder", () => {
       latencyMs: 5,
       status: "SUCCESS",
       attempts: 1,
+      attemptTrail: [],
       createdAt: new Date("2026-10-05T10:00:00Z"),
     };
 
@@ -150,9 +151,43 @@ describe("TelemetryAiCallRecorder", () => {
       latencyMs: 5,
       status: "SUCCESS",
       attempts: 1,
+      attemptTrail: [],
       createdAt,
     });
 
     expect(usageCache.get("user-1", "FREE_CHAT", createdAt)).toEqual({ requests: 3, inputTokens: 130, outputTokens: 70 });
+  });
+});
+
+describe("TelemetryAiCallRecorder call details", () => {
+  it("should persist the call details and price the deterministic fallback at zero", async () => {
+    const { recorder, telemetry } = buildHarness(new FakeLlmProvider("fake", { kind: "text", text: "" }));
+
+    await recorder.record({
+      id: "call-3",
+      useCase: "NOTES_ANALYSIS",
+      provider: "deterministic",
+      promptVersion: "2.0.0",
+      promptHash: "hash",
+      latencyMs: 4,
+      status: "FALLBACK",
+      attempts: 1,
+      createdAt: new Date("2026-10-05T10:00:00Z"),
+      language: "es",
+      temperature: 0.4,
+      maxOutputTokens: 2048,
+      attemptTrail: [{ provider: "fake", model: "fake-model", outcome: "error", errorCode: "SERVER", latencyMs: 3 }],
+    });
+
+    expect(telemetry.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "call-3",
+        costEstimateUsd: 0,
+        language: "es",
+        temperature: 0.4,
+        maxOutputTokens: 2048,
+        attemptTrail: [{ provider: "fake", model: "fake-model", outcome: "error", errorCode: "SERVER", latencyMs: 3 }],
+      }),
+    );
   });
 });

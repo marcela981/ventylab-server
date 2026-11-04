@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso AnalyzeNotesUseCase
- * Descripción: Analiza con IA (puerto INotesAnalyzer) las notas propias más recientes del usuario en una lección, un módulo o en todas sus notas, convirtiéndolas a texto plano con los títulos de lección y módulo; pasa el usuario y su rol al analizador para cuotas y telemetría; sin respaldo simulado cuando la IA falla
- * Versión: 1.1
+ * Descripción: Analiza con IA (puerto INotesAnalyzer) las notas propias más recientes del usuario en una lección, un módulo o en todas sus notas, convirtiéndolas a texto plano con los títulos de lección y módulo; pasa el usuario y su rol al analizador para cuotas y telemetría; v1.2: sin proveedor de IA el analizador entrega el análisis por reglas marcado DETERMINISTIC
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -41,7 +41,7 @@ export const MAX_ANALYZED_NOTES: number = 50;
  * @throws {NoteModuleNotFoundError} If the module does not exist
  * @throws {NoNotesToAnalyzeError} If the user has no notes with text in the scope
  * @throws {AiQuotaExceededError} If the user reached the daily AI usage quota
- * @throws {AiProvidersUnavailableError} If no AI provider is available
+ * (When no AI provider answers, the analyzer returns a rule-based analysis with source DETERMINISTIC instead of failing)
  * @throws {NotesAnalysisInvalidResponseError} If the AI response cannot be parsed into an analysis
  */
 @Injectable()

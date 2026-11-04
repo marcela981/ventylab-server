@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Eventos de dominio de la retroalimentación de calificación
- * Descripción: Evento de regeneración solicitada: lleva el intento y la fila PENDING reservada para que la generación corra de forma asíncrona fuera de la petición del docente; GradeFeedbackReadyEvent se emite al guardarse la retroalimentación lista y se publica también como grade.feedbackReady
- * Versión: 1.1
+ * Descripción: Evento de regeneración solicitada: lleva el intento y la fila PENDING reservada para que la generación corra de forma asíncrona fuera de la petición del docente; GradeFeedbackReadyEvent se emite al guardarse la retroalimentación lista y se publica también como grade.feedbackReady; v1.2: la regeneración lleva el solicitante (id, rol e idioma)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,15 +10,28 @@
  */
 import { DomainEvent } from "@/common/domain/events/domain-event";
 import { type CatalogDomainEvent, catalogMeta, type GradeFeedbackReadyPayload } from "@/common/domain/events/domain-event-catalog";
+import { type GradeFeedbackRequester } from "@/features/evaluation/domain/value-objects/grade-feedback-requester";
 
 export class GradeFeedbackRegenerationRequestedEvent extends DomainEvent {
   public readonly attemptId: string;
   public readonly feedbackId: string;
+  public readonly requester?: GradeFeedbackRequester;
 
-  public constructor({ attemptId, feedbackId, performedBy }: { attemptId: string; feedbackId: string; performedBy?: string }) {
+  public constructor({
+    attemptId,
+    feedbackId,
+    performedBy,
+    requester,
+  }: {
+    attemptId: string;
+    feedbackId: string;
+    performedBy?: string;
+    requester?: GradeFeedbackRequester;
+  }) {
     super({ performedBy });
     this.attemptId = attemptId;
     this.feedbackId = feedbackId;
+    this.requester = requester;
   }
 }
 

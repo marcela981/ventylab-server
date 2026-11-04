@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de telemetría de IA
- * Descripción: Endpoints administrativos /api/admin/ai-telemetry: estadísticas agregadas de llamadas de IA (totales y por día) y exportación CSV de la bitácora sin texto de prompt ni de respuesta; requieren el permiso ai-telemetry:read
- * Versión: 1.0
+ * Descripción: Endpoints administrativos /api/admin/ai-telemetry: estadísticas agregadas de llamadas de IA (totales y por día) y exportación CSV de la bitácora sin texto de prompt ni de respuesta; requieren el permiso ai-telemetry:read; v1.1: la exportación CSV documenta sus columnas, incluidas las de detalle de la llamada
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -65,7 +65,7 @@ export class AiTelemetryController {
   @ApiProduces("text/csv")
   @ApiOperation({
     summary: "Export AI calls as CSV",
-    description: `One RFC 4180 row per AI call (no prompt or response text), oldest first, capped at the export row limit; the ${TRUNCATED_HEADER} header is "true" when rows were left out`,
+    description: `One RFC 4180 row per AI call (no prompt or response text), oldest first, capped at the export row limit; the ${TRUNCATED_HEADER} header is "true" when rows were left out. Columns: id, createdAt, useCase, provider (deterministic for a non-AI fallback), model, promptVersion, status, errorCode, attempts, inputTokens, outputTokens, latencyMs, ttftMs (equal to latencyMs for non-streamed calls), costEstimateUsd, refType, refId, language, finishReason (stop, length, content_filter, error or unknown), temperature, maxOutputTokens, attemptTrail (JSON array of {provider, model, outcome, errorCode, latencyMs}) and providerRequestId`,
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "CSV file" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })

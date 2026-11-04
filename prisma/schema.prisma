@@ -1905,24 +1905,33 @@ enum AiRatingTargetType {
 }
 
 model AiCallLog {
-  id              String       @id @default(cuid())
-  userId          String?      @map("user_id")
-  useCase         AiUseCase    @map("use_case")
-  provider        String // provider id, or "deterministic" / "none"
-  model           String?
-  promptVersion   String       @map("prompt_version")
-  promptHash      String       @map("prompt_hash") // sha256 hex
-  inputTokens     Int?         @map("input_tokens")
-  outputTokens    Int?         @map("output_tokens")
-  latencyMs       Int          @map("latency_ms")
-  ttftMs          Int?         @map("ttft_ms")
-  status          AiCallStatus
-  errorCode       String?      @map("error_code")
-  attempts        Int          @default(0)
-  costEstimateUsd Decimal?     @map("cost_estimate_usd") @db.Decimal(12, 6)
-  refType         String?      @map("ref_type")
-  refId           String?      @map("ref_id")
-  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                String       @id @default(cuid())
+  userId            String?      @map("user_id")
+  useCase           AiUseCase    @map("use_case")
+  provider          String // provider id, or "deterministic" / "none"
+  model             String?
+  promptVersion     String       @map("prompt_version")
+  promptHash        String       @map("prompt_hash") // sha256 hex
+  inputTokens       Int?         @map("input_tokens")
+  outputTokens      Int?         @map("output_tokens")
+  latencyMs         Int          @map("latency_ms")
+  ttftMs            Int?         @map("ttft_ms")
+  status            AiCallStatus
+  errorCode         String?      @map("error_code")
+  attempts          Int          @default(0)
+  costEstimateUsd   Decimal?     @map("cost_estimate_usd") @db.Decimal(12, 6)
+  refType           String?      @map("ref_type")
+  refId             String?      @map("ref_id")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Language the answer was asked in (es, en)
+  language          String?
+  // Normalized: stop | length | content_filter | error | unknown
+  finishReason      String?      @map("finish_reason")
+  temperature       Float?
+  maxOutputTokens   Int?         @map("max_output_tokens")
+  // [{provider, model, outcome, errorCode, latencyMs}] per provider attempt (retries included) and the deterministic fallback
+  attemptTrail      Json?        @map("attempt_trail")
+  providerRequestId String?      @map("provider_request_id")
 
   user     User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   messages AiMessage[]

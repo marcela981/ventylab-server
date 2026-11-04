@@ -98,7 +98,7 @@ describe("tutor SSE transport", () => {
       events([
         { type: "start", conversationId: "conv-1", messageId: "msg-1" },
         { type: "delta", text: "Hola\nmundo" },
-        { type: "done", aiCallId: "call-1", messageId: "msg-1", conversationId: "conv-1" },
+        { type: "done", aiCallId: "call-1", messageId: "msg-1", conversationId: "conv-1", source: "LLM" },
       ]),
       translate,
     );
@@ -111,7 +111,7 @@ describe("tutor SSE transport", () => {
     expect(response.chunks).toEqual([
       "event: start\ndata: {\"conversationId\":\"conv-1\",\"messageId\":\"msg-1\"}\n\n",
       "event: delta\ndata: {\"text\":\"Hola\\nmundo\"}\n\n",
-      "event: done\ndata: {\"aiCallId\":\"call-1\",\"messageId\":\"msg-1\",\"conversationId\":\"conv-1\"}\n\n",
+      "event: done\ndata: {\"aiCallId\":\"call-1\",\"messageId\":\"msg-1\",\"conversationId\":\"conv-1\",\"source\":\"LLM\"}\n\n",
     ]);
     expect(response.writableEnded).toBe(true);
   });

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del CSV de llamadas de IA
- * Descripción: Verifica el escape RFC 4180 (comillas, comas, saltos de línea), la neutralización de fórmulas de hoja de cálculo, las columnas sin texto de prompt ni respuesta y los terminadores CRLF
- * Versión: 1.1
+ * Descripción: Verifica el escape RFC 4180 (comillas, comas, saltos de línea), la neutralización de fórmulas de hoja de cálculo, las columnas sin texto de prompt ni respuesta y los terminadores CRLF; columnas de detalle de la llamada (idioma, motivo de fin, temperatura, máximo de tokens, rastro de intentos en JSON e id de petición)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -56,6 +56,12 @@ describe("toAiCallLogsCsv", () => {
       costEstimateUsd: 0.000123,
       refType: "conversation",
       refId: "conv-1",
+      language: "es",
+      finishReason: "error",
+      temperature: 0.4,
+      maxOutputTokens: 1024,
+      attemptTrail: [{ provider: "openai", model: "gpt-4o-mini", outcome: "error", errorCode: "TIMEOUT", latencyMs: 30000 }],
+      providerRequestId: undefined,
     };
 
     const csv: string = toAiCallLogsCsv([row]);
@@ -63,10 +69,10 @@ describe("toAiCallLogsCsv", () => {
 
     expect(AI_CALL_LOGS_CSV_COLUMNS).not.toContain("prompt");
     expect(lines[0]).toBe(
-      "id,createdAt,useCase,provider,model,promptVersion,status,errorCode,attempts,inputTokens,outputTokens,latencyMs,ttftMs,costEstimateUsd,refType,refId",
+      "id,createdAt,useCase,provider,model,promptVersion,status,errorCode,attempts,inputTokens,outputTokens,latencyMs,ttftMs,costEstimateUsd,refType,refId,language,finishReason,temperature,maxOutputTokens,attemptTrail,providerRequestId",
     );
     expect(lines[1]).toBe(
-      "call-1,2026-10-05T10:00:00.000Z,FREE_CHAT,openai,gpt-4o-mini,free-chat@1,ERROR,\"TIMEOUT, retry\",2,10,,30000,,0.000123,conversation,conv-1",
+      "call-1,2026-10-05T10:00:00.000Z,FREE_CHAT,openai,gpt-4o-mini,free-chat@1,ERROR,\"TIMEOUT, retry\",2,10,,30000,,0.000123,conversation,conv-1,es,error,0.4,1024,\"[{\"\"provider\"\":\"\"openai\"\",\"\"model\"\":\"\"gpt-4o-mini\"\",\"\"outcome\"\":\"\"error\"\",\"\"errorCode\"\":\"\"TIMEOUT\"\",\"\"latencyMs\"\":30000}]\",",
     );
     expect(lines[2]).toBe("");
   });

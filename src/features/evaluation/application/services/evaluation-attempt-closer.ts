@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Cierre y calificación de intentos de evaluación
- * Descripción: Servicio compartido por los casos de uso de intentos: carga un intento solo para su propietario (404 en otro caso), toma el candado exclusivo por evaluación y usuario y el compartido de estructura de la evaluación (pg_advisory_xact_lock_shared sobre la misma clave que el editor), carga la evaluación y el plazo efectivo (plazo del intento ajustado por un cierre anticipado de la asignación), califica con el calificador puro y el puntaje práctico de IPracticalScoreProvider, cierra el intento (publicando la nota según la política por tipo: QUIZ y WORKSHOP siempre, EXAM según showResultsImmediately) y lo cierra de forma perezosa en su propia transacción cuando venció (plazo + gracia de entrega configurable), publicando los eventos tras confirmar
- * Versión: 1.3
+ * Descripción: Servicio compartido por los casos de uso de intentos: carga un intento solo para su propietario (404 en otro caso), toma el candado exclusivo por evaluación y usuario y el compartido de estructura de la evaluación (pg_advisory_xact_lock_shared sobre la misma clave que el editor), carga la evaluación y el plazo efectivo (plazo del intento ajustado por un cierre anticipado de la asignación), califica con el calificador puro y el puntaje práctico de IPracticalScoreProvider, cierra el intento (publicando la nota según la política por tipo: QUIZ y WORKSHOP siempre, EXAM según showResultsImmediately) y lo cierra de forma perezosa en su propia transacción cuando venció (plazo + gracia de entrega configurable), publicando los eventos tras confirmar; cerrar acepta el solicitante opcional de la retroalimentación (quien entrega)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,6 +36,7 @@ import { type EvaluationAttemptGrading, type GradableAnswer, gradeEvaluationAtte
 import { effectiveAttemptDeadline, evaluationAttemptLockKey, isAttemptExpired } from "@/features/evaluation/domain/services/evaluation-attempt-policy";
 import { evaluationStructureLockKey } from "@/features/evaluation/domain/services/evaluation-management-policy";
 import { SIMULATION_QUESTION_TYPE } from "@/features/evaluation/domain/value-objects/evaluation-question-type";
+import { type GradeFeedbackRequester } from "@/features/evaluation/domain/value-objects/grade-feedback-requester";
 
 export interface EvaluationAttemptContext {
   readonly evaluation: Evaluation;
@@ -103,7 +104,7 @@ export class EvaluationAttemptCloser {
     return attempt.isInProgress && !attempt.isLegacy && isAttemptExpired(context.deadlineAt, now, this._gradingConfig.submitGraceMs);
   }
 
-  public async close(attempt: StudentEvaluationAttempt, evaluation: Evaluation, submittedAt: Date, now: Date): Promise<void> {
+  public async close(attempt: StudentEvaluationAttempt, evaluation: Evaluation, submittedAt: Date, now: Date, requester?: GradeFeedbackRequester): Promise<void> {
     const answers: Map<string, GradableAnswer> = new Map<string, GradableAnswer>(
       attempt.answers.map((answer: EvaluationAnswerRecord) => [answer.questionId, answer]),
     );
@@ -120,6 +121,7 @@ export class EvaluationAttemptCloser {
       now,
       publishImmediately: evaluation.autoPublishesGrades,
       passingGrade: this._gradingConfig.passingGrade,
+      requester,
     });
   }
 

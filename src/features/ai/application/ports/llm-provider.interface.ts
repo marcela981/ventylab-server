@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Puerto ILlmProvider
- * Descripción: Contrato de estrategia de proveedor de modelos de lenguaje (completar y transmitir en stream con AbortSignal), sus tipos de petición, respuesta y fragmento, y el token del registro de proveedores configurados
- * Versión: 1.0
+ * Descripción: Contrato de estrategia de proveedor de modelos de lenguaje (completar y transmitir en stream con AbortSignal), sus tipos de petición, respuesta y fragmento, y el token del registro de proveedores configurados; v1.1: modelo por defecto opcional del proveedor (el externo lo toma de su configuración); v1.2: la respuesta lleva el motivo de fin normalizado y el id de la petición del proveedor cuando lo informa
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type AiMessage, type AiResponseFormat } from "@/features/ai/domain/prompts/prompt-template";
+import { type AiFinishReason } from "@/features/ai/domain/services/ai-finish-reason";
 
 export const AI_PROVIDERS_TOKEN: unique symbol = Symbol("AI_PROVIDERS_TOKEN");
 
@@ -26,6 +27,8 @@ export interface LlmCompletion {
   readonly model: string;
   readonly inputTokens?: number;
   readonly outputTokens?: number;
+  readonly finishReason?: AiFinishReason;
+  readonly providerRequestId?: string;
 }
 
 export interface LlmDeltaChunk {
@@ -42,6 +45,8 @@ export type LlmChunk = LlmDeltaChunk | LlmFinalChunk;
 
 export interface ILlmProvider {
   readonly id: string;
+  // Used when the use case settings name no model for the provider or the "default" placeholder.
+  readonly defaultModel?: string;
   complete(request: LlmRequest, signal: AbortSignal): Promise<LlmCompletion>;
   stream(request: LlmRequest, signal: AbortSignal): AsyncIterable<LlmChunk>;
 }

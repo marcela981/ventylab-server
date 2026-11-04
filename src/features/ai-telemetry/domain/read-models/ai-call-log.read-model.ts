@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de la telemetría de IA
- * Descripción: Tipos de la bitácora de llamadas de IA (entrada a registrar sin texto de prompt ni de respuesta, resumen de una llamada, fila exportable, consumo por usuario y estadísticas agregadas por día y por proveedor) y los valores de caso de uso y estado, incluida la referencia que marca las sondas de salud de los proveedores
- * Versión: 1.3
+ * Descripción: Tipos de la bitácora de llamadas de IA (entrada a registrar sin texto de prompt ni de respuesta, resumen de una llamada, fila exportable, consumo por usuario y estadísticas agregadas por día y por proveedor) y los valores de caso de uso y estado, incluida la referencia que marca las sondas de salud de los proveedores; v1.4: proveedor deterministic de las respuestas de respaldo sin IA; v1.5: idioma, motivo de fin, temperatura, máximo de tokens de salida, rastro de intentos e id de petición del proveedor en la entrada y en la fila exportable
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,11 +36,32 @@ export const PROVIDER_REACHING_STATUSES: readonly AiCallStatusValue[] = ["SUCCES
 
 export const NO_PROVIDER: string = "none";
 
+// Provider recorded for a consumer's deterministic (non-AI) fallback answer; it is not a real provider, so per-provider health ignores it.
+export const DETERMINISTIC_PROVIDER: string = "deterministic";
+
 // Provider health probes are logged as ordinary calls tagged with this refType; every usage, aggregate and export read excludes them so they never skew learning metrics or consume quota.
 export const HEALTH_PROBE_REF_TYPE: string = "health_probe";
 
+export interface AiCallAttemptTrailEntry {
+  readonly provider: string;
+  readonly model?: string;
+  readonly outcome: string;
+  readonly errorCode?: string;
+  readonly latencyMs: number;
+}
+
+// Generation and outcome details added to the call log (all nullable columns).
+export interface AiCallLogDetails {
+  readonly language?: string;
+  readonly finishReason?: string;
+  readonly temperature?: number;
+  readonly maxOutputTokens?: number;
+  readonly attemptTrail?: readonly AiCallAttemptTrailEntry[];
+  readonly providerRequestId?: string;
+}
+
 // Carries no prompt or response text: only the prompt hash is stored.
-export interface AiCallLogEntry {
+export interface AiCallLogEntry extends AiCallLogDetails {
   readonly id: string;
   readonly useCase: AiTelemetryUseCaseValue;
   readonly userId?: string;
@@ -72,7 +93,7 @@ export interface AiCallSummary {
   readonly createdAt: Date;
 }
 
-export interface AiCallLogRow {
+export interface AiCallLogRow extends AiCallLogDetails {
   readonly id: string;
   readonly createdAt: Date;
   readonly useCase: AiTelemetryUseCaseValue;

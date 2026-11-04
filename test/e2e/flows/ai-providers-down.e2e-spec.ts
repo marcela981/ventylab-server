@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Flujo e2e con todos los proveedores de IA caídos
- * Descripción: Arranca la aplicación con proveedores falsos que responden 5xx o agotan el tiempo (tiempos de espera cortos por caso de uso) y verifica que la retroalimentación de evaluaciones y el asesor de simulación responden con el respaldo determinista y que la telemetría de IA registra FALLBACK; el análisis de notas no tiene respaldo determinista (BUG-11, abierto) y queda documentado con una prueba it.failing y una que fija el comportamiento actual
- * Versión: 1.0
+ * Descripción: Arranca la aplicación con proveedores falsos que responden 5xx o agotan el tiempo (tiempos de espera cortos por caso de uso) y verifica que la retroalimentación de evaluaciones y el asesor de simulación responden con el respaldo determinista y que la telemetría de IA registra FALLBACK; v1.1: el análisis de notas (BUG-11, cerrado) y la profundización de páginas del tutor también responden su respaldo determinista marcado source DETERMINISTIC con telemetría FALLBACK y proveedor deterministic; v1.2: la fila FALLBACK guarda idioma, versión del prompt, máximo de tokens, rastro de intentos y costo 0
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { type ClinicalCase, type EvaluationAssignment, type User } from "@prisma/client";
+import { type AiCallLog, type ClinicalCase, type EvaluationAssignment, type User } from "@prisma/client";
 import { type Response } from "supertest";
 
 import { scenarioLlmProvider } from "@/features/ai/application/testing/ai-provider-scenarios-test-doubles-spec";
@@ -28,6 +28,7 @@ const ENVIRONMENT: Readonly<Record<string, string>> = {
   AI_USE_CASE_SETTINGS: JSON.stringify({
     GRADE_FEEDBACK: { timeoutMs: SHORT_TIMEOUT_MS },
     NOTES_ANALYSIS: { timeoutMs: SHORT_TIMEOUT_MS },
+    PAGE_DEEPEN: { timeoutMs: SHORT_TIMEOUT_MS },
     SIM_ASSIST: { timeoutMs: SHORT_TIMEOUT_MS },
   }),
   AI_BREAKER_FAILURE_THRESHOLD: "1000",
@@ -77,8 +78,8 @@ describe("flow: every AI provider is down", () => {
     await harness?.restore();
   });
 
-  async function fallbackRows(useCase: "GRADE_FEEDBACK" | "SIM_ASSIST" | "NOTES_ANALYSIS"): Promise<number> {
-    return await harness.e2e.prisma.aiCallLog.count({ where: { useCase, status: "FALLBACK" } });
+  async function fallbackRows(useCase: "GRADE_FEEDBACK" | "SIM_ASSIST" | "NOTES_ANALYSIS" | "PAGE_DEEPEN"): Promise<number> {
+    return await harness.e2e.prisma.aiCallLog.count({ where: { useCase, status: "FALLBACK", provider: "deterministic" } });
   }
 
   it("should publish deterministic grade feedback and record FALLBACK telemetry", async () => {
@@ -146,26 +147,35 @@ describe("flow: every AI provider is down", () => {
     return tree;
   }
 
-  it("should keep answering notes analysis with 503 and ERROR telemetry while BUG-11 is open", async () => {
+  it("should answer notes analysis with the rule-based fallback marked DETERMINISTIC (BUG-11)", async () => {
     const tree: ContentTree = await studentWithNotes();
 
     const analysis: Response = await api("POST", "/api/notes/analyze", studentToken, { lessonId: tree.lesson.id });
 
-    expect(analysis.status).toBe(503);
-    await waitUntil(
-      (): Promise<number> => harness.e2e.prisma.aiCallLog.count({ where: { useCase: "NOTES_ANALYSIS", status: "ERROR" } }),
-      (count: number): boolean => count > 0,
-      { description: "NOTES_ANALYSIS ERROR telemetry" },
-    );
+    expectStatus(analysis, 200);
+    expect(analysis.body.data).toMatchObject({ source: "DETERMINISTIC", model: "", keyConcepts: expect.arrayContaining(["PEEP"]) });
+    await waitUntil((): Promise<number> => fallbackRows("NOTES_ANALYSIS"), (count: number): boolean => count > 0, { description: "NOTES_ANALYSIS FALLBACK telemetry" });
+
+    const row: AiCallLog = await harness.e2e.prisma.aiCallLog.findFirstOrThrow({ where: { useCase: "NOTES_ANALYSIS", status: "FALLBACK" } });
+
+    expect(row).toMatchObject({ language: "en", promptVersion: "2.0.0", maxOutputTokens: 2048, finishReason: null });
+    expect(Number(row.costEstimateUsd)).toBe(0);
+    expect((row.attemptTrail as { provider: string; outcome: string }[]).map((entry: { provider: string; outcome: string }) => entry.outcome)).toContain("fallback");
   });
 
-  // BUG-11 (open): NOTES_ANALYSIS passes no deterministic fallback to AiGateway, so the documented 503 is returned instead of a fallback analysis.
-  it.failing("should answer notes analysis with a deterministic fallback (BUG-11)", async () => {
-    const tree: ContentTree = await studentWithNotes();
+  it("should deepen a page with its key points labelled as non-AI over SSE", async () => {
+    const tree: ContentTree = await createContentTree(harness.e2e.prisma, { author: teacher });
 
-    const analysis: Response = await api("POST", "/api/notes/analyze", studentToken, { lessonId: tree.lesson.id });
+    const response: globalThis.Response = await fetch(`${harness.e2e.baseUrl}/api/tutor/pages/${tree.page.id}/deepen`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${studentToken}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const events: { event: string; data: unknown }[] = sseEvents(await response.text());
 
-    expect(analysis.status).toBe(200);
-    await waitUntil((): Promise<number> => fallbackRows("NOTES_ANALYSIS"), (count: number): boolean => count > 0, { description: "NOTES_ANALYSIS FALLBACK telemetry", timeoutMs: 3_000 });
+    expect(response.status).toBe(200);
+    expect(events.filter((item: { event: string }): boolean => item.event === "delta")).toHaveLength(1);
+    expect(events.find((item: { event: string }): boolean => item.event === "done")?.data).toMatchObject({ source: "DETERMINISTIC" });
+    await waitUntil((): Promise<number> => fallbackRows("PAGE_DEEPEN"), (count: number): boolean => count > 0, { description: "PAGE_DEEPEN FALLBACK telemetry" });
   });
 });
