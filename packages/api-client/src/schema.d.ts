@@ -51395,6 +51395,15 @@ export interface operations {
                     "application/json": components["schemas"]["VersionInfoDTO"];
                 };
             };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Unexpected server error */
             500: {
                 headers: {
