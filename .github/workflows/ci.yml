@@ -1,6 +1,6 @@
 # Funcionalidad: Integración continua del backend
-# Descripción: Ejecuta npm run verify (tipos, lint, ciclos, prisma, deriva de migraciones y contrato, pruebas con testcontainers sobre el Docker del runner) y la compilación en cada push y pull request; en main construye la imagen Docker y solo la publica en GHCR si la variable del repositorio PUBLISH_IMAGE vale true; nunca despliega
-# Versión: 1.1
+# Descripción: Ejecuta npm run verify (tipos, lint, ciclos, prisma, deriva de migraciones y contrato, pruebas con testcontainers sobre el Docker del runner) y la compilación en cada push y pull request; en main construye la imagen Docker y solo la publica en GHCR si la variable del repositorio PUBLISH_IMAGE vale true, pasando el commit y la fecha de construcción como argumentos GIT_SHA y BUILD_DATE; nunca despliega
+# Versión: 1.2
 # Autor: Marcela Mazo Castro
 # Proyecto: VentyLab
 # Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -82,5 +82,9 @@ jobs:
           push: ${{ env.PUBLISH == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Baked into the image and reported by GET /api/version.
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

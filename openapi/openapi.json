@@ -26271,6 +26271,31 @@
           "activeAlarms"
         ],
         "type": "object"
+      },
+      "VersionInfoDTO": {
+        "properties": {
+          "builtAt": {
+            "description": "ISO 8601 build date of the running image, or \"unknown\"",
+            "example": "2026-11-04T00:49:37.000Z",
+            "type": "string"
+          },
+          "contract": {
+            "description": "Version of the HTTP response contract; bumped when a response shape changes incompatibly",
+            "example": 1,
+            "type": "number"
+          },
+          "sha": {
+            "description": "Git commit the running image was built from, or \"unknown\"",
+            "example": "3f2c1ab9d0e4c6b7a8f9e0d1c2b3a4f5e6d7c8b9",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sha",
+          "builtAt",
+          "contract"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -81441,6 +81466,47 @@
         "x-required-permissions": [
           "simulation:read"
         ]
+      }
+    },
+    "/api/version": {
+      "get": {
+        "description": "Returns the commit and build date baked into the running image and the API contract version\n\n**Required access:** public.",
+        "operationId": "version",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionInfoDTO"
+                }
+              }
+            },
+            "description": "Version of the running backend"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "InternalServerError": {
+                    "$ref": "#/components/examples/InternalServerError"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [],
+        "summary": "Deployed version",
+        "tags": [
+          "Health"
+        ],
+        "x-min-role": "ANONYMOUS",
+        "x-required-permissions": []
       }
     },
     "/health": {

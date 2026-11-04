@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Referencia de variables de entorno
-  Descripción: Lista cada variable que valida env.validation.ts, las que se leen antes del arranque de Nest (Sentry), las de pruebas y herramientas y las de interpolación de docker-compose, con obligatoriedad, valor por defecto, descripción y ejemplo no real
-  Versión: 1.2
+  Descripción: Lista cada variable que valida env.validation.ts, las que se leen antes del arranque de Nest (Sentry), las de pruebas y herramientas, las de interpolación de docker-compose y los argumentos de construcción de la imagen (GIT_SHA, BUILD_DATE), con obligatoriedad, valor por defecto, descripción y ejemplo no real
+  Versión: 1.3
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,6 +24,8 @@ Source of truth: `src/common/infrastructure/config/env.validation.ts` (`Environm
 | `APP_VERSION` | no | `version` of `package.json` | Version reported by the system status. | `1.0.0` |
 | `APP_COMMIT_SHA` | no | value of `GIT_COMMIT` | Commit reported by the system status. | `3f2c1ab` |
 | `GIT_COMMIT` | no | — | Alias of `APP_COMMIT_SHA` (used only when that one is unset). | `3f2c1ab` |
+| `APP_GIT_SHA` | no | build argument `GIT_SHA` (`unknown`) | Commit reported as `sha` by `GET /api/version`. Set by the image from the `GIT_SHA` build argument; if it is empty or `unknown`, `APP_COMMIT_SHA` is used, else `unknown`. | `3f2c1ab9d0e4` |
+| `APP_BUILD_DATE` | no | build argument `BUILD_DATE` (`unknown`) | Build date reported as `builtAt` by `GET /api/version`, normalized to ISO 8601; a value that is not a date is reported as `unknown`. | `2026-11-04T00:49:37Z` |
 
 ## Database
 
@@ -205,12 +207,28 @@ A malformed JSON value stops startup with an error naming the variable and the o
 | `VERIFY_VERBOSE` | `scripts/verify/verify.mjs` | `1` streams step output (same as `--verbose`). |
 | `AUDIT_BASE_URL`, `AUDIT_JWT_TOKEN` | `scripts/audit-e2e/e2e-config.ts` | Thesis audit scripts only. |
 
+## Image build arguments (Dockerfile)
+
+`GET /api/version` (public, raw JSON) answers `{"sha":"<commit or \"unknown\">","builtAt":"<ISO date or \"unknown\">","contract":1}`. `sha` and `builtAt` are baked into the image at build time; `contract` is `API_CONTRACT_VERSION` in `src/common/presentation/api-contract-version.ts` (bumped when a response shape changes incompatibly; the web declares the contract it requires).
+
+| Build argument | Default | Becomes | How to set it |
+|---|---|---|---|
+| `GIT_SHA` | `unknown` | `APP_GIT_SHA` | `docker build --build-arg GIT_SHA=$(git rev-parse HEAD) ...`. The CI `image` job passes `github.sha`. `docker-compose.yml` forwards `${GIT_SHA:-unknown}`. |
+| `BUILD_DATE` | `unknown` | `APP_BUILD_DATE` | `--build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)`. The CI `image` job passes the OCI `created` date. `docker-compose.yml` forwards `${BUILD_DATE:-unknown}`. |
+
+**Dokploy.** Dokploy builds this repository itself with this `Dockerfile`. That is true for an Application with the Dockerfile build type and for the Compose service, whose `backend` has `build: { context: ., dockerfile: Dockerfile }`. Dokploy does not know the commit by itself, so the build arguments must be set there:
+
+- Application: set `GIT_SHA` and `BUILD_DATE` in the build-time arguments of the application (Environment tab, "Build Time Arguments", one `KEY=value` per line). Compose: set them as environment variables of the compose service so `${GIT_SHA}`/`${BUILD_DATE}` interpolate.
+- A static value goes stale after the next deploy. Either update `GIT_SHA` before each deploy (for example from the CI deploy flow described in [runbook §8](../runbook.md#8-controlled-deploy)), or leave both unset: the endpoint then reports `"unknown"` and only `contract` is meaningful. `sha: "unknown"` is never an error.
+- An image built by CI and pulled by Dokploy (Docker source, `PUBLISH_IMAGE=true`) already carries the real values.
+
 ## docker-compose.yml interpolation (not read by the app)
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `BACKEND_ENV_FILE` | no | `.env` | Env file loaded into the backend container. |
 | `BACKEND_IMAGE` | no | `ventylab-server:local` | Image tag (for example a GHCR tag). |
+| `GIT_SHA` / `BUILD_DATE` | no | `unknown` | Build arguments of the backend image (see above). |
 | `API_DOMAIN` | yes | — | Public host of the API in the Traefik router. |
 | `TRAEFIK_NETWORK` | no | `dokploy-network` | External Docker network shared with Traefik. |
 | `TRAEFIK_HTTPS_ENTRYPOINT` / `TRAEFIK_HTTP_ENTRYPOINT` | no | `websecure` / `web` | Traefik entrypoints. |
