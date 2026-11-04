@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador GradeFeedbackController
- * Descripción: Rutas de retroalimentación de calificación: lectura del estudiante sobre su intento con la nota publicada (GET /api/evaluation-attempts/:attemptId/feedback, evaluations:attempt), lectura del docente o administrador (GET /api/evaluation-grading/attempts/:attemptId/feedback) y regeneración asíncrona que responde 202 PENDING (POST /api/evaluation-grading/attempts/:attemptId/feedback/regenerate), ambas con evaluations:grade y alcance de grupo
- * Versión: 1.0
+ * Descripción: Rutas de retroalimentación de calificación: lectura del estudiante sobre su intento con la nota publicada (GET /api/evaluation-attempts/:attemptId/feedback, evaluations:attempt), lectura del docente o administrador (GET /api/evaluation-grading/attempts/:attemptId/feedback) y regeneración asíncrona que responde 202 PENDING (POST /api/evaluation-grading/attempts/:attemptId/feedback/regenerate), ambas con evaluations:grade y alcance de grupo; regenerar pasa el idioma activo del docente
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { Throttle } from "@nestjs/throttler";
 import { I18n, I18nContext } from "nestjs-i18n";
 
+import { Language } from "@/common/domain/value-objects/language";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
@@ -112,7 +113,7 @@ export class GradeFeedbackController {
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<GradeFeedbackRegenerationDTO>> {
     const result: GradeFeedbackRegenerationResult = await this._regenerateGradeFeedbackUseCase.execute(
-      new RegenerateGradeFeedbackCommand({ attemptId, actor: toEvaluationActor(currentUser) }),
+      new RegenerateGradeFeedbackCommand({ attemptId, actor: toEvaluationActor(currentUser), language: Language.createOrDefault(i18n.lang).value }),
     );
 
     return new APIResponseBuilder<GradeFeedbackRegenerationDTO>()

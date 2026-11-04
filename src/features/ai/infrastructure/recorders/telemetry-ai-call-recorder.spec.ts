@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de TelemetryAiCallRecorder
- * Descripción: Verifica que cada llamada completada o transmitida por el gateway de IA produzca exactamente un registro de telemetría (versión del prompt, tokens, latencia y TTFT en streams), el costo estimado con los precios de la configuración y el incremento local del consumo en caché
- * Versión: 1.0
+ * Descripción: Verifica que cada llamada completada o transmitida por el gateway de IA produzca exactamente un registro de telemetría (versión del prompt, tokens, latencia y TTFT en streams), el costo estimado con los precios de la configuración y el incremento local del consumo en caché; entrada estructurada de NOTES_ANALYSIS
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -66,7 +66,7 @@ describe("TelemetryAiCallRecorder", () => {
     const provider: FakeLlmProvider = new FakeLlmProvider("fake", { kind: "text", text: "{}", inputTokens: 1000, outputTokens: 500 });
     const { gateway, telemetry } = buildHarness(provider);
 
-    const result: AiResult = await gateway.complete("NOTES_ANALYSIS", { userPrompt: "Analiza" }, { userId: "user-1", userRole: "STUDENT", refType: "notes_analysis" });
+    const result: AiResult = await gateway.complete("NOTES_ANALYSIS", { scope: "all", notes: [{ lessonTitle: "L", moduleTitle: "M", text: "Analiza" }] }, { userId: "user-1", userRole: "STUDENT", refType: "notes_analysis" });
     await flushRecords();
 
     const entries: AiCallLogEntry[] = recordedEntries(telemetry);

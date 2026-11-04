@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Gateway de IA
- * Descripción: Fachada pública de la feature ai: construye el prompt versionado del caso de uso, elimina correos del contenido saliente, calcula su hash, verifica la cuota del usuario (con versión y hash para registrar el rechazo) y delega en AiOrchestrator para completar o transmitir la respuesta con respaldo determinista opcional; registra sin llamar a ningún proveedor ni consultar la cuota las llamadas que el consumidor bloquea por estar fuera de tema, expone los ajustes del tutor (ventana de historial y presupuesto de contexto), la salud de solo lectura de cada proveedor y el catálogo de proveedores con sus modelos conocidos (sin llamar a ninguno ni exponer credenciales) y la sonda manual de un proveedor con el prompt mínimo versionado, sin cuota y registrada en la telemetría con la referencia health_probe; v1.5: la sonda acepta el identificador heredado custom como external
- * Versión: 1.5
+ * Descripción: Fachada pública de la feature ai: construye el prompt versionado del caso de uso, elimina correos del contenido saliente, calcula su hash, verifica la cuota del usuario (con versión y hash para registrar el rechazo) y delega en AiOrchestrator para completar o transmitir la respuesta con respaldo determinista opcional; registra sin llamar a ningún proveedor ni consultar la cuota las llamadas que el consumidor bloquea por estar fuera de tema, expone los ajustes del tutor (ventana de historial y presupuesto de contexto), la salud de solo lectura de cada proveedor y el catálogo de proveedores con sus modelos conocidos (sin llamar a ninguno ni exponer credenciales) y la sonda manual de un proveedor con el prompt mínimo versionado, sin cuota y registrada en la telemetría con la referencia health_probe; v1.5: la sonda acepta el identificador heredado custom como external; v1.6: la versión registrada es la de la variante de plantilla construida y la cuota se verifica para quotaUserId/quotaUserRole cuando el consumidor separa quién solicita de a quién se atribuye la llamada
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -95,7 +95,11 @@ export class AiGateway {
   private async _assertWithinQuota(request: AiOrchestrationRequest): Promise<void> {
     const { options } = request;
 
-    await this._quotaGuard.assertWithinQuota(options.userId, options.userRole, request.useCase, {
+    const separateQuotaSubject: boolean = options.quotaUserId !== undefined || options.quotaUserRole !== undefined;
+    const quotaUserId: string | undefined = separateQuotaSubject ? options.quotaUserId : options.userId;
+    const quotaUserRole: string | undefined = separateQuotaSubject ? options.quotaUserRole : options.userRole;
+
+    await this._quotaGuard.assertWithinQuota(quotaUserId, quotaUserRole, request.useCase, {
       promptVersion: request.promptVersion,
       promptHash: request.promptHash,
       refType: options.refType,
@@ -115,7 +119,7 @@ export class AiGateway {
     return {
       useCase,
       prompt,
-      promptVersion: template.version,
+      promptVersion: template.versionFor?.(input) ?? template.version,
       promptHash: computePromptHash(prompt.system, prompt.messages),
       options,
     };

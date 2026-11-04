@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GradeEvaluationAnswerUseCase
- * Descripción: Calificación manual de una pregunta de un intento por un profesor en su alcance (o un administrador): bajo el candado por evaluación y estudiante y el compartido de estructura (los mismos del cierre y la entrega) cierra antes un intento en curso vencido, valida 0 ≤ puntaje ≤ puntos, exige comentario al sobrescribir un puntaje automático o manual existente y lo audita con IAuditRecorder en la misma transacción, recalcula puntaje, estado y nota (GRADED sin pendientes, publicación automática si showResultsImmediately) y publica los eventos tras confirmar; los intentos heredados (legacySource) se rechazan con 409 porque se califican por las rutas heredadas y su puntaje migrado no se recalcula desde las respuestas
- * Versión: 1.1
+ * Descripción: Calificación manual de una pregunta de un intento por un profesor en su alcance (o un administrador): bajo el candado por evaluación y estudiante y el compartido de estructura (los mismos del cierre y la entrega) cierra antes un intento en curso vencido, valida 0 ≤ puntaje ≤ puntos, exige comentario al sobrescribir un puntaje automático o manual existente y lo audita con IAuditRecorder en la misma transacción, recalcula puntaje, estado y nota (GRADED sin pendientes, publicación automática si showResultsImmediately) y publica los eventos tras confirmar; los intentos heredados (legacySource) se rechazan con 409 porque se califican por las rutas heredadas y su puntaje migrado no se recalcula desde las respuestas; la calificación lleva al docente como solicitante de la retroalimentación (rol e idioma activo)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -102,6 +102,7 @@ export class GradeEvaluationAnswerUseCase {
         now,
         publishImmediately: context.evaluation.autoPublishesGrades,
         passingGrade: this._gradingConfig.passingGrade,
+        requester: command.language ? { userId: command.actor.id, role: command.actor.role, language: command.language } : undefined,
       });
 
       await this._attemptsRepository.save(attempt, transaction);

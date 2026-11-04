@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Orquestador de proveedores de IA
- * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada; v1.4: resuelve el identificador heredado custom como external (sin repetir un proveedor en la cadena) y el modelo "default" o ausente con el modelo por defecto del proveedor; v1.5: la respuesta de respaldo del consumidor se registra como FALLBACK con el proveedor deterministic
- * Versión: 1.5
+ * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada; v1.4: resuelve el identificador heredado custom como external (sin repetir un proveedor en la cadena) y el modelo "default" o ausente con el modelo por defecto del proveedor; v1.5: la respuesta de respaldo del consumidor se registra como FALLBACK con el proveedor deterministic; v1.6: opciones con sujeto de cuota separado de la atribución (quotaUserId, quotaUserRole)
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -59,8 +59,12 @@ const FALLBACK_FAILED_CODE: string = "FALLBACK_FAILED";
 const OFF_TOPIC_CODE: string = "OFF_TOPIC";
 
 export interface AiCallOptions {
+  // Attribution of the call in the telemetry (and in the daily usage it adds to).
   readonly userId?: string;
   readonly userRole?: string;
+  // When either is set, the quota is checked for this user and role instead of userId/userRole (a staff action attributed to a student).
+  readonly quotaUserId?: string;
+  readonly quotaUserRole?: string;
   readonly fallback?: () => string | Promise<string>;
   readonly signal?: AbortSignal;
   readonly refType?: string;

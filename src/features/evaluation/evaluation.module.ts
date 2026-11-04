@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo EvaluationModule
- * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación (EVALUATION_GRADING_CONFIG_TOKEN, enlazada por la raíz de composición), vinculación de sesiones de simulación con eventos vía SimulationFacade (SimulationModule), casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (gateway de IA vía AiModule con respaldo determinista), puntaje práctico recalculado por repetición de la sesión en el servidor y lector de sesiones del simulador heredadas; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola y su conteo, notas de un estudiante, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión); registra el repositorio de lecturas por lotes para analítica que usa EvaluationFacade
- * Versión: 1.9
+ * Descripción: Registra la feature de evaluaciones: controladores /api/evaluations de autoría y de activación (/api/evaluations/:id/assignments, /api/evaluation-assignments, con GroupsModule para el alcance de grupos) y del estudiante (/api/my-evaluations, /api/evaluation-attempts), editor transaccional, cierre y calificación de intentos, configuración de calificación (EVALUATION_GRADING_CONFIG_TOKEN, enlazada por la raíz de composición), vinculación de sesiones de simulación con eventos vía SimulationFacade (SimulationModule), casos de uso, repositorios Prisma de evaluaciones y asignaciones, manejador de eventos en tiempo real y los adaptadores de retroalimentación (gateway de IA vía AiModule con respaldo determinista), puntaje práctico recalculado por repetición de la sesión en el servidor y lector de sesiones del simulador heredadas; retroalimentación de calificación asíncrona (repositorio Prisma de GradeFeedback, generación, regeneración y lecturas, manejadores @OnEvent y controlador de /api/evaluation-attempts/:attemptId/feedback y /api/evaluation-grading/attempts/:attemptId/feedback); calificación docente (/api/evaluation-grading: cola y su conteo, notas de un estudiante, vista, puntaje manual con auditoría, publicación; repositorio Prisma de lectura de calificación, alcance de calificación) y EvaluationFacade exportada (notas publicadas, estadísticas y pendientes de revisión); registra el repositorio de lecturas por lotes para analítica que usa EvaluationFacade; importa UsersModule para eliminar el nombre del estudiante de las respuestas enviadas al proveedor de IA
+ * Versión: 1.10
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -96,9 +96,10 @@ import { GradeFeedbackController } from "@/features/evaluation/presentation/cont
 import { StudentEvaluationsController } from "@/features/evaluation/presentation/controllers/student-evaluations.controller";
 import { GroupsModule } from "@/features/groups/groups.module";
 import { SimulationModule } from "@/features/simulation/simulation.module";
+import { UsersModule } from "@/features/users/users.module";
 
 @Module({
-  imports: [AuthModule, GroupsModule, AiModule, SimulationModule],
+  imports: [AuthModule, GroupsModule, AiModule, SimulationModule, UsersModule],
   controllers: [EvaluationsController, EvaluationAssignmentsController, StudentEvaluationsController, GradeFeedbackController, EvaluationGradingController],
   providers: [
     {

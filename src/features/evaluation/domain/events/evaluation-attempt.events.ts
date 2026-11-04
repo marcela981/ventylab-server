@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Eventos de dominio de intentos de evaluación
- * Descripción: Eventos emitidos al cerrar un intento: calificado por completo (gancho para la retroalimentación de E6) y nota publicada al estudiante (notificación en tiempo real grade:published), y nota recalculada por el profesor sobre un intento ya calificado (indica si la nota ya estaba publicada); la nota publicada se publica también como grade.published; intento concedido por un reinicio del docente (evaluation.attemptReset, notificación ATTEMPT_RESET)
- * Versión: 1.3
+ * Descripción: Eventos emitidos al cerrar un intento: calificado por completo (gancho para la retroalimentación de E6) y nota publicada al estudiante (notificación en tiempo real grade:published), y nota recalculada por el profesor sobre un intento ya calificado (indica si la nota ya estaba publicada); la nota publicada se publica también como grade.published; intento concedido por un reinicio del docente (evaluation.attemptReset, notificación ATTEMPT_RESET); v1.4: calificado y recalificado llevan el solicitante opcional de la retroalimentación (id, rol e idioma)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import {
   type EvaluationAttemptResetPayload,
   type GradePublishedPayload,
 } from "@/common/domain/events/domain-event-catalog";
+import { type GradeFeedbackRequester } from "@/features/evaluation/domain/value-objects/grade-feedback-requester";
 
 export class EvaluationAttemptGradedEvent extends DomainEvent {
   public readonly attemptId: string;
@@ -23,6 +24,7 @@ export class EvaluationAttemptGradedEvent extends DomainEvent {
   public readonly score: number;
   public readonly maxScore: number;
   public readonly grade: number;
+  public readonly requester?: GradeFeedbackRequester;
 
   public constructor({
     attemptId,
@@ -32,6 +34,7 @@ export class EvaluationAttemptGradedEvent extends DomainEvent {
     maxScore,
     grade,
     performedBy,
+    requester,
   }: {
     attemptId: string;
     evaluationId: string;
@@ -40,6 +43,7 @@ export class EvaluationAttemptGradedEvent extends DomainEvent {
     maxScore: number;
     grade: number;
     performedBy?: string;
+    requester?: GradeFeedbackRequester;
   }) {
     super({ performedBy });
     this.attemptId = attemptId;
@@ -48,6 +52,7 @@ export class EvaluationAttemptGradedEvent extends DomainEvent {
     this.score = score;
     this.maxScore = maxScore;
     this.grade = grade;
+    this.requester = requester;
   }
 }
 
@@ -122,6 +127,7 @@ export class EvaluationGradeUpdatedEvent extends DomainEvent {
   public readonly passed: boolean;
   public readonly published: boolean;
   public readonly publishedAt?: Date;
+  public readonly requester?: GradeFeedbackRequester;
 
   public constructor({
     attemptId,
@@ -133,6 +139,7 @@ export class EvaluationGradeUpdatedEvent extends DomainEvent {
     passed,
     publishedAt,
     performedBy,
+    requester,
   }: {
     attemptId: string;
     evaluationId: string;
@@ -143,6 +150,7 @@ export class EvaluationGradeUpdatedEvent extends DomainEvent {
     passed: boolean;
     publishedAt?: Date;
     performedBy?: string;
+    requester?: GradeFeedbackRequester;
   }) {
     super({ performedBy });
     this.attemptId = attemptId;
@@ -154,6 +162,7 @@ export class EvaluationGradeUpdatedEvent extends DomainEvent {
     this.passed = passed;
     this.published = publishedAt !== undefined;
     this.publishedAt = publishedAt;
+    this.requester = requester;
   }
 }
 

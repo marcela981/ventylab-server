@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de TelemetryAiQuotaGuard
- * Descripción: Verifica la cuota diaria de IA calculada desde la telemetría: límites por rol y caso de uso, consumo desde el inicio del día UTC con caché de corta duración, rechazo 429 con hora de reinicio a la medianoche UTC siguiente y registro QUOTA_EXCEEDED sin llamar al proveedor, y llamadas de sistema sin cuota
- * Versión: 1.0
+ * Descripción: Verifica la cuota diaria de IA calculada desde la telemetría: límites por rol y caso de uso, consumo desde el inicio del día UTC con caché de corta duración, rechazo 429 con hora de reinicio a la medianoche UTC siguiente y registro QUOTA_EXCEEDED sin llamar al proveedor, y llamadas de sistema sin cuota; entrada estructurada de NOTES_ANALYSIS
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -143,7 +143,7 @@ describe("TelemetryAiQuotaGuard", () => {
     const guard: TelemetryAiQuotaGuard = new TelemetryAiQuotaGuard(telemetry as unknown as AiTelemetryFacade, settings, new AiUsageCache());
     const gateway: AiGateway = new AiGateway(new AiOrchestrator(providerRegistry(provider), settings, recorder), guard);
 
-    const promise: Promise<unknown> = gateway.complete("NOTES_ANALYSIS", { userPrompt: "Analiza" }, { userId: "user-1", userRole: "STUDENT" });
+    const promise: Promise<unknown> = gateway.complete("NOTES_ANALYSIS", { scope: "all", notes: [{ lessonTitle: "L", moduleTitle: "M", text: "Analiza" }] }, { userId: "user-1", userRole: "STUDENT" });
 
     await expect(promise).rejects.toBeInstanceOf(AiQuotaExceededError);
     expect(provider.calls).toBe(0);

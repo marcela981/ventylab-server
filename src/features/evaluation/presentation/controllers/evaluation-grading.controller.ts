@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de calificación de evaluaciones
- * Descripción: Rutas /api/evaluation-grading del profesor o administrador con el permiso evaluations:grade: cola paginada de intentos PENDING_REVIEW en su alcance filtrable por evaluación, grupo o estudiante (cierra antes los intentos vencidos) y su conteo, lista paginada de todos los intentos no heredados de una evaluación filtrable por grupo y estados con conteos por estado, reinicio no destructivo del intento de un estudiante (concede un intento más, auditado y notificado), notas publicadas de un estudiante de sus grupos, vista de calificación de un intento, calificación manual de una pregunta (comentario obligatorio al sobrescribir, auditado), publicación idempotente de una nota y publicación masiva de una evaluación o grupo
- * Versión: 1.2
+ * Descripción: Rutas /api/evaluation-grading del profesor o administrador con el permiso evaluations:grade: cola paginada de intentos PENDING_REVIEW en su alcance filtrable por evaluación, grupo o estudiante (cierra antes los intentos vencidos) y su conteo, lista paginada de todos los intentos no heredados de una evaluación filtrable por grupo y estados con conteos por estado, reinicio no destructivo del intento de un estudiante (concede un intento más, auditado y notificado), notas publicadas de un estudiante de sus grupos, vista de calificación de un intento, calificación manual de una pregunta (comentario obligatorio al sobrescribir, auditado), publicación idempotente de una nota y publicación masiva de una evaluación o grupo; calificar pasa el idioma activo para la retroalimentación con IA
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } f
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { type Paginated } from "@/common/domain/utils/paginated";
+import { Language } from "@/common/domain/value-objects/language";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
@@ -273,7 +274,14 @@ export class EvaluationGradingController {
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<GradeEvaluationAnswerResponseDTO>> {
     const result: GradeEvaluationAnswerResult = await this._gradeEvaluationAnswerUseCase.execute(
-      new GradeEvaluationAnswerCommand({ attemptId, questionId, manualScore: dto.manualScore, comment: dto.comment, actor: toEvaluationActor(currentUser) }),
+      new GradeEvaluationAnswerCommand({
+        attemptId,
+        questionId,
+        manualScore: dto.manualScore,
+        comment: dto.comment,
+        actor: toEvaluationActor(currentUser),
+        language: Language.createOrDefault(i18n.lang).value,
+      }),
     );
 
     return new APIResponseBuilder<GradeEvaluationAnswerResponseDTO>()

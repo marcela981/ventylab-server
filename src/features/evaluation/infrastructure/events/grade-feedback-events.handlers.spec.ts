@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de GradeFeedbackEventsHandlers
- * Descripción: Verifica que los manejadores de retroalimentación escuchen de forma asíncrona, que la entrega del intento no espere ni se vea afectada por la generación, que con todos los proveedores del gateway de IA real fallando la retroalimentación quede READY con origen DETERMINISTIC (check 14) y que un error inesperado nunca se propague al emisor y solo registre el nombre del error. v1.4: el check 14 sale de la cuarentena: la espera sondea en tiempo real con un plazo explícito de 2 s; además, la recalificación de una nota publicada reemplaza la retroalimentación vigente
- * Versión: 1.4
+ * Descripción: Verifica que los manejadores de retroalimentación escuchen de forma asíncrona, que la entrega del intento no espere ni se vea afectada por la generación, que con todos los proveedores del gateway de IA real fallando la retroalimentación quede READY con origen DETERMINISTIC (check 14) y que un error inesperado nunca se propague al emisor y solo registre el nombre del error. v1.4: el check 14 sale de la cuarentena: la espera sondea en tiempo real con un plazo explícito de 2 s; además, la recalificación de una nota publicada reemplaza la retroalimentación vigente; el generador recibe una fachada de usuarios falsa; la entrega del estudiante lo atribuye y propaga su idioma
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -34,6 +34,7 @@ import { GradeFeedbackRegenerationRequestedEvent } from "@/features/evaluation/d
 import { type GradeFeedbackRecord } from "@/features/evaluation/domain/read-models/grade-feedback.read-model";
 import { AIGradeFeedbackGenerator } from "@/features/evaluation/infrastructure/ai/ai-grade-feedback-generator";
 import { GradeFeedbackEventsHandlers } from "@/features/evaluation/infrastructure/events/grade-feedback-events.handlers";
+import { type UsersFacade } from "@/features/users/application/services/users.facade";
 
 const EVENT_LISTENER_METADATA: string = "EVENT_LISTENER_METADATA";
 
@@ -77,7 +78,7 @@ function buildPipeline(feedbacks: InMemoryGradeFeedbacksRepository = new InMemor
       doubles.attemptsRepository,
       doubles.evaluationsRepository,
       feedbacks,
-      new AIGradeFeedbackGenerator(failingGateway(providers, aiCalls)),
+      new AIGradeFeedbackGenerator(failingGateway(providers, aiCalls), { getUserById: () => Promise.resolve(undefined) } as unknown as UsersFacade),
       doubles.gradingConfig,
       doubles.transactionManager,
       new NestEventBus(emitter),
@@ -148,7 +149,9 @@ describe("GradeFeedbackEventsHandlers", () => {
   it("stores READY DETERMINISTIC feedback when the language model fails, without affecting the submit result (check 14)", async () => {
     const { submit, feedbacks, providers, aiCalls } = buildPipeline();
 
-    const result: SubmitEvaluationAttemptResult = await submit.execute(new SubmitEvaluationAttemptCommand({ attemptId: "attempt-1", userId: "student-1" }));
+    const result: SubmitEvaluationAttemptResult = await submit.execute(
+      new SubmitEvaluationAttemptCommand({ attemptId: "attempt-1", userId: "student-1", userRole: "STUDENT", language: "en" }),
+    );
 
     expect(result).toMatchObject({ attemptId: "attempt-1", status: "GRADED", published: true, score: 1, maxScore: 2, grade: 2.5, passed: false });
     expect(feedbacks.current().some((record: GradeFeedbackRecord) => record.status === "READY")).toBe(false);
@@ -158,6 +161,7 @@ describe("GradeFeedbackEventsHandlers", () => {
     expect(providers.every((provider: FakeLlmProvider) => provider.calls > 0)).toBe(true);
     expect(aiCalls.records.length).toBeGreaterThan(0);
     expect(aiCalls.records.every((record: { status: string }) => record.status === "FALLBACK")).toBe(true);
+    expect(aiCalls.records.every((record: { userId?: string }) => record.userId === "student-1")).toBe(true);
     expect(feedbacks.current()).toHaveLength(3);
     expect(feedbacks.current().every((record: GradeFeedbackRecord) => record.status === "READY" && record.source === "DETERMINISTIC")).toBe(true);
     expect(readyOverall(feedbacks)?.content).toContain("2.5");
@@ -171,7 +175,9 @@ describe("GradeFeedbackEventsHandlers", () => {
 
     const { submit } = buildPipeline(feedbacks);
 
-    const result: SubmitEvaluationAttemptResult = await submit.execute(new SubmitEvaluationAttemptCommand({ attemptId: "attempt-1", userId: "student-1" }));
+    const result: SubmitEvaluationAttemptResult = await submit.execute(
+      new SubmitEvaluationAttemptCommand({ attemptId: "attempt-1", userId: "student-1", userRole: "STUDENT", language: "en" }),
+    );
 
     await waitUntil(() => errorLog.mock.calls.length > 0, "the logged generation error");
 

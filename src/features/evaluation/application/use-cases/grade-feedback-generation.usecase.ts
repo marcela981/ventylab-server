@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GenerateGradeFeedbackUseCase
- * Descripción: Genera la retroalimentación de un intento calificado: reserva bajo candado por intento una fila global PENDING (idempotente: omite si ya hay una READY o una PENDING de menos de 10 minutos, salvo que se complete una reserva de regeneración o que una recalificación pida reemplazar la vigente; las filas anteriores se marcan supersededAt, nunca se borran), arma el contexto sin datos personales, llama a IGradeFeedbackGenerator fuera de toda transacción (con el identificador del intento solo para la telemetría) y guarda en otra transacción la fila global y una por pregunta como READY con origen, proveedor y modelo, solo si la reserva sigue vigente y, tras confirmarse esa transacción, publica GradeFeedbackReadyEvent únicamente si la nota del intento ya está publicada; ante un error inesperado marca la reserva FAILED y relanza
- * Versión: 1.3
+ * Descripción: Genera la retroalimentación de un intento calificado: reserva bajo candado por intento una fila global PENDING (idempotente: omite si ya hay una READY o una PENDING de menos de 10 minutos, salvo que se complete una reserva de regeneración o que una recalificación pida reemplazar la vigente; las filas anteriores se marcan supersededAt, nunca se borran), arma el contexto sin datos personales, llama a IGradeFeedbackGenerator fuera de toda transacción (con el identificador del intento solo para la telemetría) y guarda en otra transacción la fila global y una por pregunta como READY con origen, proveedor y modelo, solo si la reserva sigue vigente y, tras confirmarse esa transacción, publica GradeFeedbackReadyEvent únicamente si la nota del intento ya está publicada; ante un error inesperado marca la reserva FAILED y relanza; v1.4: pasa al generador el estudiante dueño del intento (atribución) y el solicitante (idioma y cuota)
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -82,7 +82,7 @@ export class GenerateGradeFeedbackUseCase {
     try {
       const generated: GeneratedGradeFeedback = await this._generator.generate(
         buildGradeFeedbackContext({ evaluation: await this._loadEvaluation(attempt), attempt, passingGrade: this._gradingConfig.passingGrade }),
-        { attemptId: attempt.id },
+        { attemptId: attempt.id, studentId: attempt.userId, requester: command.requester },
       );
 
       if (!(await this._store(attempt.id, pendingId, generated))) {

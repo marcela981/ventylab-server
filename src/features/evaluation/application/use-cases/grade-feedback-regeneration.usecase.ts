@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso RegenerateGradeFeedbackUseCase
- * Descripción: Regeneración de la retroalimentación de un intento calificado por un docente con alcance sobre su grupo o un administrador: en una transacción bajo el candado por intento rechaza con 409 si ya hay una generación PENDING de menos de 10 minutos, marca las filas vigentes como superseded (no las borra: sus valoraciones siguen resolviendo su texto) e inserta una fila global PENDING, y tras confirmar publica GradeFeedbackRegenerationRequestedEvent para que la generación corra de forma asíncrona; responde de inmediato con el estado PENDING
- * Versión: 1.1
+ * Descripción: Regeneración de la retroalimentación de un intento calificado por un docente con alcance sobre su grupo o un administrador: en una transacción bajo el candado por intento rechaza con 409 si ya hay una generación PENDING de menos de 10 minutos, marca las filas vigentes como superseded (no las borra: sus valoraciones siguen resolviendo su texto) e inserta una fila global PENDING, y tras confirmar publica GradeFeedbackRegenerationRequestedEvent para que la generación corra de forma asíncrona; responde de inmediato con el estado PENDING; el evento lleva al docente como solicitante (rol e idioma activo)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -85,7 +85,12 @@ export class RegenerateGradeFeedbackUseCase {
       return reserved;
     });
 
-    this._eventBus.publish([new GradeFeedbackRegenerationRequestedEvent({ attemptId: attempt.id, feedbackId: pending.id, performedBy: command.actor.id })]);
+    this._eventBus.publish([new GradeFeedbackRegenerationRequestedEvent({
+      attemptId: attempt.id,
+      feedbackId: pending.id,
+      performedBy: command.actor.id,
+      requester: command.language ? { userId: command.actor.id, role: command.actor.role, language: command.language } : undefined,
+    })]);
 
     return new GradeFeedbackRegenerationResult({ attemptId: attempt.id, feedbackId: pending.id, status: pending.status });
   }

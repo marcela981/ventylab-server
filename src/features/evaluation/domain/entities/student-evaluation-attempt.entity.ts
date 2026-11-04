@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Agregado StudentEvaluationAttempt
- * Descripción: Intento de un estudiante en una evaluación con sus respuestas por pregunta: inicio con número de intento y plazo del servidor, autoguardado (solo en curso, no heredado y sin revisar) y revisión inmediata que guarda la respuesta con revealedAt y la bloquea, cierre con la calificación automática (puntaje por pregunta, estado GRADED o PENDING_REVIEW, nota, publicación inmediata opcional) y eventos de intento calificado y nota publicada; calificación docente por pregunta (puntaje manual 0–puntos, comentario obligatorio al sobrescribir un puntaje existente, recálculo de puntaje, estado y nota con eventos de calificado, publicado o actualizado) y publicación idempotente de la nota; los intentos heredados (legacySource) son de solo lectura para el estudiante pero el profesor puede calificarlos
- * Versión: 1.3
+ * Descripción: Intento de un estudiante en una evaluación con sus respuestas por pregunta: inicio con número de intento y plazo del servidor, autoguardado (solo en curso, no heredado y sin revisar) y revisión inmediata que guarda la respuesta con revealedAt y la bloquea, cierre con la calificación automática (puntaje por pregunta, estado GRADED o PENDING_REVIEW, nota, publicación inmediata opcional) y eventos de intento calificado y nota publicada; calificación docente por pregunta (puntaje manual 0–puntos, comentario obligatorio al sobrescribir un puntaje existente, recálculo de puntaje, estado y nota con eventos de calificado, publicado o actualizado) y publicación idempotente de la nota; los intentos heredados (legacySource) son de solo lectura para el estudiante pero el profesor puede calificarlos; v1.4: cerrar y calificar reciben el solicitante opcional de la retroalimentación y lo pasan a los eventos de calificado y recalificado
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -42,6 +42,7 @@ import {
   isClosedAttemptStatus,
   PENDING_REVIEW_ATTEMPT_STATUS,
 } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
+import { type GradeFeedbackRequester } from "@/features/evaluation/domain/value-objects/grade-feedback-requester";
 
 export const EVALUATION_ANSWER_AUDIT_TARGET: string = "evaluation_answers";
 export const EVALUATION_ATTEMPT_AUDIT_TARGET: string = "evaluation_attempts";
@@ -86,6 +87,7 @@ export interface CloseAttemptInput {
   readonly now: Date;
   readonly publishImmediately: boolean;
   readonly passingGrade: number;
+  readonly requester?: GradeFeedbackRequester;
 }
 
 export interface GradeAnswerInput {
@@ -97,6 +99,7 @@ export interface GradeAnswerInput {
   readonly now: Date;
   readonly publishImmediately: boolean;
   readonly passingGrade: number;
+  readonly requester?: GradeFeedbackRequester;
 }
 
 export interface AnswerScoreState extends Record<string, unknown> {
@@ -240,7 +243,7 @@ export class StudentEvaluationAttempt extends AggregateRoot {
     this._writeAnswer(questionId, answer, now, now);
   }
 
-  public close({ grading, submittedAt, now, publishImmediately, passingGrade }: CloseAttemptInput): void {
+  public close({ grading, submittedAt, now, publishImmediately, passingGrade, requester }: CloseAttemptInput): void {
     this._assertWritable();
 
     for (const questionGrade of grading.questions) {
@@ -271,6 +274,7 @@ export class StudentEvaluationAttempt extends AggregateRoot {
           maxScore: grading.maxScore,
           grade,
           performedBy: this.userId,
+          requester,
         }),
       );
 
@@ -292,7 +296,7 @@ export class StudentEvaluationAttempt extends AggregateRoot {
     }
   }
 
-  public gradeAnswer({ questions, questionId, manualScore, comment, graderId, now, publishImmediately, passingGrade }: GradeAnswerInput): AnswerGradeChange {
+  public gradeAnswer({ questions, questionId, manualScore, comment, graderId, now, publishImmediately, passingGrade, requester }: GradeAnswerInput): AnswerGradeChange {
     if (this.isInProgress) {
       throw new EvaluationAttemptNotGradableError();
     }
@@ -330,7 +334,7 @@ export class StudentEvaluationAttempt extends AggregateRoot {
 
     this._answers.set(questionId, answer);
     this._changedQuestionIds.add(questionId);
-    this._recompute(questions, { graderId, now, publishImmediately, passingGrade });
+    this._recompute(questions, { graderId, now, publishImmediately, passingGrade, requester });
 
     return { answerId: answer.id, override, before: scoreState(current), after: scoreState(answer) };
   }
@@ -394,7 +398,13 @@ export class StudentEvaluationAttempt extends AggregateRoot {
 
   private _recompute(
     questions: ReadonlyArray<EvaluationQuestionItem>,
-    { graderId, now, publishImmediately, passingGrade }: { graderId: string; now: Date; publishImmediately: boolean; passingGrade: number },
+    {
+      graderId,
+      now,
+      publishImmediately,
+      passingGrade,
+      requester,
+    }: { graderId: string; now: Date; publishImmediately: boolean; passingGrade: number; requester?: GradeFeedbackRequester },
   ): void {
     const wasGraded: boolean = this._props.status === GRADED_ATTEMPT_STATUS;
     const summary: AttemptScoreSummary = summarizeAttemptScores(questions, this._answers);
@@ -427,6 +437,7 @@ export class StudentEvaluationAttempt extends AggregateRoot {
           passed: hasPassedEvaluation(grade, passingGrade),
           publishedAt: this._props.gradePublishedAt,
           performedBy: graderId,
+          requester,
         }),
       );
 
@@ -442,6 +453,7 @@ export class StudentEvaluationAttempt extends AggregateRoot {
         maxScore: summary.maxScore,
         grade,
         performedBy: graderId,
+        requester,
       }),
     );
 
