@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Escaneo de secretos del historial git
-  Descripción: Cómo se ejecuta gitleaks en Docker sobre todo el historial git, reglas propias y listas de permitidos justificadas, resultado del escaneo (sin valores de secretos: regla, archivo, commit, primeros 4 caracteres y longitud) y secretos a rotar
-  Versión: 1.0
+  Descripción: Cómo se ejecuta gitleaks en Docker sobre todo el historial git, reglas propias y listas de permitidos justificadas, resultado del escaneo (sin valores de secretos: regla, archivo, commit, primeros 4 caracteres y longitud) y secretos a rotar. v1.1: la regla nombra los secretos vigentes y los del puente de autenticación retirado solo como nombres históricos
+  Versión: 1.1
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,7 +20,7 @@ Observed on 2026-10-13 on branch `main` (90 commits reachable from all refs; git
 ## Rules
 
 - gitleaks default rules (`[extend] useDefault = true`).
-- `ventylab-env-secret`: a value of 8+ characters assigned to one of this backend's secret variables (`JWT_SECRET`, `JWT_REFRESH_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_BRIDGE_SECRET`, `ADMIN_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANALYTICS_EXPORT_SALT`, `INFLUXDB_TOKEN`, `MQTT_PASSWORD`, `SMTP_PASS`, the AI provider keys, `GOOGLE_CLIENT_SECRET`, `SENTRY_DSN`, `POSTGRES_PASSWORD`).
+- `ventylab-env-secret`: a value of 8+ characters assigned to one of this backend's secret variables (`JWT_SECRET`, `JWT_REFRESH_SECRET`, `ADMIN_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANALYTICS_EXPORT_SALT`, `INFLUXDB_TOKEN`, `MQTT_PASSWORD`, `SMTP_PASS`, the AI provider keys, `GOOGLE_CLIENT_SECRET`, `SENTRY_DSN`, `POSTGRES_PASSWORD`). The rule in `.gitleaks.toml` also keeps the two variable names of the retired frontend token bridge, because the scanned history still contains them; no current code or configuration reads them.
 - `ventylab-postgres-url-password`: a `postgres(ql)://user:password@host` URL.
 
 Both custom rules were checked against a synthetic file: a realistic `JWT_SECRET` and a PostgreSQL URL with a password on a remote host were reported, while placeholders, `test-` values and a `localhost` URL were not.

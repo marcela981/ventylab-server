@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura del panel de administración
- * Descripción: Vistas de solo lectura del panel docente y administrativo: listado paginado de estudiantes con avance, detalle de actividad de un estudiante, listado de profesores y estadísticas de la plataforma
- * Versión: 1.0
+ * Descripción: Vistas de solo lectura del panel docente y administrativo: listado paginado de estudiantes con avance ponderado por lecciones publicadas, grupos activos, código, si el solicitante puede abrir el detalle y su filtro (búsqueda y grupos), detalle de actividad de un estudiante, listado de profesores y estadísticas de la plataforma
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,14 +17,58 @@ export const ADMIN_STUDENT_SORT_BY_VALUES: readonly ["name", "email", "lastActiv
 
 export type AdminStudentSortByValue = (typeof ADMIN_STUDENT_SORT_BY_VALUES)[number];
 
+export type AdminSortOrderValue = "asc" | "desc";
+
+interface AdminActor {
+  readonly id: string;
+  readonly role: string;
+}
+
 export interface GetAdminStudentsQuery {
-  page: number;
-  limit: number;
-  groupId?: string;
-  teacherId?: string;
-  search?: string;
-  sortBy: AdminStudentSortByValue;
-  sortOrder: "asc" | "desc";
+  readonly actor: AdminActor;
+  readonly page: number;
+  readonly limit: number;
+  readonly groupId?: string;
+  readonly myGroups: boolean;
+  readonly search?: string;
+  readonly sortBy: AdminStudentSortByValue;
+  readonly sortOrder: AdminSortOrderValue;
+}
+
+// groupIds undefined = no group filter; an empty list matches nobody.
+export interface AdminStudentFilter {
+  readonly search?: string;
+  readonly groupIds?: readonly string[];
+}
+
+export interface AdminStudentPageRequest {
+  readonly sortBy: "name" | "email";
+  readonly sortOrder: AdminSortOrderValue;
+  readonly skip: number;
+  readonly take: number;
+}
+
+export interface AdminGroupRef {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface AdminStudentRow {
+  readonly id: string;
+  readonly name?: string;
+  readonly email: string;
+  readonly studentCode?: string;
+  // Active STUDENT groups, for display.
+  readonly activeGroups: AdminGroupRef[];
+  // Every STUDENT group of the student, active or not, for the teacher scope.
+  readonly groupIds: string[];
+}
+
+export interface StudentProgressSnapshot {
+  readonly overallProgress: number;
+  readonly completedModules: number;
+  readonly totalModules: number;
+  readonly lastActivity?: Date;
 }
 
 export interface ModuleProgressRecord {
@@ -33,15 +77,14 @@ export interface ModuleProgressRecord {
   readonly lastAccessedAt?: Date;
 }
 
-export interface AdminStudentListItem {
+export interface AdminStudentListItem extends StudentProgressSnapshot {
   readonly id: string;
   readonly name?: string;
   readonly email: string;
-  readonly lastActivity?: Date;
-  readonly overallProgress: number;
-  readonly completedModules: number;
-  readonly totalModules: number;
+  readonly studentCode?: string;
   readonly groupName?: string;
+  readonly groups: AdminGroupRef[];
+  readonly canView: boolean;
 }
 
 export interface AdminPersonView {
@@ -185,6 +228,7 @@ export interface PlatformCounts {
   readonly totalAdmins: number;
   readonly totalGroups: number;
   readonly totalModules: number;
+  readonly publishedModules: number;
   readonly totalLessons: number;
   readonly totalEvaluations: number;
   readonly totalSimulatorSessions: number;

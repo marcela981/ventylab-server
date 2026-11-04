@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetStudentsUseCase
- * Descripción: Lista estudiantes paginados con filtros y orden
- * Versión: 1.0
+ * Descripción: Lista estudiantes paginados con filtros y orden, con su resumen de progreso y sus grupos STUDENT activos (dos lecturas por página, en paralelo)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,6 +11,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { type Paginated } from "@/common/domain/utils/paginated";
+import { type IStudentGroupsReader, STUDENT_GROUPS_READER_TOKEN, type StudentGroupRef } from "@/features/users/application/ports/student-groups-reader.interface";
 import { StudentResult } from "@/features/users/application/results/student.result";
 import { type User } from "@/features/users/domain/entities/user.entity";
 import {
@@ -28,14 +29,18 @@ export class GetStudentsUseCase {
     private readonly _usersRepository: IUserRepository,
     @Inject(USER_STATISTICS_REPOSITORY_TOKEN)
     private readonly _userStatisticsRepository: IUserStatisticsRepository,
+    @Inject(STUDENT_GROUPS_READER_TOKEN)
+    private readonly _studentGroups: IStudentGroupsReader,
   ) {}
 
   public async execute(query: Omit<GetUsersQuery, "roles">): Promise<Paginated<StudentResult>> {
     const students: Paginated<User> = await this._usersRepository.getAll({ ...query, roles: [STUDENT_ROLE_VALUE] });
 
-    const summaries: StudentProgressSummary[] = await this._userStatisticsRepository.getStudentProgressSummaries(
-      students.data.map((student: User) => student.id),
-    );
+    const studentIds: string[] = students.data.map((student: User) => student.id);
+    const [summaries, groupsByStudentId]: [StudentProgressSummary[], ReadonlyMap<string, StudentGroupRef[]>] = await Promise.all([
+      this._userStatisticsRepository.getStudentProgressSummaries(studentIds),
+      this._studentGroups.getActiveGroups(studentIds),
+    ]);
 
     const summaryByStudentId: Map<string, StudentProgressSummary> = new Map(
       summaries.map((summary: StudentProgressSummary): [string, StudentProgressSummary] => [summary.studentId, summary]),
@@ -46,6 +51,7 @@ export class GetStudentsUseCase {
         new StudentResult({
           user: student,
           progress: summaryByStudentId.get(student.id) ?? StudentProgressSummary.empty(student.id),
+          groups: groupsByStudentId.get(student.id) ?? [],
         }),
     );
   }

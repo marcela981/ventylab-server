@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO UpdateMeDTO
- * Descripción: Valida el cuerpo de la actualización del perfil
- * Versión: 1.0
+ * Descripción: Valida el cuerpo de la actualización del perfil (la imagen solo como URL http(s) de hasta 2048 caracteres)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,7 +12,10 @@ import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsOptional, IsString, Matches, MaxLength, MinLength, ValidateIf } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
 
-const IMAGE_URL_REGEX: RegExp = /^(https?:\/\/\S+|data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+)$/;
+// Uploaded photos go through PUT /api/users/me/avatar; base64 data URLs are no longer accepted here (rows already stored are kept).
+const IMAGE_URL_REGEX: RegExp = /^https?:\/\/\S+$/;
+
+const IMAGE_URL_MAX_LENGTH: number = 2048;
 
 export class UpdateMeDTO {
   @ApiPropertyOptional({
@@ -28,13 +31,15 @@ export class UpdateMeDTO {
   public name?: string;
 
   @ApiPropertyOptional({
-    description: "Profile image as an http(s) URL or a base64 image data URL. Send null or an empty string to remove it.",
+    description: "Profile image as an http(s) URL of at most 2048 characters (upload a photo with PUT /api/users/me/avatar). Send null or an empty string to remove it.",
     example: "https://example.com/avatar.png",
     nullable: true,
     type: String,
+    maxLength: IMAGE_URL_MAX_LENGTH,
   })
   @ValidateIf((dto: UpdateMeDTO) => dto.image !== undefined && dto.image !== null && dto.image !== "")
   @IsString({ message: i18nValidationMessage("users.update_me.image_must_be_valid_url") })
+  @MaxLength(IMAGE_URL_MAX_LENGTH, { message: i18nValidationMessage("users.update_me.image_too_long") })
   @Matches(IMAGE_URL_REGEX, { message: i18nValidationMessage("users.update_me.image_must_be_valid_url") })
   public image?: string | null;
 }

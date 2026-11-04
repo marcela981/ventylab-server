@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GoogleLoginUseCase
- * Descripción: Verifica el ID token de Google, exige correo verificado y dominio permitido, crea o vincula la cuenta con UsersFacade, rechaza cuentas inactivas y emite el mismo par de tokens que el inicio de sesión local
- * Versión: 1.0
+ * Descripción: Verifica el ID token de Google, exige correo verificado y dominio permitido, crea o vincula la cuenta con UsersFacade, rechaza cuentas inactivas y emite el mismo par de tokens que el inicio de sesión local, con la imagen del usuario resuelta (foto subida o imagen guardada)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -79,7 +79,7 @@ export class GoogleLoginUseCase {
       throw new UserInactiveError();
     }
 
-    return await issueLoginResult(this._tokenGenerator, user);
+    return await issueLoginResult(this._tokenGenerator, { ...user, image: await this._usersFacade.resolveImage(user) });
   }
 
   private _isDomainAllowed(email: string): boolean {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelo de lectura UserAccount
- * Descripción: Vista de solo lectura de la cuenta de un usuario que UsersFacade entrega a otras features (rol, estado activo, vínculo con Google, revocación de refresh tokens y código de estudiante)
- * Versión: 1.1
+ * Descripción: Vista de solo lectura de la cuenta de un usuario que UsersFacade entrega a otras features (rol, estado activo, vínculo con Google, revocación de refresh tokens, código de estudiante y la media de la foto de perfil subida)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ export interface UserAccount {
   name?: string;
   role: UserRoleValue;
   image?: string;
+  avatarMediaId?: string;
   isActive: boolean;
   googleId?: string;
   hasPassword: boolean;

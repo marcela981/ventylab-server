@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la política de acceso a reservas
- * Descripción: Verifica quién puede reservar para un titular, quién puede cancelar quién puede desplazar la reserva de otro titular y la relación de un usuario con una reserva
- * Versión: 1.1
+ * Descripción: Verifica quién puede reservar para un titular (seis casos del docente: grupo creado o supervisado sí; grupo ajeno, grupo inactivo u otro usuario no; ADMIN siempre), quién puede cancelar quién puede desplazar la reserva de otro titular y la relación de un usuario con una reserva
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -21,7 +21,7 @@ import {
 import { ReservationHolder } from "@/features/reservations/domain/value-objects/reservation-holder";
 import { ReservationWindow } from "@/features/reservations/domain/value-objects/reservation-window";
 
-const NO_FACTS: HolderGroupFacts = { leadsGroup: false, supervisesGroup: false, isStudentGroup: true };
+const NO_FACTS: HolderGroupFacts = { leadsGroup: false, managesGroup: false, isStudentGroup: true };
 
 function actor(userId: string, role: ReservationPartyRole): ReservationActor {
   return { userId, role };
@@ -45,14 +45,28 @@ describe("reservation access policy", () => {
       canReserveFor(actor("s1", "STUDENT"), ReservationHolder.forUser("s2"), NO_FACTS),
       canReserveFor(actor("s1", "STUDENT"), group, { ...NO_FACTS, leadsGroup: true }),
       canReserveFor(actor("s1", "STUDENT"), group, NO_FACTS),
-      canReserveFor(actor("t1", "TEACHER"), group, { ...NO_FACTS, supervisesGroup: true }),
+      canReserveFor(actor("t1", "TEACHER"), group, { ...NO_FACTS, managesGroup: true }),
       canReserveFor(actor("t1", "TEACHER"), group, NO_FACTS),
-      canReserveFor(actor("t1", "TEACHER"), group, { ...NO_FACTS, supervisesGroup: true, isStudentGroup: false }),
+      canReserveFor(actor("t1", "TEACHER"), group, { ...NO_FACTS, managesGroup: true, isStudentGroup: false }),
       canReserveFor(actor("a1", "ADMIN"), ReservationHolder.forUser("s2"), NO_FACTS),
       canReserveFor(actor("a1", "ADMIN"), group, NO_FACTS),
     ];
 
     expect(decisions).toEqual([true, false, true, false, true, false, false, true, true]);
+  });
+
+  it.each([
+    ["a group they created or supervise", ReservationHolder.forGroup("group-1"), { ...NO_FACTS, managesGroup: true }, true],
+    ["a group they neither created nor supervise", ReservationHolder.forGroup("group-1"), NO_FACTS, false],
+    ["an inactive or teacher group they manage", ReservationHolder.forGroup("group-1"), { ...NO_FACTS, managesGroup: true, isStudentGroup: false }, false],
+    ["themselves", ReservationHolder.forUser("t1"), NO_FACTS, true],
+    ["another user", ReservationHolder.forUser("s2"), { ...NO_FACTS, managesGroup: true }, false],
+  ])("lets a teacher reserve for %s", (_label: string, holder: ReservationHolder, facts: HolderGroupFacts, expected: boolean) => {
+    expect(canReserveFor(actor("t1", "TEACHER"), holder, facts)).toBe(expected);
+  });
+
+  it("lets an administrator reserve for any user or group without group facts", () => {
+    expect([canReserveFor(actor("a1", "ADMIN"), ReservationHolder.forUser("s2"), NO_FACTS), canReserveFor(actor("a1", "ADMIN"), ReservationHolder.forGroup("group-9"), { ...NO_FACTS, isStudentGroup: false })]).toEqual([true, true]);
   });
 
   it("decides who can cancel a group reservation", () => {
@@ -62,7 +76,7 @@ describe("reservation access policy", () => {
       canCancel(actor("s1", "STUDENT"), reservation, NO_FACTS),
       canCancel(actor("s2", "STUDENT"), reservation, NO_FACTS),
       canCancel(actor("s3", "STUDENT"), reservation, { ...NO_FACTS, leadsGroup: true }),
-      canCancel(actor("t1", "TEACHER"), reservation, { ...NO_FACTS, supervisesGroup: true }),
+      canCancel(actor("t1", "TEACHER"), reservation, { ...NO_FACTS, managesGroup: true }),
       canCancel(actor("t2", "TEACHER"), reservation, NO_FACTS),
       canCancel(actor("a1", "ADMIN"), reservation, NO_FACTS),
     ];

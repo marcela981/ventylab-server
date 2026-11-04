@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Adaptador JwtTokenGenerator
  * Descripción: Implementa ITokenGenerator con @nestjs/jwt usando los secretos y expiraciones configurados; la verificación del token de refresco expone su iat
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,7 +13,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 
 import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
-import { type ITokenGenerator, type JwtPayload, type RefreshTokenClaims } from "@/features/auth/application/ports/token-generator.interface";
+import { type ITokenGenerator, type JwtPayload, type RefreshTokenClaims, type RefreshTokenOptions } from "@/features/auth/application/ports/token-generator.interface";
 import {
   InvalidTokenError,
   RefreshTokenExpiredError,
@@ -50,8 +50,11 @@ export class JwtTokenGenerator implements ITokenGenerator {
     }
   }
 
-  public async generateRefreshToken(payload: JwtPayload): Promise<string> {
-    return await this._jwtService.signAsync(JwtTokenGenerator._toClaims(payload), {
+  public async generateRefreshToken(payload: JwtPayload, options: RefreshTokenOptions = {}): Promise<string> {
+    // jsonwebtoken keeps a payload iat and computes exp from it.
+    const claims: JwtPayload & { iat?: number } = { ...JwtTokenGenerator._toClaims(payload), ...(options.issuedAtSeconds !== undefined ? { iat: options.issuedAtSeconds } : {}) };
+
+    return await this._jwtService.signAsync(claims, {
       secret: this._configService.get("JWT_REFRESH_SECRET", { infer: true }),
       expiresIn: this._configService.get("JWT_REFRESH_EXPIRES_IN", { infer: true }),
     });

@@ -1,15 +1,16 @@
 /*
  * Funcionalidad: Pruebas de GroupsFacade
- * Descripción: Verifica las lecturas públicas de la feature de grupos con repositorios simulados: grupo STUDENT del usuario, miembros, liderazgo, pertenencia, grupos supervisados por un profesor, alcance de gestión y resumen de un grupo; los grupos STUDENT gestionables por actor con una sola lectura del repositorio de analítica, si un actor gestiona algún grupo STUDENT de un estudiante sin bucle por grupo y que las membresías de estudiantes se leen del repositorio de analítica
- * Versión: 1.3
+ * Descripción: Verifica las lecturas públicas de la feature de grupos con repositorios simulados: grupo STUDENT del usuario, miembros, liderazgo, pertenencia, grupos supervisados por un profesor, alcance de gestión y resumen de un grupo; los grupos STUDENT gestionables por actor con una sola lectura del repositorio de analítica, si un actor gestiona algún grupo STUDENT de un estudiante sin bucle por grupo que las membresías de estudiantes se leen del repositorio de analítica los grupos STUDENT activos de varios estudiantes agrupados por estudiante en una sola lectura y la política de lectura de un estudiante (ADMIN todos, docente solo los de sus grupos, estudiante ninguno, 403 con assertCanViewStudent)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { GroupsFacade, type GroupMemberSummary, type GroupSummary } from "@/features/groups/application/services/groups.facade";
+import { GroupsFacade, type GroupMemberSummary, type GroupSummary, type StudentViewScope } from "@/features/groups/application/services/groups.facade";
 import { buildDoubles, buildGroup, buildMember, type GroupsDoubles } from "@/features/groups/application/testing/groups-test-doubles-spec";
+import { StudentOutOfScopeError } from "@/features/groups/domain/groups.errors";
 import { type StudentGroupSummaryView } from "@/features/groups/domain/read-models/group.read-model";
 import {
   type IGroupAnalyticsRepository,
@@ -91,6 +92,26 @@ describe("GroupsFacade", () => {
     expect(ids).toEqual(["group-1"]);
   });
 
+  it("groups the active student groups of several students by student with one repository read", async () => {
+    const doubles: GroupsDoubles = defaultDoubles();
+    const read: jest.Mock = doubles.groupsRepository.getActiveStudentGroupsOfUsers as jest.Mock;
+
+    read.mockResolvedValue([
+      { userId: "student-1", group: { id: "group-1", name: "Grupo A" } },
+      { userId: "student-2", group: { id: "group-2", name: "Grupo B" } },
+      { userId: "student-1", group: { id: "group-3", name: "Grupo C" } },
+    ]);
+
+    const groups: Map<string, { id: string; name: string }[]> = await buildFacade(doubles).getActiveStudentGroupsOfUsers(["student-1", "student-2", "student-3"]);
+
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledWith(["student-1", "student-2", "student-3"]);
+    expect(Object.fromEntries(groups)).toEqual({
+      "student-1": [{ id: "group-1", name: "Grupo A" }, { id: "group-3", name: "Grupo C" }],
+      "student-2": [{ id: "group-2", name: "Grupo B" }],
+    });
+  });
+
   it("returns the student group of a user", async () => {
     const doubles: GroupsDoubles = defaultDoubles();
     const summary: StudentGroupSummaryView = { id: "group-1", name: "Group", members: [], supervisingGroups: [] };
@@ -152,5 +173,37 @@ describe("GroupsFacade", () => {
     const facade: GroupsFacade = buildFacade(defaultDoubles());
 
     expect(await facade.getStudentMemberships()).toEqual(MEMBERSHIPS);
+  });
+
+  describe("student view policy", () => {
+    it("lets an administrator read any user without reading groups", async () => {
+      const analytics: jest.Mocked<IGroupAnalyticsRepository> = buildAnalyticsRepository();
+      const facade: GroupsFacade = buildFacade(defaultDoubles(), analytics);
+
+      const scope: StudentViewScope = await facade.assertCanViewStudent({ id: "admin-1", role: "ADMIN" }, "anyone");
+
+      expect(scope).toEqual({});
+      expect(analytics.getStudentGroupIds).not.toHaveBeenCalled();
+    });
+
+    it("lets a teacher read a student of a group they created or supervise and returns those groups", async () => {
+      const facade: GroupsFacade = buildFacade(defaultDoubles());
+
+      const scope: StudentViewScope = await facade.assertCanViewStudent({ id: "teacher-1", role: "TEACHER" }, "student-1");
+
+      expect(scope).toEqual({ groupIds: ["group-1"] });
+      expect(await facade.canViewStudent({ id: "teacher-1", role: "TEACHER" }, "student-1")).toBe(true);
+    });
+
+    it.each([
+      ["a teacher without groups", { id: "teacher-2", role: "TEACHER" }, "student-1"],
+      ["a teacher for a student outside their groups", { id: "teacher-1", role: "TEACHER" }, "student-9"],
+      ["a student", { id: "student-2", role: "STUDENT" }, "student-1"],
+    ])("refuses %s with StudentOutOfScopeError", async (_label: string, actor: { id: string; role: string }, userId: string) => {
+      const facade: GroupsFacade = buildFacade(defaultDoubles());
+
+      await expect(facade.assertCanViewStudent(actor, userId)).rejects.toBeInstanceOf(StudentOutOfScopeError);
+      expect(await facade.canViewStudent(actor, userId)).toBe(false);
+    });
   });
 });

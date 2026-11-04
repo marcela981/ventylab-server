@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO APIResponse
- * Descripción: Define la forma del envoltorio estándar de respuesta y de su paginación para la documentación y el tipado
- * Versión: 1.0
+ * Descripción: Define la forma del envoltorio estándar de respuesta y de su paginación para la documentación y el tipado; next y previous se documentan como número o null
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,10 +23,10 @@ export class APIPagination {
   @ApiProperty({ description: "Number of items per page", example: 10 })
   public limit: number;
 
-  @ApiProperty({ description: "Next page number", example: 3, nullable: true })
+  @ApiProperty({ description: "Next page number", example: 3, nullable: true, type: Number })
   public next: number | null;
 
-  @ApiProperty({ description: "Previous page number", example: 1, nullable: true })
+  @ApiProperty({ description: "Previous page number", example: 1, nullable: true, type: Number })
   public previous: number | null;
 }
 

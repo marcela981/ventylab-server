@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Datos adicionales solo para las pruebas de carga
- * Descripción: Sobre una base local ya sembrada con demo:seed crea, de forma idempotente, un grupo de 30 estudiantes de carga supervisado por el equipo docente de la demostración, clona a cada estudiante el progreso de un estudiante de la demostración, clona al grupo las asignaciones de evaluación del grupo A y crea una reserva de grupo activa del ventilador para que los 30 estudiantes entren a la sala ventilator; se niega a correr fuera de localhost o sin la marca de base de demostración e imprime en la última línea un JSON con los identificadores que usan los scripts de carga
- * Versión: 1.0
+ * Descripción: Sobre una base local ya sembrada con demo:seed crea, de forma idempotente, un grupo de LOAD_STUDENT_COUNT estudiantes de carga (30 por defecto) supervisado por el equipo docente de la demostración, clona a cada estudiante el progreso de un estudiante de la demostración, clona al grupo las asignaciones de evaluación del grupo A y crea una reserva de grupo activa del ventilador para que esos estudiantes entren a la sala ventilator; se niega a correr fuera de localhost o sin la marca de base de demostración e imprime en la última línea un JSON con los identificadores que usan los scripts de carga
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,7 +15,8 @@ import { type Prisma, PrismaClient } from "@prisma/client";
 import { DEMO_STUDENT_GROUPS, DEMO_STUDENTS, DEMO_TEACHER_GROUP, DEMO_TEACHERS, type DemoPerson } from "../../prisma/demo/demo-cast";
 import { DEMO_MARKER_KEY, DEMO_MARKER_VALUE, DEMO_PASSWORD, demoPasswordHash } from "../../prisma/demo/demo-support";
 
-const LOAD_STUDENT_COUNT: number = 30;
+const DEFAULT_LOAD_STUDENT_COUNT: number = 30;
+const MAX_LOAD_STUDENT_COUNT: number = 5000;
 const LOAD_EMAIL_DOMAIN: string = "ventylab.load";
 const LOCAL_HOSTS: readonly string[] = ["127.0.0.1", "localhost", "::1", "[::1]"];
 const RESERVATION_MINUTES: number = 90;
@@ -27,8 +28,30 @@ function loadId(name: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
+function readStudentCount(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === "") {
+    return DEFAULT_LOAD_STUDENT_COUNT;
+  }
+
+  const count: number = Number(raw);
+
+  if (!Number.isInteger(count) || count < 1 || count > MAX_LOAD_STUDENT_COUNT) {
+    throw new Error(`LOAD_STUDENT_COUNT must be an integer between 1 and ${MAX_LOAD_STUDENT_COUNT} (got "${raw}")`);
+  }
+
+  return count;
+}
+
+const LOAD_STUDENT_COUNT: number = readStudentCount(process.env.LOAD_STUDENT_COUNT);
+// Two digits up to 99 students (the original 30-student emails and names); wider only when the count needs it.
+const LOAD_INDEX_WIDTH: number = Math.max(2, String(LOAD_STUDENT_COUNT).length);
+
+function loadIndex(index: number): string {
+  return String(index + 1).padStart(LOAD_INDEX_WIDTH, "0");
+}
+
 function loadStudentEmail(index: number): string {
-  return `load-student-${String(index + 1).padStart(2, "0")}@${LOAD_EMAIL_DOMAIN}`;
+  return `load-student-${loadIndex(index)}@${LOAD_EMAIL_DOMAIN}`;
 }
 
 function assertLocalDatabase(databaseUrl: string | undefined): string {
@@ -75,8 +98,8 @@ async function main(): Promise<void> {
 
     const passwordHash: string = await demoPasswordHash();
     const teacher: DemoPerson = DEMO_TEACHERS[0];
-    const groupId: string = loadId("group:load-30");
-    const reservationId: string = loadId("reservation:load-30");
+    const groupId: string = loadId(`group:load-${LOAD_STUDENT_COUNT}`);
+    const reservationId: string = loadId(`reservation:load-${LOAD_STUDENT_COUNT}`);
     const now: Date = new Date();
     const students: { id: string; email: string; source: DemoPerson }[] = Array.from({ length: LOAD_STUDENT_COUNT }, (_: unknown, index: number) => ({
       id: loadId(`user:student-${index + 1}`),
@@ -89,7 +112,7 @@ async function main(): Promise<void> {
         const row: Prisma.UserCreateInput = {
           id: student.id,
           email: student.email,
-          name: `Load student ${String(index + 1).padStart(2, "0")}`,
+          name: `Load student ${loadIndex(index)}`,
           role: "STUDENT",
           password: passwordHash,
           emailVerified: now,
@@ -101,7 +124,7 @@ async function main(): Promise<void> {
 
       const group: Prisma.GroupUncheckedCreateInput = {
         id: groupId,
-        name: "Load test group (30 students)",
+        name: `Load test group (${LOAD_STUDENT_COUNT} students)`,
         description: "Created only by scripts/load/seed-load-data.ts for load testing",
         type: "STUDENT",
         depth: 0,
@@ -168,7 +191,7 @@ async function main(): Promise<void> {
       await db.reservation.upsert({ where: { id: reservationId }, create: reservation, update: reservation });
 
       return progressRows;
-    }, { maxWait: 10_000, timeout: 120_000 });
+    }, { maxWait: 10_000, timeout: Math.max(120_000, LOAD_STUDENT_COUNT * 1_000) });
 
     console.log(`Load data ready: ${students.length} students in group ${groupId}, ${cloned} progress rows cloned, active group reservation ${reservationId} for ${RESERVATION_MINUTES} min`);
     console.log(JSON.stringify({

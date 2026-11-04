@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Cálculos del panel de administración
- * Descripción: Funciones puras que resumen el avance por módulos de un estudiante (promedio redondeado, módulos completados, última actividad), ordenan el listado por campos calculados y derivan las estadísticas del estudiante y de la plataforma
- * Versión: 1.0
+ * Descripción: Funciones puras que resumen el avance por módulos de un estudiante (promedio redondeado, módulos completados, última actividad), ordenan los identificadores del listado por progreso o última actividad (orden estable: el empate conserva el orden por nombre) derivan las estadísticas del estudiante y de la plataforma y calculan el inicio del día de America/Bogota (corte de "hoy")
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,22 +12,30 @@ import {
   type AdminEvaluationAttemptView,
   type AdminModuleProgressView,
   type AdminStudentActivity,
-  type AdminStudentListItem,
-  type AdminStudentSortByValue,
+  type AdminSortOrderValue,
   type AdminStudentStatistics,
   type ModuleProgressRecord,
   type PlatformCounts,
   type PlatformStatistics,
+  type StudentProgressSnapshot,
 } from "@/features/admin/domain/read-models/admin-dashboard.read-model";
+import { localDateToUtcMidnight, toBogotaLocalDate } from "@/features/progress/domain/services/activity-calendar";
 
-export interface ModuleProgressSummary {
+// Colombia keeps UTC−05:00 all year, so Bogotá midnight is 05:00 UTC of the same calendar day.
+const BOGOTA_MIDNIGHT_UTC_OFFSET_MS: number = 5 * 60 * 60 * 1000;
+
+export function startOfBogotaDay(instant: Date): Date {
+  return new Date(localDateToUtcMidnight(toBogotaLocalDate(instant)).getTime() + BOGOTA_MIDNIGHT_UTC_OFFSET_MS);
+}
+
+interface ModuleProgressSummary {
   readonly overallProgress: number;
   readonly completedModules: number;
   readonly totalModules: number;
   readonly lastActivity?: Date;
 }
 
-export function summarizeModuleProgress(records: ModuleProgressRecord[]): ModuleProgressSummary {
+function summarizeModuleProgress(records: ModuleProgressRecord[]): ModuleProgressSummary {
   const totalModules: number = records.length;
   let lastActivity: Date | undefined;
 
@@ -48,17 +56,19 @@ export function summarizeModuleProgress(records: ModuleProgressRecord[]): Module
   };
 }
 
-export function sortStudentsByComputedField(
-  students: AdminStudentListItem[],
-  sortBy: AdminStudentSortByValue,
-  sortOrder: "asc" | "desc",
-): AdminStudentListItem[] {
-  const valueOf = (student: AdminStudentListItem): number =>
-    sortBy === "lastActivity" ? (student.lastActivity?.getTime() ?? 0) : student.overallProgress;
+export function sortStudentIdsByComputedField(
+  ids: readonly string[],
+  snapshots: ReadonlyMap<string, StudentProgressSnapshot>,
+  sortBy: "lastActivity" | "progress",
+  sortOrder: AdminSortOrderValue,
+): string[] {
+  const valueOf = (id: string): number => {
+    const snapshot: StudentProgressSnapshot | undefined = snapshots.get(id);
 
-  return [...students].sort((a: AdminStudentListItem, b: AdminStudentListItem): number =>
-    sortOrder === "asc" ? valueOf(a) - valueOf(b) : valueOf(b) - valueOf(a),
-  );
+    return sortBy === "lastActivity" ? (snapshot?.lastActivity?.getTime() ?? 0) : (snapshot?.overallProgress ?? 0);
+  };
+
+  return [...ids].sort((a: string, b: string): number => (sortOrder === "asc" ? valueOf(a) - valueOf(b) : valueOf(b) - valueOf(a)));
 }
 
 export function computeStudentStatistics(activity: AdminStudentActivity, achievementsUnlocked: number): AdminStudentStatistics {
@@ -97,7 +107,7 @@ export function buildPlatformStatistics(counts: PlatformCounts, generatedAt: Dat
     totalAdmins: counts.totalAdmins,
     totalGroups: counts.totalGroups,
     totalModules: counts.totalModules,
-    publishedModules: counts.totalModules,
+    publishedModules: counts.publishedModules,
     totalLessons: counts.totalLessons,
     totalEvaluations: counts.totalEvaluations,
     totalSimulatorSessions: counts.totalSimulatorSessions,

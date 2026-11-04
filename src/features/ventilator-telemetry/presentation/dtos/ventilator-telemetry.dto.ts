@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO de respuesta de la telemetría del ventilador
- * Descripción: Respuestas de las métricas del pipeline (tasas, contadores incluidos los duplicados y los descartes del búfer y resumen de percentiles por tipo de latencia), y de las tramas grabadas de una reserva
- * Versión: 1.3
+ * Descripción: Respuestas de las métricas del pipeline (tasas, contadores incluidos los duplicados y los descartes del búfer y resumen de percentiles por tipo de latencia), de las tramas grabadas de una reserva y del resumen de cada reserva grabada de un usuario
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,8 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { ApiProperty } from "@nestjs/swagger";
+
+import { RESERVATION_STATUS_VALUES } from "@/features/reservations/domain/value-objects/reservation-status";
 
 export class LatencySummaryDTO {
   @ApiProperty({ description: "Number of retained samples", example: 3600 })
@@ -180,5 +182,42 @@ export class TelemetryRecordingDTO {
     this.sampleRateHz = sampleRateHz;
     this.chunkCount = chunkCount;
     this.frames = frames;
+  }
+}
+
+export class TelemetryRecordingSummaryDTO {
+  @ApiProperty({ description: "Recorded reservation", example: "0192f3a4-5b6c-7d8e-9f01-23456789abcd" })
+  public reservationId: string;
+
+  @ApiProperty({ description: "Whether the reservation is held by a user or a group", enum: ["USER", "GROUP"], example: "USER" })
+  public holderType: string;
+
+  @ApiProperty({ description: "Holder group of a group reservation", example: "cm5group01", nullable: true, type: String })
+  public groupId: string | null;
+
+  @ApiProperty({ description: "Reservation start", example: "2026-10-30T14:00:00.000Z" })
+  public startsAt: Date;
+
+  @ApiProperty({ description: "Reservation end", example: "2026-10-30T14:30:00.000Z" })
+  public endsAt: Date;
+
+  @ApiProperty({ description: "Reservation status", enum: RESERVATION_STATUS_VALUES, example: "COMPLETED" })
+  public status: string;
+
+  @ApiProperty({ description: "Number of stored chunks", example: 12 })
+  public chunkCount: number;
+
+  @ApiProperty({ description: "Recording sample rate in Hz", example: 20, nullable: true, type: Number })
+  public sampleRateHz: number | null;
+
+  public constructor(fields: TelemetryRecordingSummaryDTO) {
+    this.reservationId = fields.reservationId;
+    this.holderType = fields.holderType;
+    this.groupId = fields.groupId;
+    this.startsAt = fields.startsAt;
+    this.endsAt = fields.endsAt;
+    this.status = fields.status;
+    this.chunkCount = fields.chunkCount;
+    this.sampleRateHz = fields.sampleRateHz;
   }
 }

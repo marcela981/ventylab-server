@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso LoginUseCase
- * Descripción: Verifica las credenciales del usuario, rechaza cuentas sin contraseña (solo Google) e inactivas, y emite tokens de acceso y de refresco con sus permisos
- * Versión: 1.1
+ * Descripción: Verifica las credenciales del usuario, rechaza cuentas sin contraseña (solo Google) e inactivas, y emite tokens de acceso y de refresco con sus permisos; la imagen del usuario de la respuesta es la foto subida resuelta (o la imagen guardada)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { toAuthenticatedUser } from "@/features/auth/application/helpers/to-auth
 import { type ITokenGenerator, TOKEN_GENERATOR_TOKEN } from "@/features/auth/application/ports/token-generator.interface";
 import { type LoginResult } from "@/features/auth/application/results/login.result";
 import { InvalidCredentialsError, PasswordLoginNotAvailableError, UserInactiveError } from "@/features/auth/domain/auth.errors";
+import { UsersFacade } from "@/features/users/application/services/users.facade";
 import { type User } from "@/features/users/domain/entities/user.entity";
 import { type IUserRepository, USERS_REPOSITORY_TOKEN } from "@/features/users/domain/repositories/users.repository";
 
@@ -34,6 +35,7 @@ export class LoginUseCase {
     private readonly _passwordHasher: IPasswordHasher,
     @Inject(TOKEN_GENERATOR_TOKEN)
     private readonly _tokenGenerator: ITokenGenerator,
+    private readonly _usersFacade: UsersFacade,
   ) {}
 
   public async execute(command: LoginCommand): Promise<LoginResult> {
@@ -57,6 +59,6 @@ export class LoginUseCase {
       throw new UserInactiveError();
     }
 
-    return await issueLoginResult(this._tokenGenerator, toAuthenticatedUser(user));
+    return await issueLoginResult(this._tokenGenerator, toAuthenticatedUser(user, await this._usersFacade.resolveImage(user)));
   }
 }

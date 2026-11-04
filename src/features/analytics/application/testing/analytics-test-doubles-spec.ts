@@ -80,7 +80,7 @@ function progressOf(userIds: readonly string[]): UserLearningProgress[] {
 }
 
 export interface FakeFacades {
-  groups: { [K in "getGroupSummary" | "getManageableStudentGroupIds" | "isStudentMemberOfAny" | "getGroupMembers" | "getStudentMemberships"]: jest.Mock };
+  groups: { [K in "getGroupSummary" | "getManageableStudentGroupIds" | "isStudentMemberOfAny" | "getStudentViewScope" | "getGroupMembers" | "getStudentMemberships"]: jest.Mock };
   progress: { getProgressForUsers: jest.Mock; getLessonCompletionsOfUser: jest.Mock; getSummary: jest.Mock; getLastActivityForUsers: jest.Mock; getContinueLearning: jest.Mock };
   evaluation: {
     [K in
@@ -102,24 +102,36 @@ export interface FakeFacades {
 }
 
 export function buildFakeFacades(students: GroupMemberSummary[]): FakeFacades {
+  const groups: FakeFacades["groups"] = {
+    // Same rule as GroupsFacade.getStudentViewScope, built on the two fakes below: administrators see everyone, teachers only STUDENT members of the groups they manage.
+    getStudentViewScope: jest.fn().mockImplementation(async (actor: AnalyticsActor, userId: string) => {
+      if (actor.role === "ADMIN") {
+        return {};
+      }
+
+      const groupIds: string[] = await groups.getManageableStudentGroupIds(actor);
+
+      return groupIds.length > 0 && (await groups.isStudentMemberOfAny(userId, groupIds)) ? { groupIds } : undefined;
+    }),
+    getGroupSummary: jest
+      .fn()
+      .mockImplementation((groupId: string) => Promise.resolve(groupId === GROUP_ID ? { id: GROUP_ID, name: "Group A", type: "STUDENT", isActive: true } : undefined)),
+    getManageableStudentGroupIds: jest
+      .fn()
+      .mockImplementation((actor: AnalyticsActor, candidates?: string[]) =>
+        Promise.resolve((MANAGED_GROUPS[actor.id] ?? []).filter((groupId: string) => candidates === undefined || candidates.includes(groupId))),
+      ),
+    isStudentMemberOfAny: jest
+      .fn()
+      .mockImplementation((userId: string, groupIds: string[]) =>
+        Promise.resolve(groupIds.includes(GROUP_ID) && students.some((student: GroupMemberSummary) => student.userId === userId)),
+      ),
+    getGroupMembers: jest.fn().mockResolvedValue([...students, { userId: TEACHER.id, email: "teacher@example.edu", userRole: "TEACHER", memberRole: "MEMBER" }]),
+    getStudentMemberships: jest.fn().mockResolvedValue(students.map((student: GroupMemberSummary) => ({ userId: student.userId, groupId: GROUP_ID }))),
+  };
+
   return {
-    groups: {
-      getGroupSummary: jest
-        .fn()
-        .mockImplementation((groupId: string) => Promise.resolve(groupId === GROUP_ID ? { id: GROUP_ID, name: "Group A", type: "STUDENT", isActive: true } : undefined)),
-      getManageableStudentGroupIds: jest
-        .fn()
-        .mockImplementation((actor: AnalyticsActor, candidates?: string[]) =>
-          Promise.resolve((MANAGED_GROUPS[actor.id] ?? []).filter((groupId: string) => candidates === undefined || candidates.includes(groupId))),
-        ),
-      isStudentMemberOfAny: jest
-        .fn()
-        .mockImplementation((userId: string, groupIds: string[]) =>
-          Promise.resolve(groupIds.includes(GROUP_ID) && students.some((student: GroupMemberSummary) => student.userId === userId)),
-        ),
-      getGroupMembers: jest.fn().mockResolvedValue([...students, { userId: TEACHER.id, email: "teacher@example.edu", userRole: "TEACHER", memberRole: "MEMBER" }]),
-      getStudentMemberships: jest.fn().mockResolvedValue(students.map((student: GroupMemberSummary) => ({ userId: student.userId, groupId: GROUP_ID }))),
-    },
+    groups,
     progress: {
       getProgressForUsers: jest.fn().mockImplementation((userIds: string[]) => Promise.resolve(progressOf(userIds))),
       getLessonCompletionsOfUser: jest.fn().mockResolvedValue([]),
@@ -202,6 +214,7 @@ export function buildFakeFacades(students: GroupMemberSummary[]): FakeFacades {
         Promise.resolve(
           userIds.map((userId: string) => ({
             userId,
+            surface: "ASSISTANT",
             useCase: "FREE_CHAT",
             ratings: 3,
             helpfulCount: 2,

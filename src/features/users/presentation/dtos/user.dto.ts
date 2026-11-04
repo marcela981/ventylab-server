@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO UserDTO
  * Descripción: Representa un usuario en las respuestas, incluidos su estado activo, su código estudiantil y si es el superadministrador
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,7 +25,12 @@ export class UserDTO {
   @ApiProperty({ description: "User role", enum: USER_ROLE_VALUES, example: "STUDENT" })
   public role: string;
 
-  @ApiProperty({ description: "Profile image URL", example: "https://example.com/avatar.png", nullable: true, type: String })
+  @ApiProperty({
+    description: "Profile image URL: a signed URL of the uploaded photo (it expires; read it again instead of storing it), or else the stored image (the Google picture)",
+    example: "https://example.com/avatar.png",
+    nullable: true,
+    type: String,
+  })
   public image: string | null;
 
   @ApiProperty({ description: "Whether the account is active", example: true })
@@ -36,6 +41,9 @@ export class UserDTO {
 
   @ApiProperty({ description: "Whether the user is the configured superadmin (SUPERADMIN_EMAIL), whose role and status cannot change", example: false })
   public isSuperadmin: boolean;
+
+  @ApiProperty({ description: "Whether the account has a local password (false for Google sign-in accounts, whose password is managed by Google)", example: true })
+  public hasPassword: boolean;
 
   @ApiProperty({ description: "Email verification timestamp", example: "2024-01-15T10:30:00.000Z", nullable: true, type: Date })
   public emailVerified: Date | null;
@@ -55,6 +63,7 @@ export class UserDTO {
     isActive,
     studentCode,
     isSuperadmin,
+    hasPassword,
     emailVerified,
     createdAt,
     updatedAt,
@@ -67,6 +76,7 @@ export class UserDTO {
     isActive: boolean;
     studentCode: string | null;
     isSuperadmin: boolean;
+    hasPassword: boolean;
     emailVerified: Date | null;
     createdAt: Date;
     updatedAt: Date;
@@ -79,6 +89,7 @@ export class UserDTO {
     this.isActive = isActive;
     this.studentCode = studentCode;
     this.isSuperadmin = isSuperadmin;
+    this.hasPassword = hasPassword;
     this.emailVerified = emailVerified;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba de cobertura del contrato AsyncAPI
- * Descripción: Recorre src/ y obtiene los eventos Socket.io que se emiten (segundo argumento de emitToUser/emitToGroup/emitToRole/emitToRoom/emitToRoomsVolatile, primer argumento de broadcast y client.emit, resolviendo constantes y, cuando el evento es una variable, todas las constantes *_EVENT del archivo), los mensajes del cliente (@SubscribeMessage y comparaciones message.event === o !== CONSTANTE) y los eventos SSE escritos por los helpers de streaming; falla si alguno falta en openapi/asyncapi.yaml o en contracts/websocket-events.contracts.ts, si el AsyncAPI documenta eventos Socket.io que nadie emite o recibe, o si una ruta SSE de openapi.json no tiene canal. v1.1: el piso de eventos emitidos baja a 18 al retirar ventilator:reserved y ventilator:released
- * Versión: 1.2
+ * Descripción: Recorre src/ y obtiene los eventos Socket.io que se emiten (segundo argumento de emitToUser/emitToGroup/emitToRole/emitToRoom/emitToRoomsVolatile, primer argumento de broadcast y client.emit, resolviendo constantes y, cuando el evento es una variable, todas las constantes *_EVENT del archivo), los mensajes del cliente (@SubscribeMessage y comparaciones message.event === o !== CONSTANTE) y los eventos SSE escritos por los helpers de streaming; falla si alguno falta en openapi/asyncapi.yaml o en contracts/websocket-events.contracts.ts, si el AsyncAPI o el contrato TypeScript declaran eventos Socket.io que nadie emite o recibe (verificación inversa), o si una ruta SSE de openapi.json no tiene canal. v1.1: el piso de eventos emitidos baja a 18 al retirar ventilator:reserved y ventilator:released
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -106,6 +106,11 @@ function sseEvents(): Set<string> {
   return new Set<string>(FILES.flatMap((file: SourceFile): string[] => [...file.text.matchAll(SSE_EVENT)].map((match: RegExpMatchArray): string => match[1])));
 }
 
+// Keys of the ClientToServerEvents and ServerToClientEvents maps of the TypeScript contract.
+function contractEventNames(): Set<string> {
+  return new Set<string>([...WEBSOCKET_CONTRACT.matchAll(/^\s+"([^"]+)": \(/gm)].map((match: RegExpMatchArray): string => match[1]));
+}
+
 function documentedMessageNames(): Set<string> {
   return new Set<string>([...ASYNCAPI.matchAll(/^\s+name: "([^"]+)"$/gm)].map((match: RegExpMatchArray): string => match[1]));
 }
@@ -135,6 +140,13 @@ describe("AsyncAPI contract coverage", () => {
     const stale: string[] = [...documented].filter((name: string): boolean => !emitted.has(name) && !received.has(name) && !sse.has(name));
 
     expect(stale).toEqual([]);
+  });
+
+  it("should not declare Socket.io events in the TypeScript contract that nothing emits or receives", () => {
+    const contract: Set<string> = contractEventNames();
+
+    expect(contract.size).toBeGreaterThanOrEqual(emitted.size);
+    expect([...contract].filter((name: string): boolean => !emitted.has(name) && !received.has(name))).toEqual([]);
   });
 
   it("should give every server-sent-events route of openapi.json a channel with its delta, done and error events", () => {

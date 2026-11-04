@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador del panel de administración
- * Descripción: Endpoints /api/admin para el panel docente y administrativo: listado y detalle de estudiantes, listado de profesores, catálogo de proveedores de IA (configurado y modelos conocidos, sin credenciales; permiso settings:manage), cambio de rol (delegado en ChangeUserRoleUseCase de usuarios) y estadísticas de la plataforma. El cambio de rol en /api/admin está deprecado en favor de PATCH /api/users/:id/role.
- * Versión: 1.3
+ * Descripción: Endpoints /api/admin para el panel docente y administrativo: listado y detalle de estudiantes (el detalle, solo de los grupos que el docente creó o supervisa), listado de profesores, catálogo de proveedores de IA (configurado y modelos conocidos, sin credenciales; permiso settings:manage), cambio de rol (delegado en ChangeUserRoleUseCase de usuarios) y estadísticas de la plataforma. El cambio de rol en /api/admin está deprecado en favor de PATCH /api/users/:id/role.
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -61,7 +61,8 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Get dashboard students",
-    description: "Paginated students with progress summary and group; myGroups=true limits it to the caller's groups as teacher",
+    description:
+      "Paginated students with their published-content progress, active groups, student code and whether the caller may open their detail (canView); search matches name, email or student code; myGroups=true limits it to the groups the caller created or supervises (an empty page when there are none); sorting by progress or lastActivity is computed on the server before paging",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Students retrieved successfully", type: AdminStudentListItemDTO, isArray: true })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
@@ -73,10 +74,11 @@ export class AdminController {
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<AdminStudentListItemDTO[]>> {
     const students: Paginated<AdminStudentListItem> = await this._getAdminStudentsUseCase.execute({
+      actor: { id: currentUser.sub, role: currentUser.role },
       page: query.page,
       limit: query.limit,
       groupId: query.groupId,
-      teacherId: query.myGroups === "true" ? currentUser.sub : undefined,
+      myGroups: query.myGroups === "true",
       search: query.search,
       sortBy: (query.sortBy ?? "name") as AdminStudentSortByValue,
       sortOrder: query.sortOrder ?? "asc",
@@ -92,14 +94,21 @@ export class AdminController {
   @Get("students/:id/progress")
   @RequirePermissions("students:read")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Get dashboard student progress", description: "Full activity detail and statistics of a student" })
+  @ApiOperation({
+    summary: "Get dashboard student progress",
+    description: "Full activity detail and statistics of a student; a teacher only reads students of the groups they created or supervise",
+  })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Student progress retrieved successfully", type: AdminStudentProgressDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "The user is not a student" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden or the student is outside the teacher's groups" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "User not found" })
-  public async getStudentProgress(@Param("id") id: string, @I18n() i18n: I18nContext): Promise<APIResponse<AdminStudentProgressDTO>> {
-    const detail: AdminStudentProgressDetail = await this._getAdminStudentProgressUseCase.execute(id);
+  public async getStudentProgress(
+    @Param("id") id: string,
+    @CurrentUser() currentUser: JwtPayload,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<AdminStudentProgressDTO>> {
+    const detail: AdminStudentProgressDetail = await this._getAdminStudentProgressUseCase.execute({ id: currentUser.sub, role: currentUser.role }, id);
 
     return new APIResponseBuilder<AdminStudentProgressDTO>()
       .setData(AdminMapper.toStudentProgressDTO(detail))
@@ -110,7 +119,10 @@ export class AdminController {
   @Get("teachers")
   @RequirePermissions("users:read")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Get dashboard teachers", description: "Teachers and admins ordered by name with their groups and student counts" })
+  @ApiOperation({
+    summary: "Get dashboard teachers",
+    description: "Teachers and admins ordered by name with the active student groups they created or supervise and the number of distinct students in them",
+  })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Teachers retrieved successfully", type: AdminTeacherDTO, isArray: true })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })

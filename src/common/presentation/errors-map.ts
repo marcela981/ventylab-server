@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
  * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.41
+ * Versión: 1.44
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -148,6 +148,7 @@ import {
   ParentGroupNotFoundError,
   SimulatorLeadNotMemberError,
   StudentAlreadyInGroupError,
+  StudentOutOfScopeError,
 } from "@/features/groups/domain/groups.errors";
 import {
   InactiveModuleLessonCreationError,
@@ -169,6 +170,7 @@ import {
   PrerequisiteLevelNotFoundError,
 } from "@/features/levels/domain/levels.errors";
 import {
+  MediaContentMismatchError,
   MediaFileRequiredError,
   MediaInUseError,
   MediaNotFoundError,
@@ -285,6 +287,7 @@ import {
   TeacherStudentNotFoundError,
 } from "@/features/teacher-students/domain/teacher-students.errors";
 import {
+  AvatarFileRequiredError,
   CannotChangeOwnRoleError,
   CannotChangeOwnStatusError,
   InvalidCurrentPasswordError,
@@ -314,6 +317,7 @@ import {
 import {
   TelemetryNoActiveReservationError,
   TelemetryRecordingForbiddenError,
+  TelemetryRecordingRangeInvalidError,
   TelemetryReservationNotFoundError,
 } from "@/features/ventilator-telemetry/domain/ventilator-telemetry.errors";
 
@@ -370,6 +374,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [InvalidGroupSupervisionError, HttpStatus.UNPROCESSABLE_ENTITY],
   [GroupSupervisionNotFoundError, HttpStatus.NOT_FOUND],
   [GroupUserNotFoundError, HttpStatus.NOT_FOUND],
+  [StudentOutOfScopeError, HttpStatus.FORBIDDEN],
   [ScoreNotFoundError, HttpStatus.NOT_FOUND],
   [ScoreNotOwnedError, HttpStatus.FORBIDDEN],
   [InvalidScorePointsError, HttpStatus.BAD_REQUEST],
@@ -389,6 +394,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [SuperadminRoleImmutableError, HttpStatus.FORBIDDEN],
   [SuperadminStatusImmutableError, HttpStatus.FORBIDDEN],
   [CannotChangeOwnStatusError, HttpStatus.BAD_REQUEST],
+  [AvatarFileRequiredError, HttpStatus.BAD_REQUEST],
   [LevelNotFoundError, HttpStatus.NOT_FOUND],
   [PrerequisiteLevelNotFoundError, HttpStatus.NOT_FOUND],
   [ParentLevelNotFoundError, HttpStatus.NOT_FOUND],
@@ -490,6 +496,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [MediaInUseError, HttpStatus.CONFLICT],
   [MediaStorageUnavailableError, HttpStatus.SERVICE_UNAVAILABLE],
   [UnsupportedMediaTypeError, HttpStatus.UNSUPPORTED_MEDIA_TYPE],
+  [MediaContentMismatchError, HttpStatus.UNSUPPORTED_MEDIA_TYPE],
   [MediaTooLargeError, HttpStatus.PAYLOAD_TOO_LARGE],
   [MediaFileRequiredError, HttpStatus.BAD_REQUEST],
   [NoteNotFoundError, HttpStatus.NOT_FOUND],
@@ -559,6 +566,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [ReservationConflictError, HttpStatus.CONFLICT],
   [TelemetryNoActiveReservationError, HttpStatus.CONFLICT],
   [TelemetryRecordingForbiddenError, HttpStatus.FORBIDDEN],
+  [TelemetryRecordingRangeInvalidError, HttpStatus.UNPROCESSABLE_ENTITY],
   [TelemetryReservationNotFoundError, HttpStatus.NOT_FOUND],
   [NoActiveVentilatorReservationError, HttpStatus.FORBIDDEN],
   [NotReservationHolderError, HttpStatus.FORBIDDEN],

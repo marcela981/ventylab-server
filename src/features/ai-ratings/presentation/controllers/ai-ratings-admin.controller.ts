@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador administrativo de valoraciones de IA
- * Descripción: Endpoints /api/admin/ai-ratings: estadísticas agregadas (tasa de utilidad y media con n por dimensión QUEST por caso de uso, proveedor, modelo y versión de prompt) y exportación CSV sin identificador de usuario; requieren el permiso ai-ratings:read (TEACHER y ADMIN)
- * Versión: 1.0
+ * Descripción: Endpoints /api/admin/ai-ratings: estadísticas agregadas (tasa de utilidad y media con n por dimensión QUEST por caso de uso, proveedor, modelo y versión de prompt) y exportación CSV sin identificador de usuario; la superficie se deriva del tipo de objetivo cuando falta; requieren el permiso ai-ratings:read (solo ADMIN)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,7 +44,7 @@ export class AiRatingsAdminController {
   @ApiOperation({
     summary: "Get AI rating stats",
     description:
-      "Helpful rate and mean with n per QUEST dimension, grouped by use case, provider, model and prompt version of the linked AI call (\"unknown\" when the rating has no linked call)",
+      "Helpful rate and mean with n per QUEST dimension, grouped by surface (stored, or implied by the target type when missing), scope, and the use case, provider, model and prompt version of the linked AI call (\"unknown\" when there is no value)",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Stats retrieved successfully", type: AiRatingStatsDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })

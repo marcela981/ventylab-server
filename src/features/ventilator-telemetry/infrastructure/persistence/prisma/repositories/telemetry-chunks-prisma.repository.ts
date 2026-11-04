@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de fragmentos de telemetría
  * Descripción: Guarda los TelemetryChunk en telemetry_chunks, los lista por reserva ordenados por inicio y lee en solo lectura los titulares de una reserva desde la tabla reservations
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,10 +13,26 @@ import { type TelemetryChunk as TelemetryChunkModel } from "@prisma/client";
 
 import { type PrismaExecutor, resolveClient } from "@/common/infrastructure/persistence/prisma/prisma-client";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
-import { type ITelemetryChunksRepository, type RecordedReservationHolder } from "@/features/ventilator-telemetry/domain/repositories/telemetry-chunks.repository";
+import {
+  type ITelemetryChunksRepository,
+  type RecordedReservationHolder,
+  type TelemetryRecordingsFilter,
+  type TelemetryRecordingSummary,
+} from "@/features/ventilator-telemetry/domain/repositories/telemetry-chunks.repository";
 import { type TelemetryChunk } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-chunk";
 
 const MAX_CHUNKS_PER_RESERVATION: number = 5000;
+
+interface RecordingRow {
+  id: string;
+  holderType: "USER" | "GROUP";
+  groupId: string | null;
+  startsAt: Date;
+  endsAt: Date;
+  status: string;
+  telemetry: { sampleRateHz: number }[];
+  _count: { telemetry: number };
+}
 
 interface ReservationHolderRow {
   id: string;
@@ -93,5 +109,38 @@ export class TelemetryChunksPrismaRepository implements ITelemetryChunksReposito
       startsAt: row.startsAt,
       endsAt: row.endsAt,
     };
+  }
+
+  public async listRecordingsOfUser(filter: TelemetryRecordingsFilter): Promise<TelemetryRecordingSummary[]> {
+    const rows: RecordingRow[] = await this._prisma.reservation.findMany({
+      where: {
+        OR: [{ userId: filter.userId }, { group: { members: { some: { userId: filter.userId } } } }],
+        startsAt: { gte: filter.from, lt: filter.to },
+        telemetry: { some: {} },
+      },
+      select: {
+        id: true,
+        holderType: true,
+        groupId: true,
+        startsAt: true,
+        endsAt: true,
+        status: true,
+        telemetry: { select: { sampleRateHz: true }, orderBy: { startTs: "asc" }, take: 1 },
+        _count: { select: { telemetry: true } },
+      },
+      orderBy: [{ startsAt: "desc" }, { id: "asc" }],
+      take: filter.limit,
+    });
+
+    return rows.map((row: RecordingRow): TelemetryRecordingSummary => ({
+      reservationId: row.id,
+      holderType: row.holderType,
+      groupId: row.groupId ?? undefined,
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+      status: row.status,
+      chunkCount: row._count.telemetry,
+      sampleRateHz: row.telemetry[0]?.sampleRateHz,
+    }));
   }
 }

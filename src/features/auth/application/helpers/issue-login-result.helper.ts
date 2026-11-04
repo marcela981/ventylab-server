@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Utilidad issueLoginResult
- * Descripción: Emite el mismo par de tokens de acceso y de refresco para cualquier inicio de sesión (local o con Google) y arma el LoginResult. v1.1: sin el puente de NextAuth retirado
- * Versión: 1.1
+ * Descripción: Emite el mismo par de tokens de acceso y de refresco para cualquier inicio de sesión (local o con Google) y arma el LoginResult. v1.1: sin el puente de NextAuth retirado; opcionalmente fecha el refresh token con un iat explícito (reemisión tras cambiar la contraseña)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,11 +13,14 @@ import { type ITokenGenerator, type JwtPayload } from "@/features/auth/applicati
 import { type AuthenticatedUser } from "@/features/auth/application/results/authenticated-user.result";
 import { LoginResult } from "@/features/auth/application/results/login.result";
 
-export async function issueLoginResult(tokenGenerator: ITokenGenerator, user: AuthenticatedUser): Promise<LoginResult> {
+export async function issueLoginResult(tokenGenerator: ITokenGenerator, user: AuthenticatedUser, options: { refreshIssuedAtSeconds?: number } = {}): Promise<LoginResult> {
   const payload: JwtPayload = buildJwtPayload(user);
 
   const accessToken: string = await tokenGenerator.generateToken(payload);
-  const refreshToken: string = await tokenGenerator.generateRefreshToken(payload);
+  const refreshToken: string =
+    options.refreshIssuedAtSeconds === undefined
+      ? await tokenGenerator.generateRefreshToken(payload)
+      : await tokenGenerator.generateRefreshToken(payload, { issuedAtSeconds: options.refreshIssuedAtSeconds });
 
   return new LoginResult({
     accessToken,

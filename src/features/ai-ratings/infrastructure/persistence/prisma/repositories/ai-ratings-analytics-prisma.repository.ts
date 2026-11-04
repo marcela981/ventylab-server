@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma AiRatingsAnalyticsPrismaRepository
  * Descripción: Implementa IAiRatingsAnalyticsRepository con una sola consulta $queryRaw parametrizada sobre ai_ratings unida a ai_call_logs, agrupada por usuario y caso de uso (unknown sin llamada enlazada) con IN, con conteo de valoraciones, conteo útil y media y tamaño de cada dimensión
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,7 +17,7 @@ import {
   type IAiRatingsAnalyticsRepository,
 } from "@/features/ai-ratings/domain/repositories/ai-ratings-analytics.repository";
 import { AiRatingsMapper, type RawAiRatingUserGroup } from "@/features/ai-ratings/infrastructure/persistence/prisma/mappers/ai-ratings.mapper";
-import { DIMENSION_COLUMNS_SQL, UNKNOWN_SQL } from "@/features/ai-ratings/infrastructure/persistence/prisma/repositories/ai-ratings-prisma.repository";
+import { DERIVED_SURFACE_SQL, DIMENSION_COLUMNS_SQL, UNKNOWN_SQL } from "@/features/ai-ratings/infrastructure/persistence/prisma/repositories/ai-ratings-prisma.repository";
 
 @Injectable()
 export class AiRatingsAnalyticsPrismaRepository implements IAiRatingsAnalyticsRepository {
@@ -31,6 +31,7 @@ export class AiRatingsAnalyticsPrismaRepository implements IAiRatingsAnalyticsRe
     const rows: RawAiRatingUserGroup[] = await this._prisma.$queryRaw<RawAiRatingUserGroup[]>(Prisma.sql`
       SELECT
         r.user_id AS user_id,
+        coalesce(${DERIVED_SURFACE_SQL}, ${UNKNOWN_SQL}) AS surface,
         coalesce(l.use_case::text, ${UNKNOWN_SQL}) AS use_case,
         count(*) AS ratings,
         count(*) FILTER (WHERE r.helpful) AS helpful_count,
@@ -38,8 +39,8 @@ export class AiRatingsAnalyticsPrismaRepository implements IAiRatingsAnalyticsRe
       FROM ai_ratings r
       LEFT JOIN ai_call_logs l ON l.id = r.ai_call_id
       WHERE r.user_id IN (${Prisma.join([...new Set<string>(userIds)])})
-      GROUP BY 1, 2
-      ORDER BY 1, 2
+      GROUP BY 1, 2, 3
+      ORDER BY 1, 2, 3
     `);
 
     return rows.map((row: RawAiRatingUserGroup) => AiRatingsMapper.toUserUseCaseAggregate(row));

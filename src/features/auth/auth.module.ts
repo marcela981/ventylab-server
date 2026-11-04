@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo AuthModule
  * Descripción: Módulo global de autenticación: JWT, casos de uso de acceso (local y Google), verificador de ID tokens de Google, dominios de correo permitidos, guards y el verificador de tokens que consume la capa común de tiempo real; depende de UsersModule. v1.4: sin el caso de uso ni el guard del puente de NextAuth retirado
- * Versión: 1.4
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { type EnvironmentVariables } from "@/common/infrastructure/config/env.va
 import { GOOGLE_ID_TOKEN_VERIFIER_TOKEN } from "@/features/auth/application/ports/google-id-token-verifier.interface";
 import { TOKEN_GENERATOR_TOKEN } from "@/features/auth/application/ports/token-generator.interface";
 import { ALLOWED_EMAIL_DOMAINS_TOKEN, parseAllowedEmailDomains } from "@/features/auth/application/tokens/allowed-email-domains.token";
+import { ChangeOwnPasswordUseCase } from "@/features/auth/application/use-cases/change-own-password.usecase";
 import { GoogleLoginUseCase } from "@/features/auth/application/use-cases/google-login.usecase";
 import { LoginUseCase } from "@/features/auth/application/use-cases/login.usecase";
 import { RefreshTokenUseCase } from "@/features/auth/application/use-cases/refresh-token.usecase";
@@ -52,6 +53,7 @@ import { UsersModule } from "@/features/users/users.module";
     RegisterUseCase,
     RefreshTokenUseCase,
     GoogleLoginUseCase,
+    ChangeOwnPasswordUseCase,
     {
       provide: GOOGLE_ID_TOKEN_VERIFIER_TOKEN,
       useClass: GoogleIdTokenVerifier,

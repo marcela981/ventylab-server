@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de acceso a reservas
- * Descripción: Resuelve con GroupsFacade los hechos de grupo que necesita la política (liderazgo, supervisión, tipo de grupo), los hechos para filtrar el calendario por grupo (gestión o supervisión de un profesor, pertenencia de un estudiante), el grupo de estudiantes de quien consulta, si un usuario es titular de una reserva (usuario titular o miembro del grupo titular), los usuarios a avisar y la relación de quien consulta con una reserva
- * Versión: 1.3
+ * Descripción: Resuelve con GroupsFacade los hechos de grupo que necesita la política (liderazgo, gestión del grupo por un docente que lo creó o lo supervisa con GroupsFacade.canManageGroup, tipo de grupo), los hechos para filtrar el calendario por grupo (gestión o supervisión de un profesor, pertenencia de un estudiante), el grupo de estudiantes de quien consulta, si un usuario es titular de una reserva (usuario titular o miembro del grupo titular), los usuarios a avisar y la relación de quien consulta con una reserva
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,7 +28,7 @@ export interface ResolvedGroupFacts extends HolderGroupFacts {
   readonly exists: boolean;
 }
 
-const NO_GROUP_FACTS: ResolvedGroupFacts = { exists: false, leadsGroup: false, supervisesGroup: false, isStudentGroup: false };
+const NO_GROUP_FACTS: ResolvedGroupFacts = { exists: false, leadsGroup: false, managesGroup: false, isStudentGroup: false };
 
 @Injectable()
 export class ReservationAccessService {
@@ -39,10 +39,10 @@ export class ReservationAccessService {
       return NO_GROUP_FACTS;
     }
 
-    const [summary, leadsGroup, supervisedGroupIds]: [GroupSummary | undefined, boolean, string[]] = await Promise.all([
+    const [summary, leadsGroup, managesGroup]: [GroupSummary | undefined, boolean, boolean] = await Promise.all([
       this._groupsFacade.getGroupSummary(groupId),
       this._groupsFacade.isGroupLeader(actor.userId, groupId),
-      actor.role === TEACHER_ACTOR_ROLE ? this._groupsFacade.getSupervisedStudentGroupIds(actor.userId) : Promise.resolve([]),
+      actor.role === TEACHER_ACTOR_ROLE ? this._groupsFacade.canManageGroup({ id: actor.userId, role: actor.role }, groupId) : Promise.resolve(false),
     ]);
 
     if (!summary) {
@@ -52,7 +52,7 @@ export class ReservationAccessService {
     return {
       exists: true,
       leadsGroup,
-      supervisesGroup: supervisedGroupIds.includes(groupId),
+      managesGroup,
       isStudentGroup: summary.type === "STUDENT" && summary.isActive,
     };
   }

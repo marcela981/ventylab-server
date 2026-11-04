@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de petición del panel de administración
  * Descripción: Validación y documentación Swagger de los filtros del listado de estudiantes y profesores y del cuerpo para cambiar el rol de un usuario; esquemas OpenAPI con nombre propio para no colisionar con clases homónimas de otras features (ChangeUserRoleDTO como AdminChangeUserRoleDTO)
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,7 +37,7 @@ export class GetAdminStudentsQueryDTO {
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   public groupId?: string;
 
-  @ApiPropertyOptional({ description: "Partial, case-insensitive match against name or email", example: "ana" })
+  @ApiPropertyOptional({ description: "Partial, case-insensitive match against name, email or student code", example: "ana" })
   @IsOptional()
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   public search?: string;
@@ -52,7 +52,7 @@ export class GetAdminStudentsQueryDTO {
   @IsIn(["asc", "desc"], { message: i18nValidationMessage("common.validation.sort_order.must_be_valid") })
   public sortOrder?: "asc" | "desc";
 
-  @ApiPropertyOptional({ description: "Only students of the groups where the caller is a teacher (ignored when groupId is sent)", enum: ["true", "false"], example: "true" })
+  @ApiPropertyOptional({ description: "Only students of the STUDENT groups the caller created or supervises (an administrator manages all of them); combined with groupId it keeps that group only when the caller manages it", enum: ["true", "false"], example: "true" })
   @IsOptional()
   @IsIn(["true", "false"], { message: i18nValidationMessage("common.validation.boolean") })
   public myGroups?: string;

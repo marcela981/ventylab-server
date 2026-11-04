@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de profesores y estadísticas del panel de administración
- * Descripción: Formas de respuesta documentadas en Swagger para el listado de profesores y las estadísticas de la plataforma, incluida la actividad reciente y la reserva activa del ventilador
- * Versión: 1.0
+ * Descripción: Formas de respuesta documentadas en Swagger para el listado de profesores y las estadísticas de la plataforma, incluida la actividad reciente y la reserva activa del ventilador; módulos y lecciones publicados, evaluaciones listas y el día de America/Bogota
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -42,10 +42,10 @@ export class AdminTeacherDTO {
   @ApiProperty({ description: "Account creation date", example: "2026-01-15T10:00:00.000Z" })
   public createdAt: Date;
 
-  @ApiProperty({ description: "Groups where the user is a teacher", type: AdminTeacherGroupDTO, isArray: true })
+  @ApiProperty({ description: "Active student groups the user created or supervises from an active teacher group", type: AdminTeacherGroupDTO, isArray: true })
   public groups: AdminTeacherGroupDTO[];
 
-  @ApiProperty({ description: "Student memberships across those groups", example: 25 })
+  @ApiProperty({ description: "Distinct students across those groups", example: 25 })
   public studentCount: number;
 
   @ApiProperty({ description: "Groups created by the user", example: 3 })
@@ -104,13 +104,13 @@ export class PlatformStatisticsDTO {
   @ApiProperty({ description: "Active modules", example: 12 })
   public totalModules: number;
 
-  @ApiProperty({ description: "Published modules (same as active modules)", example: 12 })
+  @ApiProperty({ description: "Active modules that students can see (published, inside a published level and section)", example: 12 })
   public publishedModules: number;
 
-  @ApiProperty({ description: "Active lessons", example: 60 })
+  @ApiProperty({ description: "Active published lessons inside a published module", example: 60 })
   public totalLessons: number;
 
-  @ApiProperty({ description: "Active clinical cases", example: 10 })
+  @ApiProperty({ description: "Evaluations ready to assign (status READY)", example: 10 })
   public totalEvaluations: number;
 
   @ApiProperty({ description: "Simulator sessions", example: 40 })
@@ -122,7 +122,7 @@ export class PlatformStatisticsDTO {
   @ApiProperty({ description: "Rounded percentage of students with at least one completed module", example: 30 })
   public completionRate: number;
 
-  @ApiProperty({ description: "Lessons completed since local midnight", example: 5 })
+  @ApiProperty({ description: "Lessons completed since midnight in America/Bogota", example: 5 })
   public completionsToday: number;
 
   @ApiProperty({ description: "Last 10 lesson completions", type: RecentActivityDTO, isArray: true })

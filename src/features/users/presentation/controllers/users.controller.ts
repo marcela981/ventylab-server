@@ -1,20 +1,24 @@
 /*
  * Funcionalidad: Controlador UsersController
- * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id. v1.3: la descripción del cambio de contraseña ya no menciona sesiones de NextAuth
- * Versión: 1.3
+ * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id. v1.3: la descripción del cambio de contraseña ya no menciona sesiones de NextAuth. v1.6: el listado y el detalle de estudiantes resuelven la foto subida como UserDTO (una lectura firmada por página)
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Param, Patch, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse as ApiResponseDoc, ApiTags } from "@nestjs/swagger";
 import { I18n, I18nContext } from "nestjs-i18n";
 
 import { Paginated } from "@/common/domain/utils/paginated";
+import { AVATAR_MAX_BYTES } from "@/common/domain/value-objects/avatar-upload-rules";
 import { APIResponseBuilder } from "@/common/presentation/builders/api-response.builder";
+import { DeprecatedRoute } from "@/common/presentation/decorators/deprecated-route.decorator";
 import { APIResponse } from "@/common/presentation/dtos/api-response.dto";
+import { BLOCK4_ROUTES_DEPRECATED_AT } from "@/common/presentation/utils/deprecation.util";
 import { type JwtPayload } from "@/features/auth/application/ports/token-generator.interface";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
 import { RequirePermissions } from "@/features/auth/presentation/decorators/require-permissions.decorator";
@@ -27,7 +31,9 @@ import { ChangeUserStudentCodeCommand } from "@/features/users/application/comma
 import { GetStudentByIdCommand } from "@/features/users/application/commands/get-student-by-id.command";
 import { UpdateProfileCommand } from "@/features/users/application/commands/update-profile.command";
 import { StudentResult } from "@/features/users/application/results/student.result";
+import { UserImageResolver } from "@/features/users/application/services/user-image.resolver";
 import { SUPERADMIN_EMAIL_TOKEN } from "@/features/users/application/tokens/superadmin-email.token";
+import { RemoveAvatarUseCase, UpdateAvatarUseCase } from "@/features/users/application/use-cases/change-avatar.usecase";
 import { ChangePasswordUseCase } from "@/features/users/application/use-cases/change-password.usecase";
 import { ChangeUserRoleUseCase } from "@/features/users/application/use-cases/change-user-role.usecase";
 import { ChangeUserStatusUseCase } from "@/features/users/application/use-cases/change-user-status.usecase";
@@ -40,6 +46,7 @@ import { GetUsersUseCase } from "@/features/users/application/use-cases/get-user
 import { UpdateProfileUseCase } from "@/features/users/application/use-cases/update-profile.usecase";
 import { User } from "@/features/users/domain/entities/user.entity";
 import { type UserSortByValue } from "@/features/users/domain/repositories/users.repository";
+import { AvatarFileRequiredError } from "@/features/users/domain/users.errors";
 import { type UserRoleValue } from "@/features/users/domain/value-objects/user-role";
 import { UserStats } from "@/features/users/domain/value-objects/user-stats";
 import { ChangePasswordDTO } from "@/features/users/presentation/dtos/change-password.dto";
@@ -50,6 +57,7 @@ import { GetStudentsQueryDTO } from "@/features/users/presentation/dtos/get-stud
 import { GetUsersQueryDTO } from "@/features/users/presentation/dtos/get-users-query.dto";
 import { StudentDTO } from "@/features/users/presentation/dtos/student.dto";
 import { UpdateMeDTO } from "@/features/users/presentation/dtos/update-me.dto";
+import { type UploadedAvatarFile } from "@/features/users/presentation/dtos/uploaded-avatar-file";
 import { UserStatsDTO } from "@/features/users/presentation/dtos/user-stats.dto";
 import { UserDTO } from "@/features/users/presentation/dtos/user.dto";
 import { UsersMapper } from "@/features/users/presentation/mappers/users.mapper";
@@ -70,6 +78,9 @@ export class UsersController {
     private readonly _changeUserRoleUseCase: ChangeUserRoleUseCase,
     private readonly _changeUserStatusUseCase: ChangeUserStatusUseCase,
     private readonly _changeUserStudentCodeUseCase: ChangeUserStudentCodeUseCase,
+    private readonly _updateAvatarUseCase: UpdateAvatarUseCase,
+    private readonly _removeAvatarUseCase: RemoveAvatarUseCase,
+    private readonly _userImageResolver: UserImageResolver,
     @Inject(SUPERADMIN_EMAIL_TOKEN)
     private readonly _superadminEmail: string,
   ) {}
@@ -101,8 +112,10 @@ export class UsersController {
       sortOrder: query.sortOrder,
     });
 
+    const images: Map<string, string | undefined> = await this._userImageResolver.resolve(users.data);
+
     return new APIResponseBuilder<UserDTO[]>()
-      .setData(users.data.map((user: User) => UsersMapper.toDTO(user, this._superadminEmail)))
+      .setData(users.data.map((user: User) => UsersMapper.toDTO(user, this._superadminEmail, images.get(user.id))))
       .setMessage(await i18n.t("users.users_retrieved"))
       .setPagination(users.pagination)
       .build();
@@ -118,14 +131,77 @@ export class UsersController {
     const user: User = await this._getUserByIdUseCase.execute(currentUser.sub);
 
     return new APIResponseBuilder<UserDTO>()
-      .setData(UsersMapper.toDTO(user, this._superadminEmail))
+      .setData(await this._toDTO(user))
       .setMessage(await i18n.t("users.user_retrieved"))
+      .build();
+  }
+
+  @Put("me/avatar")
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: AVATAR_MAX_BYTES, files: 1 } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["file"],
+      properties: { file: { type: "string", format: "binary", description: "Profile photo: png, jpeg or webp of at most 2 MB (the client crops it square and resizes it to 512 px)" } },
+    },
+  })
+  @ApiOperation({
+    summary: "Upload own profile photo",
+    description: "Stores the photo after checking its type, size and first bytes, replaces the previous uploaded photo (which is deleted) and returns the profile with the photo's signed URL as image",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Profile photo updated successfully", type: UserDTO })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "No file or an empty file was sent" })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "User not found" })
+  @ApiResponseDoc({ status: HttpStatus.PAYLOAD_TOO_LARGE, description: "The photo exceeds 2 MB" })
+  @ApiResponseDoc({ status: HttpStatus.UNSUPPORTED_MEDIA_TYPE, description: "Not a png, jpeg or webp image, or the content does not match its type" })
+  @ApiResponseDoc({ status: HttpStatus.SERVICE_UNAVAILABLE, description: "File storage is not configured" })
+  public async updateMyAvatar(
+    @UploadedFile() file: UploadedAvatarFile | undefined,
+    @CurrentUser() currentUser: JwtPayload,
+    @I18n() i18n: I18nContext,
+  ): Promise<APIResponse<UserDTO>> {
+    if (!file || file.size === 0) {
+      throw new AvatarFileRequiredError();
+    }
+
+    const user: User = await this._updateAvatarUseCase.execute({
+      ownerId: currentUser.sub,
+      content: file.buffer,
+      mimeType: file.mimetype,
+      sizeBytes: file.size,
+      originalName: file.originalname,
+    });
+
+    return new APIResponseBuilder<UserDTO>()
+      .setData(await this._toDTO(user))
+      .setMessage(await i18n.t("users.avatar_updated"))
+      .build();
+  }
+
+  @Delete("me/avatar")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Remove own profile photo",
+    description: "Removes the uploaded photo and deletes its file; image falls back to the stored image (the Google picture), if any",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Profile photo removed successfully", type: UserDTO })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "User not found" })
+  public async removeMyAvatar(@CurrentUser() currentUser: JwtPayload, @I18n() i18n: I18nContext): Promise<APIResponse<UserDTO>> {
+    const user: User = await this._removeAvatarUseCase.execute(currentUser.sub);
+
+    return new APIResponseBuilder<UserDTO>()
+      .setData(await this._toDTO(user))
+      .setMessage(await i18n.t("users.avatar_removed"))
       .build();
   }
 
   @Patch("me")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Update own profile", description: "Updates the authenticated user's name or profile image" })
+  @ApiOperation({ summary: "Update own profile", description: "Updates the authenticated user's name or profile image URL (http(s) only; upload a photo with PUT /api/users/me/avatar)" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Profile updated successfully" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
@@ -150,10 +226,12 @@ export class UsersController {
   }
 
   @Post("me/change-password")
+  @DeprecatedRoute({ successor: "/api/auth/change-password", since: BLOCK4_ROUTES_DEPRECATED_AT })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Change own password",
-    description: "Changes the authenticated user's password; access and refresh tokens already issued stay valid until they expire",
+    description:
+      "Deprecated alias of POST /api/auth/change-password without reissuing tokens: changes the authenticated user's password and revokes every refresh token issued so far (the current session too); access tokens stay valid until they expire",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Password changed successfully" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error, wrong current password, or no password set" })
@@ -212,8 +290,10 @@ export class UsersController {
       sortOrder: query.sortOrder,
     });
 
+    const images: Map<string, string | undefined> = await this._userImageResolver.resolve(students.data.map((student: StudentResult) => student.user));
+
     return new APIResponseBuilder<StudentDTO[]>()
-      .setData(students.data.map((student: StudentResult) => UsersMapper.toStudentDTO(student)))
+      .setData(students.data.map((student: StudentResult) => UsersMapper.toStudentDTO(student, images.get(student.user.id))))
       .setMessage(await i18n.t("users.students_retrieved"))
       .setPagination(students.pagination)
       .build();
@@ -224,7 +304,8 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Get student by ID",
-    description: "Retrieves a student with their lesson progress summary. Teachers only see students assigned to them.",
+    description:
+      "Retrieves a student with their institutional code, active STUDENT groups and lesson progress summary. Teachers only see students of the groups they created or supervise (or assigned to them).",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Student retrieved successfully", type: StudentDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "User is not a student" })
@@ -245,7 +326,7 @@ export class UsersController {
     );
 
     return new APIResponseBuilder<StudentDTO>()
-      .setData(UsersMapper.toStudentDTO(student))
+      .setData(UsersMapper.toStudentDTO(student, await this._userImageResolver.resolveOne(student.user)))
       .setMessage(await i18n.t("users.student_retrieved"))
       .build();
   }
@@ -327,5 +408,9 @@ export class UsersController {
     return new APIResponseBuilder<null>()
       .setMessage(await i18n.t("users.student_code_changed"))
       .build();
+  }
+
+  private async _toDTO(user: User): Promise<UserDTO> {
+    return UsersMapper.toDTO(user, this._superadminEmail, await this._userImageResolver.resolveOne(user));
   }
 }

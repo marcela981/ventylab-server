@@ -33,7 +33,7 @@ All processes share one laptop, so the load generators compete with the backend 
 
 `scripts/load/seed-load-data.ts` (idempotent; refuses a non-local database or one without the demo marker) adds, on top of the demo seed and never inside it:
 
-- 30 students `load-student-01..30@ventylab.load` (demo password) in one STUDENT group created by the first demo teacher and supervised by the demo teacher group, so both demo teachers can open its analytics panel;
+- `LOAD_STUDENT_COUNT` students (default 30: `load-student-01..30@ventylab.load`; the index is zero-padded to at least 2 digits, so 500 gives `load-student-001..500`; integer 1-5000) with the demo password, in one STUDENT group created by the first demo teacher and supervised by the demo teacher group, so both demo teachers can open its analytics panel;
 - each load student gets a copy of the progress of a demo student (page, lesson and module progress), and the group gets the evaluation assignments of demo group A;
 - a GROUP reservation of the ventilator for that group, active from now for 90 minutes, so the 30 students are the holders of the `ventilator` room.
 

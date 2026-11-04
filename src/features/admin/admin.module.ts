@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo AdminModule
- * Descripción: Registra la feature de panel de administración (controlador /api/admin, casos de uso de lectura y repositorio de modelo de lectura Prisma); importa UsersModule para el cambio de rol, ProgressModule para contar logros y AiModule para el catálogo de proveedores de IA (AiGateway)
- * Versión: 1.1
+ * Descripción: Registra la feature de panel de administración (controlador /api/admin, casos de uso de lectura y repositorio de modelo de lectura Prisma); importa UsersModule para el cambio de rol, ProgressModule para contar logros AiModule para el catálogo de proveedores de IA (AiGateway) y GroupsModule para el alcance docente (grupos creados o supervisados)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,11 +20,12 @@ import { AdminDashboardPrismaRepository } from "@/features/admin/infrastructure/
 import { AdminController } from "@/features/admin/presentation/controllers/admin.controller";
 import { AiModule } from "@/features/ai/ai.module";
 import { AuthModule } from "@/features/auth/auth.module";
+import { GroupsModule } from "@/features/groups/groups.module";
 import { ProgressModule } from "@/features/progress/progress.module";
 import { UsersModule } from "@/features/users/users.module";
 
 @Module({
-  imports: [AuthModule, UsersModule, ProgressModule, AiModule],
+  imports: [AuthModule, UsersModule, ProgressModule, AiModule, GroupsModule],
   controllers: [AdminController],
   providers: [
     {

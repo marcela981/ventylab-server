@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de UsersFacade
- * Descripción: Verifica la jerarquía de roles, la detección del superadmin y las tres ramas del alta o vinculación con Google (por googleId, por email y creación)
- * Versión: 1.0
+ * Descripción: Verifica la jerarquía de roles, la detección del superadmin y las tres ramas del alta o vinculación con Google (por googleId, por email y creación), y la imagen que se muestra (foto subida firmada, imagen guardada si no hay o si la firma falla)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,9 @@
  */
 import { type IEventBus } from "@/common/application/events/event-bus.interface";
 import { type ITransactionManager } from "@/common/application/persistence/transaction-manager.interface";
+import { type IMediaUrlResolver, type ResolvedMediaURL } from "@/common/application/ports/media-url-resolver.interface";
 import { type IPasswordHasher } from "@/common/application/security/password-hasher.interface";
+import { UserImageResolver } from "@/features/users/application/services/user-image.resolver";
 import { UsersFacade } from "@/features/users/application/services/users.facade";
 import { CreateUserUseCase } from "@/features/users/application/use-cases/create-user.usecase";
 import { FindOrCreateGoogleUserUseCase } from "@/features/users/application/use-cases/find-or-create-google-user.usecase";
@@ -51,7 +53,7 @@ function buildUser({ id, email, googleId, image }: { id: string; email: string; 
   });
 }
 
-function buildHarness(users: User[]): Harness {
+function buildHarness(users: User[], resolveMany: IMediaUrlResolver["resolveMany"] = (): Promise<Map<string, ResolvedMediaURL>> => Promise.resolve(new Map())): Harness {
   const save: jest.Mock = jest.fn().mockResolvedValue(undefined);
   const hash: jest.Mock = jest.fn().mockResolvedValue("hashed");
 
@@ -78,7 +80,9 @@ function buildHarness(users: User[]): Harness {
     createUserUseCase,
   );
 
-  return { facade: new UsersFacade(usersRepository, findOrCreateUseCase, SUPERADMIN_EMAIL), save, hash };
+  const imageResolver: UserImageResolver = new UserImageResolver({ resolveMany });
+
+  return { facade: new UsersFacade(usersRepository, findOrCreateUseCase, SUPERADMIN_EMAIL, imageResolver), save, hash };
 }
 
 describe("UsersFacade", () => {
@@ -165,6 +169,39 @@ describe("UsersFacade", () => {
       const account: UserAccount = await facade.findOrCreateFromGoogle({ ...GOOGLE_PROFILE, email: "Root@VentyLab.com" });
 
       expect(account.role).toBe("ADMIN");
+    });
+  });
+
+  describe("resolveImage", () => {
+    const GOOGLE_PICTURE: string = "https://lh3.googleusercontent.com/a/ana";
+    const SIGNED_URL: string = "https://storage.example.com/avatars/media-1.png?token=signed";
+
+    it("returns the signed URL of the uploaded photo over the stored image", async () => {
+      const resolveMany: jest.Mock = jest.fn().mockResolvedValue(new Map([["media-1", { mediaId: "media-1", url: SIGNED_URL, mimeType: "image/png", kind: "IMAGE" }]]));
+      const { facade } = buildHarness([], resolveMany);
+
+      const image: string | undefined = await facade.resolveImage({ id: "U1", image: GOOGLE_PICTURE, avatarMediaId: "media-1" });
+
+      expect(resolveMany).toHaveBeenCalledWith(["media-1"]);
+      expect(image).toBe(SIGNED_URL);
+    });
+
+    it("keeps the stored image without reading media when no photo was uploaded", async () => {
+      const resolveMany: jest.Mock = jest.fn();
+      const { facade } = buildHarness([], resolveMany);
+
+      const image: string | undefined = await facade.resolveImage({ id: "U1", image: GOOGLE_PICTURE });
+
+      expect(resolveMany).not.toHaveBeenCalled();
+      expect(image).toBe(GOOGLE_PICTURE);
+    });
+
+    it("falls back to the stored image when the photo cannot be signed", async () => {
+      const { facade } = buildHarness([], jest.fn().mockRejectedValue(new Error("storage down")));
+
+      const image: string | undefined = await facade.resolveImage({ id: "U1", image: GOOGLE_PICTURE, avatarMediaId: "media-1" });
+
+      expect(image).toBe(GOOGLE_PICTURE);
     });
   });
 });

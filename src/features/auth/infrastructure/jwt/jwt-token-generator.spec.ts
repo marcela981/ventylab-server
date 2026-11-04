@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de JwtTokenGenerator
- * Descripción: Verifica que el token de refresco conserve exactamente sus claims (sub, email, role, permissions más iat y exp estándar) y que la verificación exponga el iat
- * Versión: 1.0
+ * Descripción: Verifica que el token de refresco conserve exactamente sus claims (sub, email, role, permissions más iat y exp estándar) que la verificación exponga el iat y que un iat explícito (reemisión tras revocar) se conserve con su exp calculado desde él y siga verificándose aunque quede en el futuro
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -52,6 +52,19 @@ describe("JwtTokenGenerator", () => {
 
     expect(claims).toMatchObject(PAYLOAD);
     expect(claims.iat).toBeGreaterThanOrEqual(before);
+  });
+
+  it("keeps an explicit issued-at time, computes exp from it and still verifies a token dated in the future", async () => {
+    const { generator, jwtService } = buildGenerator();
+    const issuedAtSeconds: number = Math.floor(Date.now() / 1000) + 1;
+
+    const token: string = await generator.generateRefreshToken(PAYLOAD, { issuedAtSeconds });
+    const decoded: { iat: number; exp: number } = jwtService.decode<{ iat: number; exp: number }>(token);
+    const claims: RefreshTokenClaims = await generator.verifyRefreshToken(token);
+
+    expect(decoded.iat).toBe(issuedAtSeconds);
+    expect(decoded.exp).toBe(issuedAtSeconds + 7 * 24 * 60 * 60);
+    expect(claims.iat).toBe(issuedAtSeconds);
   });
 
   it("rejects a refresh token signed with another secret", async () => {

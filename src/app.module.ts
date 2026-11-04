@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo raíz AppModule
- * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features, incluidas la consulta de la bitácora de auditoría, las notificaciones persistidas, el estado del sistema y la analítica (con el puerto de notificaciones sin leer enlazado por la raíz de composición); registra el filtro global y los middlewares de traza y contexto
- * Versión: 1.21
+ * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features, incluidas la consulta de la bitácora de auditoría, las notificaciones persistidas, el estado del sistema y la analítica (con el puerto de notificaciones sin leer enlazado por la raíz de composición) y el puerto de alcance docente de usuarios enlazado a GroupsFacade; registra el filtro global y los middlewares de traza y contexto
+ * Versión: 1.22
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -36,6 +36,7 @@ import { TraceIdMiddleware } from "@/common/presentation/middlewares/trace-id.mi
 import { AnalyticsPortsModule } from "@/composition/analytics-ports.module";
 import { CompositionModule } from "@/composition/composition.module";
 import { EvaluationPortsModule } from "@/composition/evaluation-ports.module";
+import { UsersPortsModule } from "@/composition/users-ports.module";
 import { ActivitiesModule } from "@/features/activities/activities.module";
 import { AdminModule } from "@/features/admin/admin.module";
 import { AiModule } from "@/features/ai/ai.module";
@@ -151,6 +152,7 @@ import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/venti
     SystemStatusModule,
     AnalyticsPortsModule,
     EvaluationPortsModule,
+    UsersPortsModule,
     AnalyticsModule,
   ],
   controllers: [HealthController],

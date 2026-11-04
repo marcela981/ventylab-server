@@ -14,6 +14,7 @@
   "type_creation_forbidden": "No tiene permiso para crear este tipo de grupo",
   "invalid_supervision": "Una supervisión debe vincular un grupo de profesores con un grupo de estudiantes",
   "supervision_not_found": "La supervisión no existe",
+  "student_out_of_scope": "El estudiante no pertenece a un grupo que usted creó o supervisa",
   "user_not_found": "El usuario no existe",
   "groups_retrieved": "Grupos obtenidos correctamente",
   "my_groups_retrieved": "Sus grupos se obtuvieron correctamente",

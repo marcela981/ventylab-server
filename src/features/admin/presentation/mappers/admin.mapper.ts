@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación del panel de administración
  * Descripción: Convierte las vistas del modelo de lectura del panel (estudiantes, detalle de estudiante, profesores y estadísticas) y el catálogo de proveedores de IA a los DTOs de respuesta de /api/admin
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import {
   type AdminEvaluationAttemptView,
+  type AdminGroupRef,
   type AdminLessonCompletionView,
   type AdminModuleProgressView,
   type AdminQuizAttemptView,
@@ -32,6 +33,7 @@ import {
 import {
   AdminEvaluationAttemptDTO,
   AdminGraderDTO,
+  AdminGroupRefDTO,
   AdminLessonCompletionDTO,
   AdminModuleProgressDTO,
   AdminQuizAttemptDTO,
@@ -51,11 +53,14 @@ export class AdminMapper {
       id: item.id,
       name: item.name ?? null,
       email: item.email,
+      studentCode: item.studentCode ?? null,
       lastActivity: item.lastActivity ?? null,
       overallProgress: item.overallProgress,
       completedModules: item.completedModules,
       totalModules: item.totalModules,
       groupName: item.groupName ?? null,
+      groups: item.groups.map((group: AdminGroupRef) => new AdminGroupRefDTO({ id: group.id, name: group.name })),
+      canView: item.canView,
     });
   }
 

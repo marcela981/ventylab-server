@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
- * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad
- * Versión: 1.7
+ * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante; gamificación, actividad reciente y logros de un estudiante en solo lectura; listado de grabaciones del ventilador por usuario; ai-ratings:read solo ADMIN; cambio de contraseña en auth; foto de perfil
+ * Versión: 1.8
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -66,13 +66,13 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/admin/ai/providers": ADMIN_ONLY, // settings:manage
   "GET /api/admin/statistics": TEACHER_UP, // admin-statistics:read
   "GET /api/admin/students": TEACHER_UP, // students:read
-  "GET /api/admin/students/:id/progress": TEACHER_UP, // students:read
+  "GET /api/admin/students/:id/progress": { ...TEACHER_UP, teacher: 403 }, // students:read; a teacher only reads students of their groups (403 otherwise)
   "GET /api/admin/teachers": ADMIN_ONLY, // users:read
   "PATCH /api/admin/users/:id/role": ADMIN_ONLY, // users:update_role
 
   // ai-ratings
-  "GET /api/admin/ai-ratings/export.csv": TEACHER_UP, // ai-ratings:read
-  "GET /api/admin/ai-ratings/stats": TEACHER_UP, // ai-ratings:read
+  "GET /api/admin/ai-ratings/export.csv": ADMIN_ONLY, // ai-ratings:read (ADMIN only since Block 4)
+  "GET /api/admin/ai-ratings/stats": ADMIN_ONLY, // ai-ratings:read (ADMIN only since Block 4)
   "GET /api/ai-ratings/mine": STUDENT_UP, // ai-ratings:create_own
   "PUT /api/ai-ratings": STUDENT_UP, // ai-ratings:create_own
 
@@ -109,6 +109,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/auth/me": AUTHENTICATED, // JwtAuthGuard
   "POST /api/auth/google": PUBLIC, // no guard
   "POST /api/auth/login": PUBLIC, // no guard
+  "POST /api/auth/change-password": AUTHENTICATED, // JwtAuthGuard
   "POST /api/auth/logout": AUTHENTICATED, // JwtAuthGuard
   "POST /api/auth/refresh": PUBLIC, // no guard
   "POST /api/auth/register": PUBLIC, // no guard
@@ -345,10 +346,13 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/progress/sections/:sectionId": STUDENT_UP, // progress:read_own
   "GET /api/progress/skills": STUDENT_UP, // progress:read_own
   "GET /api/progress/summary": STUDENT_UP, // progress:read_own
-  "GET /api/progress/users/:userId/levels/:levelId": TEACHER_UP, // progress:read
-  "GET /api/progress/users/:userId/modules/:moduleId": TEACHER_UP, // progress:read
-  "GET /api/progress/users/:userId/sections/:sectionId": TEACHER_UP, // progress:read
-  "GET /api/progress/users/:userId/summary": TEACHER_UP, // progress:read
+  "GET /api/progress/users/:userId/achievements": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
+  "GET /api/progress/users/:userId/activity/recent": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
+  "GET /api/progress/users/:userId/gamification": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
+  "GET /api/progress/users/:userId/levels/:levelId": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
+  "GET /api/progress/users/:userId/modules/:moduleId": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
+  "GET /api/progress/users/:userId/sections/:sectionId": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
+  "GET /api/progress/users/:userId/summary": { ...TEACHER_UP, teacher: 403 }, // progress:read; a teacher only reads students of their groups (403 otherwise)
   "GET /api/teaching/lessons/:lessonId/access": STUDENT_UP, // progress:read_own
   "GET /api/teaching/modules/:moduleId/access": STUDENT_UP, // progress:read_own
   "GET /api/teaching/modules/unlocked": STUDENT_UP, // progress:read_own
@@ -457,6 +461,8 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "PATCH /api/users/:id/status": ADMIN_ONLY, // users:update_status
   "PATCH /api/users/:id/student-code": ADMIN_ONLY, // users:update_status
   "PATCH /api/users/me": AUTHENTICATED, // JwtAuthGuard
+  "PUT /api/users/me/avatar": AUTHENTICATED, // JwtAuthGuard
+  "DELETE /api/users/me/avatar": AUTHENTICATED, // JwtAuthGuard
   "POST /api/users/me/change-password": AUTHENTICATED, // JwtAuthGuard
 
   // ventilator-commands
@@ -471,6 +477,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   // ventilator-telemetry
   "GET /api/ventilator/telemetry/metrics": TEACHER_UP, // ventilator:metrics
   "GET /api/ventilator/telemetry/metrics.csv": TEACHER_UP, // ventilator:metrics
+  "GET /api/ventilator/telemetry/recordings": STUDENT_UP, // simulation:read; another user's list is scoped in the use case
   "GET /api/ventilator/telemetry/recordings/:reservationId": STUDENT_UP, // simulation:read
   "POST /api/ventilator/telemetry/metrics/reset": ADMIN_ONLY, // ventilator:metrics_reset
   "POST /api/ventilator/telemetry/recordings/start": STUDENT_UP, // simulation:read

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba de completitud del contrato OpenAPI
  * Descripción: Lee openapi/openapi.json y falla si el documento no es OpenAPI 3.1 sin nullable, si alguna operación no tiene respuesta 2xx con contenido (salvo 204), seguridad cuando está protegida, x-min-role, x-required-permissions, respuestas de error con ErrorResponse (500 siempre, 401 si autentica, 403 si exige permisos) u operationId único; además contrasta x-min-role con la matriz de autorización e2e (misma cantidad de operaciones y el rol mínimo que la matriz observa, salvo divergencias explicadas por reglas del caso de uso) y verifica que ningún DTO comparta nombre de esquema con otro
- * Versión: 1.1
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,7 +28,15 @@ const ERROR_RESPONSE_REF: string = "#/components/schemas/ErrorResponse";
 
 // Routes where the guards admit a lower role than the matrix observes, because the use case or the self-or rule adds a check the random fixture cannot satisfy.
 const MATRIX_DIVERGENCES: Readonly<Record<string, string>> = {
+  "GET /api/admin/students/:id/progress": "a teacher only reads students of the groups they created or supervise (GroupsFacade.assertCanViewStudent)",
   "GET /api/analytics/students/:userId/timeline": "a teacher only sees STUDENT members of their groups (use case)",
+  "GET /api/progress/users/:userId/achievements": "a teacher only reads students of the groups they created or supervise (GroupsFacade.assertCanViewStudent)",
+  "GET /api/progress/users/:userId/activity/recent": "a teacher only reads students of the groups they created or supervise (GroupsFacade.assertCanViewStudent)",
+  "GET /api/progress/users/:userId/gamification": "a teacher only reads students of the groups they created or supervise (GroupsFacade.assertCanViewStudent)",
+  "GET /api/progress/users/:userId/levels/:levelId": "a teacher only reads students of the groups they created or supervise (GroupsFacade.assertCanViewStudent)",
+  "GET /api/progress/users/:userId/modules/:moduleId": "a teacher only reads students of the groups they created or supervise (GroupsFacade.assertCanViewStudent)",
+  "GET /api/progress/users/:userId/sections/:sectionId": "a teacher only reads students of the groups they created or supervise (GroupsFacade.assertCanViewStudent)",
+  "GET /api/progress/users/:userId/summary": "a teacher only reads students of the groups they created or supervise (GroupsFacade.assertCanViewStudent)",
   "GET /api/teachers/:id/students": "a teacher passes only for their own ID (self-or rule)",
   "GET /api/teachers/:teacherId/students/:studentId/progress": "a teacher passes only for their own ID (self-or rule)",
 };

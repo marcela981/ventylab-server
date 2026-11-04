@@ -1,7 +1,7 @@
 <!--
 Funcionalidad: Inventario de endpoints heredados
-Descripción: Lista las rutas HTTP heredadas marcadas como deprecadas, su ruta sucesora, las cabeceras que envían y los consumidores actuales en el frontend (ventilab-web, rama master). v1.1: rutas deprecadas en el Bloque 2 (acceso a lección, reanudación, hitos y habilidades)
-Versión: 1.1
+Descripción: Lista las rutas HTTP heredadas marcadas como deprecadas, su ruta sucesora, las cabeceras que envían y los consumidores actuales en el frontend (ventilab-web, rama master). v1.1: rutas deprecadas en el Bloque 2 (acceso a lección, reanudación, hitos y habilidades). v1.2: cambio de contraseña en /api/users/me deprecado en el Bloque 4
+Versión: 1.2
 Autor: Marcela Mazo Castro
 Proyecto: VentyLab
 Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -57,8 +57,9 @@ Frontend consumers were found by searching `ventilab-web/src` (branch `master`, 
 | `GET /api/progress/resume/:moduleId` | `GET /api/progress/modules/:moduleId` (same as above) | yes | no consumer found |
 | `GET /api/progress/milestones` | `GET /api/progress/summary` (milestones are derived on the client from real curriculum progress) | yes | static catalog |
 | `GET /api/progress/skills` | `GET /api/progress/summary` (skills are derived on the client from real curriculum progress) | yes | static catalog |
+| `POST /api/users/me/change-password` | `POST /api/auth/change-password` (also revokes the refresh tokens, and reissues the current session's pair) | yes | no consumer found |
 
-33 operations in total. The five Block 2 deprecations (the last five rows) send `Deprecation: @1793145600` (since 2026-10-28T00:00:00Z, `BLOCK2_ROUTES_DEPRECATED_AT`). The frontend also calls `POST /api/progress/lesson/:lessonId/complete-unified` (`src/features/ensenanza/shared/progreso/api/progress.api.ts:108`), which the backend does not register.
+34 operations in total. The five Block 2 deprecations (the last five rows) send `Deprecation: @1793145600` (since 2026-10-28T00:00:00Z, `BLOCK2_ROUTES_DEPRECATED_AT`); the Block 4 one (last row) sends `Deprecation: @1793664000` (since 2026-11-03T00:00:00Z, `BLOCK4_ROUTES_DEPRECATED_AT`). The frontend also calls `POST /api/progress/lesson/:lessonId/complete-unified` (`src/features/ensenanza/shared/progreso/api/progress.api.ts:108`), which the backend does not register.
 
 ## Adding or retiring a legacy route
 

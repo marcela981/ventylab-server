@@ -13,7 +13,12 @@ import { type MqttQos } from "@/features/ventilator-telemetry/application/ports/
 import { type ITelemetryChunkCodec } from "@/features/ventilator-telemetry/application/ports/telemetry-chunk-codec.interface";
 import { type ITelemetryClock } from "@/features/ventilator-telemetry/application/ports/telemetry-clock.interface";
 import { type VentilatorTelemetrySettings } from "@/features/ventilator-telemetry/application/tokens/ventilator-telemetry-settings.token";
-import { type ITelemetryChunksRepository, type RecordedReservationHolder } from "@/features/ventilator-telemetry/domain/repositories/telemetry-chunks.repository";
+import {
+  type ITelemetryChunksRepository,
+  type RecordedReservationHolder,
+  type TelemetryRecordingsFilter,
+  type TelemetryRecordingSummary,
+} from "@/features/ventilator-telemetry/domain/repositories/telemetry-chunks.repository";
 import { type RecordedTelemetrySample, type TelemetryChunk } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-chunk";
 import { type MqttClientLike } from "@/features/ventilator-telemetry/infrastructure/mqtt/mqtt-client";
 
@@ -114,6 +119,23 @@ export class InMemoryTelemetryChunksRepository implements ITelemetryChunksReposi
 
   public async getReservationHolder(reservationId: string): Promise<RecordedReservationHolder | undefined> {
     return await Promise.resolve(this.holders.get(reservationId));
+  }
+
+  public async listRecordingsOfUser(filter: TelemetryRecordingsFilter): Promise<TelemetryRecordingSummary[]> {
+    const summaries: TelemetryRecordingSummary[] = [...this.holders.values()]
+      .filter((holder: RecordedReservationHolder): boolean => holder.userId === filter.userId && holder.startsAt >= filter.from && holder.startsAt < filter.to)
+      .map((holder: RecordedReservationHolder): TelemetryRecordingSummary => ({
+        reservationId: holder.id,
+        holderType: holder.holderType,
+        groupId: holder.groupId,
+        startsAt: holder.startsAt,
+        endsAt: holder.endsAt,
+        status: "COMPLETED",
+        chunkCount: this.chunks.filter((chunk: TelemetryChunk): boolean => chunk.reservationId === holder.id).length,
+      }))
+      .filter((summary: TelemetryRecordingSummary): boolean => summary.chunkCount > 0);
+
+    return await Promise.resolve(summaries.slice(0, filter.limit));
   }
 }
 

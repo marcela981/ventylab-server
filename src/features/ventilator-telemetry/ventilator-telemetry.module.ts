@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo VentilatorTelemetryModule
- * Descripción: Registra la telemetría del ventilador físico: conexión MQTT única, decodificador configurable, pipeline por lotes hacia Socket.io, acceso a la sala ventilator, vigilancia de actividad, métricas, grabación en telemetry_chunks y destino InfluxDB opcional (los ajustes VENTILATOR_TELEMETRY_SETTINGS_TOKEN los enlaza la raíz de composición); exporta VentilatorTelemetryFacade y depende solo de la fachada de reservas
- * Versión: 1.1
+ * Descripción: Registra la telemetría del ventilador físico: conexión MQTT única, decodificador configurable, pipeline por lotes hacia Socket.io, acceso a la sala ventilator, vigilancia de actividad, métricas, grabación en telemetry_chunks (lectura y listado por usuario) y destino InfluxDB opcional (los ajustes VENTILATOR_TELEMETRY_SETTINGS_TOKEN los enlaza la raíz de composición); exporta VentilatorTelemetryFacade y depende de las fachadas de reservas y de grupos (alcance docente de las grabaciones)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,6 +12,7 @@ import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
+import { GroupsModule } from "@/features/groups/groups.module";
 import { ReservationsModule } from "@/features/reservations/reservations.module";
 import { MQTT_CONNECTION_TOKEN } from "@/features/ventilator-telemetry/application/ports/mqtt-connection.interface";
 import { TELEMETRY_CHUNK_CODEC_TOKEN } from "@/features/ventilator-telemetry/application/ports/telemetry-chunk-codec.interface";
@@ -30,6 +31,7 @@ import {
   type VentilatorTelemetrySettings,
 } from "@/features/ventilator-telemetry/application/tokens/ventilator-telemetry-settings.token";
 import { GetTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/get-telemetry-recording.usecase";
+import { ListTelemetryRecordingsUseCase } from "@/features/ventilator-telemetry/application/use-cases/list-telemetry-recordings.usecase";
 import { StartTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/start-telemetry-recording.usecase";
 import { StopTelemetryRecordingUseCase } from "@/features/ventilator-telemetry/application/use-cases/stop-telemetry-recording.usecase";
 import {
@@ -63,7 +65,7 @@ function createDecoder(settings: VentilatorTelemetrySettings): TelemetryDecoder 
 }
 
 @Module({
-  imports: [ReservationsModule],
+  imports: [ReservationsModule, GroupsModule],
   controllers: [VentilatorTelemetryController],
   providers: [
     { provide: TELEMETRY_DECODER_TOKEN, useFactory: createDecoder, inject: [VENTILATOR_TELEMETRY_SETTINGS_TOKEN] },
@@ -86,6 +88,7 @@ function createDecoder(settings: VentilatorTelemetrySettings): TelemetryDecoder 
     StartTelemetryRecordingUseCase,
     StopTelemetryRecordingUseCase,
     GetTelemetryRecordingUseCase,
+    ListTelemetryRecordingsUseCase,
     VentilatorTelemetryEventsHandlers,
     VentilatorTelemetryLifecycleService,
     VentilatorTelemetryFacade,

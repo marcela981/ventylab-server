@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio de grupos
- * Descripción: Contrato de persistencia y lectura del agregado Group (búsqueda, unicidad del código de inscripción, conteo de subgrupos, vistas del listado y detalle), de las lecturas de pertenencia que consumen otras features (grupos de un usuario y grupo activo), del alcance de supervisión del profesor, del historial que impide el borrado físico y de las vistas del grupo propio y las membresías de un usuario
- * Versión: 1.1
+ * Descripción: Contrato de persistencia y lectura del agregado Group (búsqueda, unicidad del código de inscripción, conteo de subgrupos, vistas del listado y detalle), de las lecturas de pertenencia que consumen otras features (grupos de un usuario y grupo activo), del alcance de supervisión del profesor, del historial que impide el borrado físico y de las vistas del grupo propio y las membresías de un usuario, y de los grupos STUDENT activos de varios usuarios en una sola lectura
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import {
   type GroupMembershipSummaryView,
   type GroupView,
   type StudentGroupSummaryView,
+  type UserActiveStudentGroupView,
 } from "@/features/groups/domain/read-models/group.read-model";
 
 export const GROUPS_REPOSITORY_TOKEN: unique symbol = Symbol("GROUPS_REPOSITORY_TOKEN");
@@ -32,6 +33,7 @@ export interface IGroupsRepository {
   hasActivityHistory(groupId: string, transaction?: unknown): Promise<boolean>;
   getStudentGroupSummaryOfUser(userId: string): Promise<StudentGroupSummaryView | undefined>;
   getMembershipSummariesOfUser(userId: string): Promise<GroupMembershipSummaryView[]>;
+  getActiveStudentGroupsOfUsers(userIds: ReadonlyArray<string>): Promise<UserActiveStudentGroupView[]>;
   save(group: Group, transaction?: unknown): Promise<void>;
   delete(group: Group, transaction?: unknown): Promise<void>;
 }

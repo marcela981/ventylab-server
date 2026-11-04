@@ -80,7 +80,7 @@ describe("ExportResearchDatasetUseCase", () => {
       grades: [hmac(`evaluation:${EVALUATION_ID}`)],
       simulation: ["all"],
       ai_telemetry: ["FREE_CHAT"],
-      ai_ratings: ["FREE_CHAT"],
+      ai_ratings: ["ASSISTANT/FREE_CHAT"],
     };
 
     expect(csv.split("\r\n")[0]).toBe("participant,group,domain,item,metric,value");

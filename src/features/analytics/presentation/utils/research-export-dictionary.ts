@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Diccionario de datos de la exportación de investigación
  * Descripción: Definición única de las columnas del CSV de investigación en formato largo (nombre, tipo, descripción en español y ejemplo), usada por el escritor del CSV para el orden de columnas, por la ruta del diccionario de datos y por docs/operation/RESEARCH-EXPORT-DICTIONARY.md
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,7 +44,7 @@ export const RESEARCH_EXPORT_DICTIONARY: readonly ResearchExportColumnDefinition
     column: "item",
     type: "string",
     description:
-      "Elemento medido dentro del dominio: overall o el identificador de la sección en progress, el seudónimo HMAC-SHA256 del prefijo evaluation: seguido del identificador de la evaluación en grades, all en simulation y el nombre del caso de uso de IA en ai_telemetry y ai_ratings",
+      "Elemento medido dentro del dominio: overall o el identificador de la sección en progress, el seudónimo HMAC-SHA256 del prefijo evaluation: seguido del identificador de la evaluación en grades, all en simulation, el nombre del caso de uso de IA en ai_telemetry y, en ai_ratings, la superficie (la guardada o, si falta, la que implica el tipo de objetivo; unknown si no hay ninguna) y el caso de uso separados por una barra, por ejemplo NOTES_ANALYSIS/NOTES_ANALYSIS",
     example: "overall",
   },
   {

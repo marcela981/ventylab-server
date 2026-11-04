@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Manual de operación (runbook)
-  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos. v1.2: la base de producción es PostgreSQL en Dokploy (VPS), no Supabase. v1.3 (Bloque 1): migraciones al desplegar
-  Versión: 1.3
+  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos. v1.2: la base de producción es PostgreSQL en Dokploy (VPS), no Supabase. v1.3 (Bloque 1): migraciones al desplegar. v1.4 (Bloque 4): sin secretos del puente retirado; el cambio de contraseña revoca los refresh tokens
+  Versión: 1.4
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -138,11 +138,9 @@ All secrets are environment variables read at boot through `ConfigService`; **ev
 
 | Secret | Used by | What a rotation invalidates | Steps |
 | --- | --- | --- | --- |
-| `JWT_SECRET` | access tokens (`src/features/auth/auth.module.ts`), Socket.io handshake (through `ACCESS_TOKEN_VERIFIER_TOKEN`), tokens issued by the NextAuth bridge | Every access token at once: HTTP 401 and socket handshakes rejected. Refresh tokens stay valid, so clients that refresh on 401 recover. | Set the new value, restart, watch 401s fall after clients refresh. |
+| `JWT_SECRET` | access tokens (`src/features/auth/auth.module.ts`), Socket.io handshake (through `ACCESS_TOKEN_VERIFIER_TOKEN`) | Every access token at once: HTTP 401 and socket handshakes rejected. Refresh tokens stay valid, so clients that refresh on 401 recover. | Set the new value, restart, watch 401s fall after clients refresh. |
 | `JWT_REFRESH_SECRET` | refresh tokens (`src/features/auth/infrastructure/jwt/jwt-token-generator.ts`) | Every refresh token: users must sign in again when their access token (`JWT_EXPIRES_IN`) expires. | Rotate outside class hours. |
-| Per-user revocation | `users.refreshTokensRevokedAt` | Refresh tokens of **one** user issued before that instant (401 on refresh). Set by password change, role change and deactivation (`src/features/users/domain/entities/user.entity.ts`). Access tokens stay valid until they expire: `JwtAuthGuard` is stateless and logout only tells the client to discard tokens. | Prefer this over a global rotation for a single compromised account. |
-| `NEXTAUTH_BRIDGE_SECRET` | `POST /api/auth/nextauth-token`, header `x-nextauth-bridge-secret` (`src/features/auth/presentation/guards/nextauth-bridge.guard.ts`) | The frontend's token exchange until `ventilab-web` has the same value. | Change both deployments together. |
-| `NEXTAUTH_SECRET` | validated at startup; no other code in `src/` reads it | Nothing in this backend. It belongs to NextAuth in the frontend. | Optional since it is unused; unset it or rotate it with the frontend. |
+| Per-user revocation | `users.refreshTokensRevokedAt` | Refresh tokens of **one** user issued before that instant (401 on refresh). Set by password change, role change and deactivation (`src/features/users/domain/entities/user.entity.ts`); `POST /api/auth/change-password` reissues the pair of the session that changed it. Access tokens stay valid until they expire: `JwtAuthGuard` is stateless and logout only tells the client to discard tokens. | Prefer this over a global rotation for a single compromised account. |
 | `ADMIN_API_KEY` | `src/common/presentation/guards/admin-api-key.guard.ts` (`x-admin-api-key`) | Nothing today: no route uses that guard. | Optional; rotate anyway if leaked, or unset it. |
 | `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AI_CUSTOM_HTTP_AUTH_VALUE` | AI providers | Only that provider until the new key is set; the gateway falls over to the next provider or the fallback meanwhile (section 3). | Create the new key at the provider, set it, restart, `POST /api/system/probe/ai/<provider>`, then revoke the old key. |
 | `MQTT_USERNAME` / `MQTT_PASSWORD` | broker connection | The server's broker connection when the broker changes credentials (section 1 symptoms). The device has its own credentials on the broker. | Add the new credentials on the broker, update the server, restart, then remove the old ones. |

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Repositorio Prisma de lectura del panel de administración
- * Descripción: Modelo de lectura que agrega en consultas directas tablas de varias features (users, group_members, groups, user_progress, lesson_completions, lessons, modules, evaluation_attempts, student_evaluation_attempts de evaluaciones QUIZ en lugar de la tabla congelada quiz_attempts, simulator_sessions, scores, clinical_cases y reservations, cuya reserva activa se deriva de la ventana SCHEDULED vigente), igual que el servicio de administración original; no escribe en ninguna
- * Versión: 1.2
+ * Descripción: Modelo de lectura que agrega en consultas directas tablas de varias features (users, group_members, groups, user_progress, lesson_completions, lessons, modules, evaluation_attempts, student_evaluation_attempts de evaluaciones QUIZ en lugar de la tabla congelada quiz_attempts, simulator_sessions, scores, clinical_cases y reservations, cuya reserva activa se deriva de la ventana SCHEDULED vigente), igual que el servicio de administración original; los profesores muestran los grupos STUDENT activos que crearon o supervisan desde un grupo TEACHER activo del que son miembros y los estudiantes distintos (rol STUDENT) de esos grupos; las estadísticas cuentan módulos y lecciones publicados con los filtros del currículo y las evaluaciones READY; el listado de estudiantes filtra por nombre, correo o código y por grupos, y devuelve los grupos STUDENT activos y todos sus grupos STUDENT (para el alcance docente) sin calcular avance; no escribe en ninguna
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,20 +9,20 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { Injectable } from "@nestjs/common";
-import { type Prisma, ReservationLifecycleStatus } from "@prisma/client";
+import { type GroupType, type Prisma, ReservationLifecycleStatus } from "@prisma/client";
 
-import { Paginated } from "@/common/domain/utils/paginated";
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import {
   type AdminStudentActivity,
-  type AdminStudentListItem,
+  type AdminStudentFilter,
+  type AdminStudentPageRequest,
   type AdminStudentProfile,
+  type AdminStudentRow,
   type AdminTeacherItem,
-  type GetAdminStudentsQuery,
   type PlatformCounts,
 } from "@/features/admin/domain/read-models/admin-dashboard.read-model";
 import { type IAdminDashboardRepository } from "@/features/admin/domain/repositories/admin-dashboard.repository";
-import { type ModuleProgressSummary, sortStudentsByComputedField, summarizeModuleProgress } from "@/features/admin/domain/services/admin-dashboard-calculator";
+import { publishedLessonWhere, publishedModuleWhere } from "@/features/curriculum/infrastructure/persistence/prisma/published-content-filters";
 import {
   QUIZ_RESULT_ATTEMPT_SCOPE,
   QUIZ_RESULT_ATTEMPT_SELECT,
@@ -31,19 +31,70 @@ import {
 } from "@/features/progress/infrastructure/persistence/prisma/quiz-results";
 import { type QuizAttemptRow } from "@/features/quizzes/infrastructure/persistence/prisma/mappers/quizzes.mapper";
 
-const TEACHER_MEMBER_ROLE: string = "TEACHER";
-const STUDENT_MEMBER_ROLE: string = "STUDENT";
 const ACTIVE_RESERVATION_STATUS: ReservationLifecycleStatus = ReservationLifecycleStatus.SCHEDULED;
 const RECENT_COMPLETIONS_LIMIT: number = 10;
 const LESSON_COMPLETIONS_LIMIT: number = 50;
 const QUIZ_ATTEMPTS_LIMIT: number = 30;
 
+const STUDENT_GROUP_TYPE: GroupType = "STUDENT";
+
+const STUDENT_ROW_SELECT: {
+  id: true;
+  name: true;
+  email: true;
+  studentCode: true;
+  groupMembers: {
+    where: Prisma.GroupMemberWhereInput;
+    select: { group: { select: { id: true; name: true; isActive: true } } };
+    orderBy: { joinedAt: "asc" };
+  };
+} = {
+  id: true,
+  name: true,
+  email: true,
+  studentCode: true,
+  groupMembers: {
+    where: { group: { type: STUDENT_GROUP_TYPE } },
+    select: { group: { select: { id: true, name: true, isActive: true } } },
+    orderBy: { joinedAt: "asc" },
+  },
+};
+
 interface StudentListRow {
   id: string;
   name: string | null;
   email: string;
-  groupMembers: { group: { name: string } }[];
-  userProgress: { progressPercentage: number; isModuleCompleted: boolean; lastAccessedAt: Date }[];
+  studentCode: string | null;
+  groupMembers: { group: { id: string; name: string; isActive: boolean } }[];
+}
+
+function toStudentRow(row: StudentListRow): AdminStudentRow {
+  return {
+    id: row.id,
+    name: row.name ?? undefined,
+    email: row.email,
+    studentCode: row.studentCode ?? undefined,
+    activeGroups: row.groupMembers.filter((member: StudentListRow["groupMembers"][number]) => member.group.isActive).map((member: StudentListRow["groupMembers"][number]) => ({ id: member.group.id, name: member.group.name })),
+    groupIds: row.groupMembers.map((member: StudentListRow["groupMembers"][number]) => member.group.id),
+  };
+}
+
+function studentWhere(filter: AdminStudentFilter): Prisma.UserWhereInput {
+  const where: Prisma.UserWhereInput = { role: "STUDENT" };
+
+  if (filter.search) {
+    where.OR = [
+      { name: { contains: filter.search, mode: "insensitive" } },
+      { email: { contains: filter.search, mode: "insensitive" } },
+      { studentCode: { contains: filter.search, mode: "insensitive" } },
+    ];
+  }
+
+  if (filter.groupIds !== undefined) {
+    where.groupMembers = { some: { groupId: { in: [...filter.groupIds] } } };
+  }
+
+  return where;
 }
 
 interface QuizAttemptActivityRow extends QuizAttemptRow {
@@ -58,78 +109,69 @@ interface TeacherRow {
   role: string;
   image: string | null;
   createdAt: Date;
-  groupMembers: { group: { id: string; name: string } }[];
   _count: { createdGroups: number };
+}
+
+interface ManagedGroupRow {
+  id: string;
+  name: string;
+  createdBy: string | null;
+  supervisingGroups: { teacherGroup: { members: { userId: string }[] } }[];
+  members: { userId: string }[];
+}
+
+function isManagedBy(group: ManagedGroupRow, teacherId: string): boolean {
+  return (
+    group.createdBy === teacherId ||
+    group.supervisingGroups.some((supervision: ManagedGroupRow["supervisingGroups"][number]) =>
+      supervision.teacherGroup.members.some((member: { userId: string }) => member.userId === teacherId),
+    )
+  );
 }
 
 @Injectable()
 export class AdminDashboardPrismaRepository implements IAdminDashboardRepository {
   public constructor(private readonly _prisma: PrismaService) {}
 
-  public async getStudents(query: GetAdminStudentsQuery): Promise<Paginated<AdminStudentListItem>> {
-    const skip: number = (query.page - 1) * query.limit;
-    const where: Prisma.UserWhereInput = { role: "STUDENT" };
+  public async countStudents(filter: AdminStudentFilter): Promise<number> {
+    return await this._prisma.user.count({ where: studentWhere(filter) });
+  }
 
-    if (query.search) {
-      where.OR = [
-        { name: { contains: query.search, mode: "insensitive" } },
-        { email: { contains: query.search, mode: "insensitive" } },
-      ];
-    }
-
-    if (query.groupId) {
-      where.groupMembers = { some: { groupId: query.groupId } };
-    } else if (query.teacherId) {
-      const teacherGroupIds: string[] = await this._getTeacherGroupIds(query.teacherId);
-
-      if (teacherGroupIds.length > 0) {
-        where.groupMembers = { some: { groupId: { in: teacherGroupIds } } };
-      }
-    }
-
-    const sortsInMemory: boolean = query.sortBy === "lastActivity" || query.sortBy === "progress";
-    const orderBy: Prisma.UserOrderByWithRelationInput = sortsInMemory
-      ? { name: "asc" }
-      : query.sortBy === "email"
-        ? { email: query.sortOrder }
-        : { name: query.sortOrder };
-
-    const [rows, total]: [StudentListRow[], number] = await Promise.all([
-      this._prisma.user.findMany({
-        where,
-        ...(sortsInMemory ? {} : { skip, take: query.limit }),
-        orderBy,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          groupMembers: { select: { group: { select: { name: true } } } },
-          userProgress: { select: { progressPercentage: true, isModuleCompleted: true, lastAccessedAt: true } },
-        },
-      }),
-      this._prisma.user.count({ where }),
-    ]);
-
-    let students: AdminStudentListItem[] = rows.map((row: StudentListRow): AdminStudentListItem => {
-      const summary: ModuleProgressSummary = summarizeModuleProgress(row.userProgress);
-
-      return {
-        id: row.id,
-        name: row.name ?? undefined,
-        email: row.email,
-        lastActivity: summary.lastActivity,
-        overallProgress: summary.overallProgress,
-        completedModules: summary.completedModules,
-        totalModules: summary.totalModules,
-        groupName: row.groupMembers[0]?.group.name,
-      };
+  public async getStudentPage(filter: AdminStudentFilter, page: AdminStudentPageRequest): Promise<AdminStudentRow[]> {
+    const rows: StudentListRow[] = await this._prisma.user.findMany({
+      where: studentWhere(filter),
+      orderBy: [page.sortBy === "email" ? { email: page.sortOrder } : { name: page.sortOrder }, { id: "asc" }],
+      skip: page.skip,
+      take: page.take,
+      select: STUDENT_ROW_SELECT,
     });
 
-    if (sortsInMemory) {
-      students = sortStudentsByComputedField(students, query.sortBy, query.sortOrder).slice(skip, skip + query.limit);
+    return rows.map(toStudentRow);
+  }
+
+  public async getStudentIds(filter: AdminStudentFilter): Promise<string[]> {
+    const rows: { id: string }[] = await this._prisma.user.findMany({
+      where: studentWhere(filter),
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      select: { id: true },
+    });
+
+    return rows.map((row: { id: string }) => row.id);
+  }
+
+  public async getStudentRows(ids: readonly string[]): Promise<AdminStudentRow[]> {
+    if (ids.length === 0) {
+      return [];
     }
 
-    return new Paginated({ items: students, total, page: query.page, limit: query.limit });
+    const rows: StudentListRow[] = await this._prisma.user.findMany({ where: { id: { in: [...ids] } }, select: STUDENT_ROW_SELECT });
+    const byId: Map<string, AdminStudentRow> = new Map(rows.map((row: StudentListRow): [string, AdminStudentRow] => [row.id, toStudentRow(row)]));
+
+    return ids.flatMap((id: string): AdminStudentRow[] => {
+      const row: AdminStudentRow | undefined = byId.get(id);
+
+      return row ? [row] : [];
+    });
   }
 
   public async getStudentProfile(userId: string): Promise<AdminStudentProfile | undefined> {
@@ -283,25 +325,14 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
 
     const rows: TeacherRow[] = await this._prisma.user.findMany({
       where,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        image: true,
-        createdAt: true,
-        groupMembers: { where: { role: TEACHER_MEMBER_ROLE }, select: { group: { select: { id: true, name: true } } } },
-        _count: { select: { createdGroups: true } },
-      },
+      select: { id: true, name: true, email: true, role: true, image: true, createdAt: true, _count: { select: { createdGroups: true } } },
       orderBy: { name: "asc" },
     });
-
-    const studentCounts: Map<string, number> = await this._countStudentsInGroups(
-      rows.flatMap((row: TeacherRow) => row.groupMembers.map((member: { group: { id: string } }) => member.group.id)),
-    );
+    const groups: ManagedGroupRow[] = await this._getManagedGroups(rows.map((row: TeacherRow) => row.id));
 
     return rows.map((row: TeacherRow): AdminTeacherItem => {
-      const groupIds: Set<string> = new Set(row.groupMembers.map((member: { group: { id: string } }) => member.group.id));
+      const managed: ManagedGroupRow[] = groups.filter((group: ManagedGroupRow) => isManagedBy(group, row.id));
+      const students: Set<string> = new Set(managed.flatMap((group: ManagedGroupRow) => group.members.map((member: { userId: string }) => member.userId)));
 
       return {
         id: row.id,
@@ -310,8 +341,8 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
         role: row.role,
         image: row.image ?? undefined,
         createdAt: row.createdAt,
-        groups: row.groupMembers.map((member: { group: { id: string; name: string } }) => member.group),
-        studentCount: [...groupIds].reduce((sum: number, groupId: string) => sum + (studentCounts.get(groupId) ?? 0), 0),
+        groups: managed.map((group: ManagedGroupRow) => ({ id: group.id, name: group.name })),
+        studentCount: students.size,
         groupsCreated: row._count.createdGroups,
       };
     });
@@ -326,6 +357,7 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
       totalAdmins,
       totalGroups,
       totalModules,
+      publishedModules,
       totalLessons,
       totalEvaluations,
       totalSimulatorSessions,
@@ -341,8 +373,9 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
       this._prisma.user.count({ where: { role: "ADMIN" } }),
       this._prisma.group.count({ where: { isActive: true } }),
       this._prisma.module.count({ where: { isActive: true } }),
-      this._prisma.lesson.count({ where: { isActive: true } }),
-      this._prisma.clinicalCase.count({ where: { isActive: true } }),
+      this._prisma.module.count({ where: { AND: [{ isActive: true }, publishedModuleWhere()] } }),
+      this._prisma.lesson.count({ where: { AND: [{ isActive: true }, publishedLessonWhere()] } }),
+      this._prisma.evaluation.count({ where: { status: "READY" } }),
       this._prisma.simulatorSession.count(),
       this._prisma.lessonCompletion.count({ where: { isCompleted: true, completedAt: { gte: todayStart } } }),
       this._prisma.reservation.findFirst({
@@ -368,6 +401,7 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
       totalAdmins,
       totalGroups,
       totalModules,
+      publishedModules,
       totalLessons,
       totalEvaluations,
       totalSimulatorSessions,
@@ -390,31 +424,30 @@ export class AdminDashboardPrismaRepository implements IAdminDashboardRepository
     };
   }
 
-  private async _getTeacherGroupIds(teacherId: string): Promise<string[]> {
-    const memberships: { groupId: string }[] = await this._prisma.groupMember.findMany({
-      where: { userId: teacherId, role: TEACHER_MEMBER_ROLE },
-      select: { groupId: true },
-    });
-
-    return memberships.map((membership: { groupId: string }) => membership.groupId);
-  }
-
-  private async _countStudentsInGroups(groupIds: string[]): Promise<Map<string, number>> {
-    if (groupIds.length === 0) {
-      return new Map<string, number>();
+  // Active STUDENT groups created by, or supervised from an active TEACHER group with, any of the teachers; one query.
+  private async _getManagedGroups(teacherIds: string[]): Promise<ManagedGroupRow[]> {
+    if (teacherIds.length === 0) {
+      return [];
     }
 
-    const memberships: { groupId: string }[] = await this._prisma.groupMember.findMany({
-      where: { groupId: { in: [...new Set(groupIds)] }, role: STUDENT_MEMBER_ROLE },
-      select: { groupId: true },
+    return await this._prisma.group.findMany({
+      where: {
+        type: STUDENT_GROUP_TYPE,
+        isActive: true,
+        OR: [
+          { createdBy: { in: teacherIds } },
+          { supervisingGroups: { some: { teacherGroup: { isActive: true, members: { some: { userId: { in: teacherIds } } } } } } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        createdBy: true,
+        supervisingGroups: { where: { teacherGroup: { isActive: true } }, select: { teacherGroup: { select: { members: { select: { userId: true } } } } } },
+        members: { where: { user: { role: "STUDENT" } }, select: { userId: true } },
+      },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
     });
-    const counts: Map<string, number> = new Map<string, number>();
-
-    for (const membership of memberships) {
-      counts.set(membership.groupId, (counts.get(membership.groupId) ?? 0) + 1);
-    }
-
-    return counts;
   }
 
   private async _findQuizAttempts(userId: string): Promise<QuizAttemptActivityRow[]> {

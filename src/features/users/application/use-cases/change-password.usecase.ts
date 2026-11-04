@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso ChangePasswordUseCase
  * Descripción: Verifica la contraseña actual, guarda la nueva y cierra las sesiones previas
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,6 +24,7 @@ import {
 } from "@/features/users/domain/users.errors";
 
 /**
+ * Returns the refresh token revocation instant set by the change.
  * @throws {UserNotFoundError} If the user does not exist
  * @throws {PasswordNotSetError} If the user signed up with an external provider and has no password
  * @throws {InvalidCurrentPasswordError} If the current password does not match
@@ -42,8 +43,8 @@ export class ChangePasswordUseCase {
     private readonly _passwordHasher: IPasswordHasher,
   ) {}
 
-  public async execute(command: ChangePasswordCommand): Promise<void> {
-    await this._transactionManager.run(async (transaction: unknown): Promise<void> => {
+  public async execute(command: ChangePasswordCommand): Promise<Date> {
+    return await this._transactionManager.run(async (transaction: unknown): Promise<Date> => {
       const user: User | undefined = await this._usersRepository.getById(command.userId, transaction);
 
       if (!user) {
@@ -77,6 +78,8 @@ export class ChangePasswordUseCase {
       await this._usersRepository.revokeSessions(user.id, transaction);
 
       this._eventBus.publish(user.getEvents());
+
+      return user.refreshTokensRevokedAt ?? new Date();
     });
   }
 }

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de estudiantes del panel de administración
- * Descripción: Formas de respuesta documentadas en Swagger para el listado de estudiantes y el detalle de actividad de un estudiante (perfil, grupos, módulos, lecciones, evaluaciones, quizzes, simulador, calificaciones y estadísticas)
- * Versión: 1.0
+ * Descripción: Formas de respuesta documentadas en Swagger para el listado de estudiantes (con código, grupos activos y si el solicitante puede abrir el detalle) y el detalle de actividad de un estudiante (perfil, grupos, módulos, lecciones, evaluaciones, quizzes, simulador, calificaciones y estadísticas)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,19 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { ApiProperty } from "@nestjs/swagger";
+
+export class AdminGroupRefDTO {
+  @ApiProperty({ description: "Group ID", example: "cm5group01" })
+  public id: string;
+
+  @ApiProperty({ description: "Group name", example: "Grupo A" })
+  public name: string;
+
+  public constructor(fields: AdminGroupRefDTO) {
+    this.id = fields.id;
+    this.name = fields.name;
+  }
+}
 
 export class AdminStudentListItemDTO {
   @ApiProperty({ description: "Student ID", example: "cm5student01" })
@@ -20,30 +33,42 @@ export class AdminStudentListItemDTO {
   @ApiProperty({ description: "Student email", example: "ana@example.com" })
   public email: string;
 
-  @ApiProperty({ description: "Most recent module access", example: "2026-03-01T10:00:00.000Z", nullable: true, type: Date })
+  @ApiProperty({ description: "Institutional student code", example: "2026-0001", nullable: true, type: String })
+  public studentCode: string | null;
+
+  @ApiProperty({ description: "Most recent page or lesson activity", example: "2026-03-01T10:00:00.000Z", nullable: true, type: Date })
   public lastActivity: Date | null;
 
-  @ApiProperty({ description: "Rounded average progress over started modules (0-100)", example: 45 })
+  @ApiProperty({ description: "Lesson-weighted progress over all published content (0-100, rounded down)", example: 45 })
   public overallProgress: number;
 
-  @ApiProperty({ description: "Completed modules", example: 2 })
+  @ApiProperty({ description: "Completed published modules", example: 2 })
   public completedModules: number;
 
-  @ApiProperty({ description: "Started modules", example: 5 })
+  @ApiProperty({ description: "Published modules", example: 5 })
   public totalModules: number;
 
-  @ApiProperty({ description: "Name of the first group of the student", example: "Grupo A", nullable: true, type: String })
+  @ApiProperty({ description: "Name of the first active group of the student", example: "Grupo A", nullable: true, type: String })
   public groupName: string | null;
+
+  @ApiProperty({ description: "Active STUDENT groups of the student", type: [AdminGroupRefDTO] })
+  public groups: AdminGroupRefDTO[];
+
+  @ApiProperty({ description: "Whether the caller may open the student's detail (an administrator always; a teacher when they created or supervise one of the student's groups)", example: true })
+  public canView: boolean;
 
   public constructor(fields: AdminStudentListItemDTO) {
     this.id = fields.id;
     this.name = fields.name;
     this.email = fields.email;
+    this.studentCode = fields.studentCode;
     this.lastActivity = fields.lastActivity;
     this.overallProgress = fields.overallProgress;
     this.completedModules = fields.completedModules;
     this.totalModules = fields.totalModules;
     this.groupName = fields.groupName;
+    this.groups = fields.groups;
+    this.canView = fields.canView;
   }
 }
 
