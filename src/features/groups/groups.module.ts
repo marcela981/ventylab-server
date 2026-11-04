@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo GroupsModule
- * Descripción: Registra la feature de grupos (controlador /api/groups, casos de uso, servicio de acceso, fachada y repositorios Prisma de grupos, miembros, supervisiones y lecturas por lotes para analítica, y los manejadores que mantienen las salas Socket.io group:{id}); exporta GroupsFacade y, para las features que aún los consumen, los repositorios de grupos y miembros
- * Versión: 1.3
+ * Descripción: Registra la feature de grupos (controlador /api/groups, casos de uso, servicio de acceso, fachada y repositorios Prisma de grupos, miembros, supervisiones y lecturas por lotes para analítica, y los manejadores que mantienen las salas Socket.io group:{id}); exporta GroupsFacade y, para las features que aún los consumen, los repositorios de grupos y miembros; v1.4: consulta de grupos STUDENT activos de varios usuarios
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,6 +22,7 @@ import { GetGroupMembersUseCase } from "@/features/groups/application/use-cases/
 import { GetGroupSupervisionsUseCase } from "@/features/groups/application/use-cases/get-group-supervisions.usecase";
 import { GetGroupsUseCase } from "@/features/groups/application/use-cases/get-groups.usecase";
 import { GetMyGroupsUseCase } from "@/features/groups/application/use-cases/get-my-groups.usecase";
+import { GetStudentMembershipsUseCase } from "@/features/groups/application/use-cases/get-student-memberships.usecase";
 import { RemoveGroupMemberUseCase } from "@/features/groups/application/use-cases/remove-group-member.usecase";
 import { RemoveGroupSupervisionUseCase } from "@/features/groups/application/use-cases/remove-group-supervision.usecase";
 import { SetSimulatorLeadUseCase } from "@/features/groups/application/use-cases/set-simulator-lead.usecase";
@@ -67,6 +68,7 @@ import { UsersModule } from "@/features/users/users.module";
     UpdateGroupUseCase,
     DeleteGroupUseCase,
     GetGroupMembersUseCase,
+    GetStudentMembershipsUseCase,
     AddGroupMemberUseCase,
     RemoveGroupMemberUseCase,
     SetSimulatorLeadUseCase,
