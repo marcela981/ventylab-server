@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Utilidades HTTP de proveedores de IA
- * Descripción: Envía peticiones JSON con fetch y AbortSignal, convierte respuestas HTTP no exitosas y fallos de red en AiProviderError clasificados y lee flujos Server-Sent Events línea por línea; v1.1: lectura del id de petición del proveedor (cabeceras x-request-id o request-id, o el id del cuerpo)
- * Versión: 1.1
+ * Descripción: Envía peticiones JSON con fetch y AbortSignal, convierte respuestas HTTP no exitosas y fallos de red en AiProviderError clasificados y lee flujos Server-Sent Events línea por línea; v1.1: lectura del id de petición del proveedor (cabeceras x-request-id o request-id, o el id del cuerpo); v1.2: una respuesta 429 o 503 lleva su Retry-After (segundos o fecha HTTP, acotado) en el error
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { AiProviderError } from "@/features/ai/domain/ai.errors";
 import { classifyAiError, classifyHttpStatus } from "@/features/ai/domain/services/ai-error-classification";
+import { parseRetryAfterMs } from "@/features/ai/domain/services/ai-retry-policy";
 
 export interface SseEvent {
   readonly event?: string;
@@ -47,7 +48,12 @@ export async function postJson(
   if (!response.ok) {
     await response.body?.cancel().catch(() => undefined);
 
-    throw new AiProviderError(classifyHttpStatus(response.status), `${providerId} responded with HTTP ${response.status}`, response.status);
+    throw new AiProviderError(
+      classifyHttpStatus(response.status),
+      `${providerId} responded with HTTP ${response.status}`,
+      response.status,
+      parseRetryAfterMs(response.headers.get("retry-after")),
+    );
   }
 
   return response;

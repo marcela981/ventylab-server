@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AiOrchestrator
- * Descripción: Verifica la cadena de proveedores del gateway de IA: reintento ante errores transitorios, paso al siguiente proveedor, tiempo límite por intento, cortocircuito, respaldo determinista, 503 sin respaldo, abortos y medición de TTFT en streams; v1.1: resolución del identificador heredado custom como external con su modelo por defecto; telemetría de detalle: rastro de intentos, ajustes de generación, idioma, TTFT sin stream y motivo de fin
- * Versión: 1.2
+ * Descripción: Verifica la cadena de proveedores del gateway de IA: reintento ante errores transitorios, paso al siguiente proveedor, tiempo límite por intento, cortocircuito, respaldo determinista, 503 sin respaldo, abortos y medición de TTFT en streams; v1.1: resolución del identificador heredado custom como external con su modelo por defecto; telemetría de detalle: rastro de intentos, ajustes de generación, idioma, TTFT sin stream y motivo de fin; espera del Retry-After del proveedor y su propagación cuando todos limitan la tasa
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,7 +18,7 @@ import {
   providerRegistry,
   StaticAiSettingsProvider,
 } from "@/features/ai/application/testing/ai-test-doubles-spec";
-import { AiCallAbortedError, AiProvidersUnavailableError, AiStreamInterruptedError } from "@/features/ai/domain/ai.errors";
+import { AiCallAbortedError, AiProviderError, AiProvidersUnavailableError, AiStreamInterruptedError } from "@/features/ai/domain/ai.errors";
 import { type AiResult, type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
 
 const TIMEOUT_MS: number = 1000;
@@ -418,5 +418,45 @@ describe("AiOrchestrator call details telemetry", () => {
 
     expect(recorder.last?.attemptTrail).toEqual([{ provider: "streamer", model: "streamer-model", outcome: "success", latencyMs: expect.any(Number) }]);
     expect(recorder.last?.finishReason).toBe("unknown");
+  });
+});
+
+describe("AiOrchestrator rate limits", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("should honor the provider's Retry-After before retrying and propagate it when every provider is rate limited", async () => {
+    const limited: FakeLlmProvider = new FakeLlmProvider("limited", { kind: "error", error: new AiProviderError("RATE_LIMIT", "429", 429, 2000) });
+    const { orchestrator, recorder } = buildOrchestrator([limited]);
+    const startedAt: number = Date.now();
+
+    const outcome: Promise<unknown> = orchestrator.complete(buildRequest()).catch((error: unknown) => error);
+
+    await jest.advanceTimersByTimeAsync(1999);
+    expect(limited.calls).toBe(1);
+    await jest.advanceTimersByTimeAsync(1);
+    expect(limited.calls).toBe(2);
+
+    const error: unknown = await outcome;
+
+    expect(error).toBeInstanceOf(AiProvidersUnavailableError);
+    expect((error as AiProvidersUnavailableError).retryAt?.getTime()).toBe(startedAt + 2000 + 2000);
+    expect(recorder.last?.attemptTrail.map((entry: { errorCode?: string }) => entry.errorCode)).toEqual(["RATE_LIMIT", "RATE_LIMIT"]);
+  });
+
+  it("should not propagate a retry time when another provider failed for a different reason", async () => {
+    const limited: FakeLlmProvider = new FakeLlmProvider("limited", { kind: "error", error: new AiProviderError("RATE_LIMIT", "429", 429, 1000) });
+    const broken: FakeLlmProvider = new FakeLlmProvider("broken", { kind: "error", error: httpStatusError(400) });
+    const { orchestrator } = buildOrchestrator([limited, broken]);
+
+    const error: unknown = await settle(orchestrator.complete(buildRequest()).catch((caught: unknown) => caught));
+
+    expect(error).toBeInstanceOf(AiProvidersUnavailableError);
+    expect((error as AiProvidersUnavailableError).retryAt).toBeUndefined();
   });
 });

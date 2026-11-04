@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los proveedores LLM
- * Descripción: Verifica con fetch y SDK simulados las peticiones y respuestas de OpenAI, Anthropic, Gemini y el registro del proveedor externo (completar, stream SSE, uso de tokens, errores HTTP clasificados, rechazos, AbortSignal) y el registro de proveedores según la configuración; motivo de fin normalizado e id de petición del proveedor
- * Versión: 1.2
+ * Descripción: Verifica con fetch y SDK simulados las peticiones y respuestas de OpenAI, Anthropic, Gemini y el registro del proveedor externo (completar, stream SSE, uso de tokens, errores HTTP clasificados, rechazos, AbortSignal) y el registro de proveedores según la configuración; motivo de fin normalizado e id de petición del proveedor; Retry-After de un 429 en el error
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -224,5 +224,17 @@ describe("LLM providers", () => {
       expect(registry.get("external")?.defaultModel).toBe("classmate-model");
       expect(buildAiProviderRegistry({ externalModel: "classmate-model" }).size).toBe(0);
     });
+  });
+});
+
+describe("HTTP provider Retry-After", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should carry the Retry-After of a 429 into the provider error", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 429, headers: { "retry-after": "3" } }));
+
+    await expect(new OpenAIProvider("test-key").complete(REQUEST, new AbortController().signal)).rejects.toMatchObject({ kind: "RATE_LIMIT", retryAfterMs: 3000 });
   });
 });

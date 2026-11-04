@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Orquestador de proveedores de IA
- * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada; v1.4: resuelve el identificador heredado custom como external (sin repetir un proveedor en la cadena) y el modelo "default" o ausente con el modelo por defecto del proveedor; v1.5: la respuesta de respaldo del consumidor se registra como FALLBACK con el proveedor deterministic; v1.6: opciones con sujeto de cuota separado de la atribución (quotaUserId, quotaUserRole); v1.7: telemetría por llamada con idioma, temperatura y máximo de tokens de salida usados, motivo de fin normalizado (error si la llamada falla), id de petición del proveedor, rastro de cada intento (proveedor, modelo, resultado, código y latencia; fallback con el proveedor deterministic) y TTFT también en llamadas sin stream (igual a la latencia total hasta la respuesta)
- * Versión: 1.7
+ * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada; v1.4: resuelve el identificador heredado custom como external (sin repetir un proveedor en la cadena) y el modelo "default" o ausente con el modelo por defecto del proveedor; v1.5: la respuesta de respaldo del consumidor se registra como FALLBACK con el proveedor deterministic; v1.6: opciones con sujeto de cuota separado de la atribución (quotaUserId, quotaUserRole); v1.7: telemetría por llamada con idioma, temperatura y máximo de tokens de salida usados, motivo de fin normalizado (error si la llamada falla), id de petición del proveedor, rastro de cada intento (proveedor, modelo, resultado, código y latencia; fallback con el proveedor deterministic) y TTFT también en llamadas sin stream (igual a la latencia total hasta la respuesta); v1.8: espera entre reintentos con retroceso exponencial y jitter completo acotado o el Retry-After del proveedor (acotado); si todos los intentos fallaron por límite de tasa y no hay respaldo, el 503 lleva la hora de reintento más tardía informada
+ * Versión: 1.8
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -41,6 +41,7 @@ import { type AiProbeResult, type AiProviderCatalogEntry, type AiProviderHealth 
 import { type AiCallStatus, type AiResult, type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
 import { classifyAiError } from "@/features/ai/domain/services/ai-error-classification";
 import { type AiFinishReason, ERROR_FINISH_REASON, UNKNOWN_FINISH_REASON } from "@/features/ai/domain/services/ai-finish-reason";
+import { retryDelayMs } from "@/features/ai/domain/services/ai-retry-policy";
 import {
   AI_PROVIDER_ID_VALUES,
   normalizeAiProviderId,
@@ -105,6 +106,8 @@ interface CallTracker {
   temperature?: number;
   maxOutputTokens?: number;
   readonly trail: AiAttemptTrailEntry[];
+  // Longest Retry-After a rate-limited provider sent during this call.
+  retryAfterMs?: number;
 }
 
 interface RecordOutcome {
@@ -198,6 +201,10 @@ class AttemptScope {
   private readonly _onCallerAbort = (): void => {
     this._controller.abort(new AiCallAbortedError());
   };
+}
+
+function retryAfterOf(error: unknown): number | undefined {
+  return error instanceof AiProviderError ? error.retryAfterMs : undefined;
 }
 
 function toError(reason: unknown): Error {
@@ -533,9 +540,11 @@ export class AiOrchestrator {
       throw error;
     }
 
-    this._logger.warn(`AI provider ${target.provider.id} failed (${kind}), retrying`);
+    const delayMs: number = retryDelayMs(this._settings.getRetryDelayMs(), retry, retryAfterOf(error));
 
-    await sleep(this._settings.getRetryDelayMs() * (retry + 1), request.options.signal);
+    this._logger.warn(`AI provider ${target.provider.id} failed (${kind}), retrying in ${delayMs} ms`);
+
+    await sleep(delayMs, request.options.signal);
   }
 
   private _registerFailure(target: ProviderTarget, tracker: CallTracker, error: unknown): void {
@@ -552,7 +561,7 @@ export class AiOrchestrator {
     if (!fallback) {
       this._record(request, tracker, { status: "ERROR" });
 
-      throw new AiProvidersUnavailableError();
+      throw new AiProvidersUnavailableError(this._rateLimitRetryAt(tracker));
     }
 
     try {
@@ -663,8 +672,21 @@ export class AiOrchestrator {
     tracker.trail.push(entry);
   }
 
+  // Only when every failed attempt was rate limited and at least one provider said when to come back.
+  private _rateLimitRetryAt(tracker: CallTracker): Date | undefined {
+    const failures: AiAttemptTrailEntry[] = tracker.trail.filter((entry: AiAttemptTrailEntry) => entry.outcome === "error");
+    const allRateLimited: boolean = failures.length > 0 && failures.every((entry: AiAttemptTrailEntry) => entry.errorCode === "RATE_LIMIT");
+
+    return allRateLimited && tracker.retryAfterMs !== undefined ? new Date(Date.now() + tracker.retryAfterMs) : undefined;
+  }
+
   private _pushFailedAttempt(tracker: CallTracker, target: ProviderTarget, request: AiOrchestrationRequest, error: unknown, attemptStartedAt: number): void {
     const outcome: AiAttemptOutcome = this._isCallerAborted(request) ? "aborted" : "error";
+    const retryAfterMs: number | undefined = retryAfterOf(error);
+
+    if (retryAfterMs !== undefined) {
+      tracker.retryAfterMs = Math.max(tracker.retryAfterMs ?? 0, retryAfterMs);
+    }
 
     this._pushTrail(tracker, {
       provider: target.provider.id,
