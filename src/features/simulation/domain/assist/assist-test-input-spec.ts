@@ -88,10 +88,11 @@ export function buildAssistInput(overrides: AssistInputOverrides = {}): AssistSn
     lastCycle: cycle,
     ventilation: { totalRespiratoryRateBpm: 16, mandatoryRateBpm: 16, spontaneousRateBpm: 0, minuteVolumeLpm: 6.7, alveolarVentilationLpm: 4.8 },
     gasExchange: { ...NORMAL_GAS, ...(overrides.gas ?? {}) },
-    hemodynamics: { meanArterialPressureMmHg: 85 },
+    hemodynamics: { meanArterialPressureMmHg: 85, heartRateBpm: null },
     conditions: { resistanceCmH2OPerLps: 10, complianceMlPerCmH2O: 40, disconnected: false, deteriorationLevel: 0, appliedCaseEvents: [] },
     alarms,
     targets,
+    patient: null,
   };
 
   return {
