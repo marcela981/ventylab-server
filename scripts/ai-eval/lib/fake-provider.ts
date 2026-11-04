@@ -72,6 +72,7 @@ export function createFakeProvider(): EvalProvider {
           model: request.model,
           inputTokens: Math.ceil(inputChars / CHARS_PER_TOKEN),
           outputTokens: Math.ceil(text.length / CHARS_PER_TOKEN),
+          finishReason: "stop",
         },
       };
     },

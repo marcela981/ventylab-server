@@ -75,8 +75,12 @@ La lista completa está en [Referencias](#10-referencias).
 |---|---|
 | `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Habilitan cada proveedor |
 | `OPENAI_BASE_URL`, `ANTHROPIC_BASE_URL` | URL base opcional |
-| `AI_CUSTOM_HTTP_ENDPOINT`, `AI_CUSTOM_HTTP_AUTH_HEADER`, `AI_CUSTOM_HTTP_AUTH_VALUE` | Proveedor HTTP personalizado (solo si su mapeo está configurado en el código) |
-| `AI_USE_CASE_SETTINGS` | Modelo por proveedor, temperatura, máximo de tokens y tiempo máximo por caso de uso (si falta, se usan los valores por defecto del código) |
+| `AI_EXTERNAL_BASE_URL`, `AI_EXTERNAL_MODEL` | Habilitan el proveedor `external` (modelo de terceros, p. ej. de otro grupo de investigación); se registra solo si ambas están definidas |
+| `AI_EXTERNAL_API_KEY`, `AI_EXTERNAL_AUTH_HEADER` | Clave y cabecera de autenticación opcionales del proveedor `external` (por defecto `Authorization`, que lleva `Bearer <clave>`) |
+| `AI_EXTERNAL_FORMAT` | `openai` (endpoint compatible con `/chat/completions`, por defecto) o `simple` (POST JSON propio, sin stream) |
+| `AI_EXTERNAL_TIMEOUT_MS` | Tiempo máximo propio del proveedor `external` (0 = sin límite propio; el tiempo máximo del caso de uso sigue aplicando) |
+| `AI_EXTERNAL_PRICE_INPUT_PER_MTOK`, `AI_EXTERNAL_PRICE_OUTPUT_PER_MTOK` | Precio por millón de tokens del proveedor `external` para estimar el costo (por defecto 0) |
+| `AI_USE_CASE_SETTINGS` | Modelo por proveedor, temperatura, máximo de tokens y tiempo máximo por caso de uso (si falta, se usan los valores por defecto del código; el modelo `default` de `external` es `AI_EXTERNAL_MODEL`) |
 | `AI_PRICES` | Precios por 1000 tokens para estimar el costo (si falta, los del código) |
 
 ### 3.2 Corrida en seco (sin red)
@@ -100,6 +104,8 @@ node --test scripts/ai-eval/lib/result-writers.test.ts
 npx tsx scripts/ai-eval/run-eval.ts --repeat 3
 # un subconjunto
 npx tsx scripts/ai-eval/run-eval.ts --providers openai,anthropic --scenarios sim-,eval-05
+# solo el modelo de terceros
+npx tsx scripts/ai-eval/run-eval.ts --providers external
 ```
 
 | Opción | Efecto |
@@ -112,9 +118,10 @@ npx tsx scripts/ai-eval/run-eval.ts --providers openai,anthropic --scenarios sim
 
 Decisiones de diseño:
 
-- **Un único proveedor por llamada**: se llama directamente al adaptador del proveedor (`ILlmProvider.stream`), sin la cadena de respaldo, reintentos, cortocircuito, cuota ni respaldo determinista del gateway. Así se mide el modelo y no el mecanismo de tolerancia a fallos. La versión y el hash del prompt se calculan igual que en `AiGateway` (limpieza de correos y hash SHA-256).
+- **Un único proveedor por llamada**: se llama directamente al adaptador del proveedor (`ILlmProvider.stream`), sin la cadena de respaldo, reintentos, cortocircuito, cuota ni respaldo determinista del gateway. Así se mide el modelo y no el mecanismo de tolerancia a fallos. La versión y el hash del prompt se calculan igual que en `AiGateway` (versión de la variante construida del registro de plantillas, limpieza de correos y hash SHA-256). Los proveedores son los mismos que registra el servidor: `gemini`, `openai`, `anthropic` y `external`, cada uno solo si sus variables están definidas.
 - **Ejecución secuencial**, para que la latencia no se vea afectada por llamadas concurrentes del propio ejecutor.
-- **Aislamiento del código del servidor**: todas las importaciones de `src/` están en `scripts/ai-eval/adapters/server-ai.adapter.ts`. El código de IA se está modificando en la rama `feat/cierre-ia` (el prompt de `GRADE_FEEDBACK` podría pasar al registro de plantillas y cambiar de versión); al integrarse esa rama, solo hay que actualizar ese archivo y volver a ejecutar la corrida en seco. La versión del prompt queda registrada en cada resultado.
+- **Aislamiento del código del servidor**: todas las importaciones de `src/` están en `scripts/ai-eval/adapters/server-ai.adapter.ts`. Si cambia una plantilla, su entrada o la fábrica de proveedores, solo hay que actualizar ese archivo y volver a ejecutar la corrida en seco. La versión del prompt queda registrada en cada resultado.
+- **Versiones de prompt vigentes** (registro `src/features/ai/domain/prompts/`): `GRADE_FEEDBACK` 2.0.0 (entrada estructurada armada en el registro, `grade-feedback-prompt.ts`, igual que `AIGradeFeedbackGenerator`), `SIM_ASSIST` 1.1.0, `LESSON_QA` 1.0.0 y `PAGE_DEEPEN` 1.0.0. Cada prompt se construye en el idioma del escenario (`language`), que también queda registrado.
 
 ### 3.4 Archivos de salida
 
@@ -122,7 +129,7 @@ En `scripts/ai-eval/results/<marca ISO>/` (p. ej., `2026-11-04T15-04-05Z`; los d
 
 | Archivo | Contenido |
 |---|---|
-| `raw.jsonl` | Un objeto por llamada: escenario, proveedor, modelo, versión y hash del prompt, prompt completo, ajustes (temperatura, tokens, tiempo máximo), estado (`ok`/`error`/`timeout`), TTFT, latencia total, tokens de entrada y salida, costo estimado, salida cruda, validez del JSON (`GRADE_FEEDBACK`) y puntaje auxiliar automático |
+| `raw.jsonl` | Un objeto por llamada: escenario, idioma, proveedor, modelo, versión y hash del prompt, prompt completo, ajustes (temperatura, tokens, tiempo máximo), estado (`ok`/`error`/`timeout`), TTFT, latencia total, motivo de fin normalizado (`finishReason`: `stop`, `length`, `content_filter`, `error`, `unknown`, si el proveedor lo informa), tokens de entrada y salida, costo estimado, salida cruda, validez del JSON (`GRADE_FEEDBACK`) y puntaje auxiliar automático |
 | `summary.csv` | Una fila por llamada con las mismas métricas sin el texto (UTF-8 con BOM) |
 | `run-meta.json` | Marca de la corrida, commit de git, versión de Node, proveedores, escenarios, repeticiones y número de llamadas fallidas |
 
@@ -137,6 +144,7 @@ En `scripts/ai-eval/results/<marca ISO>/` (p. ej., `2026-11-04T15-04-05Z`; los d
 | Validez estructural | Porcentaje de respuestas `GRADE_FEEDBACK` aceptadas por el parser del servidor | `parseOk` |
 | TTFT | Milisegundos desde el inicio de la llamada hasta el primer fragmento con texto | `ttftMs` |
 | Latencia total | Milisegundos hasta el final del stream | `totalMs` |
+| Respuestas cortadas | Llamadas con `finishReason` = `length` (máximo de tokens alcanzado) / total | `finishReason` |
 | Tokens | Entrada y salida informados por el proveedor | `inputTokens`, `outputTokens` |
 | Costo estimado | Tokens × precio configurado (USD) | `costUsd` |
 | Tasa de fallos | Llamadas con `error` o `timeout` / total | `status` |
@@ -165,7 +173,7 @@ Si participan dos evaluadores, calificar de forma independiente y reportar el ac
 - **Datos sintéticos**: las métricas del simulador no provienen del motor; podrían contener combinaciones fisiológicamente poco realistas que confundan al modelo.
 - **No determinismo**: con temperatura > 0 la salida varía entre llamadas; se recomiendan repeticiones y reportar la variabilidad.
 - **Deriva de modelos y versiones**: los proveedores actualizan modelos con el mismo nombre; se registran modelo, fecha, versión y hash del prompt, pero una corrida posterior puede no ser comparable.
-- **Cambios del código**: la rama `feat/cierre-ia` puede modificar prompts y versiones; los resultados solo son comparables con la misma `promptVersion` y `promptHash`.
+- **Cambios del código**: los prompts y sus versiones pueden cambiar; los resultados solo son comparables con la misma `promptVersion` y `promptHash`.
 - **Diferencia con producción**: el ejecutor omite la cadena de respaldo, la cuota y el respaldo determinista; en la aplicación el estudiante podría recibir la respuesta determinista cuando el proveedor falla.
 - **Latencia**: depende de la red, la región y la carga del proveedor en el momento de la corrida; no es una propiedad estable del modelo.
 - **Costo**: es una estimación con los precios configurados, no la factura del proveedor.

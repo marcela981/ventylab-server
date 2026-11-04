@@ -62,6 +62,7 @@ export interface EvalPrompt {
   readonly useCase: EvalUseCase;
   readonly promptVersion: string;
   readonly promptHash: string;
+  readonly language: "es" | "en";
   readonly system: string;
   readonly messages: readonly EvalMessage[];
   readonly responseFormat: "text" | "json";
@@ -88,6 +89,8 @@ export interface EvalCompletion {
   readonly model: string;
   readonly inputTokens?: number;
   readonly outputTokens?: number;
+  // Normalized by the server provider (stop, length, content_filter, error, unknown) when it reports one.
+  readonly finishReason?: string;
 }
 
 export type EvalChunk = { readonly type: "delta"; readonly text: string } | { readonly type: "final"; readonly completion: EvalCompletion };
@@ -139,6 +142,7 @@ export interface EvalResultRecord {
   readonly errorMessage?: string;
   readonly ttftMs?: number;
   readonly totalMs: number;
+  readonly finishReason?: string;
   readonly inputTokens?: number;
   readonly outputTokens?: number;
   readonly costUsd?: number;

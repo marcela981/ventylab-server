@@ -191,7 +191,7 @@ async function resolveProviders(options: CliOptions): Promise<Map<string, EvalPr
   }
 
   if (wanted.length === 0) {
-    throw new Error("No AI provider is configured; set GEMINI_API_KEY, OPENAI_API_KEY or ANTHROPIC_API_KEY, or use --dry-run");
+    throw new Error("No AI provider is configured; set GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY or AI_EXTERNAL_BASE_URL + AI_EXTERNAL_MODEL, or use --dry-run");
   }
 
   return new Map<string, EvalProvider>(wanted.map((id: string) => [id, available.get(id) as EvalProvider]));
@@ -246,6 +246,7 @@ async function main(argv: readonly string[]): Promise<number> {
           errorMessage: outcome.errorMessage,
           ttftMs: outcome.ttftMs,
           totalMs: outcome.totalMs,
+          finishReason: outcome.completion?.finishReason,
           inputTokens: outcome.completion?.inputTokens,
           outputTokens: outcome.completion?.outputTokens,
           costUsd: options.dryRun ? undefined : server.costUsd(providerId, model, outcome.completion?.inputTokens, outcome.completion?.outputTokens),
