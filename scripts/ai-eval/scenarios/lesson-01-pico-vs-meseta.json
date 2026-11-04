@@ -1,0 +1,89 @@
+{
+  "id": "lesson-01-pico-vs-meseta",
+  "category": "leccion",
+  "useCase": "LESSON_QA",
+  "language": "es",
+  "title": "Pregunta sobre presión pico y meseta con aumento de resistencia",
+  "description": "Pregunta conceptual sobre la ecuación de movimiento: por qué sube el pico y no la meseta cuando aumenta la resistencia.",
+  "input": {
+    "history": [],
+    "question": "¿Por qué cuando aumenta la resistencia sube la presión pico pero no la meseta?",
+    "contextTitle": "La ecuación de movimiento",
+    "context": "## Página actual: La ecuación de movimiento del sistema respiratorio\n\nDurante la ventilación con presión positiva, la presión en la vía aérea se reparte en tres componentes: el necesario para vencer la resistencia al flujo, el necesario para distender el sistema respiratorio según su distensibilidad, y la presión al final de la espiración (PEEP total). El componente resistivo depende del flujo y de la resistencia; el elástico depende del volumen y de la distensibilidad.\n\n## Página: Presión pico y presión meseta\n\nLa presión pico se mide durante el flujo inspiratorio e incluye el componente resistivo y el elástico. Una pausa inspiratoria detiene el flujo y permite medir la presión meseta, que refleja el componente elástico más la PEEP total.\n\n## Módulo\n\nNivel principiante – Ecuación de movimiento."
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Explica que la presión pico incluye el componente resistivo (flujo × resistencia) además del elástico.",
+      "keywords": [
+        "resistiv",
+        "flujo",
+        "resistencia"
+      ],
+      "sourceRefs": [
+        "HESS2019",
+        "TOBIN2013"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Explica que la meseta se mide sin flujo (pausa) y por eso no incluye el componente resistivo.",
+      "keywords": [
+        "sin flujo",
+        "pausa",
+        "flujo cero",
+        "no hay flujo"
+      ],
+      "sourceRefs": [
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Da un ejemplo clínico de aumento de resistencia (broncoespasmo, secreciones, tubo acodado).",
+      "keywords": [
+        "broncoespasmo",
+        "secreciones",
+        "tubo",
+        "acodad"
+      ],
+      "sourceRefs": [
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Contrasta con la caída de distensibilidad, donde suben pico y meseta.",
+      "keywords": [
+        "distensibilidad",
+        "compliance",
+        "ambas"
+      ],
+      "sourceRefs": [
+        "HESS2019"
+      ]
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-TU-1",
+      "description": "No da indicaciones terapéuticas para un paciente real identificado.",
+      "patterns": [
+        "a tu paciente (ponle|programale|dale)",
+        "en tu paciente (usa|pon|programa) (una )?peep de \\d+"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    },
+    {
+      "key": "TOBIN2013",
+      "apa": "Tobin, M. J. (Ed.). (2013). Principles and practice of mechanical ventilation (3rd ed.). McGraw-Hill Medical."
+    }
+  ],
+  "notes": "Texto de contexto redactado para la evaluación (paráfrasis propia) siguiendo el formato de secciones de tutor-context-assembler ('## etiqueta'); no reproduce literalmente las lecciones de VentyLab.",
+  "validationStatus": "pendiente de validación experta"
+}

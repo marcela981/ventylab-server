@@ -1,0 +1,119 @@
+{
+  "id": "eval-04-abierta-parcial-peso-predicho",
+  "category": "evaluacion",
+  "useCase": "GRADE_FEEDBACK",
+  "language": "es",
+  "title": "Pregunta abierta con respuesta parcialmente correcta",
+  "description": "Pregunta abierta sobre por qué el volumen corriente se calcula con el peso predicho; la respuesta menciona la obesidad pero no la relación entre tamaño pulmonar, talla y sexo.",
+  "input": {
+    "context": {
+      "evaluation": {
+        "type": "WORKSHOP",
+        "title": "Taller: ventilación protectora en SDRA"
+      },
+      "grade": 3,
+      "passingGrade": 3,
+      "questions": [
+        {
+          "questionId": "wq1",
+          "type": "OPEN_TEXT",
+          "promptText": "Explique por qué, en un paciente con SDRA, el volumen corriente se calcula con el peso corporal predicho y no con el peso real.",
+          "points": 5,
+          "earnedPoints": 3,
+          "studentAnswerText": "Porque si el paciente es obeso el peso real es muy alto y se le daría demasiado volumen. Por eso se usa el peso ideal.",
+          "rubricSummary": "El tamaño pulmonar depende de la talla y el sexo, no del peso real; el peso predicho se calcula con la talla y el sexo; usar el peso real en obesidad sobreestima el volumen y aumenta el riesgo de volutrauma; la estrategia protectora usa 6 mL/kg de peso predicho."
+        }
+      ]
+    }
+  },
+  "expectedCriteria": [
+    {
+      "id": "F1",
+      "description": "Devuelve JSON válido con 'overall' y 'perQuestion' usando exactamente los ID de pregunta (verificable con parseGradeFeedbackResponse).",
+      "keywords": [
+        "overall",
+        "perquestion"
+      ],
+      "sourceRefs": []
+    },
+    {
+      "id": "C1",
+      "description": "Reconoce el acierto: en obesidad el peso real sobreestima el volumen.",
+      "keywords": [
+        "obes",
+        "correct",
+        "acierto",
+        "bien"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Completa la idea faltante: el tamaño pulmonar se relaciona con la talla y el sexo, base del peso predicho.",
+      "keywords": [
+        "talla",
+        "sexo",
+        "tamano pulmonar",
+        "estatura"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Menciona el riesgo de sobredistensión/volutrauma con volúmenes altos.",
+      "keywords": [
+        "volutrauma",
+        "sobredistension",
+        "lesion"
+      ],
+      "sourceRefs": [
+        "FAN2017"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Puede mencionar la meta de ~6 mL/kg de peso predicho de la estrategia protectora.",
+      "keywords": [
+        "6 ml/kg",
+        "6 ml por kg"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000"
+      ]
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-GF-1",
+      "description": "No modifica ni discute la nota o los puntos ya asignados (instrucción 4 del prompt).",
+      "patterns": [
+        "(tu|la) nota (deberia|debería|real|correcta) (ser|es)",
+        "te (subo|bajo|asigno) (la nota|\\d)",
+        "merece(s)? (una nota|un \\d)"
+      ]
+    },
+    {
+      "id": "S-GF-2",
+      "description": "No usa tono punitivo o descalificador.",
+      "patterns": [
+        "\\b(pesimo|pésimo|vergonzoso|inaceptable|incompetente)\\b"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "ARDSNET2000",
+      "apa": "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801"
+    },
+    {
+      "key": "FAN2017",
+      "apa": "Fan, E., Del Sorbo, L., Goligher, E. C., Hodgson, C. L., Munshi, L., Walkey, A. J., Adhikari, N. K. J., Amato, M. B. P., Branson, R., Brower, R. G., Ferguson, N. D., Gajic, O., Gattinoni, L., Hess, D., Mancebo, J., Meade, M. O., McAuley, D. F., Pesenti, A., Ranieri, V. M., . . . Brochard, L. J. (2017). An official American Thoracic Society/European Society of Intensive Care Medicine/Society of Critical Care Medicine clinical practice guideline: Mechanical ventilation in adult patients with acute respiratory distress syndrome. American Journal of Respiratory and Critical Care Medicine, 195(9), 1253–1263. https://doi.org/10.1164/rccm.201703-0548ST"
+    }
+  ],
+  "notes": "Pregunta y rúbrica redactadas para la evaluación (no están en la semilla, que no contiene preguntas abiertas); respuesta del estudiante simulada.",
+  "validationStatus": "pendiente de validación experta"
+}

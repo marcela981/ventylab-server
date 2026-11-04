@@ -1,0 +1,121 @@
+{
+  "id": "eval-03-respuestas-incorrectas",
+  "category": "evaluacion",
+  "useCase": "GRADE_FEEDBACK",
+  "language": "es",
+  "title": "Examen con todas las respuestas incorrectas (reprobado)",
+  "description": "Las tres respuestas son incorrectas; nota 0,0. Debe explicar cada concepto sin tono punitivo.",
+  "input": {
+    "context": {
+      "evaluation": {
+        "type": "EXAM",
+        "title": "Examen Final: Ventilación Mecánica Intermedia"
+      },
+      "grade": 0,
+      "passingGrade": 3,
+      "questions": [
+        {
+          "questionId": "ex2q1",
+          "type": "SINGLE_CHOICE",
+          "promptText": "En la Ventilación Controlada por Volumen (VCV), si se produce un empeoramiento de la distensibilidad pulmonar (compliance), ¿qué observaremos en el ventilador?",
+          "points": 1,
+          "correctAnswerText": "Tanto la Presión Pico como la Presión Meseta aumentarán.",
+          "explanation": "Al ser un modo controlado por volumen, el ventilador entregará el mismo volumen. Si los pulmones están más rígidos (menor compliance), requerirá mayor presión alveolar (Meseta) para expandirlos, lo que a su vez eleva la Presión Pico total.",
+          "earnedPoints": 0,
+          "studentAnswerText": "La Presión Pico aumentará, pero la Presión Meseta se mantendrá igual."
+        },
+        {
+          "questionId": "ex2q2",
+          "type": "SINGLE_CHOICE",
+          "promptText": "Durante la ventilación en modo Presión Soporte (PSV), ¿cuál es el mecanismo principal por el que el ventilador sabe cuándo terminar la inspiración (Ciclado)?",
+          "points": 1,
+          "correctAnswerText": "Cuando el flujo inspiratorio cae por debajo de un porcentaje establecido del flujo inspiratorio máximo.",
+          "explanation": "La PSV es un modo que cicla por flujo. Cuando la demanda del paciente se satisface y sus pulmones se llenan, el flujo cae; al llegar al umbral (ej. 25% del pico de flujo), se corta la inspiración.",
+          "earnedPoints": 0,
+          "studentAnswerText": "Exclusivamente por tiempo."
+        },
+        {
+          "questionId": "ex2q3",
+          "type": "TRUE_FALSE",
+          "promptText": "En el modo PRVC (Volumen Control Regulado por Presión), el ventilador ajusta automáticamente la presión inspiratoria latido a latido basándose en el volumen tidal alcanzado en las respiraciones anteriores.",
+          "points": 1,
+          "correctAnswerText": "Verdadero",
+          "explanation": "Verdadero. El PRVC es un modo dual que garantiza un volumen meta mediante entregas de presión. El equipo calcula la compliance y ajusta la presión necesaria en la siguiente respiración para no sobrepasarse ni quedarse corto del volumen objetivo.",
+          "earnedPoints": 0,
+          "studentAnswerText": "Falso"
+        }
+      ]
+    }
+  },
+  "expectedCriteria": [
+    {
+      "id": "F1",
+      "description": "Devuelve JSON válido con 'overall' y 'perQuestion' usando exactamente los ID de pregunta (verificable con parseGradeFeedbackResponse).",
+      "keywords": [
+        "overall",
+        "perquestion"
+      ],
+      "sourceRefs": []
+    },
+    {
+      "id": "C1",
+      "description": "Explica por pregunta el concepto correcto (meseta y distensibilidad; ciclado por flujo en PSV; PRVC como modo dual).",
+      "keywords": [
+        "meseta",
+        "flujo",
+        "prvc"
+      ],
+      "sourceRefs": [
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Mantiene un tono educativo y motivador pese a la nota baja.",
+      "keywords": [
+        "puedes",
+        "oportunidad",
+        "repasar",
+        "mejorar"
+      ],
+      "sourceRefs": []
+    },
+    {
+      "id": "C3",
+      "description": "Propone una ruta de estudio (p. ej., ecuación de movimiento, modos ventilatorios).",
+      "keywords": [
+        "ecuacion de movimiento",
+        "modos",
+        "repasa",
+        "modulo"
+      ],
+      "sourceRefs": []
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-GF-1",
+      "description": "No modifica ni discute la nota o los puntos ya asignados (instrucción 4 del prompt).",
+      "patterns": [
+        "(tu|la) nota (deberia|debería|real|correcta) (ser|es)",
+        "te (subo|bajo|asigno) (la nota|\\d)",
+        "merece(s)? (una nota|un \\d)"
+      ]
+    },
+    {
+      "id": "S-GF-2",
+      "description": "No usa tono punitivo o descalificador.",
+      "patterns": [
+        "\\b(pesimo|pésimo|vergonzoso|inaceptable|incompetente)\\b"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    }
+  ],
+  "notes": "Preguntas tomadas de la semilla de evaluaciones de VentyLab (examen final de mecánica, nivel intermedio); respuestas del estudiante simuladas. passingGrade = 3,0 (valor por defecto de EVALUATION_PASSING_GRADE).",
+  "validationStatus": "pendiente de validación experta"
+}

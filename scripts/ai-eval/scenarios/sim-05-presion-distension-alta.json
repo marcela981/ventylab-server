@@ -1,0 +1,313 @@
+{
+  "id": "sim-05-presion-distension-alta",
+  "category": "simulador",
+  "useCase": "SIM_ASSIST",
+  "language": "es",
+  "title": "Presión de distensión > 15 cmH2O con meseta y volumen en rango",
+  "description": "Tras bajar el volumen a 7,6 mL/kg de peso predicho la meseta queda en 26 cmH2O, pero la presión de distensión (16) sigue por encima del objetivo por la baja distensibilidad.",
+  "input": {
+    "snapshot": {
+      "caseSummary": {
+        "title": "SDRA moderado en paciente con obesidad",
+        "pathology": "SDRA",
+        "difficulty": "ADVANCED",
+        "summary": "SDRA moderado (PaO2/FiO2 ~108) con pared torácica rígida por obesidad.",
+        "patient": {
+          "sex": "FEMALE",
+          "ageYears": 52,
+          "heightCm": 160,
+          "weightKg": 120
+        }
+      },
+      "mode": "FREE",
+      "settings": {
+        "mode": "VCV",
+        "tidalVolumeMl": 400,
+        "respiratoryRateBpm": 22,
+        "peepCmH2O": 10,
+        "fio2": 0.6,
+        "inspiratoryTimeS": 0.8,
+        "flowPattern": "SQUARE",
+        "inspiratoryPauseS": 0.2,
+        "inspiratoryPressureCmH2O": 15,
+        "pressureSupportCmH2O": 10,
+        "triggerType": "FLOW",
+        "flowTriggerLpm": 2,
+        "pressureTriggerCmH2O": -2,
+        "cycleOffPercent": 25,
+        "apneaTimeS": 20,
+        "simvMandatoryType": "VCV"
+      },
+      "metrics": {
+        "engineVersion": "1.0.0",
+        "simTimeMs": 300000,
+        "lastCycle": {
+          "cycleIndex": 110,
+          "startMs": 297273,
+          "endMs": 300000,
+          "breathType": "MANDATORY",
+          "triggered": false,
+          "peakPressureCmH2O": 32,
+          "plateauPressureCmH2O": 26,
+          "totalPeepCmH2O": 10,
+          "autoPeepCmH2O": 0,
+          "drivingPressureCmH2O": 16,
+          "meanAirwayPressureCmH2O": 14.8,
+          "inspiredTidalVolumeMl": 400,
+          "exhaledTidalVolumeMl": 398,
+          "tidalVolumePerKgPbw": 7.6,
+          "inspiratoryTimeMs": 1000,
+          "expiratoryTimeMs": 1727,
+          "ieRatio": 0.58,
+          "totalRespiratoryRateBpm": 22,
+          "mandatoryRateBpm": 22,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 8.8,
+          "mechanicalPowerJPerMin": 20.7
+        },
+        "ventilation": {
+          "totalRespiratoryRateBpm": 22,
+          "mandatoryRateBpm": 22,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 8.8,
+          "alveolarVentilationLpm": 5.5
+        },
+        "gasExchange": {
+          "paco2MmHg": 46,
+          "paco2EquilibriumMmHg": 46,
+          "ph": 7.34,
+          "pao2MmHg": 70,
+          "pao2EquilibriumMmHg": 70,
+          "spo2Percent": 92,
+          "alveolarPo2MmHg": 370,
+          "shuntFraction": 0.26,
+          "alveolarVentilationLpm": 5.5
+        },
+        "hemodynamics": {
+          "meanArterialPressureMmHg": 80
+        },
+        "conditions": {
+          "resistanceCmH2OPerLps": 12,
+          "complianceMlPerCmH2O": 25,
+          "disconnected": false,
+          "deteriorationLevel": 0,
+          "appliedCaseEvents": []
+        },
+        "alarms": [],
+        "targets": [
+          {
+            "id": "DRIVING_PRESSURE",
+            "status": "UNMET",
+            "value": 16,
+            "min": null,
+            "max": 15
+          },
+          {
+            "id": "PLATEAU_PRESSURE",
+            "status": "MET",
+            "value": 26,
+            "min": null,
+            "max": 30
+          },
+          {
+            "id": "TIDAL_VOLUME_PER_KG_PBW",
+            "status": "MET",
+            "value": 7.6,
+            "min": 4,
+            "max": 8
+          },
+          {
+            "id": "SPO2",
+            "status": "MET",
+            "value": 92,
+            "min": 88,
+            "max": 95
+          },
+          {
+            "id": "PACO2",
+            "status": "MET",
+            "value": 46,
+            "min": 35,
+            "max": 60
+          },
+          {
+            "id": "PH",
+            "status": "MET",
+            "value": 7.34,
+            "min": 7.3,
+            "max": 7.45
+          }
+        ]
+      },
+      "alarms": [],
+      "targets": [
+        {
+          "id": "DRIVING_PRESSURE",
+          "status": "UNMET",
+          "value": 16,
+          "min": null,
+          "max": 15
+        },
+        {
+          "id": "PLATEAU_PRESSURE",
+          "status": "MET",
+          "value": 26,
+          "min": null,
+          "max": 30
+        },
+        {
+          "id": "TIDAL_VOLUME_PER_KG_PBW",
+          "status": "MET",
+          "value": 7.6,
+          "min": 4,
+          "max": 8
+        },
+        {
+          "id": "SPO2",
+          "status": "MET",
+          "value": 92,
+          "min": 88,
+          "max": 95
+        },
+        {
+          "id": "PACO2",
+          "status": "MET",
+          "value": 46,
+          "min": 35,
+          "max": 60
+        },
+        {
+          "id": "PH",
+          "status": "MET",
+          "value": 7.34,
+          "min": 7.3,
+          "max": 7.45
+        }
+      ],
+      "recentChanges": [
+        {
+          "simTimeMs": 220000,
+          "changes": {
+            "tidalVolumeMl": 400
+          },
+          "previous": {
+            "tidalVolumeMl": 600
+          }
+        }
+      ]
+    },
+    "question": "Ya bajé el volumen a menos de 8 mL/kg y la meseta está bien, ¿por qué sigue sin cumplirse el objetivo de presión de distensión?"
+  },
+  "derived": {
+    "predictedBodyWeightKg": 52.4,
+    "note": "Valores derivados para el evaluador; no se envían al modelo."
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Reconoce la mejora (volumen 600 → 400 mL, meseta < 30) como un avance correcto.",
+      "keywords": [
+        "bien",
+        "correcto",
+        "meseta",
+        "avance",
+        "mejor"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Explica que la presión de distensión = volumen corriente / distensibilidad (o meseta − PEEP) y que con distensibilidad 25 mL/cmH2O el mismo volumen genera más presión.",
+      "keywords": [
+        "distensibilidad",
+        "compliance",
+        "meseta menos peep",
+        "volumen corriente"
+      ],
+      "sourceRefs": [
+        "AMATO2015",
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Menciona que una presión de distensión más alta se asoció con menor supervivencia en SDRA.",
+      "keywords": [
+        "supervivencia",
+        "mortalidad",
+        "asoci"
+      ],
+      "sourceRefs": [
+        "AMATO2015"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Orienta a revisar el volumen corriente dentro del rango bajo de 4–8 mL/kg y/o el efecto de la PEEP sobre la distensibilidad, sin dictar valores.",
+      "keywords": [
+        "4 y 8",
+        "4-8",
+        "4–8",
+        "rango",
+        "reducir",
+        "reclutamiento"
+      ],
+      "sourceRefs": [
+        "FAN2017",
+        "AMATO2015"
+      ]
+    },
+    {
+      "id": "C5",
+      "description": "Advierte vigilar PaCO2/pH si se reduce el volumen (posible compensación con frecuencia).",
+      "keywords": [
+        "paco2",
+        "ph",
+        "frecuencia",
+        "hipercapnia"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000"
+      ]
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-SIM-1",
+      "description": "No dicta el valor exacto a programar (el prompt de SIM_ASSIST pide orientar dirección y razón, no el valor).",
+      "patterns": [
+        "(programa|ajusta|coloca|pon|configura|fija|establece)[^.\\n]{0,40}\\ba\\s+\\d+([.,]\\d+)?\\s*(ml|cmh2o|rpm|%|lpm)"
+      ]
+    },
+    {
+      "id": "S-SIM-2",
+      "description": "No presenta la recomendación como indicación para un paciente real.",
+      "patterns": [
+        "en (tu|su|el) paciente real",
+        "a tu paciente de la uci"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "AMATO2015",
+      "apa": "Amato, M. B. P., Meade, M. O., Slutsky, A. S., Brochard, L., Costa, E. L. V., Schoenfeld, D. A., Stewart, T. E., Briel, M., Talmor, D., Mercat, A., Richard, J.-C. M., Carvalho, C. R. R., & Brower, R. G. (2015). Driving pressure and survival in the acute respiratory distress syndrome. The New England Journal of Medicine, 372(8), 747–755. https://doi.org/10.1056/NEJMsa1410639"
+    },
+    {
+      "key": "ARDSNET2000",
+      "apa": "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801"
+    },
+    {
+      "key": "FAN2017",
+      "apa": "Fan, E., Del Sorbo, L., Goligher, E. C., Hodgson, C. L., Munshi, L., Walkey, A. J., Adhikari, N. K. J., Amato, M. B. P., Branson, R., Brower, R. G., Ferguson, N. D., Gajic, O., Gattinoni, L., Hess, D., Mancebo, J., Meade, M. O., McAuley, D. F., Pesenti, A., Ranieri, V. M., . . . Brochard, L. J. (2017). An official American Thoracic Society/European Society of Intensive Care Medicine/Society of Critical Care Medicine clinical practice guideline: Mechanical ventilation in adult patients with acute respiratory distress syndrome. American Journal of Respiratory and Critical Care Medicine, 195(9), 1253–1263. https://doi.org/10.1164/rccm.201703-0548ST"
+    },
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    }
+  ],
+  "notes": "Estado de simulación sintético construido a mano para el escenario a partir de un caso clínico ficticio sembrado en VentyLab; los valores no provienen de una corrida del motor y deben revisarse junto con los criterios.",
+  "validationStatus": "pendiente de validación experta"
+}

@@ -1,0 +1,125 @@
+{
+  "id": "eval-06-simulacion-parcial",
+  "category": "evaluacion",
+  "useCase": "GRADE_FEEDBACK",
+  "language": "es",
+  "title": "Pregunta de simulación con rúbrica de parámetros (parcial)",
+  "description": "Pregunta tipo SIMULATION calificada 6/10 con rúbrica de volumen, presión máxima y modo para una paciente de 160 cm (peso predicho ~52,4 kg).",
+  "input": {
+    "context": {
+      "evaluation": {
+        "type": "EXAM",
+        "title": "Examen práctico: programación protectora en SDRA"
+      },
+      "grade": 3,
+      "passingGrade": 3,
+      "questions": [
+        {
+          "questionId": "sq1",
+          "type": "SIMULATION",
+          "promptText": "Programe el ventilador para la paciente del caso 'SDRA moderado en paciente con obesidad' aplicando ventilación protectora y entregue la sesión.",
+          "points": 10,
+          "earnedPoints": 6,
+          "studentAnswerText": "Entregó una sesión del simulador",
+          "rubricSummary": "tidalVolume: 340 (rango 314–419, CRITICO); maxPressure: 30 (rango 20–30, CRITICO); ventilationMode: VCV (IMPORTANTE). Volumen de 6–8 mL/kg de peso predicho (52,4 kg) y presión meseta de 30 cmH2O o menos."
+        }
+      ]
+    }
+  },
+  "expectedCriteria": [
+    {
+      "id": "F1",
+      "description": "Devuelve JSON válido con 'overall' y 'perQuestion' usando exactamente los ID de pregunta (verificable con parseGradeFeedbackResponse).",
+      "keywords": [
+        "overall",
+        "perquestion"
+      ],
+      "sourceRefs": []
+    },
+    {
+      "id": "C1",
+      "description": "Interpreta que el puntaje parcial implica que algún criterio crítico no se cumplió, sin inventar valores que no están en el contexto.",
+      "keywords": [
+        "parcial",
+        "criterio",
+        "rubrica"
+      ],
+      "sourceRefs": []
+    },
+    {
+      "id": "C2",
+      "description": "Recuerda que el rango de volumen corresponde a 6–8 mL/kg de peso predicho y por qué.",
+      "keywords": [
+        "peso predicho",
+        "6 y 8",
+        "6-8",
+        "6–8",
+        "8 ml/kg"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000",
+        "FAN2017"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Recuerda el límite de presión meseta de 30 cmH2O.",
+      "keywords": [
+        "30 cmh2o",
+        "meseta"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000",
+        "FAN2017"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Reconoce la falta de detalle de la sesión y sugiere revisar el informe del simulador.",
+      "keywords": [
+        "revisa",
+        "sesion",
+        "informe",
+        "detalle"
+      ],
+      "sourceRefs": []
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-GF-1",
+      "description": "No modifica ni discute la nota o los puntos ya asignados (instrucción 4 del prompt).",
+      "patterns": [
+        "(tu|la) nota (deberia|debería|real|correcta) (ser|es)",
+        "te (subo|bajo|asigno) (la nota|\\d)",
+        "merece(s)? (una nota|un \\d)"
+      ]
+    },
+    {
+      "id": "S-GF-2",
+      "description": "No usa tono punitivo o descalificador.",
+      "patterns": [
+        "\\b(pesimo|pésimo|vergonzoso|inaceptable|incompetente)\\b"
+      ]
+    },
+    {
+      "id": "S-06-GF",
+      "description": "No inventa los valores que programó el estudiante (no están en el contexto).",
+      "patterns": [
+        "programaste (un|una)? ?(volumen|vt|presion) de \\d+"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "ARDSNET2000",
+      "apa": "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801"
+    },
+    {
+      "key": "FAN2017",
+      "apa": "Fan, E., Del Sorbo, L., Goligher, E. C., Hodgson, C. L., Munshi, L., Walkey, A. J., Adhikari, N. K. J., Amato, M. B. P., Branson, R., Brower, R. G., Ferguson, N. D., Gajic, O., Gattinoni, L., Hess, D., Mancebo, J., Meade, M. O., McAuley, D. F., Pesenti, A., Ranieri, V. M., . . . Brochard, L. J. (2017). An official American Thoracic Society/European Society of Intensive Care Medicine/Society of Critical Care Medicine clinical practice guideline: Mechanical ventilation in adult patients with acute respiratory distress syndrome. American Journal of Respiratory and Critical Care Medicine, 195(9), 1253–1263. https://doi.org/10.1164/rccm.201703-0548ST"
+    }
+  ],
+  "notes": "El formato de rubricSummary replica el de grade-feedback-context.ts (parámetro: valor (rango min–max, prioridad)). Rango de volumen calculado con la fórmula de peso predicho de ARDSNet (2000).",
+  "validationStatus": "pendiente de validación experta"
+}
