@@ -17457,7 +17457,7 @@
               "gemini",
               "openai",
               "anthropic",
-              "custom"
+              "external"
             ],
             "items": {
               "type": "string"

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los proveedores LLM
- * Descripción: Verifica con fetch y SDK simulados las peticiones y respuestas de OpenAI, Anthropic, Gemini y el proveedor HTTP personalizado (completar, stream SSE, uso de tokens, errores HTTP clasificados, rechazos, AbortSignal) y el registro de proveedores según la configuración
- * Versión: 1.0
+ * Descripción: Verifica con fetch y SDK simulados las peticiones y respuestas de OpenAI, Anthropic, Gemini y el registro del proveedor externo (completar, stream SSE, uso de tokens, errores HTTP clasificados, rechazos, AbortSignal) y el registro de proveedores según la configuración
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -11,10 +11,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import { type AiProviderRegistry, type LlmChunk, type LlmCompletion, type LlmRequest } from "@/features/ai/application/ports/llm-provider.interface";
-import { AiProviderError, CustomHttpMappingNotConfiguredError } from "@/features/ai/domain/ai.errors";
+import { AiProviderError } from "@/features/ai/domain/ai.errors";
 import { buildAiProviderRegistry } from "@/features/ai/infrastructure/providers/ai-providers.factory";
 import { AnthropicProvider } from "@/features/ai/infrastructure/providers/anthropic.provider";
-import { CustomHttpProvider } from "@/features/ai/infrastructure/providers/custom-http.provider";
 import { GeminiProvider } from "@/features/ai/infrastructure/providers/gemini.provider";
 import { OpenAIProvider } from "@/features/ai/infrastructure/providers/openai.provider";
 
@@ -205,57 +204,23 @@ describe("LLM providers", () => {
     });
   });
 
-  describe("CustomHttpProvider", () => {
-    it("should throw while the mapping is not configured", async () => {
-      const provider: CustomHttpProvider = new CustomHttpProvider({ endpoint: "https://custom.local/ai", authHeader: "x-key", authValue: "secret" });
-
-      await expect(provider.complete(REQUEST, new AbortController().signal)).rejects.toBeInstanceOf(CustomHttpMappingNotConfiguredError);
-      expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it("should use the injected mapping and auth header and stream a single chunk", async () => {
-      fetchMock.mockResolvedValue(jsonResponse({ answer: "ok" }));
-      const provider: CustomHttpProvider = new CustomHttpProvider({
-        endpoint: "https://custom.local/ai",
-        authHeader: "x-key",
-        authValue: "secret",
-        toRequest: (request: LlmRequest): unknown => ({ prompt: request.messages[request.messages.length - 1].content }),
-        fromResponse: (json: unknown, request: LlmRequest): LlmCompletion => ({ text: String((json as { answer: string }).answer), model: request.model }),
-      });
-
-      const chunks: LlmChunk[] = await collect(provider.stream(REQUEST, new AbortController().signal));
-
-      expect(chunks).toEqual([{ type: "delta", text: "ok" }, { type: "final", completion: { text: "ok", model: "test-model" } }]);
-      expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ "x-key": "secret" });
-      expect(lastFetchBody(fetchMock)).toEqual({ prompt: "PEEP" });
-    });
-  });
-
   describe("buildAiProviderRegistry", () => {
     it("should register only the providers whose credentials are configured", () => {
       const registry: AiProviderRegistry = buildAiProviderRegistry({
         geminiApiKey: "g",
         anthropicApiKey: "a",
-        customEndpoint: "https://custom.local",
-        customAuthHeader: "x-key",
-        customAuthValue: "v",
-        customMappingConfigured: false,
+        externalBaseUrl: "https://external.local/v1",
       });
 
       expect([...registry.keys()]).toEqual(["gemini", "anthropic"]);
     });
 
-    it("should register the custom provider only with endpoint, auth and mapping", () => {
-      const registry: AiProviderRegistry = buildAiProviderRegistry({
-        openaiApiKey: "o",
-        customEndpoint: "https://custom.local",
-        customAuthHeader: "x-key",
-        customAuthValue: "v",
-        customMappingConfigured: true,
-      });
+    it("should register the external provider only with a base URL and a model, exposing the model as its default", () => {
+      const registry: AiProviderRegistry = buildAiProviderRegistry({ openaiApiKey: "o", externalBaseUrl: "https://external.local/v1", externalModel: "classmate-model" });
 
-      expect([...registry.keys()]).toEqual(["openai", "custom"]);
-      expect(buildAiProviderRegistry({ customMappingConfigured: false }).size).toBe(0);
+      expect([...registry.keys()]).toEqual(["openai", "external"]);
+      expect(registry.get("external")?.defaultModel).toBe("classmate-model");
+      expect(buildAiProviderRegistry({ externalModel: "classmate-model" }).size).toBe(0);
     });
   });
 });

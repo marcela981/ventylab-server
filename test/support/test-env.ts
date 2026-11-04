@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entorno explícito de pruebas
- * Descripción: Construye las variables de entorno de las suites de integración y e2e a partir de los contenedores locales (PostgreSQL y Mosquitto), fija un valor para cada clave de EnvironmentVariables para que ni .env ni dotenv ni Prisma aporten credenciales, vacía las llaves de proveedores de IA, Supabase, Sentry e InfluxDB, aísla los tópicos MQTT bajo test/<runId> y rechaza cualquier base de datos o broker que no sea local
- * Versión: 1.1
+ * Descripción: Construye las variables de entorno de las suites de integración y e2e a partir de los contenedores locales (PostgreSQL y Mosquitto), fija un valor para cada clave de EnvironmentVariables para que ni .env ni dotenv ni Prisma aporten credenciales, vacía las llaves de proveedores de IA (y el modelo del proveedor externo, que así no se registra), Supabase, Sentry e InfluxDB, aísla los tópicos MQTT bajo test/<runId> y rechaza cualquier base de datos o broker que no sea local
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,7 +20,7 @@ const LOCAL_HOSTS: readonly string[] = ["localhost", "127.0.0.1", "::1", "[::1]"
 const UNREACHABLE_LOCAL_URL: string = "http://127.0.0.1:9";
 
 const MUST_BE_BLANK_KEYS: readonly string[] = [
-  "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "AI_CUSTOM_HTTP_AUTH_HEADER", "AI_CUSTOM_HTTP_AUTH_VALUE",
+  "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "AI_EXTERNAL_API_KEY", "AI_EXTERNAL_MODEL",
   "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_STORAGE_BUCKET",
   "SENTRY_DSN", "INFLUXDB_URL", "INFLUXDB_TOKEN", "MQTT_USERNAME", "MQTT_PASSWORD", "SMTP_USER", "SMTP_PASS",
   "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
@@ -87,7 +87,7 @@ export function buildTestEnvironment(infrastructure: TestInfrastructure): Record
     INFLUXDB_BUCKET: "",
     OPENAI_BASE_URL: UNREACHABLE_LOCAL_URL,
     ANTHROPIC_BASE_URL: UNREACHABLE_LOCAL_URL,
-    AI_CUSTOM_HTTP_ENDPOINT: UNREACHABLE_LOCAL_URL,
+    AI_EXTERNAL_BASE_URL: UNREACHABLE_LOCAL_URL,
     AI_USE_CASE_SETTINGS: "{}",
     AI_QUOTAS: "{}",
     AI_PRICES: "{}",

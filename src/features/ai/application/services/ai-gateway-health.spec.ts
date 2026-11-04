@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de salud y sonda del gateway de IA
- * Descripción: Verifica la salud de solo lectura de los proveedores (configurado, cortocircuito cerrado, abierto y semiabierto, último éxito y último código de error) sin llamar a ningún proveedor, el catálogo de proveedores (configurado y modelos con precio o referenciados por los ajustes, sin duplicados) y la sonda manual: 404 para un proveedor desconocido, 422 para uno sin configuración, un único intento con el prompt mínimo registrado en la telemetría y fallos reportados sin lanzar
- * Versión: 1.1
+ * Descripción: Verifica la salud de solo lectura de los proveedores (configurado, cortocircuito cerrado, abierto y semiabierto, último éxito y último código de error) sin llamar a ningún proveedor, el catálogo de proveedores (configurado y modelos con precio o referenciados por los ajustes, sin duplicados) y la sonda manual: 404 para un proveedor desconocido, 422 para uno sin configuración, un único intento con el prompt mínimo registrado en la telemetría y fallos reportados sin lanzar; v1.2: el proveedor externo reemplaza a custom entre los conocidos
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -56,7 +56,7 @@ describe("AiGateway provider health", () => {
 
     const health: AiProviderHealth[] = gateway.getProviderHealth();
 
-    expect(health.map((entry: AiProviderHealth) => entry.provider)).toEqual(["gemini", "openai", "anthropic", "custom"]);
+    expect(health.map((entry: AiProviderHealth) => entry.provider)).toEqual(["gemini", "openai", "anthropic", "external"]);
     expect(healthOf(gateway, "gemini")).toMatchObject({ configured: true, state: "closed" });
     expect(healthOf(gateway, "openai")).toMatchObject({ configured: false, state: "closed" });
     expect(gemini.calls).toBe(0);
@@ -93,7 +93,7 @@ describe("AiGateway provider catalog", () => {
       { provider: "gemini", configured: true, models: ["gemini-model", "gemini-priced"] },
       { provider: "openai", configured: false, models: ["gpt-model"] },
       { provider: "anthropic", configured: false, models: [] },
-      { provider: "custom", configured: false, models: [] },
+      { provider: "external", configured: false, models: [] },
     ]);
     expect(gemini.calls).toBe(0);
     expect(recorder.records).toHaveLength(0);

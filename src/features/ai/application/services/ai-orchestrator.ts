@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Orquestador de proveedores de IA
- * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada
- * Versión: 1.3
+ * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada; v1.4: resuelve el identificador heredado custom como external (sin repetir un proveedor en la cadena) y el modelo "default" o ausente con el modelo por defecto del proveedor
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -39,7 +39,11 @@ import { type BuiltPrompt } from "@/features/ai/domain/prompts/prompt-template";
 import { type AiProbeResult, type AiProviderCatalogEntry, type AiProviderHealth } from "@/features/ai/domain/results/ai-provider-health";
 import { type AiCallStatus, type AiResult, type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
 import { classifyAiError } from "@/features/ai/domain/services/ai-error-classification";
-import { AI_PROVIDER_ID_VALUES } from "@/features/ai/domain/value-objects/ai-provider-id";
+import {
+  AI_PROVIDER_ID_VALUES,
+  normalizeAiProviderId,
+  PROVIDER_DEFAULT_MODEL,
+} from "@/features/ai/domain/value-objects/ai-provider-id";
 import { AI_USE_CASE_VALUES, type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 
 // A timed-out attempt already spent the whole latency budget, so it moves to the next provider instead of retrying.
@@ -292,14 +296,16 @@ export class AiOrchestrator {
       return {
         provider,
         configured: this._providers.has(provider),
-        models: [...new Set<string>([...this._settings.getPricedModels(provider), ...referenced])].sort(),
+        models: [...new Set<string>([...this._settings.getPricedModels(provider), ...referenced, ...this._defaultModels(provider)])]
+          .filter((model: string) => model !== PROVIDER_DEFAULT_MODEL)
+          .sort(),
       };
     });
   }
 
   public async probe(request: AiOrchestrationRequest, providerId: string, limits: AiProbeLimits): Promise<AiProbeResult> {
-    const provider: ILlmProvider | undefined = this._providers.get(providerId);
-    const model: string | undefined = provider ? this._probeModel(request.useCase, providerId) : undefined;
+    const provider: ILlmProvider | undefined = this._providers.get(normalizeAiProviderId(providerId));
+    const model: string | undefined = provider ? this._probeModel(request.useCase, provider) : undefined;
 
     if (!provider || !model) {
       throw new AiProviderNotRegisteredError(providerId);
@@ -542,15 +548,15 @@ export class AiOrchestrator {
     return [...new Set<string>([...AI_PROVIDER_ID_VALUES, ...this._providers.keys()])];
   }
 
-  private _probeModel(useCase: AiUseCaseValue, providerId: string): string | undefined {
-    const preferred: string | undefined = this._settings.getUseCaseSettings(useCase).models[providerId];
+  private _probeModel(useCase: AiUseCaseValue, provider: ILlmProvider): string | undefined {
+    const preferred: string | undefined = this._resolveModel(this._settings.getUseCaseSettings(useCase), provider);
 
     if (preferred) {
       return preferred;
     }
 
     for (const candidate of AI_USE_CASE_VALUES) {
-      const model: string | undefined = this._settings.getUseCaseSettings(candidate).models[providerId];
+      const model: string | undefined = this._resolveModel(this._settings.getUseCaseSettings(candidate), provider);
 
       if (model) {
         return model;
@@ -560,14 +566,37 @@ export class AiOrchestrator {
     return undefined;
   }
 
-  private *_targets(settings: AiUseCaseSettings): Generator<ProviderTarget> {
-    for (const providerId of settings.providerChain) {
-      const provider: ILlmProvider | undefined = this._providers.get(providerId);
-      const model: string | undefined = settings.models[providerId];
+  private _defaultModels(providerId: string): string[] {
+    const model: string | undefined = this._providers.get(providerId)?.defaultModel;
 
-      if (!provider || !model || this._breaker.isOpen(providerId)) {
+    return model ? [model] : [];
+  }
+
+  // The legacy "custom" entry of settings saved before the external provider still selects the external model.
+  private _resolveModel(settings: AiUseCaseSettings, provider: ILlmProvider): string | undefined {
+    const configured: string | undefined =
+      settings.models[provider.id] ?? Object.entries(settings.models).find(([id]: [string, string]) => normalizeAiProviderId(id) === provider.id)?.[1];
+
+    if (!configured || configured === PROVIDER_DEFAULT_MODEL) {
+      return provider.defaultModel;
+    }
+
+    return configured;
+  }
+
+  private *_targets(settings: AiUseCaseSettings): Generator<ProviderTarget> {
+    const seen: Set<string> = new Set<string>();
+
+    for (const configuredId of settings.providerChain) {
+      const providerId: string = normalizeAiProviderId(configuredId);
+      const provider: ILlmProvider | undefined = this._providers.get(providerId);
+      const model: string | undefined = provider ? this._resolveModel(settings, provider) : undefined;
+
+      if (seen.has(providerId) || !provider || !model || this._breaker.isOpen(providerId)) {
         continue;
       }
+
+      seen.add(providerId);
 
       yield { provider, model };
     }

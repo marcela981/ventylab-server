@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Puerto ILlmProvider
- * Descripción: Contrato de estrategia de proveedor de modelos de lenguaje (completar y transmitir en stream con AbortSignal), sus tipos de petición, respuesta y fragmento, y el token del registro de proveedores configurados
- * Versión: 1.0
+ * Descripción: Contrato de estrategia de proveedor de modelos de lenguaje (completar y transmitir en stream con AbortSignal), sus tipos de petición, respuesta y fragmento, y el token del registro de proveedores configurados; v1.1: modelo por defecto opcional del proveedor (el externo lo toma de su configuración)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -42,6 +42,8 @@ export type LlmChunk = LlmDeltaChunk | LlmFinalChunk;
 
 export interface ILlmProvider {
   readonly id: string;
+  // Used when the use case settings name no model for the provider or the "default" placeholder.
+  readonly defaultModel?: string;
   complete(request: LlmRequest, signal: AbortSignal): Promise<LlmCompletion>;
   stream(request: LlmRequest, signal: AbortSignal): AsyncIterable<LlmChunk>;
 }

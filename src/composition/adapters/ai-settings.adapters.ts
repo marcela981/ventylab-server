@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Adaptadores de ajustes de IA
- * Descripción: Implementan los puertos de IA sobre la fachada de ajustes de la plataforma, leyendo el valor vigente en cada llamada: IAiSettingsProvider (cadena, modelos, tiempo límite, tokens y temperatura por caso de uso, cuotas, precios, modelos con precio (ajuste vigente más la tabla por defecto de la configuración) y verificación de tema; cortocircuito, reintento y ventana del tutor desde la configuración), la tabla de precios de la telemetría (USD por millón de tokens con clave proveedor:modelo, recalculada solo cuando cambian los precios) y la disponibilidad de proveedores según sus credenciales configuradas
- * Versión: 1.1
+ * Descripción: Implementan los puertos de IA sobre la fachada de ajustes de la plataforma, leyendo el valor vigente en cada llamada: IAiSettingsProvider (cadena, modelos, tiempo límite, tokens y temperatura por caso de uso, cuotas, precios, modelos con precio (ajuste vigente más la tabla por defecto de la configuración) y verificación de tema; cortocircuito, reintento y ventana del tutor desde la configuración), la tabla de precios de la telemetría (USD por millón de tokens con clave proveedor:modelo, recalculada solo cuando cambian los precios) y la disponibilidad de proveedores según sus credenciales configuradas; v1.2: el precio vigente cae al precio de la configuración cuando el ajuste ai.prices no lo tiene (precio del proveedor externo desde sus variables de entorno) y la disponibilidad acepta el identificador heredado custom como external
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -20,6 +20,7 @@ import {
   type IAiSettingsProvider,
 } from "@/features/ai/application/ports/ai-settings-provider.interface";
 import { type AiProviderRegistry } from "@/features/ai/application/ports/llm-provider.interface";
+import { normalizeAiProviderId } from "@/features/ai/domain/value-objects/ai-provider-id";
 import { type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 import { readAiProvidersConfig } from "@/features/ai/infrastructure/config/ai-providers.config";
 import { buildAiSettingsSnapshot, ConfigAiSettingsProvider, readAiSettingsSource, resolveAiQuota } from "@/features/ai/infrastructure/config/ai-settings.provider";
@@ -59,7 +60,7 @@ export class PlatformAiSettingsProvider implements IAiSettingsProvider {
   }
 
   public getPrice(provider: string, model: string): AiModelPrice | undefined {
-    return this._settings.get("ai.prices")[provider]?.[model];
+    return this._settings.get("ai.prices")[provider]?.[model] ?? this._config.getPrice(provider, model);
   }
 
   public getPricedModels(provider: string): readonly string[] {
@@ -107,5 +108,5 @@ export function createConfigAiSettingsProvider(configService: ConfigService<Envi
 export function createAiProviderAvailability(configService: ConfigService<EnvironmentVariables, true>): IAiProviderAvailability {
   const registry: AiProviderRegistry = buildAiProviderRegistry(readAiProvidersConfig(configService));
 
-  return { isConfigured: (providerId: string): boolean => registry.has(providerId) };
+  return { isConfigured: (providerId: string): boolean => registry.has(normalizeAiProviderId(providerId)) };
 }

@@ -27,7 +27,7 @@ export class PlatformSettingKeySchemaDTO {
 
   @ApiProperty({
     description: "Keys a form may add (for AI provider maps, the providers the AI feature registers); null when any key is accepted",
-    example: ["gemini", "openai", "anthropic", "custom"],
+    example: ["gemini", "openai", "anthropic", "external"],
     nullable: true,
     type: String,
     isArray: true,

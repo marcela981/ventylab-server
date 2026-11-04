@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de AiOrchestrator
- * Descripción: Verifica la cadena de proveedores del gateway de IA: reintento ante errores transitorios, paso al siguiente proveedor, tiempo límite por intento, cortocircuito, respaldo determinista, 503 sin respaldo, abortos y medición de TTFT en streams
- * Versión: 1.0
+ * Descripción: Verifica la cadena de proveedores del gateway de IA: reintento ante errores transitorios, paso al siguiente proveedor, tiempo límite por intento, cortocircuito, respaldo determinista, 503 sin respaldo, abortos y medición de TTFT en streams; v1.1: resolución del identificador heredado custom como external con su modelo por defecto
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -334,5 +334,35 @@ describe("AiOrchestrator", () => {
       expect(received).toEqual([{ type: "delta", text: "a" }]);
       expect(recorder.last).toMatchObject({ status: "ABORTED", ttftMs: 100 });
     });
+  });
+});
+
+describe("AiOrchestrator provider resolution", () => {
+  it("should resolve the legacy custom chain entry as external with its default model and skip a repeated provider", async () => {
+    const external: FakeLlmProvider = Object.assign(new FakeLlmProvider("external", { kind: "text", text: "externo" }), { defaultModel: "classmate-model" });
+    const settings: StaticAiSettingsProvider = new StaticAiSettingsProvider({
+      providerChain: ["custom", "external"],
+      models: { custom: "default" },
+      timeoutMs: TIMEOUT_MS,
+      maxOutputTokens: 64,
+      temperature: 0,
+    });
+    const recorder: InMemoryAiCallRecorder = new InMemoryAiCallRecorder();
+    const orchestrator: AiOrchestrator = new AiOrchestrator(providerRegistry(external), settings, recorder);
+
+    const result: AiResult = await orchestrator.complete(buildRequest());
+
+    expect(result).toMatchObject({ content: "externo", provider: "external", model: "classmate-model" });
+    expect(external.requests.map((request: { model: string }) => request.model)).toEqual(["classmate-model"]);
+    expect(recorder.last).toMatchObject({ provider: "external", model: "classmate-model", attempts: 1 });
+    expect(orchestrator.getProviderCatalog().find((entry: { provider: string }) => entry.provider === "external")).toMatchObject({ configured: true, models: ["classmate-model"] });
+  });
+
+  it("should probe the external provider through the legacy id with its default model", async () => {
+    const external: FakeLlmProvider = Object.assign(new FakeLlmProvider("external", { kind: "text", text: "OK" }), { defaultModel: "classmate-model" });
+    const settings: StaticAiSettingsProvider = new StaticAiSettingsProvider({ providerChain: ["gemini"], models: { gemini: "g" }, timeoutMs: TIMEOUT_MS, maxOutputTokens: 8, temperature: 0 });
+    const orchestrator: AiOrchestrator = new AiOrchestrator(providerRegistry(external), settings, new InMemoryAiCallRecorder());
+
+    await expect(orchestrator.probe(buildRequest(), "custom", { timeoutMs: 1000, maxOutputTokens: 8 })).resolves.toMatchObject({ ok: true, model: "classmate-model" });
   });
 });

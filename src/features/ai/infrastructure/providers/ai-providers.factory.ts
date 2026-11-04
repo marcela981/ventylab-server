@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registro de proveedores de IA
- * Descripción: Construye a partir de la configuración leída el registro de proveedores LLM disponibles: Gemini, OpenAI y Anthropic solo con su clave configurada, y el proveedor HTTP personalizado solo con endpoint, cabecera de autenticación y mapeo configurados
- * Versión: 1.0
+ * Descripción: Construye a partir de la configuración leída el registro de proveedores LLM disponibles: Gemini, OpenAI y Anthropic solo con su clave configurada; v1.1: el proveedor externo de terceros (formato openai o simple) solo con URL base y modelo configurados, en reemplazo del proveedor HTTP personalizado retirado
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,7 @@
  */
 import { type AiProviderRegistry, type ILlmProvider } from "@/features/ai/application/ports/llm-provider.interface";
 import { AnthropicProvider, DEFAULT_ANTHROPIC_BASE_URL } from "@/features/ai/infrastructure/providers/anthropic.provider";
-import { CustomHttpProvider } from "@/features/ai/infrastructure/providers/custom-http.provider";
+import { ExternalProvider, type ExternalProviderFormat } from "@/features/ai/infrastructure/providers/external.provider";
 import { GeminiProvider } from "@/features/ai/infrastructure/providers/gemini.provider";
 import { DEFAULT_OPENAI_BASE_URL, OpenAIProvider } from "@/features/ai/infrastructure/providers/openai.provider";
 
@@ -20,10 +20,12 @@ export interface AiProvidersConfig {
   readonly openaiBaseUrl?: string;
   readonly anthropicApiKey?: string;
   readonly anthropicBaseUrl?: string;
-  readonly customEndpoint?: string;
-  readonly customAuthHeader?: string;
-  readonly customAuthValue?: string;
-  readonly customMappingConfigured: boolean;
+  readonly externalBaseUrl?: string;
+  readonly externalApiKey?: string;
+  readonly externalAuthHeader?: string;
+  readonly externalModel?: string;
+  readonly externalFormat?: ExternalProviderFormat;
+  readonly externalTimeoutMs?: number;
 }
 
 export function buildAiProviderRegistry(config: AiProvidersConfig): AiProviderRegistry {
@@ -41,8 +43,17 @@ export function buildAiProviderRegistry(config: AiProvidersConfig): AiProviderRe
     providers.push(new AnthropicProvider(config.anthropicApiKey, config.anthropicBaseUrl ?? DEFAULT_ANTHROPIC_BASE_URL));
   }
 
-  if (config.customEndpoint && config.customAuthHeader && config.customAuthValue && config.customMappingConfigured) {
-    providers.push(new CustomHttpProvider({ endpoint: config.customEndpoint, authHeader: config.customAuthHeader, authValue: config.customAuthValue }));
+  if (config.externalBaseUrl && config.externalModel) {
+    providers.push(
+      new ExternalProvider({
+        baseUrl: config.externalBaseUrl,
+        model: config.externalModel,
+        format: config.externalFormat ?? "openai",
+        apiKey: config.externalApiKey,
+        authHeader: config.externalAuthHeader,
+        timeoutMs: config.externalTimeoutMs,
+      }),
+    );
   }
 
   return new Map<string, ILlmProvider>(providers.map((provider: ILlmProvider) => [provider.id, provider]));

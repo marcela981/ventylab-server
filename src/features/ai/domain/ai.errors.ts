@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores del gateway de IA
- * Descripción: Errores de dominio del gateway de IA (proveedores no disponibles → 503, cuota excedida → 429 con hora de reinicio en el mensaje traducido y en Retry-After, mapeo HTTP personalizado sin configurar, proveedor desconocido → 404 y proveedor sin configuración → 422 para la sonda manual) y el error interno de proveedor con su clasificación
- * Versión: 1.2
+ * Descripción: Errores de dominio del gateway de IA (proveedores no disponibles → 503, cuota excedida → 429 con hora de reinicio en el mensaje traducido y en Retry-After, proveedor desconocido → 404 y proveedor sin configuración → 422 para la sonda manual) y el error interno de proveedor con su clasificación; v1.3: sin el error del mapeo HTTP personalizado retirado
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -63,13 +63,6 @@ export class AiCallAbortedError extends Error {
   public constructor() {
     super("The AI call was aborted by the caller");
     this.name = AiCallAbortedError.name;
-  }
-}
-
-export class CustomHttpMappingNotConfiguredError extends Error {
-  public constructor() {
-    super("The custom HTTP provider mapping is not configured");
-    this.name = CustomHttpMappingNotConfiguredError.name;
   }
 }
 

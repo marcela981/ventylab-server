@@ -17679,7 +17679,7 @@ export interface components {
              *       "gemini",
              *       "openai",
              *       "anthropic",
-             *       "custom"
+             *       "external"
              *     ]
              */
             allowedKeys: string[] | null;
