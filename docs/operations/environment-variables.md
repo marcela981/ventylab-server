@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Referencia de variables de entorno
-  Descripción: Lista cada variable que valida env.validation.ts, las que se leen antes del arranque de Nest (Sentry), las de pruebas y herramientas, las de interpolación de docker-compose y los argumentos de construcción de la imagen (GIT_SHA, BUILD_DATE), con obligatoriedad, valor por defecto, descripción y ejemplo no real; v1.4: proveedor externo de terceros AI_EXTERNAL_* en lugar de AI_CUSTOM_HTTP_*; v1.5: notas de reintentos, Retry-After y cuota de tokens
-  Versión: 1.5
+  Descripción: Lista cada variable que valida env.validation.ts, las que se leen antes del arranque de Nest (Sentry), las de pruebas y herramientas, las de interpolación de docker-compose y los argumentos de construcción de la imagen (GIT_SHA, BUILD_DATE), con obligatoriedad, valor por defecto, descripción y ejemplo no real; v1.4: proveedor externo de terceros AI_EXTERNAL_* en lugar de AI_CUSTOM_HTTP_*; v1.5: notas de reintentos, Retry-After y cuota de tokens; v1.6: el job deploy de la CI sella GIT_SHA y BUILD_DATE en Dokploy (modo API)
+  Versión: 1.6
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -226,7 +226,8 @@ A malformed JSON value stops startup with an error naming the variable and the o
 **Dokploy.** Dokploy builds this repository itself with this `Dockerfile`. That is true for an Application with the Dockerfile build type and for the Compose service, whose `backend` has `build: { context: ., dockerfile: Dockerfile }`. Dokploy does not know the commit by itself, so the build arguments must be set there:
 
 - Application: set `GIT_SHA` and `BUILD_DATE` in the build-time arguments of the application (Environment tab, "Build Time Arguments", one `KEY=value` per line). Compose: set them as environment variables of the compose service so `${GIT_SHA}`/`${BUILD_DATE}` interpolate.
-- A static value goes stale after the next deploy. Either update `GIT_SHA` before each deploy (for example from the CI deploy flow described in [runbook §8](../runbook.md#8-controlled-deploy)), or leave both unset: the endpoint then reports `"unknown"` and only `contract` is meaningful. `sha: "unknown"` is never an error.
+- Application, CI deploy in API mode: nothing to set by hand. The `deploy` job writes `GIT_SHA` and `BUILD_DATE` into the application's build-time arguments before each deploy, keeping every other value ([runbook §8](../runbook.md#build-arguments-stamped-by-the-deploy-job-api-mode)).
+- Webhook mode, Compose service or a manual deploy: a static value goes stale after the next deploy. Either update `GIT_SHA` before each deploy, or leave both unset: the endpoint then reports `"unknown"` and only `contract` is meaningful. `sha: "unknown"` is never an error.
 - An image built by CI and pulled by Dokploy (Docker source, `PUBLISH_IMAGE=true`) already carries the real values.
 
 ## docker-compose.yml interpolation (not read by the app)
