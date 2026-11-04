@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Agregado StudentEvaluationAttempt
- * Descripción: Intento de un estudiante en una evaluación con sus respuestas por pregunta: inicio con número de intento y plazo del servidor, autoguardado (solo en curso, no heredado y sin revisar) y revisión inmediata que guarda la respuesta con revealedAt y la bloquea, cierre con la calificación automática (puntaje por pregunta, estado GRADED o PENDING_REVIEW, nota, publicación inmediata opcional) y eventos de intento calificado y nota publicada; calificación docente por pregunta (puntaje manual 0–puntos, comentario obligatorio al sobrescribir un puntaje existente, recálculo de puntaje, estado y nota con eventos de calificado, publicado o actualizado) y publicación idempotente de la nota; los intentos heredados (legacySource) son de solo lectura para el estudiante pero el profesor puede calificarlos; v1.4: cerrar y calificar reciben el solicitante opcional de la retroalimentación y lo pasan a los eventos de calificado y recalificado
- * Versión: 1.4
+ * Descripción: Intento de un estudiante en una evaluación con sus respuestas por pregunta: inicio con número de intento y plazo del servidor, autoguardado (solo en curso, no heredado y sin revisar) y revisión inmediata que guarda la respuesta con revealedAt y la bloquea, cierre con la calificación automática (puntaje por pregunta, estado GRADED o PENDING_REVIEW, nota, publicación inmediata opcional) y eventos de intento calificado y nota publicada; calificación docente por pregunta (puntaje manual 0–puntos, comentario obligatorio al sobrescribir un puntaje existente, recálculo de puntaje, estado y nota con eventos de calificado, publicado o actualizado) y publicación idempotente de la nota; los intentos heredados (legacySource) son de solo lectura para el estudiante pero el profesor puede calificarlos; v1.4: cerrar y calificar reciben el solicitante opcional de la retroalimentación y lo pasan a los eventos de calificado y recalificado; v2.0 (ajustes C1): cerrar y calificar nunca publican; el docente libera la nota sola o la nota con las respuestas (answersReleasedAt) de forma idempotente, y ya no existe la revisión inmediata (una respuesta revelada antes sigue bloqueada)
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,6 +22,7 @@ import {
   InvalidManualScoreError,
 } from "@/features/evaluation/domain/evaluation.errors";
 import {
+  EvaluationAnswersReleasedEvent,
   EvaluationAttemptGradedEvent,
   EvaluationGradePublishedEvent,
   EvaluationGradeUpdatedEvent,
@@ -43,6 +44,7 @@ import {
   PENDING_REVIEW_ATTEMPT_STATUS,
 } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
 import { type GradeFeedbackRequester } from "@/features/evaluation/domain/value-objects/grade-feedback-requester";
+import { releasesAnswers, type ResultsReleaseScopeValue } from "@/features/evaluation/domain/value-objects/results-release-scope";
 
 export const EVALUATION_ANSWER_AUDIT_TARGET: string = "evaluation_answers";
 export const EVALUATION_ATTEMPT_AUDIT_TARGET: string = "evaluation_attempts";
@@ -74,6 +76,7 @@ export interface StudentEvaluationAttemptProps {
   maxScore?: number;
   grade?: number;
   gradePublishedAt?: Date;
+  answersReleasedAt?: Date;
   isLate: boolean;
   legacySource?: string;
   answers: EvaluationAnswerRecord[];
@@ -85,8 +88,6 @@ export interface CloseAttemptInput {
   readonly grading: EvaluationAttemptGrading;
   readonly submittedAt: Date;
   readonly now: Date;
-  readonly publishImmediately: boolean;
-  readonly passingGrade: number;
   readonly requester?: GradeFeedbackRequester;
 }
 
@@ -97,9 +98,13 @@ export interface GradeAnswerInput {
   readonly comment?: string;
   readonly graderId: string;
   readonly now: Date;
-  readonly publishImmediately: boolean;
   readonly passingGrade: number;
   readonly requester?: GradeFeedbackRequester;
+}
+
+export interface ResultsReleaseChange {
+  readonly gradePublished: boolean;
+  readonly answersReleased: boolean;
 }
 
 export interface AnswerScoreState extends Record<string, unknown> {
@@ -182,6 +187,14 @@ export class StudentEvaluationAttempt extends AggregateRoot {
     return this._props.gradePublishedAt;
   }
 
+  public get answersReleasedAt(): Date | undefined {
+    return this._props.answersReleasedAt;
+  }
+
+  public get areAnswersReleased(): boolean {
+    return this._props.answersReleasedAt !== undefined;
+  }
+
   public get isLate(): boolean {
     return this._props.isLate;
   }
@@ -235,15 +248,11 @@ export class StudentEvaluationAttempt extends AggregateRoot {
   }
 
   public saveAnswer(questionId: string, answer: ValidatedEvaluationAnswer, now: Date): void {
-    this._writeAnswer(questionId, answer, now, undefined);
+    this._writeAnswer(questionId, answer, now);
   }
 
-  // Stores the answer and reveals its correction; a revealed answer is locked for the rest of the attempt.
-  public revealAnswer(questionId: string, answer: ValidatedEvaluationAnswer, now: Date): void {
-    this._writeAnswer(questionId, answer, now, now);
-  }
-
-  public close({ grading, submittedAt, now, publishImmediately, passingGrade, requester }: CloseAttemptInput): void {
+  // Closing grades the attempt but never publishes: results reach the student only through releaseResults.
+  public close({ grading, submittedAt, now, requester }: CloseAttemptInput): void {
     this._assertWritable();
 
     for (const questionGrade of grading.questions) {
@@ -251,14 +260,14 @@ export class StudentEvaluationAttempt extends AggregateRoot {
     }
 
     const graded: boolean = grading.status === GRADED_ATTEMPT_STATUS && grading.grade !== undefined;
-    const published: boolean = graded && publishImmediately;
 
     this._props.status = grading.status;
     this._props.submittedAt = submittedAt;
     this._props.score = grading.score;
     this._props.maxScore = grading.maxScore;
     this._props.grade = graded ? grading.grade : undefined;
-    this._props.gradePublishedAt = published ? now : undefined;
+    this._props.gradePublishedAt = undefined;
+    this._props.answersReleasedAt = undefined;
     this._props.isLate = false;
     this._props.updatedAt = now;
 
@@ -278,25 +287,10 @@ export class StudentEvaluationAttempt extends AggregateRoot {
         }),
       );
 
-      if (published) {
-        this.publishEvent(
-          new EvaluationGradePublishedEvent({
-            attemptId: this.id,
-            evaluationId: this.evaluationId,
-            userId: this.userId,
-            score: grading.score,
-            maxScore: grading.maxScore,
-            grade,
-            passed: hasPassedEvaluation(grade, passingGrade),
-            publishedAt: now,
-            performedBy: this.userId,
-          }),
-        );
-      }
     }
   }
 
-  public gradeAnswer({ questions, questionId, manualScore, comment, graderId, now, publishImmediately, passingGrade, requester }: GradeAnswerInput): AnswerGradeChange {
+  public gradeAnswer({ questions, questionId, manualScore, comment, graderId, now, passingGrade, requester }: GradeAnswerInput): AnswerGradeChange {
     if (this.isInProgress) {
       throw new EvaluationAttemptNotGradableError();
     }
@@ -334,27 +328,40 @@ export class StudentEvaluationAttempt extends AggregateRoot {
 
     this._answers.set(questionId, answer);
     this._changedQuestionIds.add(questionId);
-    this._recompute(questions, { graderId, now, publishImmediately, passingGrade, requester });
+    this._recompute(questions, { graderId, now, passingGrade, requester });
 
     return { answerId: answer.id, override, before: scoreState(current), after: scoreState(answer) };
   }
 
-  public publishGrade(now: Date, passingGrade: number, performedBy: string): boolean {
+  /**
+   * Releases the grade alone (GRADE) or the grade with the corrections (GRADE_AND_ANSWERS); releasing again is a no-op.
+   * @throws {EvaluationAttemptNotGradedError} If the attempt is not GRADED
+   */
+  public releaseResults(scope: ResultsReleaseScopeValue, now: Date, passingGrade: number, performedBy: string): ResultsReleaseChange {
     const grade: number | undefined = this._props.grade;
 
     if (this._props.status !== GRADED_ATTEMPT_STATUS || grade === undefined) {
       throw new EvaluationAttemptNotGradedError();
     }
 
-    if (this.isPublished) {
-      return false;
+    const gradePublished: boolean = !this.isPublished;
+    const answersReleased: boolean = releasesAnswers(scope) && !this.areAnswersReleased;
+
+    if (gradePublished) {
+      this._props.gradePublishedAt = now;
+      this._publishGradePublished(grade, now, passingGrade, performedBy);
     }
 
-    this._props.gradePublishedAt = now;
-    this._props.updatedAt = now;
-    this._publishGradePublished(grade, now, passingGrade, performedBy);
+    if (answersReleased) {
+      this._props.answersReleasedAt = now;
+      this.publishEvent(new EvaluationAnswersReleasedEvent({ attemptId: this.id, evaluationId: this.evaluationId, userId: this.userId, releasedAt: now, performedBy }));
+    }
 
-    return true;
+    if (gradePublished || answersReleased) {
+      this._props.updatedAt = now;
+    }
+
+    return { gradePublished, answersReleased };
   }
 
   public toSnapshot(): StudentEvaluationAttemptProps {
@@ -401,10 +408,9 @@ export class StudentEvaluationAttempt extends AggregateRoot {
     {
       graderId,
       now,
-      publishImmediately,
       passingGrade,
       requester,
-    }: { graderId: string; now: Date; publishImmediately: boolean; passingGrade: number; requester?: GradeFeedbackRequester },
+    }: { graderId: string; now: Date; passingGrade: number; requester?: GradeFeedbackRequester },
   ): void {
     const wasGraded: boolean = this._props.status === GRADED_ATTEMPT_STATUS;
     const summary: AttemptScoreSummary = summarizeAttemptScores(questions, this._answers);
@@ -457,10 +463,6 @@ export class StudentEvaluationAttempt extends AggregateRoot {
       }),
     );
 
-    if (publishImmediately && !this.isPublished) {
-      this._props.gradePublishedAt = now;
-      this._publishGradePublished(grade, now, passingGrade, graderId);
-    }
   }
 
   private _publishGradePublished(grade: number, publishedAt: Date, passingGrade: number, performedBy: string): void {
@@ -498,7 +500,8 @@ export class StudentEvaluationAttempt extends AggregateRoot {
     this._changedQuestionIds.add(questionGrade.questionId);
   }
 
-  private _writeAnswer(questionId: string, answer: ValidatedEvaluationAnswer, now: Date, revealedAt: Date | undefined): void {
+  // An answer revealed by the retired immediate check stays locked.
+  private _writeAnswer(questionId: string, answer: ValidatedEvaluationAnswer, now: Date): void {
     this._assertWritable();
 
     const current: EvaluationAnswerRecord | undefined = this._answers.get(questionId);
@@ -513,7 +516,6 @@ export class StudentEvaluationAttempt extends AggregateRoot {
       selectedOptionIds: [...answer.selectedOptionIds],
       textAnswer: answer.textAnswer,
       simulationSessionId: answer.simulationSessionId,
-      revealedAt,
     });
 
     this._changedQuestionIds.add(questionId);

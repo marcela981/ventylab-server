@@ -94,8 +94,8 @@ export class GenerateGradeFeedbackUseCase {
       throw error;
     }
 
-    // The student can only open the feedback of a published grade: notifying earlier leads to a 404
-    if ((await this._attemptsRepository.getById(attempt.id))?.isPublished === true) {
+    // The student can only open the feedback once the teacher released the answers: notifying earlier leads to a 404
+    if ((await this._attemptsRepository.getById(attempt.id))?.areAnswersReleased === true) {
       this._eventBus.publish([
         new GradeFeedbackReadyEvent({ attemptId: attempt.id, evaluationId: attempt.evaluationId, userId: attempt.userId, feedbackId: pendingId }),
       ]);

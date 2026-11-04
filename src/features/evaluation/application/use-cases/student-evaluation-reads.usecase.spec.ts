@@ -76,7 +76,7 @@ describe("GetEvaluationAttemptUseCase", () => {
     const result: StudentEvaluationAttemptDetailResult = await getAttempt(doubles);
 
     expect(result.attempt.status).toBe("GRADED");
-    expect(result.attempt.isPublished).toBe(true);
+    expect(result.attempt.isPublished).toBe(false);
   });
 });
 

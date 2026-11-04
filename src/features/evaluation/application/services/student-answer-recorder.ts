@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Registro de respuestas del estudiante
- * Descripción: Valida una respuesta contra su pregunta (pertenencia a la evaluación, forma según el tipo, opciones de la pregunta y vinculación de la sesión de simulación vía ISimulationSessionBindingReader: del mismo estudiante, en modo EXAM y del mismo intento y pregunta) y la guarda en el intento; lo usan el autoguardado y las respuestas finales de la entrega; también registra y revela una respuesta de selección para la retroalimentación inmediata (solo QUIZ y WORKSHOP), que queda bloqueada
+ * Descripción: Valida una respuesta contra su pregunta (pertenencia a la evaluación, forma según el tipo, opciones de la pregunta y vinculación de la sesión de simulación vía ISimulationSessionBindingReader: del mismo estudiante, en modo EXAM y del mismo intento y pregunta) y la guarda en el intento; lo usan el autoguardado y las respuestas finales de la entrega; v2.0 (ajustes C1): sin revisión inmediata
  * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -20,7 +20,6 @@ import { type EvaluationQuestionItem } from "@/features/evaluation/domain/entiti
 import { type Evaluation } from "@/features/evaluation/domain/entities/evaluation.entity";
 import { type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import {
-  EvaluationAnswerCheckUnavailableError,
   EvaluationQuestionNotFoundError,
   InvalidEvaluationAnswerError,
 } from "@/features/evaluation/domain/evaluation.errors";
@@ -29,8 +28,6 @@ import {
   validateEvaluationAnswer,
   type ValidatedEvaluationAnswer,
 } from "@/features/evaluation/domain/services/evaluation-answer-validation";
-import { isChoiceQuestionType } from "@/features/evaluation/domain/value-objects/evaluation-question-type";
-import { immediateFeedbackFor } from "@/features/evaluation/domain/value-objects/evaluation-type";
 
 export interface StudentAnswerInput extends EvaluationAnswerInput {
   readonly questionId: string;
@@ -48,25 +45,6 @@ export class StudentAnswerRecorder {
     const answer: ValidatedEvaluationAnswer = await this._validate(attempt, question, input);
 
     attempt.saveAnswer(question.id, answer, now);
-  }
-
-  /**
-   * @throws {EvaluationAnswerCheckUnavailableError} If the evaluation type has no immediate feedback or the question is not a choice question
-   */
-  public reveal(attempt: StudentEvaluationAttempt, evaluation: Evaluation, input: StudentAnswerInput, now: Date): EvaluationQuestionItem {
-    if (!immediateFeedbackFor(evaluation.type)) {
-      throw new EvaluationAnswerCheckUnavailableError("evaluation_type");
-    }
-
-    const question: EvaluationQuestionItem = StudentAnswerRecorder._findQuestion(evaluation, input.questionId);
-
-    if (!isChoiceQuestionType(question.type)) {
-      throw new EvaluationAnswerCheckUnavailableError("question_type");
-    }
-
-    attempt.revealAnswer(question.id, validateEvaluationAnswer(question, input), now);
-
-    return question;
   }
 
   private static _findQuestion(evaluation: Evaluation, questionId: string): EvaluationQuestionItem {

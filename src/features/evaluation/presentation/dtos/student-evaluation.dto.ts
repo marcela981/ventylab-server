@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de evaluaciones del estudiante
- * Descripción: Contratos HTTP propios del estudiante (no reutilizan los de gestión): inicio de intento, detalle del intento con preguntas, opciones y respuestas guardadas (respuestas correctas, explicaciones, rúbricas, retroalimentación de opciones y puntaje por pregunta solo cuando la nota está publicada; nota parcial de las cerradas mientras espera revisión), resultado de la entrega y listado de evaluaciones asignadas con sus intentos
- * Versión: 1.1
+ * Descripción: Contratos HTTP propios del estudiante (no reutilizan los de gestión): inicio de intento, detalle del intento con preguntas, opciones y respuestas guardadas (v2.0, ajustes C1: nota, puntaje y aprobado solo cuando el docente libera la nota; respuestas correctas, explicaciones, rúbricas, retroalimentación de opciones y puntaje por pregunta solo cuando libera las respuestas; sin revisión inmediata ni nota parcial), resultado de la entrega y listado de evaluaciones asignadas con sus intentos
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -104,10 +104,10 @@ export class StudentOptionDTO {
   @ApiProperty({ description: "Option media", nullable: true, type: EvaluationMediaDTO })
   public media: EvaluationMediaDTO | null;
 
-  @ApiPropertyOptional({ description: "Whether the option is correct (only once the grade is published)", example: true })
+  @ApiPropertyOptional({ description: "Whether the option is correct (only once the teacher releases the answers)", example: true })
   public isCorrect?: boolean;
 
-  @ApiPropertyOptional({ description: "Option feedback (only once the grade is published)", example: "Correct", nullable: true, type: String })
+  @ApiPropertyOptional({ description: "Option feedback (only once the teacher releases the answers)", example: "Correct", nullable: true, type: String })
   public feedback?: string | null;
 
   public constructor(fields: { id: string; order: number; content: string; media: EvaluationMediaDTO | null; isCorrect?: boolean; feedback?: string | null }) {
@@ -141,44 +141,6 @@ export class StudentScenarioDTO {
     this.order = order;
     this.content = content;
     this.media = media;
-  }
-}
-
-export class CheckEvaluationAnswerResponseDTO {
-  @ApiProperty({ description: "Whether the selected options are exactly the correct ones", example: true })
-  public isCorrect: boolean;
-
-  @ApiProperty({ description: "Correct option IDs", example: ["cm5option01"], type: [String] })
-  public correctOptionIds: string[];
-
-  @ApiProperty({ description: "Teacher explanation", example: "PEEP keeps the alveoli open", nullable: true, type: String })
-  public explanation: string | null;
-
-  public constructor({ isCorrect, correctOptionIds, explanation }: { isCorrect: boolean; correctOptionIds: string[]; explanation: string | null }) {
-    this.isCorrect = isCorrect;
-    this.correctOptionIds = correctOptionIds;
-    this.explanation = explanation;
-  }
-}
-
-export class StudentAnswerRevealDTO {
-  @ApiProperty({ description: "When the answer was checked (it is locked since then)", example: "2026-10-06T08:05:00.000Z" })
-  public revealedAt: Date;
-
-  @ApiProperty({ description: "Whether the checked answer is correct", example: false })
-  public isCorrect: boolean;
-
-  @ApiProperty({ description: "Correct option IDs", example: ["cm5option01"], type: [String] })
-  public correctOptionIds: string[];
-
-  @ApiProperty({ description: "Teacher explanation", example: "PEEP keeps the alveoli open", nullable: true, type: String })
-  public explanation: string | null;
-
-  public constructor(fields: { revealedAt: Date; isCorrect: boolean; correctOptionIds: string[]; explanation: string | null }) {
-    this.revealedAt = fields.revealedAt;
-    this.isCorrect = fields.isCorrect;
-    this.correctOptionIds = fields.correctOptionIds;
-    this.explanation = fields.explanation;
   }
 }
 
@@ -216,20 +178,13 @@ export class StudentQuestionDTO {
   @ApiProperty({ description: "Hint shown on demand (WORKSHOP evaluations only; null otherwise)", example: "Think about the alveolar recruitment", nullable: true, type: String })
   public hint: string | null;
 
-  @ApiProperty({
-    description: "Correction of an answer the student checked for immediate feedback (QUIZ and WORKSHOP); null when the answer was not checked",
-    nullable: true,
-    type: StudentAnswerRevealDTO,
-  })
-  public reveal: StudentAnswerRevealDTO | null;
-
-  @ApiPropertyOptional({ description: "Teacher explanation (only once the grade is published)", nullable: true, type: String })
+  @ApiPropertyOptional({ description: "Teacher explanation (only once the teacher releases the answers)", nullable: true, type: String })
   public explanation?: string | null;
 
-  @ApiPropertyOptional({ description: "Rubric (only once the grade is published)", nullable: true, type: Object })
+  @ApiPropertyOptional({ description: "Rubric (only once the teacher releases the answers)", nullable: true, type: Object })
   public rubric?: unknown;
 
-  @ApiPropertyOptional({ description: "Points earned (only once the grade is published; null while pending)", example: 1, nullable: true, type: Number })
+  @ApiPropertyOptional({ description: "Points earned (only once the teacher releases the answers; null while pending)", example: 1, nullable: true, type: Number })
   public earnedScore?: number | null;
 
   public constructor(fields: {
@@ -244,8 +199,7 @@ export class StudentQuestionDTO {
     options: StudentOptionDTO[];
     answer: StudentAnswerDTO | null;
     hint: string | null;
-    reveal: StudentAnswerRevealDTO | null;
-    published?: { explanation: string | null; rubric: unknown; earnedScore: number | null };
+    released?: { explanation: string | null; rubric: unknown; earnedScore: number | null };
   }) {
     this.id = fields.id;
     this.scenarioId = fields.scenarioId;
@@ -258,12 +212,11 @@ export class StudentQuestionDTO {
     this.options = fields.options;
     this.answer = fields.answer;
     this.hint = fields.hint;
-    this.reveal = fields.reveal;
 
-    if (fields.published) {
-      this.explanation = fields.published.explanation;
-      this.rubric = fields.published.rubric;
-      this.earnedScore = fields.published.earnedScore;
+    if (fields.released) {
+      this.explanation = fields.released.explanation;
+      this.rubric = fields.released.rubric;
+      this.earnedScore = fields.released.earnedScore;
     }
   }
 }
@@ -286,19 +239,6 @@ export class StudentAttemptEvaluationDTO {
     this.title = title;
     this.type = type;
     this.description = description;
-  }
-}
-
-export class PartialClosedScoreDTO {
-  @ApiProperty({ description: "Closed (choice) questions answered correctly", example: 3 })
-  public correct: number;
-
-  @ApiProperty({ description: "Closed (choice) questions in the evaluation", example: 4 })
-  public total: number;
-
-  public constructor({ correct, total }: { correct: number; total: number }) {
-    this.correct = correct;
-    this.total = total;
   }
 }
 
@@ -338,8 +278,11 @@ export class StudentAttemptDetailDTO implements PublishedGradeFields {
   @ApiProperty({ description: "Server time, to synchronize the client countdown", example: "2026-10-06T08:05:00.000Z" })
   public serverNow: Date;
 
-  @ApiProperty({ description: "Whether the grade is published (scores and correct answers are only included then)", example: false })
+  @ApiProperty({ description: "Whether the teacher released the grade (score, grade and passed are only included then)", example: false })
   public published: boolean;
+
+  @ApiProperty({ description: "Whether the teacher released the correct answers, explanations, rubrics, per-question points and AI feedback", example: false })
+  public answersReleased: boolean;
 
   @ApiPropertyOptional({ description: "Score (published only)", example: 8 })
   public score?: number;
@@ -352,13 +295,6 @@ export class StudentAttemptDetailDTO implements PublishedGradeFields {
 
   @ApiPropertyOptional({ description: "Whether the grade reaches the passing grade (published only)", example: true })
   public passed?: boolean;
-
-  @ApiProperty({
-    description: "Correct closed questions while open questions wait for the teacher (PENDING_REVIEW QUIZ or WORKSHOP attempts only; null otherwise)",
-    nullable: true,
-    type: PartialClosedScoreDTO,
-  })
-  public partialClosedScore: PartialClosedScoreDTO | null;
 
   @ApiProperty({ description: "Evaluation", type: StudentAttemptEvaluationDTO })
   public evaluation: StudentAttemptEvaluationDTO;
@@ -379,8 +315,8 @@ export class StudentAttemptDetailDTO implements PublishedGradeFields {
     deadlineAt: Date | null;
     serverNow: Date;
     published: boolean;
+    answersReleased: boolean;
     grade: PublishedGradeFields;
-    partialClosedScore: PartialClosedScoreDTO | null;
     evaluation: StudentAttemptEvaluationDTO;
     scenarios: StudentScenarioDTO[];
     questions: StudentQuestionDTO[];
@@ -394,8 +330,8 @@ export class StudentAttemptDetailDTO implements PublishedGradeFields {
     this.deadlineAt = fields.deadlineAt;
     this.serverNow = fields.serverNow;
     this.published = fields.published;
+    this.answersReleased = fields.answersReleased;
     assignPublishedGrade(this, fields.published, fields.grade);
-    this.partialClosedScore = fields.partialClosedScore;
     this.evaluation = fields.evaluation;
     this.scenarios = fields.scenarios;
     this.questions = fields.questions;
@@ -455,8 +391,11 @@ export class MyEvaluationAttemptDTO implements PublishedGradeFields {
   @ApiProperty({ description: "Server-side deadline", example: "2026-10-06T08:30:00.000Z", nullable: true, type: Date })
   public deadlineAt: Date | null;
 
-  @ApiProperty({ description: "Whether the grade is published", example: true })
+  @ApiProperty({ description: "Whether the teacher released the grade", example: true })
   public published: boolean;
+
+  @ApiProperty({ description: "Whether the teacher released the correct answers and the AI feedback", example: false })
+  public answersReleased: boolean;
 
   @ApiPropertyOptional({ description: "Score (published only)", example: 8 })
   public score?: number;
@@ -478,6 +417,7 @@ export class MyEvaluationAttemptDTO implements PublishedGradeFields {
     submittedAt: Date | null;
     deadlineAt: Date | null;
     published: boolean;
+    answersReleased: boolean;
     grade: PublishedGradeFields;
   }) {
     this.id = fields.id;
@@ -487,6 +427,7 @@ export class MyEvaluationAttemptDTO implements PublishedGradeFields {
     this.submittedAt = fields.submittedAt;
     this.deadlineAt = fields.deadlineAt;
     this.published = fields.published;
+    this.answersReleased = fields.answersReleased;
     assignPublishedGrade(this, fields.published, fields.grade);
   }
 }

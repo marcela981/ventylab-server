@@ -42,6 +42,7 @@ export const STUDENT_ATTEMPT_SUMMARY_SELECT: {
   maxScore: true;
   grade: true;
   gradePublishedAt: true;
+  answersReleasedAt: true;
 } = {
   id: true,
   evaluationId: true,
@@ -55,6 +56,7 @@ export const STUDENT_ATTEMPT_SUMMARY_SELECT: {
   maxScore: true,
   grade: true,
   gradePublishedAt: true,
+  answersReleasedAt: true,
 };
 
 export type StudentAttemptSummaryRow = Pick<StudentEvaluationAttemptModel, keyof typeof STUDENT_ATTEMPT_SUMMARY_SELECT>;
@@ -108,7 +110,7 @@ export interface StudentEvaluationBriefRow {
 
 export type StudentAttemptMutableFields = Pick<
   StudentEvaluationAttemptModel,
-  "status" | "submittedAt" | "deadlineAt" | "score" | "maxScore" | "grade" | "gradePublishedAt" | "isLate" | "updatedAt"
+  "status" | "submittedAt" | "deadlineAt" | "score" | "maxScore" | "grade" | "gradePublishedAt" | "answersReleasedAt" | "isLate" | "updatedAt"
 >;
 
 export class StudentEvaluationAttemptsMapper {
@@ -127,6 +129,7 @@ export class StudentEvaluationAttemptsMapper {
       maxScore: row.maxScore ?? undefined,
       grade: row.grade ?? undefined,
       gradePublishedAt: row.gradePublishedAt ?? undefined,
+      answersReleasedAt: row.answersReleasedAt ?? undefined,
       isLate: row.isLate,
       legacySource: row.legacySource ?? undefined,
       answers: row.answers.map((answer: EvaluationAnswerModel) => StudentEvaluationAttemptsMapper._toAnswer(answer)),
@@ -157,6 +160,7 @@ export class StudentEvaluationAttemptsMapper {
       maxScore: attempt.maxScore ?? null,
       grade: attempt.grade ?? null,
       gradePublishedAt: attempt.gradePublishedAt ?? null,
+      answersReleasedAt: attempt.answersReleasedAt ?? null,
       isLate: attempt.isLate,
       updatedAt: attempt.updatedAt,
     };
@@ -207,6 +211,7 @@ export class StudentEvaluationAttemptsMapper {
       maxScore: row.maxScore ?? undefined,
       grade: row.grade ?? undefined,
       gradePublishedAt: row.gradePublishedAt ?? undefined,
+      answersReleasedAt: row.answersReleasedAt ?? undefined,
     };
   }
 

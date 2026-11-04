@@ -33,6 +33,7 @@ import {
   EVALUATION_ATTEMPT_STATUS_VALUES,
   type EvaluationAttemptStatusValue,
 } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
+import { releasesAnswers, type ResultsReleaseScopeValue } from "@/features/evaluation/domain/value-objects/results-release-scope";
 
 const IN_PROGRESS_STATUS: EvaluationAttemptStatus = "IN_PROGRESS";
 const PENDING_REVIEW_STATUS: EvaluationAttemptStatus = "PENDING_REVIEW";
@@ -102,6 +103,7 @@ const ATTEMPT_LIST_SELECT: {
   maxScore: true;
   grade: true;
   gradePublishedAt: true;
+  answersReleasedAt: true;
   isLate: true;
   userId: true;
   assignment: { select: { groupId: true } };
@@ -118,6 +120,7 @@ const ATTEMPT_LIST_SELECT: {
   maxScore: true,
   grade: true,
   gradePublishedAt: true,
+  answersReleasedAt: true,
   isLate: true,
   userId: true,
   assignment: { select: { groupId: true } },
@@ -136,6 +139,7 @@ interface AttemptListRow {
   maxScore: number | null;
   grade: number | null;
   gradePublishedAt: Date | null;
+  answersReleasedAt: Date | null;
   isLate: boolean;
   userId: string;
   assignment: { groupId: string } | null;
@@ -324,6 +328,7 @@ export class EvaluationGradingPrismaRepository implements IEvaluationGradingRepo
         maxScore: row.maxScore ?? undefined,
         grade: row.grade ?? undefined,
         gradePublishedAt: row.gradePublishedAt ?? undefined,
+        answersReleasedAt: row.answersReleasedAt ?? undefined,
         isLate: row.isLate,
       })),
       total,
@@ -382,9 +387,13 @@ export class EvaluationGradingPrismaRepository implements IEvaluationGradingRepo
     return count > 0;
   }
 
-  public async getPublishableAttempts(filter: GradingAttemptFilter): Promise<GradingAttemptKey[]> {
+  public async getReleasableAttempts(filter: GradingAttemptFilter, releaseScope: ResultsReleaseScopeValue): Promise<GradingAttemptKey[]> {
+    const pending: Prisma.StudentEvaluationAttemptWhereInput = releasesAnswers(releaseScope)
+      ? { OR: [{ gradePublishedAt: null }, { answersReleasedAt: null }] }
+      : { gradePublishedAt: null };
+
     return await this._prisma.studentEvaluationAttempt.findMany({
-      where: { AND: [{ status: GRADED_STATUS, gradePublishedAt: null, grade: { not: null } }, ...filterConditions(filter)] },
+      where: { AND: [{ status: GRADED_STATUS, grade: { not: null } }, pending, ...filterConditions(filter)] },
       select: { id: true, evaluationId: true, userId: true },
     });
   }

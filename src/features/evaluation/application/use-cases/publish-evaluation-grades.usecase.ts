@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso PublishEvaluationGradesUseCase
- * Descripción: Publicación masiva de las notas GRADED sin publicar de una evaluación (opcionalmente de un grupo) en el alcance del profesor (o todas para un administrador): en una sola transacción toma el candado por evaluación y estudiante de cada intento en orden estable, vuelve a leerlo, fija gradePublishedAt, audita GRADE_PUBLISHED por intento y devuelve el conteo; un EvaluationGradePublishedEvent por intento se emite tras confirmar
- * Versión: 1.1
+ * Descripción: Publicación masiva de las notas GRADED sin publicar de una evaluación (opcionalmente de un grupo) en el alcance del profesor (o todas para un administrador): en una sola transacción toma el candado por evaluación y estudiante de cada intento en orden estable, vuelve a leerlo, fija gradePublishedAt, audita GRADE_PUBLISHED por intento y devuelve el conteo; un EvaluationGradePublishedEvent por intento se emite tras confirmar. v2.0 (ajustes C1): con el alcance de la liberación (GRADE o GRADE_AND_ANSWERS) toma también los intentos con la nota ya publicada y las respuestas sin liberar, y cuenta los intentos que cambiaron
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,7 +19,7 @@ import { type PublishEvaluationGradesCommand } from "@/features/evaluation/appli
 import { EVALUATION_GRADING_CONFIG_TOKEN, type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
 import { EvaluationGradingAccess } from "@/features/evaluation/application/services/evaluation-grading-access";
 import { type Evaluation } from "@/features/evaluation/domain/entities/evaluation.entity";
-import { EVALUATION_ATTEMPT_AUDIT_TARGET, type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
+import { EVALUATION_ATTEMPT_AUDIT_TARGET, type ResultsReleaseChange, type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import { EvaluationNotFoundError } from "@/features/evaluation/domain/evaluation.errors";
 import { type EvaluationAssignmentScope } from "@/features/evaluation/domain/repositories/evaluation-assignments.repository";
 import {
@@ -34,6 +34,7 @@ import {
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
 import { evaluationAttemptLockKey } from "@/features/evaluation/domain/services/evaluation-attempt-policy";
 import { GRADED_ATTEMPT_STATUS } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
+import { releasesAnswers } from "@/features/evaluation/domain/value-objects/results-release-scope";
 
 interface PublishAllOutcome {
   readonly events: DomainEvent[];
@@ -71,7 +72,7 @@ export class PublishEvaluationGradesUseCase {
     }
 
     const scope: EvaluationAssignmentScope | undefined = await this._access.scopeFor(command.actor);
-    const keys: GradingAttemptKey[] = await this._gradingRepository.getPublishableAttempts({ evaluationId: evaluation.id, groupId: command.groupId, scope });
+    const keys: GradingAttemptKey[] = await this._gradingRepository.getReleasableAttempts({ evaluationId: evaluation.id, groupId: command.groupId, scope }, command.releaseScope);
 
     if (keys.length === 0) {
       return 0;
@@ -92,21 +93,27 @@ export class PublishEvaluationGradesUseCase {
 
         const attempt: StudentEvaluationAttempt | undefined = await this._attemptsRepository.getById(key.id, transaction);
 
-        if (!attempt || attempt.status !== GRADED_ATTEMPT_STATUS || attempt.isPublished) {
+        if (!attempt || attempt.status !== GRADED_ATTEMPT_STATUS || (attempt.isPublished && (!releasesAnswers(command.releaseScope) || attempt.areAnswersReleased))) {
           continue;
         }
 
-        attempt.publishGrade(now, this._gradingConfig.passingGrade, command.actor.id);
+        const before: { gradePublishedAt: Date | null; answersReleasedAt: Date | null } = { gradePublishedAt: attempt.gradePublishedAt ?? null, answersReleasedAt: attempt.answersReleasedAt ?? null };
+        const change: ResultsReleaseChange = attempt.releaseResults(command.releaseScope, now, this._gradingConfig.passingGrade, command.actor.id);
+
+        if (!change.gradePublished && !change.answersReleased) {
+          continue;
+        }
+
         await this._attemptsRepository.save(attempt, transaction);
         await this._auditRecorder.record(
           command.actor.id,
           AUDIT_ACTIONS.GRADE_PUBLISHED,
           EVALUATION_ATTEMPT_AUDIT_TARGET,
           attempt.id,
-          { gradePublishedAt: null },
-          { gradePublishedAt: now, grade: attempt.grade },
+          before,
+          { gradePublishedAt: attempt.gradePublishedAt ?? null, answersReleasedAt: attempt.answersReleasedAt ?? null, grade: attempt.grade },
           transaction,
-          { metadata: { evaluationId: attempt.evaluationId, studentId: attempt.userId, bulk: true, groupId: command.groupId } },
+          { metadata: { evaluationId: attempt.evaluationId, studentId: attempt.userId, bulk: true, groupId: command.groupId, releaseScope: command.releaseScope } },
         );
         events.push(...attempt.getEvents());
         count++;

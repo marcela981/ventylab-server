@@ -24,6 +24,7 @@ describe("flow: practical exam graded by server-side re-simulation", () => {
   let api: ContractCaller;
   let student: User;
   let studentToken: string;
+  let teacherToken: string;
   let evaluation: EvaluationWithQuestions;
   let assignment: EvaluationAssignment;
 
@@ -45,6 +46,7 @@ describe("flow: practical exam graded by server-side re-simulation", () => {
     await makeClinicalCaseSimulationReady(e2e.prisma, evaluation.clinicalCase?.id ?? "");
     assignment = await assignEvaluationToGroup(e2e.prisma, evaluation.evaluation, group, { assignedBy: teacher });
     studentToken = await mintAccessToken(student, e2e.app);
+    teacherToken = await mintAccessToken(teacher, e2e.app);
   });
 
   afterAll(async () => {
@@ -87,7 +89,9 @@ describe("flow: practical exam graded by server-side re-simulation", () => {
     const submitted: Response = await api("POST", `/api/evaluation-attempts/${attemptId}/submit`, studentToken, {});
 
     expectStatus(submitted, 200);
-    expect(submitted.body.data).toMatchObject({ attemptId, status: "GRADED", published: true, grade: expect.any(Number) });
+    // Graded but held until the teacher releases it (ajustes C1)
+    expect(submitted.body.data).toMatchObject({ attemptId, status: "GRADED", published: false });
+    expectStatus(await api("POST", `/api/evaluation-grading/attempts/${attemptId}/publish`, teacherToken, { scope: "GRADE" }), 200);
 
     const answer: { autoScore: number | null; simulationSessionId: string | null } = await e2e.prisma.evaluationAnswer.findFirstOrThrow({
       where: { attemptId, questionId: question.id },

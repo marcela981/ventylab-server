@@ -233,8 +233,11 @@ export class GradingAttemptDTO {
   @ApiProperty({ description: "Passing grade on the 0.0–5.0 scale", example: 3 })
   public passingGrade: number;
 
-  @ApiProperty({ description: "When the grade was published to the student", example: null, nullable: true, type: Date })
+  @ApiProperty({ description: "When the grade was released to the student", example: null, nullable: true, type: Date })
   public gradePublishedAt: Date | null;
+
+  @ApiProperty({ description: "When the correct answers, explanations and AI feedback were released to the student", example: null, nullable: true, type: Date })
+  public answersReleasedAt: Date | null;
 
   @ApiProperty({ description: "Whether the attempt was migrated from the legacy model", example: false })
   public legacy: boolean;
@@ -266,6 +269,7 @@ export class GradingAttemptDTO {
     passed: boolean | null;
     passingGrade: number;
     gradePublishedAt: Date | null;
+    answersReleasedAt: Date | null;
     legacy: boolean;
     scenarios: EvaluationScenarioDTO[];
     questions: EvaluationQuestionDTO[];
@@ -288,6 +292,7 @@ export class GradingAttemptDTO {
     this.passed = fields.passed;
     this.passingGrade = fields.passingGrade;
     this.gradePublishedAt = fields.gradePublishedAt;
+    this.answersReleasedAt = fields.answersReleasedAt;
     this.legacy = fields.legacy;
     this.scenarios = fields.scenarios;
     this.questions = fields.questions;
@@ -348,18 +353,22 @@ export class PublishAttemptGradeResponseDTO {
   @ApiProperty({ description: "When the grade was published", example: "2026-10-06T10:00:00.000Z" })
   public publishedAt: Date;
 
-  @ApiProperty({ description: "Whether it was already published (nothing changed)", example: false })
+  @ApiProperty({ description: "When the answers, explanations and AI feedback were released; null while only the grade is released", example: null, nullable: true, type: Date })
+  public answersReleasedAt: Date | null;
+
+  @ApiProperty({ description: "Whether everything requested was already released (nothing changed)", example: false })
   public alreadyPublished: boolean;
 
-  public constructor(fields: { attemptId: string; publishedAt: Date; alreadyPublished: boolean }) {
+  public constructor(fields: { attemptId: string; publishedAt: Date; answersReleasedAt: Date | null; alreadyPublished: boolean }) {
     this.attemptId = fields.attemptId;
     this.publishedAt = fields.publishedAt;
+    this.answersReleasedAt = fields.answersReleasedAt;
     this.alreadyPublished = fields.alreadyPublished;
   }
 }
 
 export class PublishGradesResponseDTO {
-  @ApiProperty({ description: "Number of grades published by this call", example: 12 })
+  @ApiProperty({ description: "Number of attempts whose release changed with this call (grade published and/or answers released)", example: 12 })
   public publishedCount: number;
 
   public constructor(publishedCount: number) {
@@ -484,8 +493,11 @@ export class GradingAttemptListItemDTO {
   @ApiProperty({ description: "Grade 0.0–5.0 (null while pending)", example: 3, nullable: true, type: Number })
   public grade: number | null;
 
-  @ApiProperty({ description: "When the grade was published (null while unpublished)", example: "2026-10-06T09:00:00.000Z", nullable: true, type: Date })
+  @ApiProperty({ description: "When the grade was released (null while unreleased)", example: "2026-10-06T09:00:00.000Z", nullable: true, type: Date })
   public gradePublishedAt: Date | null;
+
+  @ApiProperty({ description: "When the answers and AI feedback were released (null while unreleased)", example: null, nullable: true, type: Date })
+  public answersReleasedAt: Date | null;
 
   @ApiProperty({ description: "Whether the attempt was closed after its deadline", example: false })
   public isLate: boolean;
@@ -504,6 +516,7 @@ export class GradingAttemptListItemDTO {
     maxScore: number | null;
     grade: number | null;
     gradePublishedAt: Date | null;
+    answersReleasedAt: Date | null;
     isLate: boolean;
   }) {
     this.attemptId = fields.attemptId;
@@ -519,6 +532,7 @@ export class GradingAttemptListItemDTO {
     this.maxScore = fields.maxScore;
     this.grade = fields.grade;
     this.gradePublishedAt = fields.gradePublishedAt;
+    this.answersReleasedAt = fields.answersReleasedAt;
     this.isLate = fields.isLate;
   }
 }

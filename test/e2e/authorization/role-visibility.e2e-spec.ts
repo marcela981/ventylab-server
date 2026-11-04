@@ -27,7 +27,7 @@ import { createE2eApp, type E2eApp } from "../../support/e2e-app";
 import { callApi, findKeysDeep, findValuesDeep } from "../../support/http";
 import { expectMatchesSpec } from "../../support/openapi-validator";
 
-const FORBIDDEN_ANSWER_KEYS: readonly string[] = ["isCorrect", "explanation", "rubric"];
+const FORBIDDEN_ANSWER_KEYS: readonly string[] = ["isCorrect", "explanation", "rubric", "correctOptionIds", "reveal", "partialClosedScore", "earnedScore"];
 const SEEDED_EXPLANATION: string = "SEEDED-EXPLANATION-must-stay-hidden";
 const CALENDAR_SPAN_MS: number = 2 * 86_400_000;
 

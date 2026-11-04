@@ -28,6 +28,7 @@ import { type SubmitEvaluationAttemptResult } from "@/features/evaluation/applic
 import { type AttemptDoubles, buildAttemptDoubles, buildStoredAttempt } from "@/features/evaluation/application/testing/evaluation-attempt-test-doubles-spec";
 import { InMemoryGradeFeedbacksRepository } from "@/features/evaluation/application/testing/grade-feedback-test-doubles-spec";
 import { GenerateGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-generation.usecase";
+import { NotifyReleasedGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-release-notification.usecase";
 import { SubmitEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/submit-evaluation-attempt.usecase";
 import { EvaluationAttemptGradedEvent, EvaluationGradeUpdatedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
 import { GradeFeedbackRegenerationRequestedEvent } from "@/features/evaluation/domain/events/grade-feedback.events";
@@ -83,6 +84,7 @@ function buildPipeline(feedbacks: InMemoryGradeFeedbacksRepository = new InMemor
       doubles.transactionManager,
       new NestEventBus(emitter),
     ),
+    new NotifyReleasedGradeFeedbackUseCase(feedbacks, new NestEventBus(emitter)),
   );
 
   emitter.on(
@@ -153,7 +155,7 @@ describe("GradeFeedbackEventsHandlers", () => {
       new SubmitEvaluationAttemptCommand({ attemptId: "attempt-1", userId: "student-1", userRole: "STUDENT", language: "en" }),
     );
 
-    expect(result).toMatchObject({ attemptId: "attempt-1", status: "GRADED", published: true, score: 1, maxScore: 2, grade: 2.5, passed: false });
+    expect(result).toMatchObject({ attemptId: "attempt-1", status: "GRADED", published: false });
     expect(feedbacks.current().some((record: GradeFeedbackRecord) => record.status === "READY")).toBe(false);
 
     await waitUntil(() => readyOverall(feedbacks) !== undefined && feedbacks.current().length === 3, "the READY DETERMINISTIC feedback");
@@ -187,7 +189,7 @@ describe("GradeFeedbackEventsHandlers", () => {
 
   it("replaces the current feedback when a published grade is regraded, and ignores unpublished regrades", async () => {
     const execute: jest.Mock = jest.fn().mockResolvedValue("ready");
-    const handlers: GradeFeedbackEventsHandlers = new GradeFeedbackEventsHandlers({ execute } as unknown as GenerateGradeFeedbackUseCase);
+    const handlers: GradeFeedbackEventsHandlers = new GradeFeedbackEventsHandlers({ execute } as unknown as GenerateGradeFeedbackUseCase, { execute: jest.fn() } as unknown as NotifyReleasedGradeFeedbackUseCase);
     const base: ConstructorParameters<typeof EvaluationGradeUpdatedEvent>[0] = { attemptId: "attempt-1", evaluationId: "evaluation-1", userId: "student-1", score: 1, maxScore: 2, grade: 2.5, passed: false };
 
     await handlers.handleGradeUpdated(new EvaluationGradeUpdatedEvent(base));
@@ -199,7 +201,7 @@ describe("GradeFeedbackEventsHandlers", () => {
 
   it("completes the reserved feedback of a regeneration request", async () => {
     const execute: jest.Mock = jest.fn().mockResolvedValue("ready");
-    const handlers: GradeFeedbackEventsHandlers = new GradeFeedbackEventsHandlers({ execute } as unknown as GenerateGradeFeedbackUseCase);
+    const handlers: GradeFeedbackEventsHandlers = new GradeFeedbackEventsHandlers({ execute } as unknown as GenerateGradeFeedbackUseCase, { execute: jest.fn() } as unknown as NotifyReleasedGradeFeedbackUseCase);
 
     await handlers.handleRegenerationRequested(new GradeFeedbackRegenerationRequestedEvent({ attemptId: "attempt-1", feedbackId: "pending-1", performedBy: "teacher-1" }));
 

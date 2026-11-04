@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso PublishEvaluationAttemptGradeUseCase
- * Descripción: Publicación idempotente de la nota de un intento GRADED por un profesor en su alcance (o un administrador): bajo el candado por evaluación y estudiante fija gradePublishedAt, audita GRADE_PUBLISHED en la misma transacción y emite EvaluationGradePublishedEvent tras confirmar (grade:published al estudiante); si ya estaba publicada devuelve la fecha original sin escribir
- * Versión: 1.1
+ * Descripción: Publicación idempotente de la nota de un intento GRADED por un profesor en su alcance (o un administrador): bajo el candado por evaluación y estudiante fija gradePublishedAt, audita GRADE_PUBLISHED en la misma transacción y emite EvaluationGradePublishedEvent tras confirmar (grade:published al estudiante); si ya estaba publicada devuelve la fecha original sin escribir. v2.0 (ajustes C1): libera solo la nota (GRADE) o la nota con las respuestas, explicaciones y retroalimentación IA (GRADE_AND_ANSWERS, emite EvaluationAnswersReleasedEvent); liberar de nuevo lo ya liberado no escribe nada
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,7 +18,7 @@ import { type DomainEvent } from "@/common/domain/events/domain-event";
 import { EVALUATION_GRADING_CONFIG_TOKEN, type EvaluationGradingConfig } from "@/features/evaluation/application/evaluation-grading.config";
 import { type PublishEvaluationAttemptGradeResult } from "@/features/evaluation/application/results/evaluation-grading.result";
 import { EvaluationGradingAccess } from "@/features/evaluation/application/services/evaluation-grading-access";
-import { EVALUATION_ATTEMPT_AUDIT_TARGET, type StudentEvaluationAttempt } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
+import { EVALUATION_ATTEMPT_AUDIT_TARGET, type StudentEvaluationAttempt, type ResultsReleaseChange } from "@/features/evaluation/domain/entities/student-evaluation-attempt.entity";
 import { EvaluationAttemptNotFoundError } from "@/features/evaluation/domain/evaluation.errors";
 import {
   type IStudentEvaluationAttemptsRepository,
@@ -26,6 +26,7 @@ import {
 } from "@/features/evaluation/domain/repositories/student-evaluation-attempts.repository";
 import { evaluationAttemptLockKey } from "@/features/evaluation/domain/services/evaluation-attempt-policy";
 import { type EvaluationActor } from "@/features/evaluation/domain/services/evaluation-management-policy";
+import { type ResultsReleaseScopeValue } from "@/features/evaluation/domain/value-objects/results-release-scope";
 
 interface PublishOutcome {
   readonly result: PublishEvaluationAttemptGradeResult;
@@ -53,7 +54,7 @@ export class PublishEvaluationAttemptGradeUseCase {
     private readonly _auditRecorder: IAuditRecorder,
   ) {}
 
-  public async execute(attemptId: string, actor: EvaluationActor): Promise<PublishEvaluationAttemptGradeResult> {
+  public async execute(attemptId: string, actor: EvaluationActor, releaseScope: ResultsReleaseScopeValue): Promise<PublishEvaluationAttemptGradeResult> {
     const target: StudentEvaluationAttempt | undefined = await this._attemptsRepository.getById(attemptId);
 
     if (!target) {
@@ -73,24 +74,26 @@ export class PublishEvaluationAttemptGradeUseCase {
         throw new EvaluationAttemptNotFoundError();
       }
 
-      const published: boolean = attempt.publishGrade(now, this._gradingConfig.passingGrade, actor.id);
+      const before: { gradePublishedAt: Date | null; answersReleasedAt: Date | null } = { gradePublishedAt: attempt.gradePublishedAt ?? null, answersReleasedAt: attempt.answersReleasedAt ?? null };
+      const change: ResultsReleaseChange = attempt.releaseResults(releaseScope, now, this._gradingConfig.passingGrade, actor.id);
+      const changed: boolean = change.gradePublished || change.answersReleased;
 
-      if (published) {
+      if (changed) {
         await this._attemptsRepository.save(attempt, transaction);
         await this._auditRecorder.record(
           actor.id,
           AUDIT_ACTIONS.GRADE_PUBLISHED,
           EVALUATION_ATTEMPT_AUDIT_TARGET,
           attempt.id,
-          { gradePublishedAt: null },
-          { gradePublishedAt: now, grade: attempt.grade },
+          before,
+          { gradePublishedAt: attempt.gradePublishedAt ?? null, answersReleasedAt: attempt.answersReleasedAt ?? null, grade: attempt.grade },
           transaction,
-          { metadata: { evaluationId: attempt.evaluationId, studentId: attempt.userId, bulk: false } },
+          { metadata: { evaluationId: attempt.evaluationId, studentId: attempt.userId, bulk: false, releaseScope } },
         );
       }
 
       return {
-        result: { attemptId: attempt.id, publishedAt: attempt.gradePublishedAt ?? now, alreadyPublished: !published },
+        result: { attemptId: attempt.id, publishedAt: attempt.gradePublishedAt ?? now, answersReleasedAt: attempt.answersReleasedAt, alreadyPublished: !changed },
         events: attempt.getEvents(),
       };
     });

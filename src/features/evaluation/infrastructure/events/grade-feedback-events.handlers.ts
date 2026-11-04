@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Manejadores de eventos de retroalimentación de calificación
- * Descripción: Generan la retroalimentación de forma asíncrona (@OnEvent con async: true, EventEmitter2 difiere el oyente con setImmediate, así la entrega o la calificación nunca esperan): al calificarse un intento (EvaluationAttemptGradedEvent), al pedirse una regeneración (GradeFeedbackRegenerationRequestedEvent) y al recalificarse un intento con la nota ya publicada (EvaluationGradeUpdatedEvent: reemplaza la retroalimentación vigente, que queda superseded); nunca propagan errores al emisor y solo registran el nombre del error; v1.2: pasan el solicitante del evento (idioma y cuota de IA)
- * Versión: 1.2
+ * Descripción: Generan la retroalimentación de forma asíncrona (@OnEvent con async: true, EventEmitter2 difiere el oyente con setImmediate, así la entrega o la calificación nunca esperan): al calificarse un intento (EvaluationAttemptGradedEvent), al pedirse una regeneración (GradeFeedbackRegenerationRequestedEvent) y al recalificarse un intento con la nota ya publicada (EvaluationGradeUpdatedEvent: reemplaza la retroalimentación vigente, que queda superseded); nunca propagan errores al emisor y solo registran el nombre del error; v1.2: pasan el solicitante del evento (idioma y cuota de IA); v1.3 (ajustes C1): al liberar el docente las respuestas (EvaluationAnswersReleasedEvent) avisan FEEDBACK_READY si la retroalimentación ya está lista
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,14 +13,18 @@ import { OnEvent } from "@nestjs/event-emitter";
 
 import { GenerateGradeFeedbackCommand } from "@/features/evaluation/application/commands/grade-feedback-generation.command";
 import { GenerateGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-generation.usecase";
-import { EvaluationAttemptGradedEvent, EvaluationGradeUpdatedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
+import { NotifyReleasedGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-release-notification.usecase";
+import { EvaluationAnswersReleasedEvent, EvaluationAttemptGradedEvent, EvaluationGradeUpdatedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
 import { GradeFeedbackRegenerationRequestedEvent } from "@/features/evaluation/domain/events/grade-feedback.events";
 
 @Injectable()
 export class GradeFeedbackEventsHandlers {
   private readonly _logger: Logger = new Logger(GradeFeedbackEventsHandlers.name);
 
-  public constructor(private readonly _generateGradeFeedbackUseCase: GenerateGradeFeedbackUseCase) {}
+  public constructor(
+    private readonly _generateGradeFeedbackUseCase: GenerateGradeFeedbackUseCase,
+    private readonly _notifyReleasedGradeFeedbackUseCase: NotifyReleasedGradeFeedbackUseCase,
+  ) {}
 
   @OnEvent(EvaluationAttemptGradedEvent.name, { async: true })
   public async handleAttemptGraded(event: EvaluationAttemptGradedEvent): Promise<void> {
@@ -40,6 +44,15 @@ export class GradeFeedbackEventsHandlers {
   @OnEvent(GradeFeedbackRegenerationRequestedEvent.name, { async: true })
   public async handleRegenerationRequested(event: GradeFeedbackRegenerationRequestedEvent): Promise<void> {
     await this._generate(new GenerateGradeFeedbackCommand({ attemptId: event.attemptId, pendingFeedbackId: event.feedbackId, requester: event.requester }));
+  }
+
+  @OnEvent(EvaluationAnswersReleasedEvent.name, { async: true })
+  public async handleAnswersReleased(event: EvaluationAnswersReleasedEvent): Promise<void> {
+    try {
+      await this._notifyReleasedGradeFeedbackUseCase.execute(event);
+    } catch (error: unknown) {
+      this._logger.error(`Feedback release notification failed for attempt ${event.attemptId} (${error instanceof Error ? error.name : "UnknownError"})`);
+    }
   }
 
   private async _generate(command: GenerateGradeFeedbackCommand): Promise<void> {

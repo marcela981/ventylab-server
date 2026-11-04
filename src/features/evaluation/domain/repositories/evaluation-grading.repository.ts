@@ -19,6 +19,7 @@ import {
 import { type EvaluationAttemptScope } from "@/features/evaluation/domain/repositories/evaluation-analytics.repository";
 import { type EvaluationAssignmentScope } from "@/features/evaluation/domain/repositories/evaluation-assignments.repository";
 import { type EvaluationAttemptStatusValue } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
+import { type ResultsReleaseScopeValue } from "@/features/evaluation/domain/value-objects/results-release-scope";
 
 export const EVALUATION_GRADING_REPOSITORY_TOKEN: unique symbol = Symbol("EVALUATION_GRADING_REPOSITORY_TOKEN");
 
@@ -55,7 +56,8 @@ export interface IEvaluationGradingRepository {
   getExpiredInProgressAttemptIds(filter: GradingAttemptFilter, cutoff: Date, limit: number): Promise<string[]>;
   isAttemptInScope(attemptId: string, scope: EvaluationAssignmentScope): Promise<boolean>;
   isGroupInScope(groupId: string, scope: EvaluationAssignmentScope): Promise<boolean>;
-  getPublishableAttempts(filter: GradingAttemptFilter): Promise<GradingAttemptKey[]>;
+  // GRADED attempts that the release would change: grade unpublished, or answers unreleased for GRADE_AND_ANSWERS.
+  getReleasableAttempts(filter: GradingAttemptFilter, releaseScope: ResultsReleaseScopeValue): Promise<GradingAttemptKey[]>;
   getPublishedGradesOfUser(userId: string, scope?: EvaluationAssignmentScope): Promise<PublishedGradeView[]>;
   getPublishedGradesOfGroup(groupId: string, evaluationId?: string): Promise<PublishedGradeView[]>;
   getEvaluationStats(evaluationId: string, passingGrade: number, scope?: EvaluationAttemptScope): Promise<EvaluationGradeAggregateView>;

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del caso de uso SubmitEvaluationAttemptUseCase
- * Descripción: Verifica la entrega idempotente con calificación automática, la publicación inmediata según showResultsImmediately, la revisión pendiente de preguntas abiertas, el puntaje práctico, las respuestas finales del cuerpo dentro del plazo con 30 s de gracia, el cierre con lo autoguardado tras el plazo, los candados por usuario y de estructura compartido, y dos entregas concurrentes calificadas una sola vez
- * Versión: 1.1
+ * Descripción: Verifica la entrega idempotente con calificación automática, que ningún tipo publica al entregar (v2.0, ajustes C1: ni con showResultsImmediately) y la entrega nunca devuelve la nota, la revisión pendiente de preguntas abiertas, el puntaje práctico, las respuestas finales del cuerpo dentro del plazo con 30 s de gracia, el cierre con lo autoguardado tras el plazo, los candados por usuario y de estructura compartido, y dos entregas concurrentes calificadas una sola vez
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,56 +44,29 @@ function stored(doubles: AttemptDoubles): StudentEvaluationAttemptProps | undefi
 }
 
 describe("SubmitEvaluationAttemptUseCase", () => {
-  it("grades, publishes immediately and emits both events when showResultsImmediately is set", async () => {
-    const doubles: AttemptDoubles = buildAttemptDoubles({ attempts: [buildStoredAttempt({ answers: RIGHT_ANSWERS })] });
-
-    const result: SubmitEvaluationAttemptResult = await submit(doubles);
-
-    expect(result).toMatchObject({ attemptId: "attempt-1", status: "GRADED", published: true, score: 2, maxScore: 2, grade: 5, passed: true });
-    expect(stored(doubles)).toMatchObject({ status: "GRADED", score: 2, maxScore: 2, grade: 5, isLate: false });
-    expect(stored(doubles)?.gradePublishedAt).toBeDefined();
-    expect(publishedEvents(doubles, EvaluationAttemptGradedEvent)).toHaveLength(1);
-    expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(1);
-    expect(doubles.attemptsRepository.locks).toEqual(["evaluations:attempt:evaluation-1:student-1"]);
-    expect(doubles.attemptsRepository.sharedLocks).toEqual(["evaluations:structure:evaluation-1"]);
-  });
-
-  it("hides the score of an EXAM that does not show results immediately", async () => {
+  it.each([
+    ["QUIZ", true],
+    ["WORKSHOP", true],
+    ["EXAM", true],
+    ["QUIZ", false],
+    ["EXAM", false],
+  ] as const)("grades a %s (showResultsImmediately %s) without publishing or returning the grade", async (type: "QUIZ" | "WORKSHOP" | "EXAM", showResultsImmediately: boolean) => {
     const doubles: AttemptDoubles = buildAttemptDoubles({
-      evaluation: buildAttemptEvaluation({ type: "EXAM", showResultsImmediately: false }),
+      evaluation: buildAttemptEvaluation({ type, showResultsImmediately }),
       attempts: [buildStoredAttempt({ answers: RIGHT_ANSWERS })],
     });
 
     const result: SubmitEvaluationAttemptResult = await submit(doubles);
 
-    expect(result.published).toBe(false);
+    expect(result).toMatchObject({ attemptId: "attempt-1", status: "GRADED", published: false });
     expect(result.score).toBeUndefined();
     expect(result.grade).toBeUndefined();
     expect(result.passed).toBeUndefined();
-    expect(stored(doubles)?.grade).toBe(5);
+    expect(stored(doubles)).toMatchObject({ status: "GRADED", score: 2, maxScore: 2, grade: 5, isLate: false, gradePublishedAt: undefined, answersReleasedAt: undefined });
     expect(publishedEvents(doubles, EvaluationAttemptGradedEvent)).toHaveLength(1);
     expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(0);
-  });
-
-  it("publishes an EXAM at once only when showResultsImmediately is set", async () => {
-    const doubles: AttemptDoubles = buildAttemptDoubles({
-      evaluation: buildAttemptEvaluation({ type: "EXAM", showResultsImmediately: true }),
-      attempts: [buildStoredAttempt({ answers: RIGHT_ANSWERS })],
-    });
-
-    expect(await submit(doubles)).toMatchObject({ status: "GRADED", published: true, grade: 5 });
-  });
-
-  it.each(["QUIZ", "WORKSHOP"] as const)("auto-publishes a %s with only closed questions even when showResultsImmediately is off", async (type: "QUIZ" | "WORKSHOP") => {
-    const doubles: AttemptDoubles = buildAttemptDoubles({
-      evaluation: buildAttemptEvaluation({ type, showResultsImmediately: false }),
-      attempts: [buildStoredAttempt({ answers: RIGHT_ANSWERS })],
-    });
-
-    const result: SubmitEvaluationAttemptResult = await submit(doubles);
-
-    expect(result).toMatchObject({ status: "GRADED", published: true, grade: 5, passed: true });
-    expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(1);
+    expect(doubles.attemptsRepository.locks).toEqual(["evaluations:attempt:evaluation-1:student-1"]);
+    expect(doubles.attemptsRepository.sharedLocks).toEqual(["evaluations:structure:evaluation-1"]);
   });
 
   it("leaves a WORKSHOP with an OPEN_TEXT question in PENDING_REVIEW without publishing", async () => {
@@ -132,7 +105,8 @@ describe("SubmitEvaluationAttemptUseCase", () => {
     const result: SubmitEvaluationAttemptResult = await submit(doubles);
 
     expect(doubles.getSessionScore).toHaveBeenCalledWith("session-1", { criteria: "expert" }, { userId: STUDENT_ID, attemptId: "attempt-1", questionId: "q1" });
-    expect(result).toMatchObject({ status: "GRADED", score: 2, maxScore: 4, grade: 2.5, passed: false });
+    expect(result.status).toBe("GRADED");
+    expect(stored(doubles)).toMatchObject({ score: 2, maxScore: 4, grade: 2.5 });
   });
 
   it("is idempotent: a second submit returns the same result without writes or events", async () => {
@@ -157,7 +131,8 @@ describe("SubmitEvaluationAttemptUseCase", () => {
       ],
     });
 
-    expect(result).toMatchObject({ score: 1, grade: 2.5 });
+    expect(result.status).toBe("GRADED");
+    expect(stored(doubles)).toMatchObject({ score: 1, grade: 2.5 });
     expect(stored(doubles)?.answers).toHaveLength(2);
   });
 
@@ -165,9 +140,9 @@ describe("SubmitEvaluationAttemptUseCase", () => {
     const deadlineAt: Date = new Date(Date.now() - 10_000);
     const doubles: AttemptDoubles = buildAttemptDoubles({ attempts: [buildStoredAttempt({ deadlineAt })] });
 
-    const result: SubmitEvaluationAttemptResult = await submit(doubles, { answers: [{ questionId: "q1", selectedOptionIds: ["q1-ok"] }] });
+    await submit(doubles, { answers: [{ questionId: "q1", selectedOptionIds: ["q1-ok"] }] });
 
-    expect(result.score).toBe(1);
+    expect(stored(doubles)?.score).toBe(1);
     expect(stored(doubles)?.isLate).toBe(false);
     expect(stored(doubles)?.submittedAt?.getTime()).toBeGreaterThan(deadlineAt.getTime());
   });
@@ -178,7 +153,8 @@ describe("SubmitEvaluationAttemptUseCase", () => {
 
     const result: SubmitEvaluationAttemptResult = await submit(doubles, { answers: [{ questionId: "q2", selectedOptionIds: ["q2-ok"] }] });
 
-    expect(result).toMatchObject({ status: "GRADED", score: 1, grade: 2.5 });
+    expect(result.status).toBe("GRADED");
+    expect(stored(doubles)).toMatchObject({ score: 1, grade: 2.5 });
     expect(result.submittedAt).toEqual(deadlineAt);
     expect(stored(doubles)?.isLate).toBe(false);
   });
@@ -214,6 +190,6 @@ describe("SubmitEvaluationAttemptUseCase", () => {
 
     expect(first).toEqual(second);
     expect(publishedEvents(doubles, EvaluationAttemptGradedEvent)).toHaveLength(1);
-    expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(1);
+    expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(0);
   });
 });

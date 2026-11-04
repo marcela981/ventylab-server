@@ -1736,24 +1736,26 @@ model EvaluationAssignment {
 }
 
 model StudentEvaluationAttempt {
-  id               String                  @id @default(cuid())
-  evaluationId     String                  @map("evaluation_id")
-  assignmentId     String?                 @map("assignment_id")
-  userId           String                  @map("user_id")
-  attemptNumber    Int                     @map("attempt_number")
-  status           EvaluationAttemptStatus
-  startedAt        DateTime                @map("started_at") @db.Timestamptz(6)
-  submittedAt      DateTime?               @map("submitted_at") @db.Timestamptz(6)
-  deadlineAt       DateTime?               @map("deadline_at") @db.Timestamptz(6)
-  score            Float?
-  maxScore         Float?                  @map("max_score")
-  grade            Float?
-  gradePublishedAt DateTime?               @map("grade_published_at") @db.Timestamptz(6)
-  isLate           Boolean                 @default(false) @map("is_late")
-  legacySource     String?                 @map("legacy_source")
-  legacyPayload    Json?                   @map("legacy_payload")
-  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                String                  @id @default(cuid())
+  evaluationId      String                  @map("evaluation_id")
+  assignmentId      String?                 @map("assignment_id")
+  userId            String                  @map("user_id")
+  attemptNumber     Int                     @map("attempt_number")
+  status            EvaluationAttemptStatus
+  startedAt         DateTime                @map("started_at") @db.Timestamptz(6)
+  submittedAt       DateTime?               @map("submitted_at") @db.Timestamptz(6)
+  deadlineAt        DateTime?               @map("deadline_at") @db.Timestamptz(6)
+  score             Float?
+  maxScore          Float?                  @map("max_score")
+  grade             Float?
+  gradePublishedAt  DateTime?               @map("grade_published_at") @db.Timestamptz(6)
+  // Set when the teacher releases the correct answers, explanations and AI feedback (gradePublishedAt releases the grade alone).
+  answersReleasedAt DateTime?               @map("answers_released_at") @db.Timestamptz(6)
+  isLate            Boolean                 @default(false) @map("is_late")
+  legacySource      String?                 @map("legacy_source")
+  legacyPayload     Json?                   @map("legacy_payload")
+  createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   evaluation Evaluation            @relation(fields: [evaluationId], references: [id], onDelete: Restrict)
   assignment EvaluationAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
