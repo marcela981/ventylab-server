@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Controlador VersionController
- * Descripción: Expone en GET /api/version, pública, fuera del limitador de peticiones y sin el envoltorio APIResponse, el commit (APP_GIT_SHA, o APP_COMMIT_SHA/GIT_COMMIT si falta) y la fecha de construcción (APP_BUILD_DATE normalizada a ISO 8601) incrustados en la imagen, con "unknown" cuando faltan o no son válidos, y la versión del contrato de la API
+ * Descripción: Expone en GET /api/version, pública, sujeta al limitador de peticiones global y sin el envoltorio APIResponse, el commit (APP_GIT_SHA, o APP_COMMIT_SHA/GIT_COMMIT si falta) y la fecha de construcción (APP_BUILD_DATE normalizada a ISO 8601) incrustados en la imagen, con "unknown" cuando faltan o no son válidos, y la versión del contrato de la API
  * Versión: 1.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -11,7 +11,6 @@
 import { Controller, Get, HttpCode, HttpStatus } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { SkipThrottle } from "@nestjs/throttler";
 
 import { type EnvironmentVariables } from "@/common/infrastructure/config/env.validation";
 import { API_CONTRACT_VERSION } from "@/common/presentation/api-contract-version";
@@ -39,7 +38,6 @@ function normalizeBuildDate(value: string | undefined): string {
   return Number.isNaN(timestamp) ? UNKNOWN_BUILD_VALUE : new Date(timestamp).toISOString();
 }
 
-@SkipThrottle()
 @RawResponse()
 @ApiTags("Health")
 @Controller()
