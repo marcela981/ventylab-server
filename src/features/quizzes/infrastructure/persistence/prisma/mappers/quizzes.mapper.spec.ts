@@ -253,7 +253,7 @@ describe("QuizzesMapper", () => {
       maxScore: 100,
       grade: 4.4,
       submittedAt: attempt.completedAt,
-      gradePublishedAt: attempt.completedAt,
+      gradePublishedAt: null,
       legacySource: "quiz_attempt",
       legacyPayload: {
         answers: attempt.answers.map((answer: { questionId: string; selectedOptionId: string }) => ({ ...answer })),

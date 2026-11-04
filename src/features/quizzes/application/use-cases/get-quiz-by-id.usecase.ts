@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Caso de uso GetQuizByIdUseCase
- * Descripción: Obtiene un quiz activo con sus preguntas; oculta las respuestas correctas, el feedback y la explicación hasta que el usuario registre su intento, salvo que pueda gestionar quizzes; rechaza quizzes inexistentes o inactivos
+ * Descripción: Obtiene un quiz activo con sus preguntas; oculta siempre las respuestas correctas, el feedback y la explicación salvo que pueda gestionar quizzes (ajustes C1: registrar un intento ya no las revela); rechaza quizzes inexistentes o inactivos
  * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -43,7 +43,7 @@ export class GetQuizByIdUseCase {
       throw new QuizInactiveError();
     }
 
-    const answersRevealed: boolean = query.canManageQuizzes || (await this._quizzesRepository.hasAttempt(query.userId, query.quizId));
+    const answersRevealed: boolean = query.canManageQuizzes;
 
     return {
       ...quiz,

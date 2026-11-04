@@ -154,88 +154,15 @@ export class QuizAttemptSummaryDTO {
   }
 }
 
-export class GradedQuestionDTO {
-  @ApiProperty({ description: "Question identifier", example: "q1" })
-  public questionId: string;
-
-  @ApiProperty({ description: "Option selected by the user, empty when unanswered", example: "q1-b" })
-  public selectedOptionId: string;
-
-  @ApiProperty({ description: "Correct option identifier", example: "q1-a" })
-  public correctOptionId: string;
-
-  @ApiProperty({ description: "Whether the selected option is correct", example: false })
-  public isCorrect: boolean;
-
-  @ApiProperty({ description: "Question explanation", example: "PEEP keeps the alveoli open", nullable: true, type: String })
-  public explanation: string | null;
-
-  @ApiProperty({ description: "Feedback of the selected option", example: "Review the definition of PEEP", nullable: true, type: String })
-  public feedback: string | null;
-
-  public constructor({
-    questionId,
-    selectedOptionId,
-    correctOptionId,
-    isCorrect,
-    explanation,
-    feedback,
-  }: {
-    questionId: string;
-    selectedOptionId: string;
-    correctOptionId: string;
-    isCorrect: boolean;
-    explanation: string | null;
-    feedback: string | null;
-  }) {
-    this.questionId = questionId;
-    this.selectedOptionId = selectedOptionId;
-    this.correctOptionId = correctOptionId;
-    this.isCorrect = isCorrect;
-    this.explanation = explanation;
-    this.feedback = feedback;
-  }
-}
-
 export class QuizAttemptResultDTO {
   @ApiProperty({ description: "Created attempt identifier", example: "01932e9f-1234-7abc-9def-1a2b3c4d5e6f" })
   public attemptId: string;
 
-  @ApiProperty({ description: "Score from 0 to 100", example: 80 })
-  public score: number;
-
-  @ApiProperty({ description: "Whether the attempt reached the passing score", example: true })
-  public passed: boolean;
-
-  @ApiProperty({ description: "Number of questions in the quiz", example: 5 })
+  @ApiProperty({ description: "Number of questions in the quiz (the score and the corrections are released by the teacher)", example: 5 })
   public totalQuestions: number;
 
-  @ApiProperty({ description: "Number of correct answers", example: 4 })
-  public correctAnswers: number;
-
-  @ApiProperty({ description: "Per-question grading", type: GradedQuestionDTO, isArray: true })
-  public gradedQuestions: GradedQuestionDTO[];
-
-  public constructor({
-    attemptId,
-    score,
-    passed,
-    totalQuestions,
-    correctAnswers,
-    gradedQuestions,
-  }: {
-    attemptId: string;
-    score: number;
-    passed: boolean;
-    totalQuestions: number;
-    correctAnswers: number;
-    gradedQuestions: GradedQuestionDTO[];
-  }) {
+  public constructor({ attemptId, totalQuestions }: { attemptId: string; totalQuestions: number }) {
     this.attemptId = attemptId;
-    this.score = score;
-    this.passed = passed;
     this.totalQuestions = totalQuestions;
-    this.correctAnswers = correctAnswers;
-    this.gradedQuestions = gradedQuestions;
   }
 }
