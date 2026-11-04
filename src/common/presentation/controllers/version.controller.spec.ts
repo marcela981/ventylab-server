@@ -51,11 +51,11 @@ describe("VersionController", () => {
     expect(API_CONTRACT_VERSION).toBe(1);
   });
 
-  it("is a raw response that skips throttling", () => {
+  it("is a raw response that stays under the global rate limiter", () => {
     const keys: string[] = Reflect.getMetadataKeys(VersionController);
     const skips: boolean = keys.some((key: string) => typeof key === "string" && key.startsWith("THROTTLER:SKIP") && Reflect.getMetadata(key, VersionController) === true);
 
-    expect(skips).toBe(true);
+    expect(skips).toBe(false);
     expect(Reflect.getMetadata(RAW_RESPONSE_KEY, VersionController)).toBe(true);
   });
 });
