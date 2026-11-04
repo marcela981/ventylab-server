@@ -10,6 +10,8 @@
     "prisma/seed-*.ts",
     "prisma/migrations/migrate-progress-data.ts",
     "scripts/*.ts",
+    "scripts/ai-eval/run-eval.ts",
+    "scripts/ai-eval/**/*.test.ts",
     "scripts/audit-e2e/audit-e2e.ts",
     "scripts/**/*.{mjs,cjs}",
     "contracts/*.ts"

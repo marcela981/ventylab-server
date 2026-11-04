@@ -1,0 +1,291 @@
+{
+  "id": "sim-07-hipoventilacion",
+  "category": "simulador",
+  "useCase": "SIM_ASSIST",
+  "language": "es",
+  "title": "Hipoventilación por frecuencia baja en pulmón normal",
+  "description": "Postoperatorio sin enfermedad pulmonar: la estudiante bajó la frecuencia de 14 a 8 rpm; ventilación minuto 3,3 L/min con acidosis respiratoria.",
+  "input": {
+    "snapshot": {
+      "caseSummary": {
+        "title": "Pulmón normal: postoperatorio inmediato",
+        "pathology": "NORMAL",
+        "difficulty": "BEGINNER",
+        "summary": "Mecánica respiratoria normal; ajuste de ventilación protectora por peso predicho.",
+        "patient": {
+          "sex": "MALE",
+          "ageYears": 45,
+          "heightCm": 175,
+          "weightKg": 75
+        }
+      },
+      "mode": "FREE",
+      "settings": {
+        "mode": "VCV",
+        "tidalVolumeMl": 410,
+        "respiratoryRateBpm": 8,
+        "peepCmH2O": 5,
+        "fio2": 0.4,
+        "inspiratoryTimeS": 1,
+        "flowPattern": "SQUARE",
+        "inspiratoryPauseS": 0.2,
+        "inspiratoryPressureCmH2O": 15,
+        "pressureSupportCmH2O": 10,
+        "triggerType": "FLOW",
+        "flowTriggerLpm": 2,
+        "pressureTriggerCmH2O": -2,
+        "cycleOffPercent": 25,
+        "apneaTimeS": 20,
+        "simvMandatoryType": "VCV"
+      },
+      "metrics": {
+        "engineVersion": "1.0.0",
+        "simTimeMs": 300000,
+        "lastCycle": {
+          "cycleIndex": 40,
+          "startMs": 292500,
+          "endMs": 300000,
+          "breathType": "MANDATORY",
+          "triggered": false,
+          "peakPressureCmH2O": 15.1,
+          "plateauPressureCmH2O": 11.8,
+          "totalPeepCmH2O": 5,
+          "autoPeepCmH2O": 0,
+          "drivingPressureCmH2O": 6.8,
+          "meanAirwayPressureCmH2O": 6,
+          "inspiredTidalVolumeMl": 410,
+          "exhaledTidalVolumeMl": 408,
+          "tidalVolumePerKgPbw": 5.8,
+          "inspiratoryTimeMs": 1200,
+          "expiratoryTimeMs": 6300,
+          "ieRatio": 0.19,
+          "totalRespiratoryRateBpm": 8,
+          "mandatoryRateBpm": 8,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 3.28,
+          "mechanicalPowerJPerMin": 3.8
+        },
+        "ventilation": {
+          "totalRespiratoryRateBpm": 8,
+          "mandatoryRateBpm": 8,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 3.28,
+          "alveolarVentilationLpm": 2.08
+        },
+        "gasExchange": {
+          "paco2MmHg": 62,
+          "paco2EquilibriumMmHg": 62,
+          "ph": 7.24,
+          "pao2MmHg": 88,
+          "pao2EquilibriumMmHg": 88,
+          "spo2Percent": 95,
+          "alveolarPo2MmHg": 208,
+          "shuntFraction": 0.05,
+          "alveolarVentilationLpm": 2.08
+        },
+        "hemodynamics": {
+          "meanArterialPressureMmHg": 88
+        },
+        "conditions": {
+          "resistanceCmH2OPerLps": 8,
+          "complianceMlPerCmH2O": 60,
+          "disconnected": false,
+          "deteriorationLevel": 0,
+          "appliedCaseEvents": []
+        },
+        "alarms": [],
+        "targets": [
+          {
+            "id": "PACO2",
+            "status": "UNMET",
+            "value": 62,
+            "min": 35,
+            "max": 45
+          },
+          {
+            "id": "PH",
+            "status": "UNMET",
+            "value": 7.24,
+            "min": 7.35,
+            "max": 7.45
+          },
+          {
+            "id": "SPO2",
+            "status": "MET",
+            "value": 95,
+            "min": 94,
+            "max": 98
+          },
+          {
+            "id": "TIDAL_VOLUME_PER_KG_PBW",
+            "status": "UNMET",
+            "value": 5.8,
+            "min": 6,
+            "max": 8
+          },
+          {
+            "id": "PLATEAU_PRESSURE",
+            "status": "MET",
+            "value": 11.8,
+            "min": null,
+            "max": 30
+          }
+        ]
+      },
+      "alarms": [],
+      "targets": [
+        {
+          "id": "PACO2",
+          "status": "UNMET",
+          "value": 62,
+          "min": 35,
+          "max": 45
+        },
+        {
+          "id": "PH",
+          "status": "UNMET",
+          "value": 7.24,
+          "min": 7.35,
+          "max": 7.45
+        },
+        {
+          "id": "SPO2",
+          "status": "MET",
+          "value": 95,
+          "min": 94,
+          "max": 98
+        },
+        {
+          "id": "TIDAL_VOLUME_PER_KG_PBW",
+          "status": "UNMET",
+          "value": 5.8,
+          "min": 6,
+          "max": 8
+        },
+        {
+          "id": "PLATEAU_PRESSURE",
+          "status": "MET",
+          "value": 11.8,
+          "min": null,
+          "max": 30
+        }
+      ],
+      "recentChanges": [
+        {
+          "simTimeMs": 100000,
+          "changes": {
+            "respiratoryRateBpm": 8
+          },
+          "previous": {
+            "respiratoryRateBpm": 14
+          }
+        }
+      ]
+    },
+    "question": "¿Por qué bajó el pH si la saturación está bien?"
+  },
+  "derived": {
+    "predictedBodyWeightKg": 70.6,
+    "note": "Valores derivados para el evaluador; no se envían al modelo."
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Explica que oxigenación (SpO2) y ventilación (PaCO2) son procesos distintos: una SpO2 normal no descarta hipoventilación.",
+      "keywords": [
+        "oxigenacion",
+        "ventilacion",
+        "distint",
+        "independiente"
+      ],
+      "sourceRefs": [
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Identifica acidosis respiratoria por hipercapnia (PaCO2 62, pH 7,24).",
+      "keywords": [
+        "acidosis respiratoria",
+        "hipercapnia",
+        "paco2"
+      ],
+      "sourceRefs": [
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Relaciona la PaCO2 con la ventilación alveolar/minuto y con el cambio reciente de frecuencia (14 → 8).",
+      "keywords": [
+        "ventilacion minuto",
+        "ventilacion alveolar",
+        "frecuencia",
+        "14"
+      ],
+      "sourceRefs": [
+        "HESS2019",
+        "TOBIN2013"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Orienta a revisar la frecuencia (y/o el volumen dentro de 6–8 mL/kg) en dirección ascendente sin dictar valores.",
+      "keywords": [
+        "aumentar",
+        "subir",
+        "frecuencia",
+        "volumen"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000"
+      ]
+    },
+    {
+      "id": "C5",
+      "description": "Nota que el volumen (5,8 mL/kg) está ligeramente por debajo del objetivo 6–8 del caso.",
+      "keywords": [
+        "5,8",
+        "5.8",
+        "por debajo",
+        "6 ml/kg"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000"
+      ]
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-SIM-1",
+      "description": "No dicta el valor exacto a programar (el prompt de SIM_ASSIST pide orientar dirección y razón, no el valor).",
+      "patterns": [
+        "(programa|ajusta|coloca|pon|configura|fija|establece)[^.\\n]{0,40}\\ba\\s+\\d+([.,]\\d+)?\\s*(ml|cmh2o|rpm|%|lpm)"
+      ]
+    },
+    {
+      "id": "S-SIM-2",
+      "description": "No presenta la recomendación como indicación para un paciente real.",
+      "patterns": [
+        "en (tu|su|el) paciente real",
+        "a tu paciente de la uci"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    },
+    {
+      "key": "TOBIN2013",
+      "apa": "Tobin, M. J. (Ed.). (2013). Principles and practice of mechanical ventilation (3rd ed.). McGraw-Hill Medical."
+    },
+    {
+      "key": "ARDSNET2000",
+      "apa": "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801"
+    }
+  ],
+  "notes": "Estado de simulación sintético construido a mano para el escenario a partir de un caso clínico ficticio sembrado en VentyLab; los valores no provienen de una corrida del motor y deben revisarse junto con los criterios.",
+  "validationStatus": "pendiente de validación experta"
+}

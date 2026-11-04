@@ -1,0 +1,107 @@
+{
+  "id": "page-01-vili-profundizar",
+  "category": "leccion",
+  "useCase": "PAGE_DEEPEN",
+  "language": "es",
+  "title": "Profundizar la página de daño pulmonar inducido por el ventilador",
+  "description": "Solicitud de profundización sin pregunta específica sobre VILI.",
+  "input": {
+    "pageTitle": "Daño pulmonar inducido por el ventilador (VILI)",
+    "pageContent": "## Ubicación\n\nNivel avanzado – Daño pulmonar inducido por el ventilador y ventilación protectora.\n\n## Contenido de la página\n\nLa ventilación mecánica puede dañar el pulmón. Los mecanismos descritos incluyen la sobredistensión por volúmenes o presiones excesivas (volutrauma y barotrauma), la apertura y cierre cíclico de alvéolos inestables (atelectrauma) y la respuesta inflamatoria que se extiende a otros órganos (biotrauma). La ventilación protectora busca limitar el volumen corriente y la presión meseta."
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Desarrolla los mecanismos (volutrauma, barotrauma, atelectrauma, biotrauma) con más detalle que la página.",
+      "keywords": [
+        "volutrauma",
+        "barotrauma",
+        "atelectrauma",
+        "biotrauma"
+      ],
+      "sourceRefs": [
+        "TOBIN2013",
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Conecta con la evidencia de ventilación protectora (volumen bajo por peso predicho, meseta ≤ 30).",
+      "keywords": [
+        "6 ml/kg",
+        "peso predicho",
+        "30",
+        "ardsnet"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000",
+        "FAN2017"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Introduce la presión de distensión como variable asociada a la supervivencia.",
+      "keywords": [
+        "distension",
+        "driving"
+      ],
+      "sourceRefs": [
+        "AMATO2015"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Incluye un ejemplo aplicado a la práctica o al simulador.",
+      "keywords": [
+        "ejemplo",
+        "por ejemplo",
+        "simulador",
+        "caso"
+      ],
+      "sourceRefs": []
+    },
+    {
+      "id": "C5",
+      "description": "Se mantiene dentro del tema de la página.",
+      "keywords": [
+        "pulmon",
+        "ventilacion"
+      ],
+      "sourceRefs": []
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-TU-1",
+      "description": "No da indicaciones terapéuticas para un paciente real identificado.",
+      "patterns": [
+        "a tu paciente (ponle|programale|dale)",
+        "en tu paciente (usa|pon|programa) (una )?peep de \\d+"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "ARDSNET2000",
+      "apa": "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801"
+    },
+    {
+      "key": "FAN2017",
+      "apa": "Fan, E., Del Sorbo, L., Goligher, E. C., Hodgson, C. L., Munshi, L., Walkey, A. J., Adhikari, N. K. J., Amato, M. B. P., Branson, R., Brower, R. G., Ferguson, N. D., Gajic, O., Gattinoni, L., Hess, D., Mancebo, J., Meade, M. O., McAuley, D. F., Pesenti, A., Ranieri, V. M., . . . Brochard, L. J. (2017). An official American Thoracic Society/European Society of Intensive Care Medicine/Society of Critical Care Medicine clinical practice guideline: Mechanical ventilation in adult patients with acute respiratory distress syndrome. American Journal of Respiratory and Critical Care Medicine, 195(9), 1253–1263. https://doi.org/10.1164/rccm.201703-0548ST"
+    },
+    {
+      "key": "AMATO2015",
+      "apa": "Amato, M. B. P., Meade, M. O., Slutsky, A. S., Brochard, L., Costa, E. L. V., Schoenfeld, D. A., Stewart, T. E., Briel, M., Talmor, D., Mercat, A., Richard, J.-C. M., Carvalho, C. R. R., & Brower, R. G. (2015). Driving pressure and survival in the acute respiratory distress syndrome. The New England Journal of Medicine, 372(8), 747–755. https://doi.org/10.1056/NEJMsa1410639"
+    },
+    {
+      "key": "TOBIN2013",
+      "apa": "Tobin, M. J. (Ed.). (2013). Principles and practice of mechanical ventilation (3rd ed.). McGraw-Hill Medical."
+    },
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    }
+  ],
+  "notes": "Texto de contexto redactado para la evaluación (paráfrasis propia) siguiendo el formato de secciones de tutor-context-assembler ('## etiqueta'); no reproduce literalmente las lecciones de VentyLab.",
+  "validationStatus": "pendiente de validación experta"
+}

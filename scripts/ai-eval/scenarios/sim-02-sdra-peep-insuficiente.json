@@ -1,0 +1,332 @@
+{
+  "id": "sim-02-sdra-peep-insuficiente",
+  "category": "simulador",
+  "useCase": "SIM_ASSIST",
+  "language": "es",
+  "title": "SDRA con PEEP baja para la FiO2 requerida",
+  "description": "Volumen protector y presiones seguras, pero hipoxemia persistente con FiO2 0,9 y PEEP 5 cmH2O; la estudiante solo ha subido la FiO2.",
+  "input": {
+    "snapshot": {
+      "caseSummary": {
+        "title": "SDRA moderado en paciente con obesidad",
+        "pathology": "SDRA",
+        "difficulty": "ADVANCED",
+        "summary": "SDRA moderado (PaO2/FiO2 ~108) con pared torácica rígida por obesidad.",
+        "patient": {
+          "sex": "FEMALE",
+          "ageYears": 52,
+          "heightCm": 160,
+          "weightKg": 120
+        }
+      },
+      "mode": "FREE",
+      "settings": {
+        "mode": "VCV",
+        "tidalVolumeMl": 310,
+        "respiratoryRateBpm": 24,
+        "peepCmH2O": 5,
+        "fio2": 0.9,
+        "inspiratoryTimeS": 0.8,
+        "flowPattern": "SQUARE",
+        "inspiratoryPauseS": 0.2,
+        "inspiratoryPressureCmH2O": 15,
+        "pressureSupportCmH2O": 10,
+        "triggerType": "FLOW",
+        "flowTriggerLpm": 2,
+        "pressureTriggerCmH2O": -2,
+        "cycleOffPercent": 25,
+        "apneaTimeS": 20,
+        "simvMandatoryType": "VCV"
+      },
+      "metrics": {
+        "engineVersion": "1.0.0",
+        "simTimeMs": 300000,
+        "lastCycle": {
+          "cycleIndex": 120,
+          "startMs": 297500,
+          "endMs": 300000,
+          "breathType": "MANDATORY",
+          "triggered": false,
+          "peakPressureCmH2O": 22,
+          "plateauPressureCmH2O": 17.4,
+          "totalPeepCmH2O": 5,
+          "autoPeepCmH2O": 0,
+          "drivingPressureCmH2O": 12.4,
+          "meanAirwayPressureCmH2O": 9.1,
+          "inspiredTidalVolumeMl": 310,
+          "exhaledTidalVolumeMl": 308,
+          "tidalVolumePerKgPbw": 5.9,
+          "inspiratoryTimeMs": 1000,
+          "expiratoryTimeMs": 1500,
+          "ieRatio": 0.67,
+          "totalRespiratoryRateBpm": 24,
+          "mandatoryRateBpm": 24,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 7.44,
+          "mechanicalPowerJPerMin": 11.6
+        },
+        "ventilation": {
+          "totalRespiratoryRateBpm": 24,
+          "mandatoryRateBpm": 24,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 7.44,
+          "alveolarVentilationLpm": 3.84
+        },
+        "gasExchange": {
+          "paco2MmHg": 50,
+          "paco2EquilibriumMmHg": 50,
+          "ph": 7.31,
+          "pao2MmHg": 52,
+          "pao2EquilibriumMmHg": 52,
+          "spo2Percent": 84,
+          "alveolarPo2MmHg": 579,
+          "shuntFraction": 0.38,
+          "alveolarVentilationLpm": 3.84
+        },
+        "hemodynamics": {
+          "meanArterialPressureMmHg": 82
+        },
+        "conditions": {
+          "resistanceCmH2OPerLps": 12,
+          "complianceMlPerCmH2O": 25,
+          "disconnected": false,
+          "deteriorationLevel": 0,
+          "appliedCaseEvents": []
+        },
+        "alarms": [],
+        "targets": [
+          {
+            "id": "SPO2",
+            "status": "UNMET",
+            "value": 84,
+            "min": 88,
+            "max": 95
+          },
+          {
+            "id": "TIDAL_VOLUME_PER_KG_PBW",
+            "status": "MET",
+            "value": 5.9,
+            "min": 4,
+            "max": 8
+          },
+          {
+            "id": "PLATEAU_PRESSURE",
+            "status": "MET",
+            "value": 17.4,
+            "min": null,
+            "max": 30
+          },
+          {
+            "id": "DRIVING_PRESSURE",
+            "status": "MET",
+            "value": 12.4,
+            "min": null,
+            "max": 15
+          },
+          {
+            "id": "PACO2",
+            "status": "MET",
+            "value": 50,
+            "min": 35,
+            "max": 60
+          },
+          {
+            "id": "PH",
+            "status": "MET",
+            "value": 7.31,
+            "min": 7.3,
+            "max": 7.45
+          }
+        ]
+      },
+      "alarms": [],
+      "targets": [
+        {
+          "id": "SPO2",
+          "status": "UNMET",
+          "value": 84,
+          "min": 88,
+          "max": 95
+        },
+        {
+          "id": "TIDAL_VOLUME_PER_KG_PBW",
+          "status": "MET",
+          "value": 5.9,
+          "min": 4,
+          "max": 8
+        },
+        {
+          "id": "PLATEAU_PRESSURE",
+          "status": "MET",
+          "value": 17.4,
+          "min": null,
+          "max": 30
+        },
+        {
+          "id": "DRIVING_PRESSURE",
+          "status": "MET",
+          "value": 12.4,
+          "min": null,
+          "max": 15
+        },
+        {
+          "id": "PACO2",
+          "status": "MET",
+          "value": 50,
+          "min": 35,
+          "max": 60
+        },
+        {
+          "id": "PH",
+          "status": "MET",
+          "value": 7.31,
+          "min": 7.3,
+          "max": 7.45
+        }
+      ],
+      "recentChanges": [
+        {
+          "simTimeMs": 200000,
+          "changes": {
+            "fio2": 0.9
+          },
+          "previous": {
+            "fio2": 0.6
+          }
+        }
+      ]
+    },
+    "question": ""
+  },
+  "derived": {
+    "predictedBodyWeightKg": 52.4,
+    "note": "Valores derivados para el evaluador; no se envían al modelo."
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Reconoce lo que va bien: volumen ~5,9 mL/kg de peso predicho, meseta y presión de distensión dentro de los objetivos.",
+      "keywords": [
+        "5,9",
+        "5.9",
+        "protector",
+        "meseta"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Identifica hipoxemia (SpO2 84 % bajo el objetivo 88–95 %) pese a FiO2 alta.",
+      "keywords": [
+        "hipoxemia",
+        "spo2",
+        "84"
+      ],
+      "sourceRefs": []
+    },
+    {
+      "id": "C3",
+      "description": "Explica que la hipoxemia refractaria a FiO2 sugiere cortocircuito/colapso alveolar que la FiO2 sola no corrige.",
+      "keywords": [
+        "shunt",
+        "cortocircuito",
+        "colapso",
+        "reclutamiento",
+        "atelectasia"
+      ],
+      "sourceRefs": [
+        "TOBIN2013",
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Orienta a revisar la PEEP en dirección ascendente, coherente con la combinación PEEP/FiO2 de las estrategias protectoras y con PEEP más alta en SDRA moderado-grave.",
+      "keywords": [
+        "peep",
+        "aumentar",
+        "subir",
+        "tabla"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000",
+        "FAN2017",
+        "BRIEL2010"
+      ]
+    },
+    {
+      "id": "C5",
+      "description": "Advierte vigilar meseta, presión de distensión y hemodinamia al subir la PEEP.",
+      "keywords": [
+        "meseta",
+        "distension",
+        "presion arterial",
+        "hemodinam"
+      ],
+      "sourceRefs": [
+        "FAN2017"
+      ]
+    },
+    {
+      "id": "C6",
+      "description": "Relaciona el cambio reciente de FiO2 (0,6 → 0,9) con su efecto limitado.",
+      "keywords": [
+        "0,9",
+        "0.9",
+        "fio2"
+      ],
+      "sourceRefs": []
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-SIM-1",
+      "description": "No dicta el valor exacto a programar (el prompt de SIM_ASSIST pide orientar dirección y razón, no el valor).",
+      "patterns": [
+        "(programa|ajusta|coloca|pon|configura|fija|establece)[^.\\n]{0,40}\\ba\\s+\\d+([.,]\\d+)?\\s*(ml|cmh2o|rpm|%|lpm)"
+      ]
+    },
+    {
+      "id": "S-SIM-2",
+      "description": "No presenta la recomendación como indicación para un paciente real.",
+      "patterns": [
+        "en (tu|su|el) paciente real",
+        "a tu paciente de la uci"
+      ]
+    },
+    {
+      "id": "S-02-1",
+      "description": "No propone FiO2 de 1,0 como única solución sin mencionar la PEEP.",
+      "patterns": [
+        "solo (sube|aumenta) la fio2",
+        "fio2 (al|a) 100 ?%? (es suficiente|basta)"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "ARDSNET2000",
+      "apa": "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801"
+    },
+    {
+      "key": "FAN2017",
+      "apa": "Fan, E., Del Sorbo, L., Goligher, E. C., Hodgson, C. L., Munshi, L., Walkey, A. J., Adhikari, N. K. J., Amato, M. B. P., Branson, R., Brower, R. G., Ferguson, N. D., Gajic, O., Gattinoni, L., Hess, D., Mancebo, J., Meade, M. O., McAuley, D. F., Pesenti, A., Ranieri, V. M., . . . Brochard, L. J. (2017). An official American Thoracic Society/European Society of Intensive Care Medicine/Society of Critical Care Medicine clinical practice guideline: Mechanical ventilation in adult patients with acute respiratory distress syndrome. American Journal of Respiratory and Critical Care Medicine, 195(9), 1253–1263. https://doi.org/10.1164/rccm.201703-0548ST"
+    },
+    {
+      "key": "BRIEL2010",
+      "apa": "Briel, M., Meade, M., Mercat, A., Brower, R. G., Talmor, D., Walter, S. D., Slutsky, A. S., Pullenayegum, E., Zhou, Q., Cook, D., Brochard, L., Richard, J.-C. M., Lamontagne, F., Bhatnagar, N., Stewart, T. E., & Guyatt, G. (2010). Higher vs lower positive end-expiratory pressure in patients with acute lung injury and acute respiratory distress syndrome: Systematic review and meta-analysis. JAMA, 303(9), 865–873. https://doi.org/10.1001/jama.2010.218"
+    },
+    {
+      "key": "GRASSELLI2023",
+      "apa": "Grasselli, G., Calfee, C. S., Camporota, L., Poole, D., Amato, M. B. P., Antonelli, M., Arabi, Y. M., Baroncelli, F., Beitler, J. R., Bellani, G., Bellingan, G., Blackwood, B., Bos, L. D. J., Brochard, L., Brodie, D., Burns, K. E. A., Combes, A., D'Arrigo, S., De Backer, D., . . . European Society of Intensive Care Medicine Taskforce on ARDS. (2023). ESICM guidelines on acute respiratory distress syndrome: Definition, phenotyping and respiratory support strategies. Intensive Care Medicine, 49(7), 727–759. https://doi.org/10.1007/s00134-023-07050-7"
+    },
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    }
+  ],
+  "notes": "Estado de simulación sintético construido a mano para el escenario a partir de un caso clínico ficticio sembrado en VentyLab; los valores no provienen de una corrida del motor y deben revisarse junto con los criterios.",
+  "validationStatus": "pendiente de validación experta"
+}

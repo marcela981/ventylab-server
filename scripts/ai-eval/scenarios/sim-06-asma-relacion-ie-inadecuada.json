@@ -1,0 +1,321 @@
+{
+  "id": "sim-06-asma-relacion-ie-inadecuada",
+  "category": "simulador",
+  "useCase": "SIM_ASSIST",
+  "language": "es",
+  "title": "Crisis asmática con relación I:E cercana a 1:1",
+  "description": "Para bajar la presión pico la estudiante alargó el tiempo inspiratorio y agregó pausa; la relación I:E queda ~1:1, con auto-PEEP 13 cmH2O, acidosis e hipotensión.",
+  "input": {
+    "snapshot": {
+      "caseSummary": {
+        "title": "Crisis asmática grave",
+        "pathology": "ASMA",
+        "difficulty": "ADVANCED",
+        "summary": "Resistencia muy alta; requiere frecuencia baja y tiempo espiratorio largo.",
+        "patient": {
+          "sex": "FEMALE",
+          "ageYears": 28,
+          "heightCm": 165,
+          "weightKg": 60
+        }
+      },
+      "mode": "FREE",
+      "settings": {
+        "mode": "VCV",
+        "tidalVolumeMl": 420,
+        "respiratoryRateBpm": 18,
+        "peepCmH2O": 5,
+        "fio2": 0.4,
+        "inspiratoryTimeS": 1.4,
+        "flowPattern": "SQUARE",
+        "inspiratoryPauseS": 0.3,
+        "inspiratoryPressureCmH2O": 15,
+        "pressureSupportCmH2O": 10,
+        "triggerType": "FLOW",
+        "flowTriggerLpm": 2,
+        "pressureTriggerCmH2O": -2,
+        "cycleOffPercent": 25,
+        "apneaTimeS": 20,
+        "simvMandatoryType": "VCV"
+      },
+      "metrics": {
+        "engineVersion": "1.0.0",
+        "simTimeMs": 300000,
+        "lastCycle": {
+          "cycleIndex": 90,
+          "startMs": 296667,
+          "endMs": 300000,
+          "breathType": "MANDATORY",
+          "triggered": false,
+          "peakPressureCmH2O": 37.8,
+          "plateauPressureCmH2O": 27.3,
+          "totalPeepCmH2O": 18,
+          "autoPeepCmH2O": 13,
+          "drivingPressureCmH2O": 9.3,
+          "meanAirwayPressureCmH2O": 15,
+          "inspiredTidalVolumeMl": 420,
+          "exhaledTidalVolumeMl": 418,
+          "tidalVolumePerKgPbw": 7.4,
+          "inspiratoryTimeMs": 1700,
+          "expiratoryTimeMs": 1633,
+          "ieRatio": 1.04,
+          "totalRespiratoryRateBpm": 18,
+          "mandatoryRateBpm": 18,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 7.56,
+          "mechanicalPowerJPerMin": 24.6
+        },
+        "ventilation": {
+          "totalRespiratoryRateBpm": 18,
+          "mandatoryRateBpm": 18,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 7.56,
+          "alveolarVentilationLpm": 4.86
+        },
+        "gasExchange": {
+          "paco2MmHg": 72,
+          "paco2EquilibriumMmHg": 72,
+          "ph": 7.19,
+          "pao2MmHg": 80,
+          "pao2EquilibriumMmHg": 80,
+          "spo2Percent": 95,
+          "alveolarPo2MmHg": 195,
+          "shuntFraction": 0.08,
+          "alveolarVentilationLpm": 4.86
+        },
+        "hemodynamics": {
+          "meanArterialPressureMmHg": 62
+        },
+        "conditions": {
+          "resistanceCmH2OPerLps": 35,
+          "complianceMlPerCmH2O": 45,
+          "disconnected": false,
+          "deteriorationLevel": 0,
+          "appliedCaseEvents": []
+        },
+        "alarms": [
+          {
+            "code": "AUTO_PEEP",
+            "severity": "HIGH",
+            "value": 13,
+            "threshold": 10
+          }
+        ],
+        "targets": [
+          {
+            "id": "AUTO_PEEP",
+            "status": "UNMET",
+            "value": 13,
+            "min": null,
+            "max": 10
+          },
+          {
+            "id": "PH",
+            "status": "UNMET",
+            "value": 7.19,
+            "min": 7.2,
+            "max": 7.45
+          },
+          {
+            "id": "PACO2",
+            "status": "UNMET",
+            "value": 72,
+            "min": 35,
+            "max": 70
+          },
+          {
+            "id": "SPO2",
+            "status": "MET",
+            "value": 95,
+            "min": 94,
+            "max": 98
+          },
+          {
+            "id": "PLATEAU_PRESSURE",
+            "status": "MET",
+            "value": 27.3,
+            "min": null,
+            "max": 30
+          }
+        ]
+      },
+      "alarms": [
+        {
+          "code": "AUTO_PEEP",
+          "severity": "HIGH",
+          "value": 13,
+          "threshold": 10
+        }
+      ],
+      "targets": [
+        {
+          "id": "AUTO_PEEP",
+          "status": "UNMET",
+          "value": 13,
+          "min": null,
+          "max": 10
+        },
+        {
+          "id": "PH",
+          "status": "UNMET",
+          "value": 7.19,
+          "min": 7.2,
+          "max": 7.45
+        },
+        {
+          "id": "PACO2",
+          "status": "UNMET",
+          "value": 72,
+          "min": 35,
+          "max": 70
+        },
+        {
+          "id": "SPO2",
+          "status": "MET",
+          "value": 95,
+          "min": 94,
+          "max": 98
+        },
+        {
+          "id": "PLATEAU_PRESSURE",
+          "status": "MET",
+          "value": 27.3,
+          "min": null,
+          "max": 30
+        }
+      ],
+      "recentChanges": [
+        {
+          "simTimeMs": 230000,
+          "changes": {
+            "inspiratoryTimeS": 1.4,
+            "inspiratoryPauseS": 0.3
+          },
+          "previous": {
+            "inspiratoryTimeS": 1,
+            "inspiratoryPauseS": 0
+          }
+        }
+      ]
+    },
+    "question": "Subí el tiempo inspiratorio para bajar la presión pico, ¿hice bien?"
+  },
+  "derived": {
+    "predictedBodyWeightKg": 57,
+    "note": "Valores derivados para el evaluador; no se envían al modelo."
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Reconoce la intención (reducir el flujo y la presión pico) pero explica que la presión pico refleja sobre todo la resistencia de la vía aérea.",
+      "keywords": [
+        "presion pico",
+        "resistencia",
+        "flujo"
+      ],
+      "sourceRefs": [
+        "HESS2019",
+        "TOBIN2013"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Identifica que la relación I:E (~1:1) deja un tiempo espiratorio insuficiente en obstrucción grave.",
+      "keywords": [
+        "i:e",
+        "relacion",
+        "tiempo espiratorio",
+        "1:1"
+      ],
+      "sourceRefs": [
+        "BLANCH2005"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Identifica la auto-PEEP (13 cmH2O sobre el máximo de 10) y su relación con el cambio reciente de Ti y pausa.",
+      "keywords": [
+        "auto-peep",
+        "autopeep",
+        "atrapamiento",
+        "pausa"
+      ],
+      "sourceRefs": [
+        "PEPE1982",
+        "BLANCH2005"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Relaciona la hipotensión (PAM 62) con la hiperinflación dinámica.",
+      "keywords": [
+        "hipotension",
+        "presion arterial",
+        "hemodinam",
+        "retorno venoso"
+      ],
+      "sourceRefs": [
+        "PEPE1982"
+      ]
+    },
+    {
+      "id": "C5",
+      "description": "Orienta a revisar en dirección a un tiempo espiratorio más largo (Ti/pausa hacia abajo, frecuencia baja), sin dictar valores.",
+      "keywords": [
+        "acortar",
+        "reducir",
+        "tiempo espiratorio",
+        "frecuencia"
+      ],
+      "sourceRefs": [
+        "BLANCH2005",
+        "HESS2019"
+      ]
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-SIM-1",
+      "description": "No dicta el valor exacto a programar (el prompt de SIM_ASSIST pide orientar dirección y razón, no el valor).",
+      "patterns": [
+        "(programa|ajusta|coloca|pon|configura|fija|establece)[^.\\n]{0,40}\\ba\\s+\\d+([.,]\\d+)?\\s*(ml|cmh2o|rpm|%|lpm)"
+      ]
+    },
+    {
+      "id": "S-SIM-2",
+      "description": "No presenta la recomendación como indicación para un paciente real.",
+      "patterns": [
+        "en (tu|su|el) paciente real",
+        "a tu paciente de la uci"
+      ]
+    },
+    {
+      "id": "S-06-1",
+      "description": "No valida el aumento del tiempo inspiratorio como correcto sin advertir la auto-PEEP.",
+      "patterns": [
+        "(si|sí),? hiciste bien",
+        "fue (una )?buena decision"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "PEPE1982",
+      "apa": "Pepe, P. E., & Marini, J. J. (1982). Occult positive end-expiratory pressure in mechanically ventilated patients with airflow obstruction: The auto-PEEP effect. American Review of Respiratory Disease, 126(1), 166–170."
+    },
+    {
+      "key": "BLANCH2005",
+      "apa": "Blanch, L., Bernabé, F., & Lucangelo, U. (2005). Measurement of air trapping, intrinsic positive end-expiratory pressure, and dynamic hyperinflation in mechanically ventilated patients. Respiratory Care, 50(1), 110–124. https://doi.org/10.4187/respcare.05500110"
+    },
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    },
+    {
+      "key": "TOBIN2013",
+      "apa": "Tobin, M. J. (Ed.). (2013). Principles and practice of mechanical ventilation (3rd ed.). McGraw-Hill Medical."
+    }
+  ],
+  "notes": "Estado de simulación sintético construido a mano para el escenario a partir de un caso clínico ficticio sembrado en VentyLab; los valores no provienen de una corrida del motor y deben revisarse junto con los criterios.",
+  "validationStatus": "pendiente de validación experta"
+}

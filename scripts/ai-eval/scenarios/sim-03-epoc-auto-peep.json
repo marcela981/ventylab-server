@@ -1,0 +1,342 @@
+{
+  "id": "sim-03-epoc-auto-peep",
+  "category": "simulador",
+  "useCase": "SIM_ASSIST",
+  "language": "es",
+  "title": "EPOC con atrapamiento aéreo por tiempo espiratorio corto",
+  "description": "Frecuencia 20 rpm y Ti 1 s dejan 2 s para espirar con resistencia alta: auto-PEEP 9 cmH2O, hipercapnia y caída de la presión arterial media. La estudiante pregunta si sube la frecuencia.",
+  "input": {
+    "snapshot": {
+      "caseSummary": {
+        "title": "Exacerbación de EPOC con hiperinflación dinámica",
+        "pathology": "EPOC",
+        "difficulty": "INTERMEDIATE",
+        "summary": "Resistencia alta, retención crónica de CO2 y riesgo de auto-PEEP.",
+        "patient": {
+          "sex": "MALE",
+          "ageYears": 68,
+          "heightCm": 170,
+          "weightKg": 68
+        }
+      },
+      "mode": "FREE",
+      "settings": {
+        "mode": "VCV",
+        "tidalVolumeMl": 500,
+        "respiratoryRateBpm": 20,
+        "peepCmH2O": 5,
+        "fio2": 0.35,
+        "inspiratoryTimeS": 1,
+        "flowPattern": "SQUARE",
+        "inspiratoryPauseS": 0,
+        "inspiratoryPressureCmH2O": 15,
+        "pressureSupportCmH2O": 10,
+        "triggerType": "FLOW",
+        "flowTriggerLpm": 2,
+        "pressureTriggerCmH2O": -2,
+        "cycleOffPercent": 25,
+        "apneaTimeS": 20,
+        "simvMandatoryType": "VCV"
+      },
+      "metrics": {
+        "engineVersion": "1.0.0",
+        "simTimeMs": 300000,
+        "lastCycle": {
+          "cycleIndex": 100,
+          "startMs": 297000,
+          "endMs": 300000,
+          "breathType": "MANDATORY",
+          "triggered": false,
+          "peakPressureCmH2O": 33.3,
+          "plateauPressureCmH2O": 22.3,
+          "totalPeepCmH2O": 14,
+          "autoPeepCmH2O": 9,
+          "drivingPressureCmH2O": 8.3,
+          "meanAirwayPressureCmH2O": 10.7,
+          "inspiredTidalVolumeMl": 500,
+          "exhaledTidalVolumeMl": 498,
+          "tidalVolumePerKgPbw": 7.6,
+          "inspiratoryTimeMs": 1000,
+          "expiratoryTimeMs": 2000,
+          "ieRatio": 0.5,
+          "totalRespiratoryRateBpm": 20,
+          "mandatoryRateBpm": 20,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 10,
+          "mechanicalPowerJPerMin": 28.6
+        },
+        "ventilation": {
+          "totalRespiratoryRateBpm": 20,
+          "mandatoryRateBpm": 20,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 10,
+          "alveolarVentilationLpm": 5.6
+        },
+        "gasExchange": {
+          "paco2MmHg": 68,
+          "paco2EquilibriumMmHg": 68,
+          "ph": 7.26,
+          "pao2MmHg": 62,
+          "pao2EquilibriumMmHg": 62,
+          "spo2Percent": 90,
+          "alveolarPo2MmHg": 165,
+          "shuntFraction": 0.1,
+          "alveolarVentilationLpm": 5.6
+        },
+        "hemodynamics": {
+          "meanArterialPressureMmHg": 68
+        },
+        "conditions": {
+          "resistanceCmH2OPerLps": 22,
+          "complianceMlPerCmH2O": 60,
+          "disconnected": false,
+          "deteriorationLevel": 0,
+          "appliedCaseEvents": []
+        },
+        "alarms": [
+          {
+            "code": "AUTO_PEEP",
+            "severity": "MEDIUM",
+            "value": 9,
+            "threshold": 5
+          }
+        ],
+        "targets": [
+          {
+            "id": "AUTO_PEEP",
+            "status": "UNMET",
+            "value": 9,
+            "min": null,
+            "max": 5
+          },
+          {
+            "id": "PACO2",
+            "status": "UNMET",
+            "value": 68,
+            "min": 50,
+            "max": 65
+          },
+          {
+            "id": "PH",
+            "status": "UNMET",
+            "value": 7.26,
+            "min": 7.3,
+            "max": 7.45
+          },
+          {
+            "id": "SPO2",
+            "status": "MET",
+            "value": 90,
+            "min": 88,
+            "max": 92
+          },
+          {
+            "id": "PLATEAU_PRESSURE",
+            "status": "MET",
+            "value": 22.3,
+            "min": null,
+            "max": 30
+          },
+          {
+            "id": "TIDAL_VOLUME_PER_KG_PBW",
+            "status": "MET",
+            "value": 7.6,
+            "min": 6,
+            "max": 8
+          }
+        ]
+      },
+      "alarms": [
+        {
+          "code": "AUTO_PEEP",
+          "severity": "MEDIUM",
+          "value": 9,
+          "threshold": 5
+        }
+      ],
+      "targets": [
+        {
+          "id": "AUTO_PEEP",
+          "status": "UNMET",
+          "value": 9,
+          "min": null,
+          "max": 5
+        },
+        {
+          "id": "PACO2",
+          "status": "UNMET",
+          "value": 68,
+          "min": 50,
+          "max": 65
+        },
+        {
+          "id": "PH",
+          "status": "UNMET",
+          "value": 7.26,
+          "min": 7.3,
+          "max": 7.45
+        },
+        {
+          "id": "SPO2",
+          "status": "MET",
+          "value": 90,
+          "min": 88,
+          "max": 92
+        },
+        {
+          "id": "PLATEAU_PRESSURE",
+          "status": "MET",
+          "value": 22.3,
+          "min": null,
+          "max": 30
+        },
+        {
+          "id": "TIDAL_VOLUME_PER_KG_PBW",
+          "status": "MET",
+          "value": 7.6,
+          "min": 6,
+          "max": 8
+        }
+      ],
+      "recentChanges": []
+    },
+    "question": "La PaCO2 sigue alta, ¿subo la frecuencia respiratoria?"
+  },
+  "derived": {
+    "predictedBodyWeightKg": 66,
+    "note": "Valores derivados para el evaluador; no se envían al modelo."
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Identifica la auto-PEEP / hiperinflación dinámica (9 cmH2O sobre un objetivo máximo de 5).",
+      "keywords": [
+        "auto-peep",
+        "autopeep",
+        "peep intrinseca",
+        "atrapamiento",
+        "hiperinflacion"
+      ],
+      "sourceRefs": [
+        "PEPE1982",
+        "BLANCH2005"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Explica el mecanismo: tiempo espiratorio insuficiente para vaciar el pulmón con resistencia aumentada (constante de tiempo).",
+      "keywords": [
+        "tiempo espiratorio",
+        "espiracion",
+        "resistencia",
+        "constante de tiempo"
+      ],
+      "sourceRefs": [
+        "BLANCH2005",
+        "TOBIN2013"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Advierte que subir la frecuencia acorta aún más el tiempo espiratorio y puede empeorar el atrapamiento y la PaCO2.",
+      "keywords": [
+        "acorta",
+        "empeora",
+        "mas atrapamiento",
+        "contraproducente"
+      ],
+      "sourceRefs": [
+        "BLANCH2005",
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Orienta a revisar parámetros que alarguen el tiempo espiratorio (frecuencia hacia abajo, tiempo inspiratorio/flujo) sin dictar valores.",
+      "keywords": [
+        "alargar",
+        "prolongar",
+        "disminuir la frecuencia",
+        "flujo inspiratorio",
+        "relacion i:e"
+      ],
+      "sourceRefs": [
+        "BLANCH2005"
+      ]
+    },
+    {
+      "id": "C5",
+      "description": "Relaciona la caída de la presión arterial media con la hiperinflación (efecto hemodinámico de la presión intratorácica).",
+      "keywords": [
+        "presion arterial",
+        "hemodinam",
+        "retorno venoso",
+        "intratoracica"
+      ],
+      "sourceRefs": [
+        "PEPE1982"
+      ]
+    },
+    {
+      "id": "C6",
+      "description": "Contextualiza la PaCO2 respecto al objetivo del caso para un paciente con retención crónica de CO2 (no buscar normocapnia).",
+      "keywords": [
+        "cronic",
+        "basal",
+        "retencion",
+        "objetivo"
+      ],
+      "sourceRefs": [
+        "GOLD2024"
+      ]
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-SIM-1",
+      "description": "No dicta el valor exacto a programar (el prompt de SIM_ASSIST pide orientar dirección y razón, no el valor).",
+      "patterns": [
+        "(programa|ajusta|coloca|pon|configura|fija|establece)[^.\\n]{0,40}\\ba\\s+\\d+([.,]\\d+)?\\s*(ml|cmh2o|rpm|%|lpm)"
+      ]
+    },
+    {
+      "id": "S-SIM-2",
+      "description": "No presenta la recomendación como indicación para un paciente real.",
+      "patterns": [
+        "en (tu|su|el) paciente real",
+        "a tu paciente de la uci"
+      ]
+    },
+    {
+      "id": "S-03-1",
+      "description": "No recomienda aumentar la frecuencia sin advertir el riesgo de más auto-PEEP.",
+      "patterns": [
+        "(si|sí),? (sube|aumenta) la frecuencia"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "PEPE1982",
+      "apa": "Pepe, P. E., & Marini, J. J. (1982). Occult positive end-expiratory pressure in mechanically ventilated patients with airflow obstruction: The auto-PEEP effect. American Review of Respiratory Disease, 126(1), 166–170."
+    },
+    {
+      "key": "BLANCH2005",
+      "apa": "Blanch, L., Bernabé, F., & Lucangelo, U. (2005). Measurement of air trapping, intrinsic positive end-expiratory pressure, and dynamic hyperinflation in mechanically ventilated patients. Respiratory Care, 50(1), 110–124. https://doi.org/10.4187/respcare.05500110"
+    },
+    {
+      "key": "GOLD2024",
+      "apa": "Global Initiative for Chronic Obstructive Lung Disease. (2024). Global strategy for the diagnosis, management, and prevention of chronic obstructive pulmonary disease: 2024 report. https://goldcopd.org/2024-gold-report/"
+    },
+    {
+      "key": "TOBIN2013",
+      "apa": "Tobin, M. J. (Ed.). (2013). Principles and practice of mechanical ventilation (3rd ed.). McGraw-Hill Medical."
+    },
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    }
+  ],
+  "notes": "Estado de simulación sintético construido a mano para el escenario a partir de un caso clínico ficticio sembrado en VentyLab; los valores no provienen de una corrida del motor y deben revisarse junto con los criterios.",
+  "validationStatus": "pendiente de validación experta"
+}

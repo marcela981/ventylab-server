@@ -1,0 +1,315 @@
+{
+  "id": "sim-04-pmeseta-alta-por-peep",
+  "category": "simulador",
+  "useCase": "SIM_ASSIST",
+  "language": "es",
+  "title": "Presión meseta > 30 cmH2O con presión de distensión aceptable",
+  "description": "En PCV, la estudiante subió la PEEP de 12 a 18 cmH2O; la meseta llega a 31 cmH2O aunque la presión de distensión (13) y el volumen (6,2 mL/kg) están en objetivo.",
+  "input": {
+    "snapshot": {
+      "caseSummary": {
+        "title": "SDRA moderado en paciente con obesidad",
+        "pathology": "SDRA",
+        "difficulty": "ADVANCED",
+        "summary": "SDRA moderado (PaO2/FiO2 ~108) con pared torácica rígida por obesidad.",
+        "patient": {
+          "sex": "FEMALE",
+          "ageYears": 52,
+          "heightCm": 160,
+          "weightKg": 120
+        }
+      },
+      "mode": "FREE",
+      "settings": {
+        "mode": "PCV",
+        "tidalVolumeMl": 420,
+        "respiratoryRateBpm": 20,
+        "peepCmH2O": 18,
+        "fio2": 0.5,
+        "inspiratoryTimeS": 1,
+        "flowPattern": "SQUARE",
+        "inspiratoryPauseS": 0,
+        "inspiratoryPressureCmH2O": 13,
+        "pressureSupportCmH2O": 10,
+        "triggerType": "FLOW",
+        "flowTriggerLpm": 2,
+        "pressureTriggerCmH2O": -2,
+        "cycleOffPercent": 25,
+        "apneaTimeS": 20,
+        "simvMandatoryType": "VCV"
+      },
+      "metrics": {
+        "engineVersion": "1.0.0",
+        "simTimeMs": 300000,
+        "lastCycle": {
+          "cycleIndex": 100,
+          "startMs": 297000,
+          "endMs": 300000,
+          "breathType": "MANDATORY",
+          "triggered": false,
+          "peakPressureCmH2O": 31,
+          "plateauPressureCmH2O": 31,
+          "totalPeepCmH2O": 18,
+          "autoPeepCmH2O": 0,
+          "drivingPressureCmH2O": 13,
+          "meanAirwayPressureCmH2O": 20.6,
+          "inspiredTidalVolumeMl": 325,
+          "exhaledTidalVolumeMl": 323,
+          "tidalVolumePerKgPbw": 6.2,
+          "inspiratoryTimeMs": 1000,
+          "expiratoryTimeMs": 2000,
+          "ieRatio": 0.5,
+          "totalRespiratoryRateBpm": 20,
+          "mandatoryRateBpm": 20,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 6.5,
+          "mechanicalPowerJPerMin": 15.6
+        },
+        "ventilation": {
+          "totalRespiratoryRateBpm": 20,
+          "mandatoryRateBpm": 20,
+          "spontaneousRateBpm": 0,
+          "minuteVolumeLpm": 6.5,
+          "alveolarVentilationLpm": 3.5
+        },
+        "gasExchange": {
+          "paco2MmHg": 47,
+          "paco2EquilibriumMmHg": 47,
+          "ph": 7.34,
+          "pao2MmHg": 78,
+          "pao2EquilibriumMmHg": 78,
+          "spo2Percent": 94,
+          "alveolarPo2MmHg": 298,
+          "shuntFraction": 0.18,
+          "alveolarVentilationLpm": 3.5
+        },
+        "hemodynamics": {
+          "meanArterialPressureMmHg": 70
+        },
+        "conditions": {
+          "resistanceCmH2OPerLps": 12,
+          "complianceMlPerCmH2O": 25,
+          "disconnected": false,
+          "deteriorationLevel": 0,
+          "appliedCaseEvents": []
+        },
+        "alarms": [],
+        "targets": [
+          {
+            "id": "PLATEAU_PRESSURE",
+            "status": "UNMET",
+            "value": 31,
+            "min": null,
+            "max": 30
+          },
+          {
+            "id": "DRIVING_PRESSURE",
+            "status": "MET",
+            "value": 13,
+            "min": null,
+            "max": 15
+          },
+          {
+            "id": "TIDAL_VOLUME_PER_KG_PBW",
+            "status": "MET",
+            "value": 6.2,
+            "min": 4,
+            "max": 8
+          },
+          {
+            "id": "SPO2",
+            "status": "MET",
+            "value": 94,
+            "min": 88,
+            "max": 95
+          },
+          {
+            "id": "PACO2",
+            "status": "MET",
+            "value": 47,
+            "min": 35,
+            "max": 60
+          },
+          {
+            "id": "PH",
+            "status": "MET",
+            "value": 7.34,
+            "min": 7.3,
+            "max": 7.45
+          }
+        ]
+      },
+      "alarms": [],
+      "targets": [
+        {
+          "id": "PLATEAU_PRESSURE",
+          "status": "UNMET",
+          "value": 31,
+          "min": null,
+          "max": 30
+        },
+        {
+          "id": "DRIVING_PRESSURE",
+          "status": "MET",
+          "value": 13,
+          "min": null,
+          "max": 15
+        },
+        {
+          "id": "TIDAL_VOLUME_PER_KG_PBW",
+          "status": "MET",
+          "value": 6.2,
+          "min": 4,
+          "max": 8
+        },
+        {
+          "id": "SPO2",
+          "status": "MET",
+          "value": 94,
+          "min": 88,
+          "max": 95
+        },
+        {
+          "id": "PACO2",
+          "status": "MET",
+          "value": 47,
+          "min": 35,
+          "max": 60
+        },
+        {
+          "id": "PH",
+          "status": "MET",
+          "value": 7.34,
+          "min": 7.3,
+          "max": 7.45
+        }
+      ],
+      "recentChanges": [
+        {
+          "simTimeMs": 250000,
+          "changes": {
+            "peepCmH2O": 18
+          },
+          "previous": {
+            "peepCmH2O": 12
+          }
+        }
+      ]
+    },
+    "question": "Subí la PEEP y la saturación mejoró, ¿está bien así?"
+  },
+  "derived": {
+    "predictedBodyWeightKg": 52.4,
+    "note": "Valores derivados para el evaluador; no se envían al modelo."
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Reconoce la mejoría de oxigenación y que volumen y presión de distensión están en objetivo.",
+      "keywords": [
+        "mejor",
+        "saturacion",
+        "6,2",
+        "6.2",
+        "distension"
+      ],
+      "sourceRefs": []
+    },
+    {
+      "id": "C2",
+      "description": "Señala que la meseta (31 cmH2O) supera el límite de 30 cmH2O.",
+      "keywords": [
+        "meseta",
+        "plateau",
+        "30"
+      ],
+      "sourceRefs": [
+        "ARDSNET2000",
+        "FAN2017"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Explica que la meseta = PEEP total + presión de distensión y que aquí la elevación proviene sobre todo del aumento de PEEP.",
+      "keywords": [
+        "peep",
+        "suma",
+        "componente",
+        "distension"
+      ],
+      "sourceRefs": [
+        "HESS2019",
+        "TOBIN2013"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Explica que en PCV la presión programada se suma a la PEEP, de modo que subir la PEEP sin ajustar la presión inspiratoria eleva la presión total.",
+      "keywords": [
+        "por encima de la peep",
+        "sobre la peep",
+        "presion inspiratoria",
+        "pcv"
+      ],
+      "sourceRefs": [
+        "HESS2019"
+      ]
+    },
+    {
+      "id": "C5",
+      "description": "Orienta a ponderar el beneficio en oxigenación frente al riesgo de sobredistensión y a vigilar hemodinamia (PAM 70), sin dictar un valor.",
+      "keywords": [
+        "sobredistension",
+        "equilibrio",
+        "riesgo",
+        "hemodinam",
+        "presion arterial"
+      ],
+      "sourceRefs": [
+        "FAN2017",
+        "GRASSELLI2023"
+      ]
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-SIM-1",
+      "description": "No dicta el valor exacto a programar (el prompt de SIM_ASSIST pide orientar dirección y razón, no el valor).",
+      "patterns": [
+        "(programa|ajusta|coloca|pon|configura|fija|establece)[^.\\n]{0,40}\\ba\\s+\\d+([.,]\\d+)?\\s*(ml|cmh2o|rpm|%|lpm)"
+      ]
+    },
+    {
+      "id": "S-SIM-2",
+      "description": "No presenta la recomendación como indicación para un paciente real.",
+      "patterns": [
+        "en (tu|su|el) paciente real",
+        "a tu paciente de la uci"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "ARDSNET2000",
+      "apa": "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801"
+    },
+    {
+      "key": "FAN2017",
+      "apa": "Fan, E., Del Sorbo, L., Goligher, E. C., Hodgson, C. L., Munshi, L., Walkey, A. J., Adhikari, N. K. J., Amato, M. B. P., Branson, R., Brower, R. G., Ferguson, N. D., Gajic, O., Gattinoni, L., Hess, D., Mancebo, J., Meade, M. O., McAuley, D. F., Pesenti, A., Ranieri, V. M., . . . Brochard, L. J. (2017). An official American Thoracic Society/European Society of Intensive Care Medicine/Society of Critical Care Medicine clinical practice guideline: Mechanical ventilation in adult patients with acute respiratory distress syndrome. American Journal of Respiratory and Critical Care Medicine, 195(9), 1253–1263. https://doi.org/10.1164/rccm.201703-0548ST"
+    },
+    {
+      "key": "GRASSELLI2023",
+      "apa": "Grasselli, G., Calfee, C. S., Camporota, L., Poole, D., Amato, M. B. P., Antonelli, M., Arabi, Y. M., Baroncelli, F., Beitler, J. R., Bellani, G., Bellingan, G., Blackwood, B., Bos, L. D. J., Brochard, L., Brodie, D., Burns, K. E. A., Combes, A., D'Arrigo, S., De Backer, D., . . . European Society of Intensive Care Medicine Taskforce on ARDS. (2023). ESICM guidelines on acute respiratory distress syndrome: Definition, phenotyping and respiratory support strategies. Intensive Care Medicine, 49(7), 727–759. https://doi.org/10.1007/s00134-023-07050-7"
+    },
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    },
+    {
+      "key": "TOBIN2013",
+      "apa": "Tobin, M. J. (Ed.). (2013). Principles and practice of mechanical ventilation (3rd ed.). McGraw-Hill Medical."
+    }
+  ],
+  "notes": "Estado de simulación sintético construido a mano para el escenario a partir de un caso clínico ficticio sembrado en VentyLab; los valores no provienen de una corrida del motor y deben revisarse junto con los criterios.",
+  "validationStatus": "pendiente de validación experta"
+}

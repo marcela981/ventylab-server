@@ -1,0 +1,95 @@
+{
+  "id": "page-02-medicion-auto-peep",
+  "category": "leccion",
+  "useCase": "PAGE_DEEPEN",
+  "language": "es",
+  "title": "Pregunta sobre cómo medir la auto-PEEP",
+  "description": "Profundización con pregunta concreta sobre la medición de la auto-PEEP.",
+  "input": {
+    "pageTitle": "Hiperinflación dinámica y auto-PEEP",
+    "pageContent": "## Ubicación\n\nNivel avanzado – EPOC, asma y fumadores.\n\n## Contenido de la página\n\nEn la obstrucción al flujo aéreo la espiración puede no completarse antes de la siguiente inspiración. El volumen atrapado genera una presión alveolar positiva al final de la espiración que no se ve en el manómetro durante la ventilación normal: la auto-PEEP o PEEP intrínseca.",
+    "question": "¿Cómo se mide la auto-PEEP en el ventilador?"
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Describe la maniobra de oclusión (pausa) al final de la espiración.",
+      "keywords": [
+        "oclusion",
+        "pausa espiratoria",
+        "final de la espiracion",
+        "pausa al final"
+      ],
+      "sourceRefs": [
+        "PEPE1982",
+        "BLANCH2005"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Indica que la medición estática requiere un paciente pasivo/sin esfuerzo inspiratorio.",
+      "keywords": [
+        "pasivo",
+        "sin esfuerzo",
+        "sedado",
+        "relajado"
+      ],
+      "sourceRefs": [
+        "BLANCH2005"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Distingue PEEP total, PEEP programada y auto-PEEP (diferencia).",
+      "keywords": [
+        "peep total",
+        "diferencia",
+        "programada",
+        "extrinseca"
+      ],
+      "sourceRefs": [
+        "BLANCH2005"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Menciona signos indirectos en la curva de flujo (el flujo espiratorio no llega a cero).",
+      "keywords": [
+        "curva de flujo",
+        "no llega a cero",
+        "no regresa a cero",
+        "flujo espiratorio"
+      ],
+      "sourceRefs": [
+        "BLANCH2005",
+        "HESS2019"
+      ]
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-TU-1",
+      "description": "No da indicaciones terapéuticas para un paciente real identificado.",
+      "patterns": [
+        "a tu paciente (ponle|programale|dale)",
+        "en tu paciente (usa|pon|programa) (una )?peep de \\d+"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "PEPE1982",
+      "apa": "Pepe, P. E., & Marini, J. J. (1982). Occult positive end-expiratory pressure in mechanically ventilated patients with airflow obstruction: The auto-PEEP effect. American Review of Respiratory Disease, 126(1), 166–170."
+    },
+    {
+      "key": "BLANCH2005",
+      "apa": "Blanch, L., Bernabé, F., & Lucangelo, U. (2005). Measurement of air trapping, intrinsic positive end-expiratory pressure, and dynamic hyperinflation in mechanically ventilated patients. Respiratory Care, 50(1), 110–124. https://doi.org/10.4187/respcare.05500110"
+    },
+    {
+      "key": "HESS2019",
+      "apa": "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+    }
+  ],
+  "notes": "Texto de contexto redactado para la evaluación (paráfrasis propia) siguiendo el formato de secciones de tutor-context-assembler ('## etiqueta'); no reproduce literalmente las lecciones de VentyLab.",
+  "validationStatus": "pendiente de validación experta"
+}

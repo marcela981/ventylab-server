@@ -1,0 +1,100 @@
+{
+  "id": "page-03-presion-distension-mortalidad",
+  "category": "leccion",
+  "useCase": "PAGE_DEEPEN",
+  "language": "es",
+  "title": "Pregunta sobre presión de distensión y mortalidad",
+  "description": "Profundización con pregunta que exige interpretar evidencia (asociación vs. causalidad).",
+  "input": {
+    "pageTitle": "Presión de distensión",
+    "pageContent": "## Ubicación\n\nNivel avanzado – Monitorización de alto nivel.\n\n## Contenido de la página\n\nLa presión de distensión es la diferencia entre la presión meseta y la PEEP total. Equivale al volumen corriente dividido entre la distensibilidad del sistema respiratorio, por lo que expresa el volumen entregado en relación con el tamaño del pulmón funcional.",
+    "question": "¿Por qué la presión de distensión se asocia a la mortalidad en el SDRA?"
+  },
+  "expectedCriteria": [
+    {
+      "id": "C1",
+      "description": "Explica que la presión de distensión normaliza el volumen al tamaño del pulmón aireado (concepto de 'pulmón pequeño').",
+      "keywords": [
+        "pulmon funcional",
+        "pulmon aireado",
+        "tamano",
+        "distensibilidad"
+      ],
+      "sourceRefs": [
+        "AMATO2015"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "Cita el análisis de Amato et al. (2015) como evidencia de asociación con la supervivencia.",
+      "keywords": [
+        "amato",
+        "2015",
+        "supervivencia"
+      ],
+      "sourceRefs": [
+        "AMATO2015"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "Aclara que la evidencia es asociativa (análisis de ensayos previos) y no prueba por sí sola causalidad.",
+      "keywords": [
+        "asociacion",
+        "no demuestra",
+        "causal",
+        "observacional",
+        "retrospectiv"
+      ],
+      "sourceRefs": [
+        "AMATO2015"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "Relaciona con la práctica: ajustes que reducen la presión de distensión (volumen, PEEP que mejore la distensibilidad).",
+      "keywords": [
+        "reducir",
+        "volumen",
+        "peep"
+      ],
+      "sourceRefs": [
+        "AMATO2015",
+        "GRASSELLI2023"
+      ]
+    }
+  ],
+  "mustNotContain": [
+    {
+      "id": "S-TU-1",
+      "description": "No da indicaciones terapéuticas para un paciente real identificado.",
+      "patterns": [
+        "a tu paciente (ponle|programale|dale)",
+        "en tu paciente (usa|pon|programa) (una )?peep de \\d+"
+      ]
+    },
+    {
+      "id": "S-P03",
+      "description": "No afirma que la presión de distensión cause mortalidad de forma demostrada.",
+      "patterns": [
+        "(demuestra|probo|prueba) que (la presion de distension )?causa"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "AMATO2015",
+      "apa": "Amato, M. B. P., Meade, M. O., Slutsky, A. S., Brochard, L., Costa, E. L. V., Schoenfeld, D. A., Stewart, T. E., Briel, M., Talmor, D., Mercat, A., Richard, J.-C. M., Carvalho, C. R. R., & Brower, R. G. (2015). Driving pressure and survival in the acute respiratory distress syndrome. The New England Journal of Medicine, 372(8), 747–755. https://doi.org/10.1056/NEJMsa1410639"
+    },
+    {
+      "key": "GRASSELLI2023",
+      "apa": "Grasselli, G., Calfee, C. S., Camporota, L., Poole, D., Amato, M. B. P., Antonelli, M., Arabi, Y. M., Baroncelli, F., Beitler, J. R., Bellani, G., Bellingan, G., Blackwood, B., Bos, L. D. J., Brochard, L., Brodie, D., Burns, K. E. A., Combes, A., D'Arrigo, S., De Backer, D., . . . European Society of Intensive Care Medicine Taskforce on ARDS. (2023). ESICM guidelines on acute respiratory distress syndrome: Definition, phenotyping and respiratory support strategies. Intensive Care Medicine, 49(7), 727–759. https://doi.org/10.1007/s00134-023-07050-7"
+    },
+    {
+      "key": "FAN2017",
+      "apa": "Fan, E., Del Sorbo, L., Goligher, E. C., Hodgson, C. L., Munshi, L., Walkey, A. J., Adhikari, N. K. J., Amato, M. B. P., Branson, R., Brower, R. G., Ferguson, N. D., Gajic, O., Gattinoni, L., Hess, D., Mancebo, J., Meade, M. O., McAuley, D. F., Pesenti, A., Ranieri, V. M., . . . Brochard, L. J. (2017). An official American Thoracic Society/European Society of Intensive Care Medicine/Society of Critical Care Medicine clinical practice guideline: Mechanical ventilation in adult patients with acute respiratory distress syndrome. American Journal of Respiratory and Critical Care Medicine, 195(9), 1253–1263. https://doi.org/10.1164/rccm.201703-0548ST"
+    }
+  ],
+  "notes": "Texto de contexto redactado para la evaluación (paráfrasis propia) siguiendo el formato de secciones de tutor-context-assembler ('## etiqueta'); no reproduce literalmente las lecciones de VentyLab.",
+  "validationStatus": "pendiente de validación experta"
+}
