@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Referencia de variables de entorno
-  Descripción: Lista cada variable que valida env.validation.ts, las que se leen antes del arranque de Nest (Sentry), las de pruebas y herramientas, las de interpolación de docker-compose y los argumentos de construcción de la imagen (GIT_SHA, BUILD_DATE), con obligatoriedad, valor por defecto, descripción y ejemplo no real; v1.4: proveedor externo de terceros AI_EXTERNAL_* en lugar de AI_CUSTOM_HTTP_*
-  Versión: 1.4
+  Descripción: Lista cada variable que valida env.validation.ts, las que se leen antes del arranque de Nest (Sentry), las de pruebas y herramientas, las de interpolación de docker-compose y los argumentos de construcción de la imagen (GIT_SHA, BUILD_DATE), con obligatoriedad, valor por defecto, descripción y ejemplo no real; v1.4: proveedor externo de terceros AI_EXTERNAL_* en lugar de AI_CUSTOM_HTTP_*; v1.5: notas de reintentos, Retry-After y cuota de tokens
+  Versión: 1.5
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -177,6 +177,8 @@ Providers: `gemini`, `openai`, `anthropic`, `external` (the retired id `custom` 
 | `AI_BREAKER_OPEN_SECONDS` | no | `60` | Open-circuit duration. | `60` |
 | `AI_TUTOR_HISTORY_WINDOW` | no | `10` | Messages of history sent to the tutor. | `10` |
 | `AI_TUTOR_CONTEXT_TOKEN_BUDGET` | no | `6000` (≥100) | Tutor context token budget. | `6000` |
+
+Retries are not configurable by environment: one retry per provider for 429, 5xx and network errors, after a full-jitter exponential backoff (base 500 ms, cap 4 s) or the provider's `Retry-After` (at most 5 s); a 503 caused by rate limits on every provider carries `Retry-After` (at most 60 s). `AI_QUOTAS` token limits are checked against the tokens already spent, so the call that crosses the limit is still admitted.
 
 A malformed JSON value stops startup with an error naming the variable and the offending path.
 
