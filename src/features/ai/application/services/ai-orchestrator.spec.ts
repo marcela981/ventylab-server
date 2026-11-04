@@ -136,7 +136,7 @@ describe("AiOrchestrator", () => {
       const result: AiResult = await settle(orchestrator.complete(buildRequest({ fallback: () => "respaldo determinista" })));
 
       expect(result).toMatchObject({ content: "respaldo determinista", source: "DETERMINISTIC" });
-      expect(recorder.last).toMatchObject({ id: result.aiCallId, status: "FALLBACK", attempts: 2, errorCode: "CLIENT" });
+      expect(recorder.last).toMatchObject({ id: result.aiCallId, status: "FALLBACK", attempts: 2, errorCode: "CLIENT", provider: "deterministic", model: undefined });
     });
 
     it("should throw AiProvidersUnavailableError when every provider fails without fallback", async () => {
@@ -310,7 +310,7 @@ describe("AiOrchestrator", () => {
         { type: "delta", text: "respaldo" },
         { type: "done", result: expect.objectContaining({ content: "respaldo", source: "DETERMINISTIC" }) as unknown },
       ]);
-      expect(recorder.last).toMatchObject({ status: "FALLBACK" });
+      expect(recorder.last).toMatchObject({ status: "FALLBACK", provider: "deterministic" });
     });
 
     it("should end silently with ABORTED when the caller aborts mid-stream", async () => {

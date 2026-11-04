@@ -78,7 +78,7 @@ describe("AI tutor conversations", () => {
     expect(events).toEqual([
       { type: "start", conversationId: result.conversationId, messageId: messages[1].id },
       { type: "delta", text: OFF_TOPIC_REPLY },
-      { type: "done", aiCallId: blocked?.id, messageId: messages[1].id, conversationId: result.conversationId },
+      { type: "done", aiCallId: blocked?.id, messageId: messages[1].id, conversationId: result.conversationId, source: "DETERMINISTIC" },
     ]);
     expect(messages.map((message: AiConversationMessage) => [message.role, message.content])).toEqual([
       ["USER", "¿Quién ganó el partido de fútbol?"],

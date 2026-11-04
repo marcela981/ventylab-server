@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resultados del gateway de IA
- * Descripción: Tipos del resultado de una llamada al gateway de IA (contenido, origen LLM o determinista, proveedor, modelo, id de llamada), de los fragmentos de un stream y del estado final de la llamada (incluida la bloqueada por estar fuera de tema)
- * Versión: 1.1
+ * Descripción: Tipos del resultado de una llamada al gateway de IA (contenido, origen LLM o determinista, proveedor, modelo, id de llamada), de los fragmentos de un stream y del estado final de la llamada (incluida la bloqueada por estar fuera de tema); v1.2: constantes de origen LLM y DETERMINISTIC
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,12 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 export type AiResultSource = "LLM" | "DETERMINISTIC";
+
+export const LLM_RESULT_SOURCE: AiResultSource = "LLM";
+
+export const DETERMINISTIC_RESULT_SOURCE: AiResultSource = "DETERMINISTIC";
+
+export const AI_RESULT_SOURCE_VALUES: readonly AiResultSource[] = [LLM_RESULT_SOURCE, DETERMINISTIC_RESULT_SOURCE] as const;
 
 export type AiCallStatus = "SUCCESS" | "FALLBACK" | "ERROR" | "ABORTED" | "BLOCKED_OFFTOPIC";
 

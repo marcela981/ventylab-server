@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de DeepenPageUseCase
- * Descripción: Verifica la profundización de páginas con el tutor: página en borrador como estudiante responde 404 sin llamar al modelo (chequeo 10), contexto con títulos de lección y módulo y fragmentos de la fuente de conocimiento, persistencia de la conversación de página y de la respuesta completa con aiCallId, TTFT registrado una sola vez por stream (chequeo 16) y reutilización de una conversación de página
- * Versión: 1.0
+ * Descripción: Verifica la profundización de páginas con el tutor: página en borrador como estudiante responde 404 sin llamar al modelo (chequeo 10), contexto con títulos de lección y módulo y fragmentos de la fuente de conocimiento, persistencia de la conversación de página y de la respuesta completa con aiCallId, TTFT registrado una sola vez por stream (chequeo 16) y reutilización de una conversación de página; v1.1: sin proveedor, los puntos clave de la página marcados como respuesta sin IA (source DETERMINISTIC, telemetría FALLBACK)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type AiCallRecord } from "@/features/ai/application/ports/ai-call-recorder.interface";
-import { FakeLlmProvider } from "@/features/ai/application/testing/ai-test-doubles-spec";
+import { FakeLlmProvider, httpStatusError } from "@/features/ai/application/testing/ai-test-doubles-spec";
 import { DeepenPageCommand } from "@/features/ai-tutor/application/commands/deepen-page.command";
 import { type TutorStreamEvent, type TutorStreamResult } from "@/features/ai-tutor/application/results/tutor-stream.result";
 import {
@@ -102,7 +102,7 @@ describe("DeepenPageUseCase", () => {
       ["USER", "¿Cuándo subir la PEEP?", false],
       ["ASSISTANT", "La PEEP evita el colapso.", false],
     ]);
-    expect(done).toEqual({ type: "done", aiCallId: messages[1].aiCallId, messageId: messages[1].id, conversationId: result.conversationId });
+    expect(done).toEqual({ type: "done", aiCallId: messages[1].aiCallId, messageId: messages[1].id, conversationId: result.conversationId, source: "LLM" });
   });
 
   it("should record exactly one telemetry entry with TTFT for the streamed call (check 16)", async () => {
@@ -140,5 +140,24 @@ describe("DeepenPageUseCase", () => {
     await expect(useCase.execute(new DeepenPageCommand({ caller: STUDENT_CALLER, pageId: "page-1", conversationId: foreign.id }))).rejects.toBeInstanceOf(
       AiConversationNotFoundError,
     );
+  });
+});
+
+describe("DeepenPageUseCase deterministic fallback", () => {
+  it("should answer the page key points labelled as non-AI when no provider answers, recorded as FALLBACK", async () => {
+    const provider: FakeLlmProvider = new FakeLlmProvider("fake", { kind: "error", error: httpStatusError(400) });
+    const { harness, useCase } = setup(provider);
+
+    const result: TutorStreamResult = await useCase.execute(new DeepenPageCommand({ caller: STUDENT_CALLER, pageId: "page-1" }));
+    const events: TutorStreamEvent[] = await collectEvents(result.events);
+    const deltas: string[] = events.flatMap((event: TutorStreamEvent) => (event.type === "delta" ? [event.text] : []));
+    const records: AiCallRecord[] = harness.recorder.records;
+
+    expect(deltas).toHaveLength(1);
+    expect(deltas[0]).toContain("[Respuesta automática sin IA]");
+    expect(deltas[0]).toContain("- La PEEP mantiene los alvéolos abiertos al final de la espiración.");
+    expect(events[events.length - 1]).toMatchObject({ type: "done", source: "DETERMINISTIC" });
+    expect(records[records.length - 1]).toMatchObject({ useCase: "PAGE_DEEPEN", status: "FALLBACK", provider: "deterministic" });
+    expect(harness.repository.messagesOf(result.conversationId).map((message: AiConversationMessage) => message.role)).toEqual(["USER", "ASSISTANT"]);
   });
 });

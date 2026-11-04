@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de notas
- * Descripción: Endpoints autenticados de /api/notes para las notas privadas del usuario: CRUD solo del autor (sin excepción por rol; una nota ajena responde 404), listados paginados de todas, por lección y por módulo, y análisis con IA limitado a 10 solicitudes por minuto y a la cuota diaria de IA del rol
- * Versión: 1.2
+ * Descripción: Endpoints autenticados de /api/notes para las notas privadas del usuario: CRUD solo del autor (sin excepción por rol; una nota ajena responde 404), listados paginados de todas, por lección y por módulo, y análisis con IA limitado a 10 solicitudes por minuto y a la cuota diaria de IA del rol; v1.3: sin proveedor de IA responde el análisis por reglas marcado source DETERMINISTIC en lugar de 503
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -127,7 +127,7 @@ export class NotesController {
   @ApiOperation({
     summary: "Analyze my notes with AI",
     description:
-      "Analyzes the caller's 50 most recent notes of a lesson, a module or all lessons with the language model and returns a summary, key concepts, gaps and suggestions. Send at most one of lessonId and moduleId.",
+      "Analyzes the caller's 50 most recent notes of a lesson, a module or all lessons with the language model and returns a summary, key concepts, gaps and suggestions. Send at most one of lessonId and moduleId. When no AI provider answers, a rule-based analysis (note and word counts, glossary concepts found, coverage of the lesson or module title) is returned with source DETERMINISTIC and an empty model; show it as a non-AI analysis.",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Notes analyzed successfully", type: NotesAnalysisDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error or both lessonId and moduleId given" })
@@ -136,7 +136,6 @@ export class NotesController {
   @ApiResponseDoc({ status: HttpStatus.UNPROCESSABLE_ENTITY, description: "No notes to analyze in the scope" })
   @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many analysis requests or daily AI quota reached (Retry-After header)" })
   @ApiResponseDoc({ status: HttpStatus.BAD_GATEWAY, description: "The AI service failed or returned an invalid analysis" })
-  @ApiResponseDoc({ status: HttpStatus.SERVICE_UNAVAILABLE, description: "The AI service is not available" })
   public async analyzeNotes(
     @Body() dto: AnalyzeNotesDTO,
     @CurrentUser() currentUser: JwtPayload,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador del tutor de IA
- * Descripción: Rutas autenticadas del tutor de IA: profundizar una página, iniciar una conversación y enviar mensajes con respuesta en Server-Sent Events sobre POST (los errores previos al stream usan el sobre JSON normal y la desconexión del cliente cancela la llamada al modelo), y CRUD de las conversaciones propias
- * Versión: 1.0
+ * Descripción: Rutas autenticadas del tutor de IA: profundizar una página, iniciar una conversación y enviar mensajes con respuesta en Server-Sent Events sobre POST (los errores previos al stream usan el sobre JSON normal y la desconexión del cliente cancela la llamada al modelo), y CRUD de las conversaciones propias; v1.1: sin 503 cuando no hay proveedor (respuesta de respaldo sin IA, done con source)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -58,7 +58,7 @@ const CONTENT_MANAGE_PERMISSION: string = "pages:update";
 const STREAM_FAILED_CODE: string = "ai-tutor.stream_failed";
 
 const SSE_DESCRIPTION: string =
-  "Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, messageId, conversationId}`, or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 429 with Retry-After, 503) use the regular JSON error envelope. Closing the connection cancels the AI call and the received part is saved as incomplete.";
+  "Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, messageId, conversationId, source}` (`source` is LLM, or DETERMINISTIC for the labelled non-AI answer sent when no AI provider answers and for the off-topic refusal), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 429 with Retry-After) use the regular JSON error envelope. Closing the connection cancels the AI call and the received part is saved as incomplete.";
 
 @ApiTags("AI tutor")
 @ApiBearerAuth("JWT-auth")
@@ -91,7 +91,6 @@ export class AiTutorController {
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Missing permission" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Page or conversation not found" })
   @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many requests or daily AI quota reached (Retry-After header)" })
-  @ApiResponseDoc({ status: HttpStatus.SERVICE_UNAVAILABLE, description: "The AI service is not available" })
   public async deepenPage(
     @Param("pageId") pageId: string,
     @Body() dto: DeepenPageDTO,
@@ -126,7 +125,6 @@ export class AiTutorController {
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Missing permission" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Lesson or module not found" })
   @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many requests or daily AI quota reached (Retry-After header)" })
-  @ApiResponseDoc({ status: HttpStatus.SERVICE_UNAVAILABLE, description: "The AI service is not available" })
   public async startConversation(
     @Body() dto: StartAiConversationDTO,
     @CurrentUser() currentUser: JwtPayload,
@@ -161,7 +159,6 @@ export class AiTutorController {
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Missing permission" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Conversation, page, lesson or module not found" })
   @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many requests or daily AI quota reached (Retry-After header)" })
-  @ApiResponseDoc({ status: HttpStatus.SERVICE_UNAVAILABLE, description: "The AI service is not available" })
   public async sendConversationMessage(
     @Param("conversationId") conversationId: string,
     @Body() dto: SendAiConversationMessageDTO,

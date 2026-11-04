@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelo de lectura del análisis de notas
- * Descripción: Alcances posibles del análisis (lección, módulo o todas las notas) y estructura del resultado: resumen, conceptos clave, vacíos detectados, sugerencias, modelo de IA usado e id de la llamada de IA para calificarla
- * Versión: 1.1
+ * Descripción: Alcances posibles del análisis (lección, módulo o todas las notas) y estructura del resultado: resumen, conceptos clave, vacíos detectados, sugerencias, modelo de IA usado e id de la llamada de IA para calificarla; v1.2: origen del análisis (LLM o DETERMINISTIC cuando es el análisis por reglas sin IA)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,7 +27,15 @@ export interface NotesAnalysisContent {
   suggestions: string[];
 }
 
+export type NotesAnalysisSourceValue = "LLM" | "DETERMINISTIC";
+
+export const LLM_NOTES_ANALYSIS_SOURCE: NotesAnalysisSourceValue = "LLM";
+export const DETERMINISTIC_NOTES_ANALYSIS_SOURCE: NotesAnalysisSourceValue = "DETERMINISTIC";
+
+export const NOTES_ANALYSIS_SOURCE_VALUES: readonly NotesAnalysisSourceValue[] = [LLM_NOTES_ANALYSIS_SOURCE, DETERMINISTIC_NOTES_ANALYSIS_SOURCE] as const;
+
 export interface NotesAnalysis extends NotesAnalysisContent {
   model: string;
   aiCallId: string;
+  source: NotesAnalysisSourceValue;
 }

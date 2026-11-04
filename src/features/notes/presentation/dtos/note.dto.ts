@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de notas
- * Descripción: Representación HTTP de una nota (contenido Tiptap saneado) y del análisis de notas con IA (con el id de la llamada de IA para calificarla)
- * Versión: 1.2
+ * Descripción: Representación HTTP de una nota (contenido Tiptap saneado) y del análisis de notas con IA (con el id de la llamada de IA para calificarla); v1.3: source del análisis (LLM o DETERMINISTIC, análisis por reglas sin IA cuando no hay proveedor)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,7 +10,7 @@
  */
 import { ApiProperty } from "@nestjs/swagger";
 
-import { NOTES_ANALYSIS_SCOPE_VALUES } from "@/features/notes/domain/read-models/notes-analysis.read-model";
+import { NOTES_ANALYSIS_SCOPE_VALUES, NOTES_ANALYSIS_SOURCE_VALUES } from "@/features/notes/domain/read-models/notes-analysis.read-model";
 
 export class NoteDTO {
   @ApiProperty({ description: "Note unique identifier", example: "0192f3a4-5b6c-7d8e-9f01-23456789abcd" })
@@ -98,8 +98,15 @@ export class NotesAnalysisDTO {
   @ApiProperty({ description: "Study suggestions", type: [String], example: ["Review the relation between compliance and pressure"] })
   public suggestions: string[];
 
-  @ApiProperty({ description: "AI model that produced the analysis", example: "gemini-2.0-flash" })
+  @ApiProperty({ description: "AI model that produced the analysis; empty for a deterministic analysis", example: "gemini-2.0-flash" })
   public model: string;
+
+  @ApiProperty({
+    description: "Origin of the analysis: LLM, or DETERMINISTIC when no AI provider answered and a rule-based analysis (word count, glossary and title coverage) was returned instead; label it as non-AI",
+    enum: NOTES_ANALYSIS_SOURCE_VALUES,
+    example: "LLM",
+  })
+  public source: string;
 
   @ApiProperty({ description: "Identifier of the AI call that produced the analysis, used to rate it", example: "01920f7e-8b1a-7c3d-9e4f-5a6b7c8d9e0f" })
   public aiCallId: string;
@@ -115,6 +122,7 @@ export class NotesAnalysisDTO {
     suggestions,
     model,
     aiCallId,
+    source,
   }: {
     scope: string;
     lessonId: string | null;
@@ -126,6 +134,7 @@ export class NotesAnalysisDTO {
     suggestions: string[];
     model: string;
     aiCallId: string;
+    source: string;
   }) {
     this.scope = scope;
     this.lessonId = lessonId;
@@ -137,5 +146,6 @@ export class NotesAnalysisDTO {
     this.suggestions = suggestions;
     this.model = model;
     this.aiCallId = aiCallId;
+    this.source = source;
   }
 }

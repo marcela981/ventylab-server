@@ -1,13 +1,15 @@
 /*
  * Funcionalidad: Resultado de stream del tutor
- * Descripción: Eventos que produce una respuesta del tutor de IA (inicio con la conversación y el id del mensaje del asistente, emitido antes del primer fragmento para poder valorar una respuesta detenida, fragmentos de texto y cierre con id de llamada, id del mensaje y conversación) y el resultado que entrega un caso de uso tras validar, cargar y verificar la cuota, antes de llamar al modelo
- * Versión: 1.1
+ * Descripción: Eventos que produce una respuesta del tutor de IA (inicio con la conversación y el id del mensaje del asistente, emitido antes del primer fragmento para poder valorar una respuesta detenida, fragmentos de texto y cierre con id de llamada, id del mensaje, conversación y origen de la respuesta: LLM o DETERMINISTIC cuando es la respuesta de respaldo sin IA) y el resultado que entrega un caso de uso tras validar, cargar y verificar la cuota, antes de llamar al modelo
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
+import { type AiResultSource } from "@/features/ai/domain/results/ai-result";
+
 export interface TutorStartEvent {
   readonly type: "start";
   readonly conversationId: string;
@@ -24,6 +26,7 @@ export interface TutorDoneEvent {
   readonly aiCallId: string;
   readonly messageId: string;
   readonly conversationId: string;
+  readonly source: AiResultSource;
 }
 
 export type TutorStreamEvent = TutorStartEvent | TutorDeltaEvent | TutorDoneEvent;
