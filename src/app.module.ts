@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo raíz AppModule
- * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features, incluidas la consulta de la bitácora de auditoría, las notificaciones persistidas, el estado del sistema y la analítica (con el puerto de notificaciones sin leer enlazado por la raíz de composición) y el puerto de alcance docente de usuarios enlazado a GroupsFacade; registra el filtro global y los middlewares de traza y contexto
- * Versión: 1.22
+ * Descripción: Compone la aplicación NestJS: configuración validada, i18n, throttling, Sentry, módulos comunes globales (persistencia, logging, contexto, eventos, tiempo real), la raíz de composición global (ajustes de la plataforma enlazados a los puertos de las features) y las features, incluidas la consulta de la bitácora de auditoría, las notificaciones persistidas, el estado del sistema y la analítica (con el puerto de notificaciones sin leer enlazado por la raíz de composición) y el puerto de alcance docente de usuarios enlazado a GroupsFacade; registra los controladores de salud y de versión desplegada (GET /api/version), el filtro global y los middlewares de traza y contexto
+ * Versión: 1.23
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,6 +30,7 @@ import { RealtimeModule } from "@/common/infrastructure/realtime/realtime.module
 import { SecurityModule } from "@/common/infrastructure/security/security.module";
 import { StorageModule } from "@/common/infrastructure/storage/storage.module";
 import { HealthController } from "@/common/presentation/controllers/health.controller";
+import { VersionController } from "@/common/presentation/controllers/version.controller";
 import { HttpExceptionFilter } from "@/common/presentation/filters/http-exception.filter";
 import { RequestContextMiddleware } from "@/common/presentation/middlewares/request-context.middleware";
 import { TraceIdMiddleware } from "@/common/presentation/middlewares/trace-id.middleware";
@@ -155,7 +156,7 @@ import { VentilatorTelemetryModule } from "@/features/ventilator-telemetry/venti
     UsersPortsModule,
     AnalyticsModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, VersionController],
   providers: [
     {
       provide: APP_FILTER,

@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Manual de operación (runbook)
-  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos. v1.2: la base de producción es PostgreSQL en Dokploy (VPS), no Supabase. v1.3 (Bloque 1): migraciones al desplegar. v1.4 (Bloque 4): sin secretos del puente retirado; el cambio de contraseña revoca los refresh tokens
-  Versión: 1.4
+  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos, migraciones y despliegue controlado. v1.2: la base de producción es PostgreSQL en Dokploy (VPS), no Supabase. v1.3 (Bloque 1): migraciones al desplegar. v1.4 (Bloque 4): sin secretos del puente retirado; el cambio de contraseña revoca los refresh tokens. v1.5: despliegue controlado desde CI (API o webhook de Dokploy, Auto Deploy apagado) y GET /api/version para comprobar el commit desplegado
+  Versión: 1.5
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ Symptoms → diagnosis → actions for the incidents expected in operation. Ever
 | --- | --- | --- |
 | `GET /health` (also `/`, `/api/health`) | public | Liveness: the process answers `{ status: "ok" }`. |
 | `GET /health/ready` (also `/api/health/ready`) | public | Readiness: `SELECT 1` within `HEALTH_CHECK_TIMEOUT_MS` (default 2000). `200 { status: "ready" }` or `503 { status: "not_ready" }`. Controller: `src/common/presentation/controllers/health.controller.ts`. |
+| `GET /api/version` | public | Deployed build: `{"sha","builtAt","contract"}` (raw JSON, `unknown` when the image was built without `GIT_SHA`/`BUILD_DATE`). Use it to confirm a deploy (section 8). |
 | `GET /api/system/status` | `system:status` (TEACHER, ADMIN) | Global `OK / DEGRADED / DOWN` and components `database`, `mqttBroker`, `ventilator`, `aiProviders`, `storage`, `process`, cached `SYSTEM_STATUS_CACHE_SECONDS`. Rules in `src/features/system-status/domain/system-status.ts`; details in [docs/operation/SYSTEM-STATUS.md](operation/SYSTEM-STATUS.md). Socket event `system:status-changed` reaches `role:ADMIN` and `role:TEACHER` on every transition. |
 | `POST /api/system/probe/ai/:provider` | `system:probe` (ADMIN), 3/min | One minimal real call to a provider; returns `ok: false` with an error code instead of failing. |
 | `GET /api/ventilator/telemetry/metrics` (+ `metrics.csv`) | `ventilator:metrics` (TEACHER, ADMIN); `POST metrics/reset` needs `ventilator:metrics_reset` (ADMIN) | Messages per second, latencies, `invalidMessages`, `lostMessages`, `bufferDrops`. |
@@ -159,3 +160,50 @@ Migrations are applied automatically: `deploy/docker-entrypoint.sh` runs `prisma
 - **Symptom:** the container restarts in a loop and the log shows `[entrypoint] prisma migrate deploy failed; refusing to start the application`.
 - **Diagnosis:** read the Prisma error above that line (connectivity through `DIRECT_URL`, a failed migration recorded in `_prisma_migrations`, or a lock held by another process).
 - **Action:** fix the cause (database reachable, `DIRECT_URL` correct), and for a migration marked as failed resolve it with `prisma migrate resolve` after checking the database state, then redeploy. Never edit an already applied `migration.sql`.
+
+## 8. Controlled deploy
+
+Production only receives a `main` commit that passed `verify`. The `deploy` job of `.github/workflows/ci.yml` runs on a push to `main`, after `verify`, and asks Dokploy to deploy. Dokploy then builds this repository with its `Dockerfile` and the entrypoint applies the migrations (section 7).
+
+**Rule: Dokploy must not deploy on push by itself.** Otherwise a red `main` reaches production before CI finishes.
+
+### Two ways to trigger it
+
+The job picks the first one that is configured in GitHub → repository → Settings → Secrets and variables → Actions:
+
+| Mode | Secrets | Auto Deploy in Dokploy | Use it when |
+| --- | --- | --- | --- |
+| **API** (preferred) | `DOKPLOY_URL` (panel origin, for example `https://dokploy.example.com`), `DOKPLOY_API_KEY`, `DOKPLOY_APPLICATION_ID` | **OFF** | Always possible. `POST <DOKPLOY_URL>/api/application.deploy` with header `x-api-key` does not look at Auto Deploy. |
+| **Webhook** | `DOKPLOY_DEPLOY_WEBHOOK` (the full webhook URL) | must be **ON** | The application's source does not push to Dokploy by itself (see the warning below). |
+
+Neither configured: the job prints a `Deploy skipped` warning and stays green, so CI is not red before the secrets exist. Deploy manually meanwhile (below).
+
+**Webhook caveat (checked against the Dokploy source, `apps/dokploy/pages/api/deploy/[refreshToken].ts`).** The webhook endpoint answers `400 "Automatic deployments are disabled for this application"` while Auto Deploy is off. It answers `301 "Branch Not Match"` when the body's `ref` is not the configured branch. The job sends a push-shaped body (`ref: refs/heads/main`, header `X-GitHub-Event: push`) and fails on any non-2xx answer. With Auto Deploy ON and the application connected through the Dokploy GitHub provider, GitHub pushes also reach Dokploy directly and deploy before CI. So the webhook mode is controlled only if the application uses a source that has no push hook to Dokploy (for example the generic Git source). Otherwise use the API mode with Auto Deploy OFF.
+
+### Setup
+
+1. Dokploy → application → **General**: turn **Auto Deploy** off (API mode). Check that the branch is `main` and the build type is Dockerfile.
+2. API mode:
+   - `DOKPLOY_API_KEY`: Dokploy → Settings → Profile → API/CLI → generate a key.
+   - `DOKPLOY_APPLICATION_ID`: the application id, shown in the application URL in the panel.
+   - `DOKPLOY_URL`: the panel origin, without a trailing `/api`.
+   Store the three values as GitHub Actions secrets with those names.
+3. Webhook mode instead: Dokploy → application → **Deployments** tab → copy the **Webhook URL** (`https://<dokploy>/api/deploy/<refresh token>`). Store it as the secret `DOKPLOY_DEPLOY_WEBHOOK`. The refresh token in that URL is a credential: if it leaks, regenerate it from the same tab (refresh token) and update the secret.
+4. Optional, for a real `sha` in `/api/version`: set the build arguments `GIT_SHA`/`BUILD_DATE` (see [environment variables](operations/environment-variables.md#image-build-arguments-dockerfile)). Without them `sha` and `builtAt` read `unknown`. The check below then relies on `builtAt` changing or on the Dokploy deployment title `CI <short sha>` (API mode).
+
+Never paste the webhook URL, the API key or the panel URL into logs, issues or this document. The job never prints them: curl runs without `--show-error` and the log shows only the HTTP status, the curl exit code and Dokploy's short message.
+
+### Verify that the new commit is live
+
+1. GitHub Actions: the `deploy` job of the push is green and says `Dokploy queued the deploy of <sha>`.
+2. Dokploy → application → Deployments: the latest deployment finishes as done. Its log ends with `Nest application successfully started`.
+3. `curl -s https://<api domain>/api/version`. The answer is `{"sha":"<sha>","builtAt":"<ISO date>","contract":1}`. `sha` must equal the pushed commit (`git rev-parse origin/main`) when `GIT_SHA` is set, and `builtAt` must be newer than the push. `contract` must be the value the web requires.
+4. `curl -s https://<api domain>/health/ready` answers `{"status":"ready"}`.
+
+### Manual redeploy (fallback)
+
+When the secrets are missing, the job failed (for example Dokploy was unreachable: `HTTP 000 (curl exit 7)`), or a rollback is needed:
+
+- Dokploy → application → **Deploy** (or **Redeploy**) for the current `main` commit. Then run the checks above.
+- Rollback: revert the commit on `main` (a new commit that goes through CI). If production is down and CI cannot wait, deploy the previous good commit from Dokploy. Note that migrations are never rolled back automatically (section 7).
+- Re-run only the deploy: GitHub Actions → the `main` run → **Re-run failed jobs**. `verify` is not repeated if it passed.

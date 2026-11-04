@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Validación de variables de entorno
- * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo) y de la telemetría del ventilador físico (conexión MQTT habilitada solo con MQTT_BROKER_URL, tópicos, retroceso de reconexión, decodificador, intervalos de envío, máximo de tramas en el búfer de lotes, inactividad, sala, métricas, grabación, ventana de reordenamiento y vuelta opcional de 16 o 32 bits de la secuencia) y de los comandos del ventilador (tópico de acuse opcional, prefijo de tópicos de pruebas, que debe empezar por letra o dígito, codificación, tiempo máximo de espera, frecuencia por usuario, gracia del operador, refresco del control, tolerancia de parámetros aplicados y límites de seguridad) y del estado del sistema (tiempo máximo por chequeo de salud, segundos de caché del estado, versión de la aplicación, que por defecto se lee de package.json, y commit opcional con GIT_COMMIT como alias de APP_COMMIT_SHA) y la sal opcional de la exportación anonimizada de analítica (ANALYTICS_EXPORT_SALT, mínimo 16 caracteres); acepta las vistas previas de Vercel en CORS solo con CORS_ALLOW_VERCEL_PREVIEWS (por defecto falso); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL; ADMIN_API_KEY es opcional porque ninguna ruta aplica AdminApiKeyGuard. v1.16: sin NEXTAUTH_SECRET ni NEXTAUTH_BRIDGE_SECRET, que salen con el puente de NextAuth retirado
- * Versión: 1.16
+ * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor HTTP personalizado, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo) y de la telemetría del ventilador físico (conexión MQTT habilitada solo con MQTT_BROKER_URL, tópicos, retroceso de reconexión, decodificador, intervalos de envío, máximo de tramas en el búfer de lotes, inactividad, sala, métricas, grabación, ventana de reordenamiento y vuelta opcional de 16 o 32 bits de la secuencia) y de los comandos del ventilador (tópico de acuse opcional, prefijo de tópicos de pruebas, que debe empezar por letra o dígito, codificación, tiempo máximo de espera, frecuencia por usuario, gracia del operador, refresco del control, tolerancia de parámetros aplicados y límites de seguridad) y del estado del sistema (tiempo máximo por chequeo de salud, segundos de caché del estado, versión de la aplicación, que por defecto se lee de package.json, y commit opcional con GIT_COMMIT como alias de APP_COMMIT_SHA) y la sal opcional de la exportación anonimizada de analítica (ANALYTICS_EXPORT_SALT, mínimo 16 caracteres); acepta las vistas previas de Vercel en CORS solo con CORS_ALLOW_VERCEL_PREVIEWS (por defecto falso); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL; ADMIN_API_KEY es opcional porque ninguna ruta aplica AdminApiKeyGuard. v1.16: sin NEXTAUTH_SECRET ni NEXTAUTH_BRIDGE_SECRET, que salen con el puente de NextAuth retirado. v1.17: APP_GIT_SHA y APP_BUILD_DATE opcionales, incrustados en la imagen por los argumentos de construcción GIT_SHA y BUILD_DATE y expuestos en GET /api/version
+ * Versión: 1.17
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -488,6 +488,16 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   public GIT_COMMIT?: string;
+
+  // Baked into the image from the GIT_SHA build argument; reported by GET /api/version.
+  @IsString()
+  @IsOptional()
+  public APP_GIT_SHA?: string;
+
+  // Baked into the image from the BUILD_DATE build argument (ISO 8601); anything else is reported as "unknown".
+  @IsString()
+  @IsOptional()
+  public APP_BUILD_DATE?: string;
 }
 
 function readPackageVersion(): string | undefined {

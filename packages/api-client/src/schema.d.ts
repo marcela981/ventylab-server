@@ -7024,6 +7024,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Deployed version
+         * @description Returns the commit and build date baked into the running image and the API contract version
+         *
+         *     **Required access:** public.
+         */
+        get: operations["version"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -23035,6 +23057,23 @@ export interface components {
              * @example CONNECTED
              */
             status: string;
+        };
+        VersionInfoDTO: {
+            /**
+             * @description ISO 8601 build date of the running image, or "unknown"
+             * @example 2026-11-04T00:49:37.000Z
+             */
+            builtAt: string;
+            /**
+             * @description Version of the HTTP response contract; bumped when a response shape changes incompatibly
+             * @example 1
+             */
+            contract: number;
+            /**
+             * @description Git commit the running image was built from, or "unknown"
+             * @example 3f2c1ab9d0e4c6b7a8f9e0d1c2b3a4f5e6d7c8b9
+             */
+            sha: string;
         };
     };
     responses: never;
@@ -51316,6 +51355,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Version of the running backend */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionInfoDTO"];
                 };
             };
             /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */

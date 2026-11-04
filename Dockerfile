@@ -1,6 +1,6 @@
 # Funcionalidad: Imagen de producción del backend
-# Descripción: Construcción multietapa: compila NestJS y genera el cliente Prisma, instala solo dependencias de producción, instala el CLI de Prisma aislado para aplicar migraciones al arrancar y produce una imagen mínima que corre como usuario no root con HEALTHCHECK sobre /health/ready
-# Versión: 1.1
+# Descripción: Construcción multietapa: compila NestJS y genera el cliente Prisma, instala solo dependencias de producción, instala el CLI de Prisma aislado para aplicar migraciones al arrancar y produce una imagen mínima que corre como usuario no root con HEALTHCHECK sobre /health/ready; los argumentos de construcción GIT_SHA y BUILD_DATE (por defecto unknown) quedan como APP_GIT_SHA y APP_BUILD_DATE, que expone GET /api/version
+# Versión: 1.2
 # Autor: Marcela Mazo Castro
 # Proyecto: VentyLab
 # Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -75,6 +75,14 @@ COPY package.json ./
 COPY deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN chmod 0755 /usr/local/bin/docker-entrypoint.sh
+
+# Build identity reported by GET /api/version. Declared last so a new commit only rebuilds this metadata layer.
+# CI passes --build-arg GIT_SHA=<commit> --build-arg BUILD_DATE=<ISO 8601>; without them both report "unknown".
+ARG GIT_SHA=unknown
+ARG BUILD_DATE=unknown
+
+ENV APP_GIT_SHA=${GIT_SHA} \
+  APP_BUILD_DATE=${BUILD_DATE}
 
 USER node
 

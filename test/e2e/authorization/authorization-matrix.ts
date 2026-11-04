@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Matriz de autorización de rutas HTTP
- * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante; gamificación, actividad reciente y logros de un estudiante en solo lectura; listado de grabaciones del ventilador por usuario; ai-ratings:read solo ADMIN; cambio de contraseña en auth; foto de perfil
- * Versión: 1.8
+ * Descripción: Tabla declarativa "<MÉTODO> <ruta registrada>" → resultado esperado por actor (anónimo, estudiante, docente, administrador, superadministrador) derivada de los guards (@UseGuards), @RequirePermissions/@AllowSelfOr de cada controlador y de ROLE_PERMISSIONS; la consumen las pruebas e2e de la matriz y de cobertura del registro de rutas. v1.6: GET /api/lessons/:id/access; rutas de gamificación y actividad. v1.8 (Bloque 4): alcance docente en el progreso de un estudiante; gamificación, actividad reciente y logros de un estudiante en solo lectura; listado de grabaciones del ventilador por usuario; ai-ratings:read solo ADMIN; cambio de contraseña en auth; foto de perfil. v1.9: GET /api/version pública
+ * Versión: 1.9
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -232,6 +232,9 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/health/ready": PUBLIC, // no guard
   "GET /health": PUBLIC, // no guard
   "GET /health/ready": PUBLIC, // no guard
+
+  // version
+  "GET /api/version": PUBLIC, // no guard
 
   // lessons
   "DELETE /api/lessons/:id": ADMIN_ONLY, // lessons:delete

@@ -1,6 +1,6 @@
 # Funcionalidad: Orquestación de producción para un VPS
-# Descripción: Backend NestJS (migraciones automáticas al arrancar), broker Mosquitto con contraseñas y ACL, Node-RED y PostgreSQL opcional (perfil postgres) con volúmenes persistentes y healthchecks; publica el backend detrás de Traefik/Dokploy con TLS, WebSockets de Socket.io y SSE sin compresión ni buffering en el proxy
-# Versión: 1.0
+# Descripción: Backend NestJS (migraciones automáticas al arrancar), broker Mosquitto con contraseñas y ACL, Node-RED y PostgreSQL opcional (perfil postgres) con volúmenes persistentes y healthchecks; publica el backend detrás de Traefik/Dokploy con TLS, WebSockets de Socket.io y SSE sin compresión ni buffering en el proxy; pasa GIT_SHA y BUILD_DATE como argumentos de construcción de la imagen del backend
+# Versión: 1.1
 # Autor: Marcela Mazo Castro
 # Proyecto: VentyLab
 # Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,6 +30,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Reported by GET /api/version; unset values build an image that reports "unknown".
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
     init: true
     restart: unless-stopped
     env_file:
