@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de notificaciones
- * Descripción: Notificación del usuario (misma forma que la carga útil de notification:new) con una variante por tipo que documenta su campo data y la unión discriminada por type, conteo de no leídas y resultado de marcar todas como leídas
- * Versión: 1.2
+ * Descripción: Notificación del usuario (misma forma que la carga útil de notification:new) con una variante por tipo que documenta su campo data y la unión discriminada por type, conteo de no leídas y resultado de marcar todas como leídas; v1.3: GROUP_MEMBER_ADDED
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import {
   EvaluationActivatedNotificationDataDTO,
   FeedbackReadyNotificationDataDTO,
   GradePublishedNotificationDataDTO,
+  GroupMemberAddedNotificationDataDTO,
   ReservationCancelledNotificationDataDTO,
   ReservationPreemptedNotificationDataDTO,
   RoleChangedNotificationDataDTO,
@@ -30,6 +31,7 @@ export const NOTIFICATION_DATA_DTOS: (new () => object)[] = [
   FeedbackReadyNotificationDataDTO,
   AttemptResetNotificationDataDTO,
   RoleChangedNotificationDataDTO,
+  GroupMemberAddedNotificationDataDTO,
   VentilatorOfflineNotificationDataDTO,
 ];
 
@@ -117,6 +119,14 @@ export class RoleChangedNotificationDTO extends OmitType(NotificationDTO, ["type
   public data: Record<string, string | number | boolean | null> | null;
 }
 
+export class GroupMemberAddedNotificationDTO extends OmitType(NotificationDTO, ["type", "data"] as const) {
+  @ApiProperty({ description: "Notification type", enum: ["GROUP_MEMBER_ADDED"], example: "GROUP_MEMBER_ADDED" })
+  public type: string;
+
+  @ApiProperty({ description: "Student group the user joined", type: GroupMemberAddedNotificationDataDTO, nullable: true })
+  public data: Record<string, string | number | boolean | null> | null;
+}
+
 export class VentilatorOfflineNotificationDTO extends OmitType(NotificationDTO, ["type", "data"] as const) {
   @ApiProperty({ description: "Notification type", enum: ["VENTILATOR_OFFLINE"], example: "VENTILATOR_OFFLINE" })
   public type: string;
@@ -133,6 +143,7 @@ export const NOTIFICATION_VARIANT_DTOS: Record<NotificationTypeValue, new () => 
   FEEDBACK_READY: FeedbackReadyNotificationDTO,
   ATTEMPT_RESET: AttemptResetNotificationDTO,
   ROLE_CHANGED: RoleChangedNotificationDTO,
+  GROUP_MEMBER_ADDED: GroupMemberAddedNotificationDTO,
   VENTILATOR_OFFLINE: VentilatorOfflineNotificationDTO,
 };
 

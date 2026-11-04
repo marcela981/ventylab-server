@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Tipos de notificación
- * Descripción: Catálogo de tipos de notificación persistida que genera la plataforma a partir de los eventos de dominio
- * Versión: 1.1
+ * Descripción: Catálogo de tipos de notificación persistida que genera la plataforma a partir de los eventos de dominio; v1.2: GROUP_MEMBER_ADDED
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ export type NotificationTypeValue =
   | "FEEDBACK_READY"
   | "ATTEMPT_RESET"
   | "ROLE_CHANGED"
+  | "GROUP_MEMBER_ADDED"
   | "VENTILATOR_OFFLINE";
 
 export const NOTIFICATION_TYPES: readonly NotificationTypeValue[] = [
@@ -26,5 +27,6 @@ export const NOTIFICATION_TYPES: readonly NotificationTypeValue[] = [
   "FEEDBACK_READY",
   "ATTEMPT_RESET",
   "ROLE_CHANGED",
+  "GROUP_MEMBER_ADDED",
   "VENTILATOR_OFFLINE",
 ];

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Suscriptores de notificaciones
- * Descripción: Escuchan los eventos de catálogo (reservas, evaluaciones, calificaciones, rol, ventilador fuera de línea) en segundo plano, resuelven los destinatarios, construyen el texto con las plantillas y entregan las notificaciones con DeliverNotificationsUseCase; atrapan y registran todo error
- * Versión: 1.1
+ * Descripción: Escuchan los eventos de catálogo (reservas, evaluaciones, calificaciones, rol, ventilador fuera de línea) en segundo plano, resuelven los destinatarios, construyen el texto con las plantillas y entregan las notificaciones con DeliverNotificationsUseCase; atrapan y registran todo error; v1.2: estudiante agregado a un grupo (lo recibe el estudiante)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -82,6 +82,13 @@ export class NotificationsEventsHandlers {
   public async handleRoleChanged(payload: DomainEventCatalog["user.roleChanged"]): Promise<void> {
     await this._run("user.roleChanged", payload.eventId, async (): Promise<void> => {
       await this._deliver([payload.userId], NOTIFICATION_TEMPLATES.roleChanged(payload));
+    });
+  }
+
+  @OnEvent("group.studentAdded", { async: true })
+  public async handleGroupStudentAdded(payload: DomainEventCatalog["group.studentAdded"]): Promise<void> {
+    await this._run("group.studentAdded", payload.eventId, async (): Promise<void> => {
+      await this._deliver(withoutActor([payload.userId], payload.actorId), NOTIFICATION_TEMPLATES.groupMemberAdded(payload));
     });
   }
 
