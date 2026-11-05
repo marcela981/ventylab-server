@@ -19618,6 +19618,26 @@ export interface components {
              */
             question?: string;
         };
+        SimulationDebriefItemDTO: {
+            /** @description Changed settings of a decision */
+            changes?: components["schemas"]["SimulationSettingChangeDTO"][];
+            /**
+             * @description Alarm code or patient status (absent for decisions)
+             * @example LOW_SPO2
+             */
+            code?: string;
+            /**
+             * @description Item kind
+             * @example DECISION
+             * @enum {string}
+             */
+            kind: "DECISION" | "ALARM" | "PATIENT_STATUS";
+            /**
+             * @description Simulated time in ms
+             * @example 15000
+             */
+            simTimeMs: number;
+        };
         SimulationEventDTO: {
             /**
              * @description Event ID
@@ -19686,6 +19706,29 @@ export interface components {
             telemetry: components["schemas"]["TelemetryHealthDTO"];
             /** @description WebSocket connections */
             ws: components["schemas"]["RealtimeHealthDTO"];
+        };
+        SimulationOutcomeDTO: {
+            /**
+             * @description Simulated time of the cardiac arrest, in ms
+             * @example 600000
+             */
+            arrestAtMs: number | null;
+            /**
+             * @description Simulated time of death, in ms
+             * @example 630000
+             */
+            deceasedAtMs: number | null;
+            /**
+             * @description Simulated time the patient first turned critical, in ms
+             * @example 360000
+             */
+            firstCriticalAtMs: number | null;
+            /**
+             * @description Final patient status; null for sessions without patient evolution (engine 1.0.0)
+             * @example DECEASED
+             * @enum {string|null}
+             */
+            status: "STABLE" | "UNSTABLE" | "CRITICAL" | "ARREST" | "DECEASED" | null;
         };
         SimulationSessionDTO: {
             /**
@@ -19906,6 +19949,8 @@ export interface components {
              * @example 0192f1c2-7c1e-7a8b-9c0d-1e2f3a4b5c6d
              */
             id: string;
+            /** @description Patient outcome; null for summaries stored before the engine 2.0.0 */
+            outcome: components["schemas"]["SimulationOutcomeDTO"] | null;
             /**
              * @description Server-computed score between 0 and 1
              * @example 0.82
@@ -19931,6 +19976,25 @@ export interface components {
              *     ]
              */
             targets: Record<string, never>[];
+            /** @description Debrief timeline: decisions, alarm onsets and patient status changes in simulated time order (at most 200) */
+            timeline: components["schemas"]["SimulationDebriefItemDTO"][];
+        };
+        SimulationSettingChangeDTO: {
+            /**
+             * @description Ventilator setting
+             * @example peepCmH2O
+             */
+            field: string;
+            /**
+             * @description Previous value
+             * @example 5
+             */
+            from: (number | string) | null;
+            /**
+             * @description New value
+             * @example 12
+             */
+            to: number | string;
         };
         SimulatorSessionDTO: {
             /**

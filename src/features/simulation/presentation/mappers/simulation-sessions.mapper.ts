@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de sesiones de simulación
  * Descripción: Convierte los resultados de los casos de uso de sesiones con eventos (inicio, lote de eventos, estado, resumen, repetición, listado y prueba de caso) en sus DTOs de respuesta con fechas ISO y null para valores ausentes; el formulario guardado del paciente propio (no sus ajustes internos) en el estado, la repetición y el listado
- * Versión: 1.2
+ * Versión: 1.3 (desenlace y línea de tiempo del debriefing en el resumen)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,7 @@ import {
   type SimulationEventRecord,
   type SimulationSessionView,
 } from "@/features/simulation/domain/read-models/simulation-session.read-model";
+import { type DebriefTimelineItem, type SettingChange } from "@/features/simulation/domain/sessions/simulation-session-debrief";
 import { SimulatedPatientDTO, SimulatedPatientVitalsDTO } from "@/features/simulation/presentation/dtos/simulation-session-request.dto";
 import {
   AppendedSimulationEventsDTO,
@@ -31,6 +32,8 @@ import {
   SimulationSessionDTO,
   SimulationSessionReplayDTO,
   SimulationSessionStateDTO,
+  SimulationDebriefItemDTO,
+  SimulationOutcomeDTO,
   SimulationSessionSummaryDTO,
   StartedSimulationSessionDTO,
 } from "@/features/simulation/presentation/dtos/simulation-session.dto";
@@ -78,6 +81,15 @@ export class SimulationSessionsResponseMapper {
       score: result.summary.score,
       breakdown: [...result.summary.breakdown],
       aiHelpCount: result.summary.aiHelpCount,
+      outcome: result.summary.outcome ? new SimulationOutcomeDTO({ ...result.summary.outcome }) : null,
+      timeline: (result.summary.timeline ?? []).map(
+        (item: DebriefTimelineItem): SimulationDebriefItemDTO => ({
+          simTimeMs: item.simTimeMs,
+          kind: item.kind,
+          ...(item.code === undefined ? {} : { code: item.code }),
+          ...(item.changes === undefined ? {} : { changes: item.changes.map((change: SettingChange) => ({ ...change })) }),
+        }),
+      ),
     });
   }
 

@@ -20599,6 +20599,42 @@
         },
         "type": "object"
       },
+      "SimulationDebriefItemDTO": {
+        "properties": {
+          "changes": {
+            "description": "Changed settings of a decision",
+            "items": {
+              "$ref": "#/components/schemas/SimulationSettingChangeDTO"
+            },
+            "type": "array"
+          },
+          "code": {
+            "description": "Alarm code or patient status (absent for decisions)",
+            "example": "LOW_SPO2",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Item kind",
+            "enum": [
+              "DECISION",
+              "ALARM",
+              "PATIENT_STATUS"
+            ],
+            "example": "DECISION",
+            "type": "string"
+          },
+          "simTimeMs": {
+            "description": "Simulated time in ms",
+            "example": 15000,
+            "type": "number"
+          }
+        },
+        "required": [
+          "simTimeMs",
+          "kind"
+        ],
+        "type": "object"
+      },
       "SimulationEventDTO": {
         "properties": {
           "id": {
@@ -20722,6 +20758,57 @@
           "ws",
           "telemetry",
           "reservation"
+        ],
+        "type": "object"
+      },
+      "SimulationOutcomeDTO": {
+        "properties": {
+          "arrestAtMs": {
+            "description": "Simulated time of the cardiac arrest, in ms",
+            "example": 600000,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "deceasedAtMs": {
+            "description": "Simulated time of death, in ms",
+            "example": 630000,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "firstCriticalAtMs": {
+            "description": "Simulated time the patient first turned critical, in ms",
+            "example": 360000,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "status": {
+            "description": "Final patient status; null for sessions without patient evolution (engine 1.0.0)",
+            "enum": [
+              "STABLE",
+              "UNSTABLE",
+              "CRITICAL",
+              "ARREST",
+              "DECEASED",
+              null
+            ],
+            "example": "DECEASED",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "firstCriticalAtMs",
+          "arrestAtMs",
+          "deceasedAtMs"
         ],
         "type": "object"
       },
@@ -21069,6 +21156,21 @@
             "example": "0192f1c2-7c1e-7a8b-9c0d-1e2f3a4b5c6d",
             "type": "string"
           },
+          "outcome": {
+            "anyOf": [
+              {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SimulationOutcomeDTO"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Patient outcome; null for summaries stored before the engine 2.0.0"
+          },
           "score": {
             "description": "Server-computed score between 0 and 1",
             "example": 0.82,
@@ -21096,6 +21198,13 @@
               "type": "object"
             },
             "type": "array"
+          },
+          "timeline": {
+            "description": "Debrief timeline: decisions, alarm onsets and patient status changes in simulated time order (at most 200)",
+            "items": {
+              "$ref": "#/components/schemas/SimulationDebriefItemDTO"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -21108,7 +21217,55 @@
           "targets",
           "score",
           "breakdown",
-          "aiHelpCount"
+          "aiHelpCount",
+          "outcome",
+          "timeline"
+        ],
+        "type": "object"
+      },
+      "SimulationSettingChangeDTO": {
+        "properties": {
+          "field": {
+            "description": "Ventilator setting",
+            "example": "peepCmH2O",
+            "type": "string"
+          },
+          "from": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Previous value",
+            "example": 5
+          },
+          "to": {
+            "description": "New value",
+            "example": 12,
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "field",
+          "from",
+          "to"
         ],
         "type": "object"
       },

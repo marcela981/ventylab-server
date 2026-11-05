@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de las sesiones de simulación
  * Descripción: Forma de un evento persistido de una sesión (id, tiempo simulado, tipo, payload saneado y recepción), del resumen calculado por el servidor al terminar, de la vista pública de una sesión y de las estadísticas agregadas de sesiones por estado
- * Versión: 1.1
+ * Versión: 1.2 (desenlace del paciente y línea de tiempo del debriefing en el resumen)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { type EngineMetrics, type TargetStatus, type TimeMultiplier } from "@/features/simulation/domain/engine";
 import { type SimulationScoreBreakdownItem } from "@/features/simulation/domain/scoring";
+import { type DebriefTimelineItem, type SimulationOutcome } from "@/features/simulation/domain/sessions/simulation-session-debrief";
 import {
   type SimulationEventTypeValue,
   type SimulationModeValue,
@@ -34,6 +35,9 @@ export interface SimulationSessionSummary {
   readonly score: number;
   readonly breakdown: readonly SimulationScoreBreakdownItem[];
   readonly aiHelpCount: number;
+  /** Absent in summaries stored before the engine 2.0.0 */
+  readonly outcome?: SimulationOutcome;
+  readonly timeline?: readonly DebriefTimelineItem[];
 }
 
 export interface SimulationSessionStatusCount {

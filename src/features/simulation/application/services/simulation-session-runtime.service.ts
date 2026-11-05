@@ -45,6 +45,7 @@ import {
   type SimulationRubricThresholds,
   type SimulationScore,
 } from "@/features/simulation/domain/scoring";
+import { buildSessionDebrief, type SessionDebrief } from "@/features/simulation/domain/sessions/simulation-session-debrief";
 import { toEngineEvents } from "@/features/simulation/domain/sessions/simulation-session-events";
 import { readStartRubricThresholds, resolveSessionRubric } from "@/features/simulation/domain/sessions/simulation-session-rubric";
 import {
@@ -159,6 +160,11 @@ export class SimulationSessionRuntime {
 
   public async computeSummary(context: SimulationSessionContext, untilMs: number, now: Date): Promise<SimulationSessionSummary> {
     const { result, score, aiHelpCount } = await this.computeScore(context, untilMs);
+    const debrief: SessionDebrief = buildSessionDebrief(
+      result,
+      toEngineEvents(context.events),
+      context.caseDefinition.engineCase.initialSettings,
+    );
 
     return {
       engineVersion: context.session.engineVersion,
@@ -169,6 +175,8 @@ export class SimulationSessionRuntime {
       score: score.score,
       breakdown: score.breakdown,
       aiHelpCount,
+      outcome: debrief.outcome,
+      timeline: debrief.timeline,
     };
   }
 

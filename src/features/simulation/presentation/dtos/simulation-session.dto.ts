@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de sesiones de simulación
  * Descripción: Serialización de las sesiones con eventos: sesión iniciada con el caso del motor, resultado de un lote de eventos, estado actual, resumen calificado, repetición con aviso de versión del motor, vista de sesión del listado y línea de tiempo de la prueba de caso; el estado, la repetición y la vista del listado llevan el formulario del paciente propio
- * Versión: 1.2
+ * Versión: 1.3 (desenlace del paciente y línea de tiempo del debriefing en el resumen)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -91,6 +91,55 @@ export class SimulationSessionStateDTO {
   }
 }
 
+export class SimulationOutcomeDTO {
+  @ApiProperty({
+    description: "Final patient status; null for sessions without patient evolution (engine 1.0.0)",
+    enum: ["STABLE", "UNSTABLE", "CRITICAL", "ARREST", "DECEASED"],
+    example: "DECEASED",
+    nullable: true,
+    type: String,
+  })
+  public status: string | null;
+
+  @ApiProperty({ description: "Simulated time the patient first turned critical, in ms", example: 360000, nullable: true, type: Number })
+  public firstCriticalAtMs: number | null;
+
+  @ApiProperty({ description: "Simulated time of the cardiac arrest, in ms", example: 600000, nullable: true, type: Number })
+  public arrestAtMs: number | null;
+
+  @ApiProperty({ description: "Simulated time of death, in ms", example: 630000, nullable: true, type: Number })
+  public deceasedAtMs: number | null;
+
+  public constructor(props: SimulationOutcomeDTO) {
+    Object.assign(this, props);
+  }
+}
+
+export class SimulationSettingChangeDTO {
+  @ApiProperty({ description: "Ventilator setting", example: "peepCmH2O" })
+  public field: string;
+
+  @ApiProperty({ description: "Previous value", example: 5, nullable: true, oneOf: [{ type: "number" }, { type: "string" }] })
+  public from: number | string | null;
+
+  @ApiProperty({ description: "New value", example: 12, oneOf: [{ type: "number" }, { type: "string" }] })
+  public to: number | string;
+}
+
+export class SimulationDebriefItemDTO {
+  @ApiProperty({ description: "Simulated time in ms", example: 15000 })
+  public simTimeMs: number;
+
+  @ApiProperty({ description: "Item kind", enum: ["DECISION", "ALARM", "PATIENT_STATUS"], example: "DECISION" })
+  public kind: string;
+
+  @ApiProperty({ description: "Alarm code or patient status (absent for decisions)", example: "LOW_SPO2", required: false })
+  public code?: string;
+
+  @ApiProperty({ description: "Changed settings of a decision", type: SimulationSettingChangeDTO, isArray: true, required: false })
+  public changes?: SimulationSettingChangeDTO[];
+}
+
 export class SimulationSessionSummaryDTO {
   @ApiProperty({ description: "Session ID", example: "0192f1c2-7c1e-7a8b-9c0d-1e2f3a4b5c6d" })
   public id: string;
@@ -121,6 +170,20 @@ export class SimulationSessionSummaryDTO {
 
   @ApiProperty({ description: "AI assistance requests during the session", example: 0 })
   public aiHelpCount: number;
+
+  @ApiProperty({
+    description: "Patient outcome; null for summaries stored before the engine 2.0.0",
+    type: SimulationOutcomeDTO,
+    nullable: true,
+  })
+  public outcome: SimulationOutcomeDTO | null;
+
+  @ApiProperty({
+    description: "Debrief timeline: decisions, alarm onsets and patient status changes in simulated time order (at most 200)",
+    type: SimulationDebriefItemDTO,
+    isArray: true,
+  })
+  public timeline: SimulationDebriefItemDTO[];
 
   public constructor(props: SimulationSessionSummaryDTO) {
     Object.assign(this, props);
