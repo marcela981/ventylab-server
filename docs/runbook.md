@@ -1,7 +1,7 @@
 <!--
   Funcionalidad: Manual de operación (runbook)
-  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos, migraciones y despliegue controlado. v1.2: la base de producción es PostgreSQL en Dokploy (VPS), no Supabase. v1.3 (Bloque 1): migraciones al desplegar. v1.4 (Bloque 4): sin secretos del puente retirado; el cambio de contraseña revoca los refresh tokens. v1.5: despliegue controlado desde CI (API o webhook de Dokploy, Auto Deploy apagado) y GET /api/version para comprobar el commit desplegado. v1.6: la clave del proveedor externo (AI_EXTERNAL_API_KEY) reemplaza a la del proveedor HTTP personalizado
-  Versión: 1.6
+  Descripción: Síntomas, diagnóstico y acciones para incidentes del backend: broker MQTT caído, ventilador sin datos, proveedor de IA caído, base de datos lenta, restauración de respaldos y rotación de secretos, migraciones y despliegue controlado. v1.2: la base de producción es PostgreSQL en Dokploy (VPS), no Supabase. v1.3 (Bloque 1): migraciones al desplegar. v1.4 (Bloque 4): sin secretos del puente retirado; el cambio de contraseña revoca los refresh tokens. v1.5: despliegue controlado desde CI (API o webhook de Dokploy, Auto Deploy apagado) y GET /api/version para comprobar el commit desplegado. v1.6: la clave del proveedor externo (AI_EXTERNAL_API_KEY) reemplaza a la del proveedor HTTP personalizado. v1.7: en modo API, el job deploy sella GIT_SHA y BUILD_DATE en los argumentos de construcción de Dokploy antes de cada despliegue
+  Versión: 1.7
   Autor: Marcela Mazo Castro
   Proyecto: VentyLab
   Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -189,7 +189,23 @@ Neither configured: the job prints a `Deploy skipped` warning and stays green, s
    - `DOKPLOY_URL`: the panel origin, without a trailing `/api`.
    Store the three values as GitHub Actions secrets with those names.
 3. Webhook mode instead: Dokploy → application → **Deployments** tab → copy the **Webhook URL** (`https://<dokploy>/api/deploy/<refresh token>`). Store it as the secret `DOKPLOY_DEPLOY_WEBHOOK`. The refresh token in that URL is a credential: if it leaks, regenerate it from the same tab (refresh token) and update the secret.
-4. Optional, for a real `sha` in `/api/version`: set the build arguments `GIT_SHA`/`BUILD_DATE` (see [environment variables](operations/environment-variables.md#image-build-arguments-dockerfile)). Without them `sha` and `builtAt` read `unknown`. The check below then relies on `builtAt` changing or on the Dokploy deployment title `CI <short sha>` (API mode).
+4. `/api/version` needs no manual step in API mode: before `application.deploy`, the job stamps the build arguments (below). In webhook mode nothing is stamped: `sha` and `builtAt` read `unknown` unless `GIT_SHA`/`BUILD_DATE` are set by hand in Dokploy (see [environment variables](operations/environment-variables.md#image-build-arguments-dockerfile)); the check below then relies on the Dokploy deployment.
+
+### Build arguments stamped by the deploy job (API mode)
+
+Dokploy builds the image from the repository and does not pass the commit to the `Dockerfile` by itself (the build context has no `.git`, see `.dockerignore`). So the `deploy` job, in API mode, does three calls with the same `x-api-key`:
+
+1. `GET <DOKPLOY_URL>/api/application.one?applicationId=<id>`: reads the application's current `env`, `buildArgs`, `buildSecrets` and `createEnvFile`.
+2. `POST <DOKPLOY_URL>/api/application.saveEnvironment`: writes the same `env`, `buildSecrets` and `createEnvFile` back unchanged and the build arguments with `GIT_SHA=<pushed commit>` and `BUILD_DATE=<UTC time of the job>`. Any other build argument line is kept in order; earlier `GIT_SHA`/`BUILD_DATE` lines are replaced. The merge is `scripts/ci/dokploy-build-args.mjs` (tested by `node --test scripts/ci/dokploy-build-args.test.mjs` in `verify`).
+3. `POST <DOKPLOY_URL>/api/application.deploy` (as before).
+
+Rules and failure modes:
+
+- `saveEnvironment` requires every field (Dokploy validates the body with `.required()`), so a missing field would be erased. If `application.one` does not return `env`, `buildArgs`, `buildSecrets` and `createEnvFile` (for example an older Dokploy), the script stops with `Dokploy application.one is missing ...` and the job fails **without deploying and without changing anything**. Upgrade Dokploy or deploy manually.
+- Any non-2xx answer of steps 1 or 2 fails the job with `Build arguments not stamped` and the HTTP status; nothing is deployed. Re-run the failed job.
+- The values read from Dokploy (environment variables included) only live in a private temporary directory of the runner, removed when the step ends, and are never printed. The API key needs permission to write the application's environment (the same key that deploys; no new secret).
+- The panel's **Environment → Build Time Arguments** shows the last stamped `GIT_SHA`/`BUILD_DATE`. Do not edit those two lines by hand: the next deploy replaces them. An edit of the environment saved in the panel while the job runs (between steps 1 and 2) would be overwritten; deploys are serialized (`concurrency: deploy-production`), so only a simultaneous manual edit can race.
+- `BUILD_DATE` is the time the job asked for the build, a few seconds before Dokploy starts it.
 
 Never paste the webhook URL, the API key or the panel URL into logs, issues or this document. The job never prints them: curl runs without `--show-error` and the log shows only the HTTP status, the curl exit code and Dokploy's short message.
 
@@ -197,7 +213,7 @@ Never paste the webhook URL, the API key or the panel URL into logs, issues or t
 
 1. GitHub Actions: the `deploy` job of the push is green and says `Dokploy queued the deploy of <sha>`.
 2. Dokploy → application → Deployments: the latest deployment finishes as done. Its log ends with `Nest application successfully started`.
-3. `curl -s https://<api domain>/api/version`. The answer is `{"sha":"<sha>","builtAt":"<ISO date>","contract":1}`. `sha` must equal the pushed commit (`git rev-parse origin/main`) when `GIT_SHA` is set, and `builtAt` must be newer than the push. `contract` must be the value the web requires.
+3. `curl -s https://<api domain>/api/version`. The answer is `{"sha":"<sha>","builtAt":"<ISO date>","contract":1}`. In API mode `sha` must equal the pushed commit (`git rev-parse origin/main`) and `builtAt` must be newer than the push; the job log line `Stamped GIT_SHA=<short sha>` shows what was stamped. `contract` must be the value the web requires.
 4. `curl -s https://<api domain>/health/ready` answers `{"status":"ready"}`.
 
 ### Manual redeploy (fallback)
