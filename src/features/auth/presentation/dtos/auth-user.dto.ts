@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO AuthUserDTO
- * Descripción: Representa el usuario autenticado en las respuestas de autenticación
- * Versión: 1.1
+ * Descripción: Representa el usuario autenticado en las respuestas de autenticación v1.2: preferencia de apariencia (themeMode, themePalette; null sin elección)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,6 +10,7 @@
  */
 import { ApiProperty } from "@nestjs/swagger";
 
+import { THEME_MODE_VALUES, THEME_PALETTE_VALUES } from "@/features/users/domain/value-objects/theme-preference";
 import { USER_ROLE_VALUES } from "@/features/users/domain/value-objects/user-role";
 
 export class AuthUserDTO {
@@ -33,23 +34,35 @@ export class AuthUserDTO {
   })
   public image: string | null;
 
+  @ApiProperty({ description: "Interface mode chosen by the user, or null when none was chosen (the web follows the system mode)", enum: THEME_MODE_VALUES, example: "dark", nullable: true, type: String })
+  public themeMode: string | null;
+
+  @ApiProperty({ description: "Interface palette chosen by the user, or null when none was chosen (the web uses VentyLab)", enum: THEME_PALETTE_VALUES, example: "ventylab", nullable: true, type: String })
+  public themePalette: string | null;
+
   public constructor({
     id,
     email,
     name,
     role,
     image,
+    themeMode,
+    themePalette,
   }: {
     id: string;
     email: string;
     name: string | null;
     role: string;
     image: string | null;
+    themeMode: string | null;
+    themePalette: string | null;
   }) {
     this.id = id;
     this.email = email;
     this.name = name;
     this.role = role;
     this.image = image;
+    this.themeMode = themeMode;
+    this.themePalette = themePalette;
   }
 }

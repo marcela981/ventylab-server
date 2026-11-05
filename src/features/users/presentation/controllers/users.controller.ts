@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador UsersController
- * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id. v1.3: la descripción del cambio de contraseña ya no menciona sesiones de NextAuth. v1.6: el listado y el detalle de estudiantes resuelven la foto subida como UserDTO (una lectura firmada por página)
- * Versión: 1.6
+ * Descripción: Expone las rutas api/users de perfil propio (me), contraseña, estadísticas, estudiantes, listado paginado de usuarios (búsqueda también por código estudiantil, con la marca de superadministrador), cambio de rol, de estado de cuenta y de código estudiantil; las rutas me se declaran antes que las de :id. v1.3: la descripción del cambio de contraseña ya no menciona sesiones de NextAuth. v1.6: el listado y el detalle de estudiantes resuelven la foto subida como UserDTO (una lectura firmada por página) v1.7: PATCH /api/users/me también acepta la preferencia de apariencia (themeMode, themePalette)
+ * Versión: 1.7
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -47,6 +47,7 @@ import { UpdateProfileUseCase } from "@/features/users/application/use-cases/upd
 import { User } from "@/features/users/domain/entities/user.entity";
 import { type UserSortByValue } from "@/features/users/domain/repositories/users.repository";
 import { AvatarFileRequiredError } from "@/features/users/domain/users.errors";
+import { toThemeMode, toThemePalette } from "@/features/users/domain/value-objects/theme-preference";
 import { type UserRoleValue } from "@/features/users/domain/value-objects/user-role";
 import { UserStats } from "@/features/users/domain/value-objects/user-stats";
 import { ChangePasswordDTO } from "@/features/users/presentation/dtos/change-password.dto";
@@ -201,7 +202,7 @@ export class UsersController {
 
   @Patch("me")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Update own profile", description: "Updates the authenticated user's name or profile image URL (http(s) only; upload a photo with PUT /api/users/me/avatar)" })
+  @ApiOperation({ summary: "Update own profile", description: "Updates the authenticated user's name, profile image URL (http(s) only; upload a photo with PUT /api/users/me/avatar) or appearance preference (themeMode, themePalette; returned by GET /api/auth/me)" })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Profile updated successfully" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
@@ -216,6 +217,8 @@ export class UsersController {
         userId: currentUser.sub,
         name: dto.name,
         image: dto.image,
+        themeMode: toThemeMode(dto.themeMode),
+        themePalette: toThemePalette(dto.themePalette),
         performedBy: currentUser.sub,
       }),
     );
