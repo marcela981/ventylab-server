@@ -53,6 +53,7 @@ describe("grade feedback supersession against PostgreSQL", () => {
         maxScore: 1,
         grade: 5,
         gradePublishedAt: new Date(),
+        answersReleasedAt: new Date(),
       },
     });
     const old: GradeFeedback = await harness.prisma.gradeFeedback.create({

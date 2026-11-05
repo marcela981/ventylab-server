@@ -15,6 +15,12 @@ import { i18nValidationMessage } from "nestjs-i18n";
 
 import { ListQueryDTO } from "@/common/presentation/dtos/list-query.dto";
 import { EVALUATION_ATTEMPT_STATUS_VALUES } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
+import {
+  GRADE_AND_ANSWERS_RELEASE_SCOPE,
+  GRADE_RELEASE_SCOPE,
+  RESULTS_RELEASE_SCOPE_VALUES,
+  type ResultsReleaseScopeValue,
+} from "@/features/evaluation/domain/value-objects/results-release-scope";
 
 export const MAX_TEACHER_COMMENT_LENGTH: number = 2000;
 
@@ -84,7 +90,19 @@ export class GradeEvaluationAnswerDTO {
   public comment?: string;
 }
 
-export class PublishEvaluationGradesDTO {
+export class ReleaseAttemptResultsDTO {
+  @ApiPropertyOptional({
+    description: "What the student gets: GRADE (score, grade and passed only) or GRADE_AND_ANSWERS (also the correct answers, explanations, rubrics, per-question points and AI feedback)",
+    enum: RESULTS_RELEASE_SCOPE_VALUES,
+    default: GRADE_AND_ANSWERS_RELEASE_SCOPE,
+    example: GRADE_RELEASE_SCOPE,
+  })
+  @IsOptional()
+  @IsIn(RESULTS_RELEASE_SCOPE_VALUES, { message: i18nValidationMessage("evaluation.validation.release_scope_invalid") })
+  public scope?: ResultsReleaseScopeValue;
+}
+
+export class PublishEvaluationGradesDTO extends ReleaseAttemptResultsDTO {
   @ApiProperty({ description: "Evaluation whose GRADED attempts are published", example: "cm5evaluation01" })
   @IsString({ message: i18nValidationMessage("evaluation.validation.evaluation_id_required") })
   @IsNotEmpty({ message: i18nValidationMessage("evaluation.validation.evaluation_id_required") })

@@ -46,6 +46,7 @@ export interface GradingAttemptListItemView {
   readonly maxScore?: number;
   readonly grade?: number;
   readonly gradePublishedAt?: Date;
+  readonly answersReleasedAt?: Date;
   readonly isLate: boolean;
 }
 

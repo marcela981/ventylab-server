@@ -216,7 +216,8 @@ export class QuizzesMapper {
         score: attempt.score,
         maxScore: QUIZ_ATTEMPT_MAX_SCORE,
         grade: quizGradeFromPercent(attempt.score),
-        gradePublishedAt: submittedAt,
+        // Graded but held: the teacher releases it from the grading hub like any other attempt (ajustes C1)
+        gradePublishedAt: null,
         isLate: false,
         legacySource: QUIZ_ATTEMPT_LEGACY_SOURCE,
         legacyPayload: { answers: legacyAnswers, passed: attempt.passed, score: attempt.score },

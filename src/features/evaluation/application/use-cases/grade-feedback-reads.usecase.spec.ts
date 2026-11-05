@@ -46,8 +46,15 @@ describe("GetMyGradeFeedbackUseCase", () => {
     await expect(useCase.execute("attempt-1", STUDENT_ID)).rejects.toThrow(GradeFeedbackNotAvailableError);
   });
 
-  it("returns 404 attempt not found to anyone but the owner", async () => {
+  it("keeps returning 404 when only the grade is released", async () => {
     const doubles: AttemptDoubles = doublesWith(gradedAttempt({ gradePublishedAt: minutesFromNow(-1) }));
+    const useCase: GetMyGradeFeedbackUseCase = new GetMyGradeFeedbackUseCase(doubles.attemptsRepository, new InMemoryGradeFeedbacksRepository(RECORDS), ratingsReader());
+
+    await expect(useCase.execute("attempt-1", STUDENT_ID)).rejects.toThrow(GradeFeedbackNotAvailableError);
+  });
+
+  it("returns 404 attempt not found to anyone but the owner", async () => {
+    const doubles: AttemptDoubles = doublesWith(gradedAttempt({ gradePublishedAt: minutesFromNow(-1), answersReleasedAt: minutesFromNow(-1) }));
     const useCase: GetMyGradeFeedbackUseCase = new GetMyGradeFeedbackUseCase(doubles.attemptsRepository, new InMemoryGradeFeedbacksRepository(RECORDS), ratingsReader());
 
     await expect(useCase.execute("attempt-1", "student-2")).rejects.toThrow(EvaluationAttemptNotFoundError);
@@ -55,7 +62,7 @@ describe("GetMyGradeFeedbackUseCase", () => {
   });
 
   it("returns the overall and per-question feedback with their status once published", async () => {
-    const doubles: AttemptDoubles = doublesWith(gradedAttempt({ gradePublishedAt: minutesFromNow(-1) }));
+    const doubles: AttemptDoubles = doublesWith(gradedAttempt({ gradePublishedAt: minutesFromNow(-1), answersReleasedAt: minutesFromNow(-1) }));
     const useCase: GetMyGradeFeedbackUseCase = new GetMyGradeFeedbackUseCase(doubles.attemptsRepository, new InMemoryGradeFeedbacksRepository(RECORDS), ratingsReader());
 
     const result: GradeFeedbackResult = await useCase.execute("attempt-1", STUDENT_ID);
@@ -71,7 +78,7 @@ describe("GetMyGradeFeedbackUseCase", () => {
 
 describe("GetMyGradeFeedbackUseCase ratings and staleness", () => {
   it("embeds the own rating of each READY block with a single read", async () => {
-    const doubles: AttemptDoubles = doublesWith(gradedAttempt({ gradePublishedAt: minutesFromNow(-1) }));
+    const doubles: AttemptDoubles = doublesWith(gradedAttempt({ gradePublishedAt: minutesFromNow(-1), answersReleasedAt: minutesFromNow(-1) }));
     const rating: GradeFeedbackRatingView = { id: "rating-1", targetId: "fq1", surface: "EVALUATION_FEEDBACK", helpful: true, createdAt: new Date(), updatedAt: new Date() };
     const reader: IGradeFeedbackRatingsReader & { getOwnRatings: jest.Mock } = ratingsReader([rating]);
 
@@ -86,7 +93,7 @@ describe("GetMyGradeFeedbackUseCase ratings and staleness", () => {
   });
 
   it("reads a PENDING block older than 10 minutes as FAILED", async () => {
-    const doubles: AttemptDoubles = doublesWith(gradedAttempt({ gradePublishedAt: minutesFromNow(-1) }));
+    const doubles: AttemptDoubles = doublesWith(gradedAttempt({ gradePublishedAt: minutesFromNow(-1), answersReleasedAt: minutesFromNow(-1) }));
     const records: GradeFeedbackRecord[] = [feedbackRecord({ id: "overall", status: "PENDING", content: "", createdAt: minutesFromNow(-11) })];
 
     const result: GradeFeedbackResult = await new GetMyGradeFeedbackUseCase(doubles.attemptsRepository, new InMemoryGradeFeedbacksRepository(records), ratingsReader()).execute(

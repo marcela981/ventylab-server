@@ -37,8 +37,9 @@ import {
   EvaluationNotFoundError,
   EvaluationStudentGradesForbiddenError,
 } from "@/features/evaluation/domain/evaluation.errors";
-import { EvaluationGradePublishedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
+import { EvaluationAnswersReleasedEvent, EvaluationGradePublishedEvent } from "@/features/evaluation/domain/events/evaluation-attempt.events";
 import { type GradingQueueItemView, type PublishedGradeView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
+import { type ResultsReleaseScopeValue } from "@/features/evaluation/domain/value-objects/results-release-scope";
 import { type GroupsFacade } from "@/features/groups/application/services/groups.facade";
 
 describe("GetGradingQueueUseCase", () => {
@@ -231,7 +232,7 @@ describe("GetAttemptForGradingUseCase", () => {
 });
 
 describe("PublishEvaluationAttemptGradeUseCase", () => {
-  function publish(doubles: GradingDoubles): Promise<PublishEvaluationAttemptGradeResult> {
+  function publish(doubles: GradingDoubles, scope: ResultsReleaseScopeValue = "GRADE_AND_ANSWERS"): Promise<PublishEvaluationAttemptGradeResult> {
     return new PublishEvaluationAttemptGradeUseCase(
       doubles.attemptsRepository,
       doubles.gradingAccess,
@@ -239,10 +240,10 @@ describe("PublishEvaluationAttemptGradeUseCase", () => {
       doubles.transactionManager,
       doubles.eventBus,
       doubles.auditRecorder,
-    ).execute("attempt-1", TEACHER);
+    ).execute("attempt-1", TEACHER, scope);
   }
 
-  it("publishes a GRADED attempt once and emits the event after commit", async () => {
+  it("releases a GRADED attempt once with its answers and emits the events after commit", async () => {
     const doubles: GradingDoubles = buildGradingDoubles({
       attempts: [buildStoredAttempt({ status: "GRADED", score: 2, maxScore: 2, grade: 5 })],
       scopedAttemptIds: ["attempt-1"],
@@ -253,19 +254,40 @@ describe("PublishEvaluationAttemptGradeUseCase", () => {
 
     expect(first).toMatchObject({ attemptId: "attempt-1", alreadyPublished: false });
     expect(second).toMatchObject({ attemptId: "attempt-1", alreadyPublished: true, publishedAt: first.publishedAt });
-    expect(doubles.attemptsRepository.store.get("attempt-1")?.gradePublishedAt).toEqual(first.publishedAt);
+    expect(doubles.attemptsRepository.store.get("attempt-1")).toMatchObject({ gradePublishedAt: first.publishedAt, answersReleasedAt: first.publishedAt });
     expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(1);
+    expect(publishedEvents(doubles, EvaluationAnswersReleasedEvent)).toHaveLength(1);
     expect(doubles.record).toHaveBeenCalledTimes(1);
     expect(doubles.record).toHaveBeenCalledWith(
       TEACHER.id,
       "grade_published",
       "evaluation_attempts",
       "attempt-1",
-      { gradePublishedAt: null },
-      { gradePublishedAt: first.publishedAt, grade: 5 },
+      { gradePublishedAt: null, answersReleasedAt: null },
+      { gradePublishedAt: first.publishedAt, answersReleasedAt: first.publishedAt, grade: 5 },
       expect.anything(),
-      { metadata: expect.objectContaining({ evaluationId: "evaluation-1", bulk: false }) },
+      { metadata: expect.objectContaining({ evaluationId: "evaluation-1", bulk: false, releaseScope: "GRADE_AND_ANSWERS" }) },
     );
+  });
+
+  it("releases only the grade, then the answers on a second call", async () => {
+    const doubles: GradingDoubles = buildGradingDoubles({
+      attempts: [buildStoredAttempt({ status: "GRADED", score: 2, maxScore: 2, grade: 5 })],
+      scopedAttemptIds: ["attempt-1"],
+    });
+
+    const gradeOnly: PublishEvaluationAttemptGradeResult = await publish(doubles, "GRADE");
+
+    expect(gradeOnly).toMatchObject({ alreadyPublished: false, answersReleasedAt: undefined });
+    expect(publishedEvents(doubles, EvaluationAnswersReleasedEvent)).toHaveLength(0);
+    expect(await publish(doubles, "GRADE")).toMatchObject({ alreadyPublished: true });
+
+    const full: PublishEvaluationAttemptGradeResult = await publish(doubles, "GRADE_AND_ANSWERS");
+
+    expect(full).toMatchObject({ alreadyPublished: false, publishedAt: gradeOnly.publishedAt, answersReleasedAt: expect.any(Date) });
+    expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(1);
+    expect(publishedEvents(doubles, EvaluationAnswersReleasedEvent)).toHaveLength(1);
+    expect(doubles.record).toHaveBeenCalledTimes(2);
   });
 
   it("refuses an attempt that is not GRADED", async () => {
@@ -276,7 +298,7 @@ describe("PublishEvaluationAttemptGradeUseCase", () => {
 });
 
 describe("PublishEvaluationGradesUseCase", () => {
-  function publishAll(doubles: GradingDoubles, evaluationId: string = "evaluation-1"): Promise<number> {
+  function publishAll(doubles: GradingDoubles, evaluationId: string = "evaluation-1", releaseScope: ResultsReleaseScopeValue = "GRADE"): Promise<number> {
     return new PublishEvaluationGradesUseCase(
       doubles.gradingRepository,
       doubles.attemptsRepository,
@@ -286,10 +308,10 @@ describe("PublishEvaluationGradesUseCase", () => {
       doubles.transactionManager,
       doubles.eventBus,
       doubles.auditRecorder,
-    ).execute(new PublishEvaluationGradesCommand({ evaluationId, actor: ADMIN }));
+    ).execute(new PublishEvaluationGradesCommand({ evaluationId, actor: ADMIN, releaseScope }));
   }
 
-  it("publishes every GRADED unpublished attempt and returns the count", async () => {
+  it("releases the grade of every GRADED unpublished attempt and returns the count", async () => {
     const doubles: GradingDoubles = buildGradingDoubles({
       attempts: [
         buildStoredAttempt({ id: "attempt-1", status: "GRADED", score: 2, maxScore: 2, grade: 5 }),
@@ -311,6 +333,10 @@ describe("PublishEvaluationGradesUseCase", () => {
       ["grade_published", "attempt-2"],
     ]);
     expect(await publishAll(doubles)).toBe(0);
+    // The answers release also takes the attempt whose grade was already published
+    expect(await publishAll(doubles, "evaluation-1", "GRADE_AND_ANSWERS")).toBe(3);
+    expect(publishedEvents(doubles, EvaluationAnswersReleasedEvent)).toHaveLength(3);
+    expect(await publishAll(doubles, "evaluation-1", "GRADE_AND_ANSWERS")).toBe(0);
   });
 
   it("returns 404 for an unknown evaluation", async () => {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Eventos de dominio de intentos de evaluación
- * Descripción: Eventos emitidos al cerrar un intento: calificado por completo (gancho para la retroalimentación de E6) y nota publicada al estudiante (notificación en tiempo real grade:published), y nota recalculada por el profesor sobre un intento ya calificado (indica si la nota ya estaba publicada); la nota publicada se publica también como grade.published; intento concedido por un reinicio del docente (evaluation.attemptReset, notificación ATTEMPT_RESET); v1.4: calificado y recalificado llevan el solicitante opcional de la retroalimentación (id, rol e idioma)
- * Versión: 1.4
+ * Descripción: Eventos emitidos al cerrar un intento: calificado por completo (gancho para la retroalimentación de E6) y nota publicada al estudiante (notificación en tiempo real grade:published), y nota recalculada por el profesor sobre un intento ya calificado (indica si la nota ya estaba publicada); la nota publicada se publica también como grade.published; intento concedido por un reinicio del docente (evaluation.attemptReset, notificación ATTEMPT_RESET); v1.4: calificado y recalificado llevan el solicitante opcional de la retroalimentación (id, rol e idioma); v1.5 (ajustes C1): respuestas liberadas por el docente (EvaluationAnswersReleasedEvent)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -198,5 +198,21 @@ export class EvaluationAttemptResetEvent extends DomainEvent implements CatalogD
 
   public toCatalogPayload(): EvaluationAttemptResetPayload {
     return { ...catalogMeta(this), evaluationId: this.evaluationId, userId: this.userId, title: this.title, extraAttempts: this.extraAttempts };
+  }
+}
+
+// The teacher released the correct answers, explanations and AI feedback of an attempt whose grade is (or becomes) published.
+export class EvaluationAnswersReleasedEvent extends DomainEvent {
+  public readonly attemptId: string;
+  public readonly evaluationId: string;
+  public readonly userId: string;
+  public readonly releasedAt: Date;
+
+  public constructor({ attemptId, evaluationId, userId, releasedAt, performedBy }: { attemptId: string; evaluationId: string; userId: string; releasedAt: Date; performedBy: string }) {
+    super({ performedBy });
+    this.attemptId = attemptId;
+    this.evaluationId = evaluationId;
+    this.userId = userId;
+    this.releasedAt = releasedAt;
   }
 }

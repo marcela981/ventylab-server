@@ -10,13 +10,11 @@
  */
 import { type QuizAttemptResult } from "@/features/quizzes/application/results/quiz-attempt.result";
 import {
-  type GradedQuestion,
   type QuizAttemptSummary,
   type QuizDetailView,
   type QuizSummary,
 } from "@/features/quizzes/domain/read-models/quiz.read-model";
 import {
-  GradedQuestionDTO,
   QuizAttemptResultDTO,
   QuizAttemptSummaryDTO,
   QuizDetailDTO,
@@ -73,24 +71,8 @@ export class QuizzesMapper {
     return attempts.map((attempt: QuizAttemptSummary) => QuizzesMapper.toAttemptSummaryDTO(attempt));
   }
 
+  // The grading stays on the server until the teacher releases it (ajustes C1)
   public static toAttemptResultDTO(result: QuizAttemptResult): QuizAttemptResultDTO {
-    return new QuizAttemptResultDTO({
-      attemptId: result.attemptId,
-      score: result.score,
-      passed: result.passed,
-      totalQuestions: result.totalQuestions,
-      correctAnswers: result.correctAnswers,
-      gradedQuestions: result.gradedQuestions.map(
-        (question: GradedQuestion) =>
-          new GradedQuestionDTO({
-            questionId: question.questionId,
-            selectedOptionId: question.selectedOptionId,
-            correctOptionId: question.correctOptionId,
-            isCorrect: question.isCorrect,
-            explanation: question.explanation ?? null,
-            feedback: question.feedback ?? null,
-          }),
-      ),
-    });
+    return new QuizAttemptResultDTO({ attemptId: result.attemptId, totalQuestions: result.totalQuestions });
   }
 }

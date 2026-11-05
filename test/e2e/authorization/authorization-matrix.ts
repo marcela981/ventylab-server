@@ -204,7 +204,6 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "POST /api/evaluations/:id/questions/:questionId/options": TEACHER_UP, // evaluations:manage
   "POST /api/evaluations/:id/scenarios": TEACHER_UP, // evaluations:manage
   "POST /api/my-evaluations/:assignmentId/attempts": STUDENT_UP, // evaluations:attempt
-  "POST /api/my-evaluations/attempts/:attemptId/answers/:questionId/check": STUDENT_UP, // evaluations:attempt
   "PUT /api/evaluation-attempts/:attemptId/answers/:questionId": STUDENT_UP, // evaluations:attempt
   "PUT /api/evaluation-grading/attempts/:attemptId/answers/:questionId": TEACHER_UP, // evaluations:grade
   "PUT /api/evaluations/:id/questions/:questionId/options/order": TEACHER_UP, // evaluations:manage

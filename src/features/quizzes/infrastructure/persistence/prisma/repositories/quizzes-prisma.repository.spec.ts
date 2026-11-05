@@ -97,14 +97,8 @@ describe("QuizzesPrismaRepository", () => {
     expect(result.map((quiz: QuizSummary) => quiz.id)).toEqual(["a", "b0", "b", "c"]);
   });
 
-  it("restricts the scope to legacy quizzes and unassigned READY QUIZ evaluations", () => {
-    expect(QUIZ_EVALUATION_SCOPE).toEqual({
-      type: "QUIZ",
-      OR: [
-        { legacySource: "quiz" },
-        { legacySource: null, status: "READY", assignments: { none: {} } },
-      ],
-    });
+  it("restricts the scope to legacy quizzes (new QUIZ evaluations only through the attempt flow)", () => {
+    expect(QUIZ_EVALUATION_SCOPE).toEqual({ type: "QUIZ", legacySource: "quiz" });
   });
 
   it("checks for an existing attempt on student_evaluation_attempts", async () => {

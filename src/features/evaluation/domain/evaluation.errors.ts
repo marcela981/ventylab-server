@@ -269,20 +269,9 @@ export class EvaluationAnswerLockedError extends DomainError {
   }
 }
 
-export type AnswerCheckUnavailableReason = "evaluation_type" | "question_type";
-
-export class EvaluationAnswerCheckUnavailableError extends DomainError {
-  public readonly reason: AnswerCheckUnavailableReason;
-
-  public constructor(reason: AnswerCheckUnavailableReason) {
-    super(`Immediate feedback is not available: ${reason}`, "evaluation.answer_check_unavailable");
-    this.reason = reason;
-  }
-}
-
 export class GradeFeedbackNotAvailableError extends DomainError {
   public constructor() {
-    super("Feedback is available once the grade is published", "evaluation.grade_feedback_not_available");
+    super("Feedback is available once the teacher releases the answers", "evaluation.grade_feedback_not_available");
   }
 }
 

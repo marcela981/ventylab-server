@@ -40,12 +40,14 @@ import { PublishEvaluationGradesUseCase } from "@/features/evaluation/applicatio
 import { ResetEvaluationAttemptUseCase } from "@/features/evaluation/application/use-cases/reset-evaluation-attempt.usecase";
 import { type GradingQueueItemView } from "@/features/evaluation/domain/read-models/evaluation-grading.read-model";
 import { type EvaluationAttemptStatusValue } from "@/features/evaluation/domain/value-objects/evaluation-attempt-status";
+import { GRADE_AND_ANSWERS_RELEASE_SCOPE } from "@/features/evaluation/domain/value-objects/results-release-scope";
 import {
   GetEvaluationAttemptsQueryDTO,
   GetGradingQueueCountQueryDTO,
   GetGradingQueueQueryDTO,
   GradeEvaluationAnswerDTO,
   PublishEvaluationGradesDTO,
+  ReleaseAttemptResultsDTO,
   ResetEvaluationAttemptDTO,
 } from "@/features/evaluation/presentation/dtos/evaluation-grading-request.dto";
 import {
@@ -294,20 +296,27 @@ export class EvaluationGradingController {
   @RequirePermissions("evaluations:grade")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: "Publish attempt grade",
-    description: "Publishes the grade of a GRADED attempt and notifies the student with grade:published; idempotent (an already published grade keeps its date)",
+    summary: "Release attempt results",
+    description:
+      "Releases to the student the grade of a GRADED attempt (scope GRADE) or the grade with the correct answers, explanations, rubrics, per-question points and AI feedback (scope GRADE_AND_ANSWERS, the default); notifies grade:published when the grade is released; idempotent (what was already released keeps its date). Until then the student only sees the attempt as submitted",
   })
-  @ApiResponseDoc({ status: HttpStatus.OK, description: "Grade published successfully", type: PublishAttemptGradeResponseDTO })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Results released successfully", type: PublishAttemptGradeResponseDTO })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
   @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "The attempt is outside the caller's groups" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Attempt not found" })
   @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "The attempt is not GRADED" })
   public async publishAttempt(
     @Param("attemptId") attemptId: string,
+    @Body() dto: ReleaseAttemptResultsDTO,
     @CurrentUser() currentUser: CurrentCaller,
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<PublishAttemptGradeResponseDTO>> {
-    const result: PublishEvaluationAttemptGradeResult = await this._publishEvaluationAttemptGradeUseCase.execute(attemptId, toEvaluationActor(currentUser));
+    const result: PublishEvaluationAttemptGradeResult = await this._publishEvaluationAttemptGradeUseCase.execute(
+      attemptId,
+      toEvaluationActor(currentUser),
+      dto.scope ?? GRADE_AND_ANSWERS_RELEASE_SCOPE,
+    );
 
     return new APIResponseBuilder<PublishAttemptGradeResponseDTO>()
       .setData(EvaluationGradingMapper.toPublishResponseDTO(result))
@@ -319,8 +328,9 @@ export class EvaluationGradingController {
   @RequirePermissions("evaluations:grade")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: "Publish evaluation grades",
-    description: "Publishes every GRADED unpublished attempt of the evaluation (optionally one group) within the caller's scope and notifies each student; returns how many were published",
+    summary: "Release evaluation results",
+    description:
+      "Releases the results of every GRADED attempt of the evaluation (optionally one group) within the caller's scope: the grade only (scope GRADE) or the grade with the answers and AI feedback (scope GRADE_AND_ANSWERS, the default); attempts still in progress or pending review are left out; returns how many attempts changed",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Grades published successfully", type: PublishGradesResponseDTO })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
@@ -333,7 +343,12 @@ export class EvaluationGradingController {
     @I18n() i18n: I18nContext,
   ): Promise<APIResponse<PublishGradesResponseDTO>> {
     const count: number = await this._publishEvaluationGradesUseCase.execute(
-      new PublishEvaluationGradesCommand({ evaluationId: dto.evaluationId, groupId: dto.groupId, actor: toEvaluationActor(currentUser) }),
+      new PublishEvaluationGradesCommand({
+        evaluationId: dto.evaluationId,
+        groupId: dto.groupId,
+        actor: toEvaluationActor(currentUser),
+        releaseScope: dto.scope ?? GRADE_AND_ANSWERS_RELEASE_SCOPE,
+      }),
     );
 
     return new APIResponseBuilder<PublishGradesResponseDTO>()

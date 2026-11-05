@@ -45,7 +45,7 @@ import {
   isAllowedStatusTransition,
   READY_EVALUATION_STATUS,
 } from "@/features/evaluation/domain/value-objects/evaluation-status";
-import { autoPublishFor, defaultShowResultsImmediately, type EvaluationTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-type";
+import { defaultShowResultsImmediately, type EvaluationTypeValue } from "@/features/evaluation/domain/value-objects/evaluation-type";
 
 export const EVALUATION_ENTITY_COLLECTION: string = "evaluations";
 export const EVALUATION_ENTITY_TYPE: string = "evaluation";
@@ -274,10 +274,6 @@ export class Evaluation extends AggregateRoot {
 
   public get showResultsImmediately(): boolean {
     return this._showResultsImmediately;
-  }
-
-  public get autoPublishesGrades(): boolean {
-    return autoPublishFor(this._type, this._showResultsImmediately);
   }
 
   public get status(): EvaluationStatusValue {

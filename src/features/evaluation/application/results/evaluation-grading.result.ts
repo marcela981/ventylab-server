@@ -58,6 +58,7 @@ export interface GradeEvaluationAnswerResult {
 export interface PublishEvaluationAttemptGradeResult {
   readonly attemptId: string;
   readonly publishedAt: Date;
+  readonly answersReleasedAt?: Date;
   readonly alreadyPublished: boolean;
 }
 

@@ -117,7 +117,7 @@ describe("GenerateGradeFeedbackUseCase", () => {
 
   it("publishes GradeFeedbackReadyEvent under the catalog name once the feedback is stored", async () => {
     const pending: GradeFeedbackRecord = feedbackRecord({ id: "pending-1", status: "PENDING", content: "", source: "DETERMINISTIC", provider: undefined, model: undefined });
-    const { useCase, doubles } = setup({ attempt: gradedAttempt({ gradePublishedAt: minutesFromNow(-1) }), records: [pending] });
+    const { useCase, doubles } = setup({ attempt: gradedAttempt({ gradePublishedAt: minutesFromNow(-1), answersReleasedAt: minutesFromNow(-1) }), records: [pending] });
 
     await useCase.execute(new GenerateGradeFeedbackCommand({ attemptId: "attempt-1", pendingFeedbackId: "pending-1" }));
 

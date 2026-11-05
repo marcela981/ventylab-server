@@ -102,15 +102,3 @@ export interface StudentEvaluationListItemResult {
   readonly extraAttempts: number;
   readonly passingGrade: number;
 }
-
-export class CheckEvaluationAnswerResult {
-  public readonly isCorrect: boolean;
-  public readonly correctOptionIds: ReadonlyArray<string>;
-  public readonly explanation?: string;
-
-  public constructor({ isCorrect, correctOptionIds, explanation }: { isCorrect: boolean; correctOptionIds: ReadonlyArray<string>; explanation?: string }) {
-    this.isCorrect = isCorrect;
-    this.correctOptionIds = correctOptionIds;
-    this.explanation = explanation;
-  }
-}

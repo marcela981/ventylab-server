@@ -34,6 +34,7 @@ import {
   type IEvaluationGradingRepository,
 } from "@/features/evaluation/domain/repositories/evaluation-grading.repository";
 import { type EvaluationActor } from "@/features/evaluation/domain/services/evaluation-management-policy";
+import { releasesAnswers, type ResultsReleaseScopeValue } from "@/features/evaluation/domain/value-objects/results-release-scope";
 
 export const TEACHER: EvaluationActor = { id: "teacher-1", role: "TEACHER" };
 export const ADMIN: EvaluationActor = { id: "admin-1", role: "ADMIN" };
@@ -143,11 +144,11 @@ export class InMemoryGradingRepository implements IEvaluationGradingRepository {
     return this.scopedAttemptIds.has(attemptId);
   }
 
-  public async getPublishableAttempts(filter: GradingAttemptFilter): Promise<GradingAttemptKey[]> {
+  public async getReleasableAttempts(filter: GradingAttemptFilter, releaseScope: ResultsReleaseScopeValue): Promise<GradingAttemptKey[]> {
     await Promise.resolve();
 
     return this._matching(filter)
-      .filter((item: StudentEvaluationAttemptProps) => item.status === "GRADED" && item.gradePublishedAt === undefined)
+      .filter((item: StudentEvaluationAttemptProps) => item.status === "GRADED" && (item.gradePublishedAt === undefined || (releasesAnswers(releaseScope) && item.answersReleasedAt === undefined)))
       .map((item: StudentEvaluationAttemptProps) => ({ id: item.id, evaluationId: item.evaluationId, userId: item.userId }));
   }
 

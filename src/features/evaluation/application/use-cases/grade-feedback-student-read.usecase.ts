@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetMyGradeFeedbackUseCase
- * Descripción: Retroalimentación del intento propio para el estudiante: 404 para intentos ajenos o inexistentes, 404 GradeFeedbackNotAvailableError mientras la nota no esté publicada, y una vez publicada la retroalimentación global y por pregunta con su estado
- * Versión: 1.1
+ * Descripción: Retroalimentación del intento propio para el estudiante: 404 para intentos ajenos o inexistentes, 404 GradeFeedbackNotAvailableError mientras el docente no libere la nota y las respuestas (v1.2, ajustes C1: liberar solo la nota no muestra la retroalimentación), y una vez liberadas la retroalimentación global y por pregunta con su estado
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -29,7 +29,7 @@ import { READY_FEEDBACK_STATUS } from "@/features/evaluation/domain/value-object
 
 /**
  * @throws {EvaluationAttemptNotFoundError} If the attempt does not exist or belongs to another user
- * @throws {GradeFeedbackNotAvailableError} If the grade of the attempt is not published yet
+ * @throws {GradeFeedbackNotAvailableError} If the teacher has not released the grade and the answers of the attempt yet
  */
 @Injectable()
 export class GetMyGradeFeedbackUseCase {
@@ -49,7 +49,7 @@ export class GetMyGradeFeedbackUseCase {
       throw new EvaluationAttemptNotFoundError();
     }
 
-    if (!attempt.isPublished) {
+    if (!attempt.isPublished || !attempt.areAnswersReleased) {
       throw new GradeFeedbackNotAvailableError();
     }
 

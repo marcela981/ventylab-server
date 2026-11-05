@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de concurrencia de entregas e intentos
  * Descripción: Lanza en paralelo, contra PostgreSQL real, el envío repetido de un intento de evaluación, el intento repetido de un quiz y el inicio y envío repetidos de una entrega de actividad, y verifica que exactamente uno gana, el error documentado para los demás y el estado final en la base de datos
- * Versión: 1.0
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -101,11 +101,15 @@ describe("submission races against PostgreSQL", () => {
     expect(new Set<string>(values.map((value: SubmitEvaluationAttemptResult): string => `${value.status}|${value.grade}|${value.submittedAt?.toISOString()}`)).size).toBe(1);
     expect(await harness.prisma.studentEvaluationAttempt.count({ where: { userId: student.id } })).toBe(1);
     expect(await harness.prisma.studentEvaluationAttempt.count({ where: { userId: student.id, status: "GRADED" } })).toBe(1);
-    expect(await harness.prisma.notification.count({ where: { userId: student.id, type: "GRADE_PUBLISHED" } })).toBe(1);
+    // The grade waits for the teacher release (ajustes C1): no GRADE_PUBLISHED on submit
+    expect(await harness.prisma.notification.count({ where: { userId: student.id, type: "GRADE_PUBLISHED" } })).toBe(0);
   });
 
   it(`should record one quiz attempt when ${CONCURRENCY} attempts race`, async () => {
-    const quiz: EvaluationWithQuestions = await createEvaluation(harness.prisma, { createdBy: teacher, questionTypes: ["SINGLE_CHOICE", "TRUE_FALSE"] });
+    const quiz: EvaluationWithQuestions = await createEvaluation(harness.prisma, { type: "QUIZ", createdBy: teacher, questionTypes: ["SINGLE_CHOICE", "TRUE_FALSE"] });
+
+    // The legacy quiz bank only serves July quizzes (ajustes C1)
+    await harness.prisma.evaluation.update({ where: { id: quiz.evaluation.id }, data: { legacySource: "quiz" } });
     const useCase: AttemptQuizUseCase = harness.app.get(AttemptQuizUseCase);
     const answers: { questionId: string; selectedOptionId: string }[] = quiz.questions.map((question: EvaluationQuestionWithOptions) => ({ questionId: question.id, selectedOptionId: question.options[0].id }));
 

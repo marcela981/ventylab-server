@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Flujo e2e con todos los proveedores de IA caídos
  * Descripción: Arranca la aplicación con proveedores falsos que responden 5xx o agotan el tiempo (tiempos de espera cortos por caso de uso) y verifica que la retroalimentación de evaluaciones y el asesor de simulación responden con el respaldo determinista y que la telemetría de IA registra FALLBACK; v1.1: el análisis de notas (BUG-11, cerrado) y la profundización de páginas del tutor también responden su respaldo determinista marcado source DETERMINISTIC con telemetría FALLBACK y proveedor deterministic; v1.2: la fila FALLBACK guarda idioma, versión del prompt, máximo de tokens, rastro de intentos y costo 0
- * Versión: 1.2
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -92,6 +92,8 @@ describe("flow: every AI provider is down", () => {
     expectStatus(await api("POST", `/api/evaluation-attempts/${attemptId}/submit`, studentToken, {
       answers: evaluation.questions.map((question: EvaluationWithQuestions["questions"][number]) => ({ questionId: question.id, selectedOptionIds: [question.options[0].id] })),
     }), 200);
+    // The feedback reaches the student only once the teacher releases the answers (ajustes C1)
+    expectStatus(await api("POST", `/api/evaluation-grading/attempts/${attemptId}/publish`, await mintAccessToken(teacher, harness.e2e.app), { scope: "GRADE_AND_ANSWERS" }), 200);
 
     const feedback: Response = await waitUntil(
       (): Promise<Response> => api("GET", `/api/evaluation-attempts/${attemptId}/feedback`, studentToken),

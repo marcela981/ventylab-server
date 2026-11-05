@@ -108,7 +108,7 @@ describe("GradeEvaluationAnswerUseCase", () => {
     expect(doubles.attemptsRepository.locks).toContain("evaluations:attempt:evaluation-1:student-1");
   });
 
-  it("auto-publishes when the evaluation shows results immediately", async () => {
+  it("never publishes, even when the evaluation was set to show results immediately", async () => {
     const doubles: GradingDoubles = buildGradingDoubles({
       evaluation: buildAttemptEvaluation({ ...OPEN_TEXT_EXAM, showResultsImmediately: true }),
       attempts: [buildStoredAttempt({ status: "PENDING_REVIEW", answers: [{ id: "answer-1", questionId: "q1", selectedOptionIds: [], autoScore: 1 }] })],
@@ -117,8 +117,8 @@ describe("GradeEvaluationAnswerUseCase", () => {
 
     const result: GradeEvaluationAnswerResult = await grade(doubles, { manualScore: 3 });
 
-    expect(result).toMatchObject({ status: "GRADED", grade: 5, published: true });
-    expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(1);
+    expect(result).toMatchObject({ status: "GRADED", grade: 5, published: false });
+    expect(publishedEvents(doubles, EvaluationGradePublishedEvent)).toHaveLength(0);
   });
 
   it("rejects an override without a comment (422) and audits an override with a comment (check 13)", async () => {

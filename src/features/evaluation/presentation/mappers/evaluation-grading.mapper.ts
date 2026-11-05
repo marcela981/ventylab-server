@@ -71,6 +71,7 @@ export class EvaluationGradingMapper {
             maxScore: view.maxScore ?? null,
             grade: view.grade ?? null,
             gradePublishedAt: view.gradePublishedAt ?? null,
+            answersReleasedAt: view.answersReleasedAt ?? null,
             isLate: view.isLate,
           }),
       ),
@@ -99,6 +100,7 @@ export class EvaluationGradingMapper {
       passed: attempt.grade === undefined ? null : hasPassedEvaluation(attempt.grade, passingGrade),
       passingGrade,
       gradePublishedAt: attempt.gradePublishedAt ?? null,
+      answersReleasedAt: attempt.answersReleasedAt ?? null,
       legacy: attempt.isLegacy,
       scenarios: evaluation.scenarios.map((scenario: EvaluationScenarioItem) => EvaluationsMapper.toScenarioDTO(scenario, mediaUrls)),
       questions: evaluation.questions.map((question: EvaluationQuestionItem) => EvaluationsMapper.toQuestionDTO(question, mediaUrls)),
@@ -122,7 +124,7 @@ export class EvaluationGradingMapper {
   }
 
   public static toPublishResponseDTO(result: PublishEvaluationAttemptGradeResult): PublishAttemptGradeResponseDTO {
-    return new PublishAttemptGradeResponseDTO({ attemptId: result.attemptId, publishedAt: result.publishedAt, alreadyPublished: result.alreadyPublished });
+    return new PublishAttemptGradeResponseDTO({ attemptId: result.attemptId, publishedAt: result.publishedAt, answersReleasedAt: result.answersReleasedAt ?? null, alreadyPublished: result.alreadyPublished });
   }
 
   public static toMyGradeDTO(grade: EvaluationUserGrade): MyEvaluationGradeDTO {

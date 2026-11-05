@@ -27,7 +27,6 @@ import { AddEvaluationOptionUseCase } from "@/features/evaluation/application/us
 import { AddEvaluationQuestionUseCase } from "@/features/evaluation/application/use-cases/add-evaluation-question.usecase";
 import { AddEvaluationScenarioUseCase } from "@/features/evaluation/application/use-cases/add-evaluation-scenario.usecase";
 import { ChangeEvaluationStatusUseCase } from "@/features/evaluation/application/use-cases/change-evaluation-status.usecase";
-import { CheckEvaluationAnswerUseCase } from "@/features/evaluation/application/use-cases/check-evaluation-answer.usecase";
 import { CloseEvaluationAssignmentUseCase } from "@/features/evaluation/application/use-cases/close-evaluation-assignment.usecase";
 import { CreateEvaluationAssignmentsUseCase } from "@/features/evaluation/application/use-cases/create-evaluation-assignments.usecase";
 import { CreateEvaluationUseCase } from "@/features/evaluation/application/use-cases/create-evaluation.usecase";
@@ -49,6 +48,7 @@ import { GetStudentGradesUseCase } from "@/features/evaluation/application/use-c
 import { GradeEvaluationAnswerUseCase } from "@/features/evaluation/application/use-cases/grade-evaluation-answer.usecase";
 import { GenerateGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-generation.usecase";
 import { RegenerateGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-regeneration.usecase";
+import { NotifyReleasedGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-release-notification.usecase";
 import { GetMyGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-student-read.usecase";
 import { GetGradeFeedbackUseCase } from "@/features/evaluation/application/use-cases/grade-feedback-teacher-read.usecase";
 import { PublishEvaluationAttemptGradeUseCase } from "@/features/evaluation/application/use-cases/publish-evaluation-attempt-grade.usecase";
@@ -176,7 +176,6 @@ import { UsersModule } from "@/features/users/users.module";
     StartEvaluationAttemptUseCase,
     GetEvaluationAttemptUseCase,
     SaveEvaluationAnswerUseCase,
-    CheckEvaluationAnswerUseCase,
     SubmitEvaluationAttemptUseCase,
     EvaluationGradingAccess,
     GradingQueueLazyCloser,
@@ -193,6 +192,7 @@ import { UsersModule } from "@/features/users/users.module";
     EvaluationEventsHandlers,
     GradeFeedbackAccess,
     GenerateGradeFeedbackUseCase,
+    NotifyReleasedGradeFeedbackUseCase,
     RegenerateGradeFeedbackUseCase,
     GetMyGradeFeedbackUseCase,
     GetGradeFeedbackUseCase,

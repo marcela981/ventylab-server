@@ -44,11 +44,6 @@ export interface AttemptScoreSummary {
   readonly grade?: number;
 }
 
-export interface PartialClosedScore {
-  readonly correct: number;
-  readonly total: number;
-}
-
 export interface EvaluationAttemptGrading {
   readonly questions: ReadonlyArray<QuestionGrade>;
   readonly score: number;
@@ -137,24 +132,6 @@ export function gradeEvaluationAttempt(
     grade: pending ? undefined : computeEvaluationGrade(score, maxScore),
     zeroMaxScore: maxScore <= 0,
   };
-}
-
-// Correct closed (choice) questions out of all closed questions, shown while open questions wait for the teacher.
-export function computePartialClosedScore(
-  questions: ReadonlyArray<Pick<EvaluationQuestionItem, "id" | "type" | "options">>,
-  answers: ReadonlyMap<string, Pick<GradableAnswer, "selectedOptionIds">>,
-): PartialClosedScore {
-  const closed: ReadonlyArray<Pick<EvaluationQuestionItem, "id" | "type" | "options">> = questions.filter(
-    (question: Pick<EvaluationQuestionItem, "id" | "type" | "options">) => isChoiceQuestionType(question.type),
-  );
-
-  const correct: number = closed.filter((question: Pick<EvaluationQuestionItem, "id" | "type" | "options">) => {
-    const answer: Pick<GradableAnswer, "selectedOptionIds"> | undefined = answers.get(question.id);
-
-    return answer !== undefined && isChoiceAnswerCorrect(question, answer.selectedOptionIds);
-  }).length;
-
-  return { correct, total: closed.length };
 }
 
 export function earnedScore(answer: ScoredAnswer | undefined): number | undefined {

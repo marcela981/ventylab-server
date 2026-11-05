@@ -26,7 +26,6 @@ import {
 } from "@/features/quizzes/domain/read-models/quiz.read-model";
 import { type IQuizzesRepository } from "@/features/quizzes/domain/repositories/quizzes.repository";
 import {
-  QUIZ_ATTEMPT_LEGACY_SOURCE,
   QUIZ_LEGACY_SOURCE,
   type QuizAttemptPersistence,
   type QuizAttemptRow,
@@ -35,23 +34,18 @@ import {
   QuizzesMapper,
 } from "@/features/quizzes/infrastructure/persistence/prisma/mappers/quizzes.mapper";
 
-// Legacy quizzes in any status, plus new QUIZ evaluations that are READY and unassigned (the open bank);
-// assigned evaluations are only reachable through the evaluation attempt flow
+// Legacy quizzes only: new QUIZ evaluations (assigned or not) are reachable solely through the evaluation attempt
+// flow, whose results wait for the teacher release (ajustes C1)
 export const QUIZ_EVALUATION_SCOPE: Prisma.EvaluationWhereInput = {
   type: "QUIZ",
-  OR: [
-    { legacySource: QUIZ_LEGACY_SOURCE },
-    { legacySource: null, status: "READY", assignments: { none: {} } },
-  ],
+  legacySource: QUIZ_LEGACY_SOURCE,
 };
 
-// Only results already visible to the student: legacy quiz attempts, or graded attempts whose grade is published
+// Only results the teacher released: graded attempts whose grade is published
 export const QUIZ_VISIBLE_ATTEMPT_SCOPE: Prisma.StudentEvaluationAttemptWhereInput = {
   evaluation: QUIZ_EVALUATION_SCOPE,
-  OR: [
-    { legacySource: QUIZ_ATTEMPT_LEGACY_SOURCE },
-    { status: "GRADED", gradePublishedAt: { not: null } },
-  ],
+  status: "GRADED",
+  gradePublishedAt: { not: null },
 };
 
 // Same key builder as the evaluation attempt flow (evaluations:attempt:<evaluationId>:<userId>), duplicated so

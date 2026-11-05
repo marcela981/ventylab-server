@@ -1,6 +1,6 @@
 /*
  * Funcionalidad: Cierre y calificación de intentos de evaluación
- * Descripción: Servicio compartido por los casos de uso de intentos: carga un intento solo para su propietario (404 en otro caso), toma el candado exclusivo por evaluación y usuario y el compartido de estructura de la evaluación (pg_advisory_xact_lock_shared sobre la misma clave que el editor), carga la evaluación y el plazo efectivo (plazo del intento ajustado por un cierre anticipado de la asignación), califica con el calificador puro y el puntaje práctico de IPracticalScoreProvider, cierra el intento (publicando la nota según la política por tipo: QUIZ y WORKSHOP siempre, EXAM según showResultsImmediately) y lo cierra de forma perezosa en su propia transacción cuando venció (plazo + gracia de entrega configurable), publicando los eventos tras confirmar; cerrar acepta el solicitante opcional de la retroalimentación (quien entrega)
+ * Descripción: Servicio compartido por los casos de uso de intentos: carga un intento solo para su propietario (404 en otro caso), toma el candado exclusivo por evaluación y usuario y el compartido de estructura de la evaluación (pg_advisory_xact_lock_shared sobre la misma clave que el editor), carga la evaluación y el plazo efectivo (plazo del intento ajustado por un cierre anticipado de la asignación), califica con el calificador puro y el puntaje práctico de IPracticalScoreProvider, cierra el intento (nunca publica: la nota y las respuestas se liberan desde la calificación docente) y lo cierra de forma perezosa en su propia transacción cuando venció (plazo + gracia de entrega configurable), publicando los eventos tras confirmar; cerrar acepta el solicitante opcional de la retroalimentación (quien entrega)
  * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
@@ -119,8 +119,6 @@ export class EvaluationAttemptCloser {
       grading,
       submittedAt,
       now,
-      publishImmediately: evaluation.autoPublishesGrades,
-      passingGrade: this._gradingConfig.passingGrade,
       requester,
     });
   }

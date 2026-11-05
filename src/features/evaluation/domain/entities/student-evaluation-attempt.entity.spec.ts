@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de la calificación docente del agregado StudentEvaluationAttempt
- * Descripción: Verifica la calificación manual por pregunta (rango 0–puntos, comentario obligatorio al sobrescribir un puntaje existente, intento en curso no calificable), el recálculo a GRADED con la nota 0.0–5.0 y sus eventos (calificado, publicado si showResultsImmediately, actualizado al recalificar) y la publicación idempotente solo de intentos GRADED
- * Versión: 1.0
+ * Descripción: Verifica la calificación manual por pregunta (rango 0–puntos, comentario obligatorio al sobrescribir un puntaje existente, intento en curso no calificable), el recálculo a GRADED con la nota 0.0–5.0 y sus eventos (calificado y actualizado al recalificar; nunca publicado al calificar) y la liberación idempotente solo de intentos GRADED: solo la nota o la nota con las respuestas (v2.0, ajustes C1)
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,7 @@ import {
   InvalidManualScoreError,
 } from "@/features/evaluation/domain/evaluation.errors";
 import {
+  EvaluationAnswersReleasedEvent,
   EvaluationAttemptGradedEvent,
   EvaluationGradePublishedEvent,
   EvaluationGradeUpdatedEvent,
@@ -60,8 +61,8 @@ function attempt(overrides: Partial<StudentEvaluationAttemptProps> = {}): Studen
   });
 }
 
-function grade(target: StudentEvaluationAttempt, questionId: string, manualScore: number, comment?: string, publishImmediately: boolean = false): AnswerGradeChange {
-  return target.gradeAnswer({ questions: QUESTIONS, questionId, manualScore, comment, graderId: "teacher-1", now: NOW, publishImmediately, passingGrade: 3 });
+function grade(target: StudentEvaluationAttempt, questionId: string, manualScore: number, comment?: string): AnswerGradeChange {
+  return target.gradeAnswer({ questions: QUESTIONS, questionId, manualScore, comment, graderId: "teacher-1", now: NOW, passingGrade: 3 });
 }
 
 const drained: WeakMap<StudentEvaluationAttempt, DomainEvent[]> = new WeakMap<StudentEvaluationAttempt, DomainEvent[]>();
@@ -88,13 +89,13 @@ describe("StudentEvaluationAttempt grading", () => {
     expect(eventsOf(target, EvaluationGradePublishedEvent)).toHaveLength(0);
   });
 
-  it("publishes immediately when the evaluation shows results immediately", () => {
+  it("never publishes when the teacher finishes the review", () => {
     const target: StudentEvaluationAttempt = attempt();
 
-    grade(target, "q2", 4, undefined, true);
+    grade(target, "q2", 4);
 
-    expect(target.gradePublishedAt).toEqual(NOW);
-    expect(eventsOf(target, EvaluationGradePublishedEvent)[0]).toMatchObject({ grade: 5, passed: true, performedBy: "teacher-1" });
+    expect(target).toMatchObject({ status: "GRADED", gradePublishedAt: undefined, answersReleasedAt: undefined });
+    expect(eventsOf(target, EvaluationGradePublishedEvent)).toHaveLength(0);
   });
 
   it("keeps PENDING_REVIEW while another question is still pending", () => {
@@ -154,12 +155,31 @@ describe("StudentEvaluationAttempt grading", () => {
     expect(() => grade(attempt(), "q9", 1)).toThrow(EvaluationQuestionNotFoundError);
   });
 
-  it("publishes a GRADED attempt once and refuses other statuses", () => {
+  it("releases only the grade, then the answers, once each", () => {
     const target: StudentEvaluationAttempt = attempt({ status: "GRADED", score: 5, grade: 5 });
 
-    expect(target.publishGrade(NOW, 3, "teacher-1")).toBe(true);
-    expect(target.publishGrade(NOW, 3, "teacher-1")).toBe(false);
+    expect(target.releaseResults("GRADE", NOW, 3, "teacher-1")).toEqual({ gradePublished: true, answersReleased: false });
+    expect(target).toMatchObject({ isPublished: true, areAnswersReleased: false });
+    expect(target.releaseResults("GRADE", NOW, 3, "teacher-1")).toEqual({ gradePublished: false, answersReleased: false });
+
+    const later: Date = new Date(NOW.getTime() + 60_000);
+
+    expect(target.releaseResults("GRADE_AND_ANSWERS", later, 3, "teacher-1")).toEqual({ gradePublished: false, answersReleased: true });
+    expect(target).toMatchObject({ gradePublishedAt: NOW, answersReleasedAt: later });
+    expect(target.releaseResults("GRADE_AND_ANSWERS", later, 3, "teacher-1")).toEqual({ gradePublished: false, answersReleased: false });
     expect(eventsOf(target, EvaluationGradePublishedEvent)).toHaveLength(1);
-    expect(() => attempt().publishGrade(NOW, 3, "teacher-1")).toThrow(EvaluationAttemptNotGradedError);
+    expect(eventsOf(target, EvaluationAnswersReleasedEvent)).toHaveLength(1);
+  });
+
+  it("releases the grade and the answers together", () => {
+    const target: StudentEvaluationAttempt = attempt({ status: "GRADED", score: 5, grade: 5 });
+
+    expect(target.releaseResults("GRADE_AND_ANSWERS", NOW, 3, "teacher-1")).toEqual({ gradePublished: true, answersReleased: true });
+    expect(eventsOf(target, EvaluationGradePublishedEvent)[0]).toMatchObject({ grade: 5, passed: true, performedBy: "teacher-1" });
+    expect(eventsOf(target, EvaluationAnswersReleasedEvent)[0]).toMatchObject({ attemptId: "attempt-1", userId: "student-1", releasedAt: NOW });
+  });
+
+  it("refuses to release an attempt that is not GRADED", () => {
+    expect(() => attempt().releaseResults("GRADE", NOW, 3, "teacher-1")).toThrow(EvaluationAttemptNotGradedError);
   });
 });

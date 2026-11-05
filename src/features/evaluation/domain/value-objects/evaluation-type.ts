@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Tipos de evaluación
- * Descripción: Valores EXAM, QUIZ y WORKSHOP de una evaluación, el valor por defecto de mostrar resultados inmediatamente (solo QUIZ) y la política derivada por tipo: retroalimentación inmediata por pregunta (QUIZ y WORKSHOP) y publicación automática de la nota al cerrar (QUIZ y WORKSHOP siempre; EXAM según showResultsImmediately)
- * Versión: 1.1
+ * Descripción: Valores EXAM, QUIZ y WORKSHOP de una evaluación y el valor por defecto heredado de mostrar resultados inmediatamente (solo QUIZ). v2.0 (ajustes C1): ningún tipo revisa respuestas durante el intento ni publica la nota al cerrar; los resultados se liberan solo desde la calificación docente (results-release-scope.ts) y showResultsImmediately queda guardado sin efecto
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,16 +16,7 @@ export const WORKSHOP_EVALUATION_TYPE: EvaluationTypeValue = "WORKSHOP";
 
 export const EVALUATION_TYPE_VALUES: readonly EvaluationTypeValue[] = [EXAM_EVALUATION_TYPE, QUIZ_EVALUATION_TYPE, WORKSHOP_EVALUATION_TYPE] as const;
 
+// Stored for compatibility only: no evaluation type publishes results without a teacher release.
 export function defaultShowResultsImmediately(type: EvaluationTypeValue): boolean {
   return type === QUIZ_EVALUATION_TYPE;
-}
-
-// Whether a student may check a choice answer during the attempt (the answer is locked afterwards).
-export function immediateFeedbackFor(type: EvaluationTypeValue): boolean {
-  return type === QUIZ_EVALUATION_TYPE || type === WORKSHOP_EVALUATION_TYPE;
-}
-
-// Derived instead of stored so existing WORKSHOP rows need no mass update: only EXAM honours the showResultsImmediately column.
-export function autoPublishFor(type: EvaluationTypeValue, showResultsImmediately: boolean): boolean {
-  return type === EXAM_EVALUATION_TYPE ? showResultsImmediately : true;
 }

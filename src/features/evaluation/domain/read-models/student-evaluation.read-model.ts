@@ -45,4 +45,5 @@ export interface StudentAttemptSummaryView {
   readonly maxScore?: number;
   readonly grade?: number;
   readonly gradePublishedAt?: Date;
+  readonly answersReleasedAt?: Date;
 }

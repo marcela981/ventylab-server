@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del mapeador de respuestas del estudiante
- * Descripción: Verifica que el intento serializado para el estudiante nunca expone respuestas correctas, explicaciones, rúbricas ni retroalimentación de opciones mientras la nota no está publicada, y que tras la publicación las incluye junto con el puntaje por pregunta y la nota; la corrección solo de las respuestas revisadas antes de publicar, la pista solo en WORKSHOP y la nota parcial de las cerradas en revisión
- * Versión: 1.1
+ * Descripción: Verifica que el intento serializado para el estudiante nunca expone respuestas correctas, explicaciones, rúbricas ni retroalimentación de opciones hasta que el docente libera las respuestas; que liberar solo la nota expone puntaje, nota y aprobado pero ninguna corrección; que con las respuestas liberadas incluye todo con el puntaje por pregunta; que una respuesta revelada por la antigua revisión inmediata no expone nada y la pista solo en WORKSHOP (v2.0, ajustes C1)
+ * Versión: 2.0
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -70,11 +70,39 @@ describe("StudentEvaluationsMapper.toAttemptDetailDTO (check 11)", () => {
     expect(json).not.toContain("\"score\"");
   });
 
-  it("includes them with the earned score per question once the grade is published", () => {
+  it("exposes the grade but no correction when only the grade is released", () => {
     const attempt: StudentEvaluationAttempt = buildStoredAttempt({
       status: "GRADED",
       submittedAt: minutesFromNow(-1),
       gradePublishedAt: minutesFromNow(-1),
+      score: 6,
+      maxScore: 6,
+      grade: 5,
+      answers: [{ id: "answer-1", questionId: "q1", selectedOptionIds: ["q1-ok"], autoScore: 1 }],
+    });
+
+    const dto: StudentAttemptDetailDTO = StudentEvaluationsMapper.toAttemptDetailDTO(detail(attempt));
+    const json: string = JSON.stringify(dto);
+
+    expect(dto).toMatchObject({ published: true, answersReleased: false, score: 6, maxScore: 6, grade: 5, passed: true });
+    expect(json).not.toContain("isCorrect");
+    expect(json).not.toContain("explanation");
+    expect(json).not.toContain("rubric");
+    expect(json).not.toContain("earnedScore");
+  });
+
+  it("never exposes corrections whose answers release lacks the grade release", () => {
+    const attempt: StudentEvaluationAttempt = buildStoredAttempt({ status: "GRADED", grade: 5, answersReleasedAt: minutesFromNow(-1) });
+
+    expect(StudentEvaluationsMapper.toAttemptDetailDTO(detail(attempt))).toMatchObject({ published: false, answersReleased: false });
+  });
+
+  it("includes them with the earned score per question once the answers are released", () => {
+    const attempt: StudentEvaluationAttempt = buildStoredAttempt({
+      status: "GRADED",
+      submittedAt: minutesFromNow(-1),
+      gradePublishedAt: minutesFromNow(-1),
+      answersReleasedAt: minutesFromNow(-1),
       score: 4,
       maxScore: 6,
       grade: 3.3,
@@ -95,30 +123,7 @@ describe("StudentEvaluationsMapper.toAttemptDetailDTO (check 11)", () => {
   });
 });
 
-describe("StudentEvaluationsMapper.toAttemptDetailDTO partialClosedScore", () => {
-  const pendingAnswers: { id: string; questionId: string; selectedOptionIds: string[]; textAnswer?: string }[] = [
-    { id: "answer-1", questionId: "q1", selectedOptionIds: ["q1-ok"] },
-    { id: "answer-2", questionId: "q2", selectedOptionIds: [], textAnswer: "Raise PEEP" },
-  ];
-
-  function pendingDetail(type: "QUIZ" | "WORKSHOP" | "EXAM"): StudentEvaluationAttemptDetailResult {
-    const evaluation: Evaluation = buildAttemptEvaluation({ type, questions: [attemptQuestion("q1"), attemptQuestion("q4"), attemptQuestion("q2", "OPEN_TEXT", 2)] });
-    const attempt: StudentEvaluationAttempt = buildStoredAttempt({ status: "PENDING_REVIEW", submittedAt: minutesFromNow(-1), answers: pendingAnswers });
-
-    return new StudentEvaluationAttemptDetailResult({ attempt, evaluation, questions: evaluation.questions, mediaUrls: new Map(), now: new Date(), passingGrade: 3 });
-  }
-
-  it("exposes the correct closed questions of a PENDING_REVIEW WORKSHOP attempt", () => {
-    expect(StudentEvaluationsMapper.toAttemptDetailDTO(pendingDetail("WORKSHOP")).partialClosedScore).toEqual({ correct: 1, total: 2 });
-  });
-
-  it("stays null for an EXAM and for attempts that are not pending review", () => {
-    expect(StudentEvaluationsMapper.toAttemptDetailDTO(pendingDetail("EXAM")).partialClosedScore).toBeNull();
-    expect(StudentEvaluationsMapper.toAttemptDetailDTO(detail(buildStoredAttempt())).partialClosedScore).toBeNull();
-  });
-});
-
-describe("StudentEvaluationsMapper.toAttemptDetailDTO immediate feedback and hint", () => {
+describe("StudentEvaluationsMapper.toAttemptDetailDTO retired reveal and hint", () => {
   function feedbackDetail(type: "QUIZ" | "WORKSHOP", answers: EvaluationAnswerRecord[]): StudentEvaluationAttemptDetailResult {
     const evaluation: Evaluation = buildAttemptEvaluation({ type, questions: [{ ...attemptQuestion("q1"), hint: "Look at the plateau" }, attemptQuestion("q2")] });
     const attempt: StudentEvaluationAttempt = buildStoredAttempt({ answers });
@@ -126,7 +131,7 @@ describe("StudentEvaluationsMapper.toAttemptDetailDTO immediate feedback and hin
     return new StudentEvaluationAttemptDetailResult({ attempt, evaluation, questions: evaluation.questions, mediaUrls: new Map(), now: new Date(), passingGrade: 3 });
   }
 
-  it("exposes the correction of a revealed answer only, before publication", () => {
+  it("exposes nothing of an answer revealed by the retired immediate check", () => {
     const revealedAt: Date = minutesFromNow(-1);
     const dto: StudentAttemptDetailDTO = StudentEvaluationsMapper.toAttemptDetailDTO(
       feedbackDetail("QUIZ", [
@@ -135,10 +140,9 @@ describe("StudentEvaluationsMapper.toAttemptDetailDTO immediate feedback and hin
       ]),
     );
 
-    expect(dto.questions[0].reveal).toEqual({ revealedAt, isCorrect: false, correctOptionIds: ["q1-ok"], explanation: "Because the guideline says so" });
-    expect(dto.questions[1].reveal).toBeNull();
-    expect(JSON.stringify(dto.questions[1])).not.toContain("isCorrect");
-    expect(JSON.stringify(dto.questions[1])).not.toContain("explanation");
+    expect(JSON.stringify(dto)).not.toContain("isCorrect");
+    expect(JSON.stringify(dto)).not.toContain("explanation");
+    expect(JSON.stringify(dto)).not.toContain("reveal");
     expect(dto.questions[0].options.every((option: { isCorrect?: boolean }) => option.isCorrect === undefined)).toBe(true);
   });
 
