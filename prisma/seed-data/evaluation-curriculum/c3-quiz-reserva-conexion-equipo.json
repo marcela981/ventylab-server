@@ -1,0 +1,140 @@
+{
+  "id": "c3-quiz-reserva-conexion-equipo",
+  "type": "QUIZ",
+  "title": "Quiz: Reserva y conexión del equipo físico",
+  "description": "Comprueba que conoces las reglas de reserva del ventilador físico, quién puede operarlo y cómo funciona el control exclusivo durante la reserva.",
+  "levelId": "ventylab-avanzado",
+  "moduleId": "2b14c136-be41-539b-89c2-0275eea94368",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "Con la configuración por defecto, ¿cuál es la duración máxima de una reserva del equipo físico y con qué granularidad se programan las franjas?",
+      "options": [
+        {
+          "text": "Hasta 120 minutos, en franjas de 15 minutos.",
+          "isCorrect": true
+        },
+        {
+          "text": "Hasta 60 minutos, en franjas de 30 minutos.",
+          "isCorrect": false
+        },
+        {
+          "text": "Hasta 240 minutos, en franjas de 60 minutos.",
+          "isCorrect": false
+        },
+        {
+          "text": "Sin límite de duración, en franjas de 5 minutos.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "Los valores por defecto son RESERVATION_MAX_DURATION_MINUTES = 120 y RESERVATION_SLOT_MINUTES = 15; las reglas de programación exigen que la reserva esté alineada a la franja y no supere la duración máxima. Un administrador puede ajustar estos valores en la configuración de la plataforma. Fuente: Mazo Castro (2026e)."
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "Con la configuración por defecto, ¿cuántas reservas futuras puede tener un estudiante y con cuánta antelación puede reservar?",
+      "options": [
+        {
+          "text": "Hasta 3 reservas futuras, con un máximo de 14 días de antelación.",
+          "isCorrect": true
+        },
+        {
+          "text": "Hasta 5 reservas futuras, con un máximo de 7 días de antelación.",
+          "isCorrect": false
+        },
+        {
+          "text": "Una sola reserva futura, con un máximo de 30 días de antelación.",
+          "isCorrect": false
+        },
+        {
+          "text": "Reservas ilimitadas, con un máximo de 14 días de antelación.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "Los valores por defecto son RESERVATION_MAX_FUTURE_PER_STUDENT = 3 y RESERVATION_MAX_ADVANCE_DAYS = 14; para un grupo el límite es RESERVATION_MAX_FUTURE_PER_GROUP = 5. Fuente: Mazo Castro (2026e)."
+    },
+    {
+      "key": "q3",
+      "type": "MULTIPLE_CHOICE",
+      "points": 1,
+      "prompt": "Durante una reserva activa, ¿quiénes pueden controlar el ventilador físico? Selecciona todas las correctas.",
+      "options": [
+        {
+          "text": "El usuario titular de la reserva.",
+          "isCorrect": true
+        },
+        {
+          "text": "El líder del grupo titular de la reserva.",
+          "isCorrect": true
+        },
+        {
+          "text": "Un docente.",
+          "isCorrect": true
+        },
+        {
+          "text": "Un administrador.",
+          "isCorrect": true
+        },
+        {
+          "text": "Cualquier estudiante autenticado, aunque no participe en la reserva.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "La política de acceso establece que controlan el ventilador el usuario titular, el líder del grupo titular, los docentes y los administradores; un estudiante sin relación con la reserva activa no puede tomar el control. Fuente: Mazo Castro (2026j)."
+    },
+    {
+      "key": "q4",
+      "type": "TRUE_FALSE",
+      "points": 1,
+      "prompt": "Un docente puede desplazar la reserva de un estudiante para usar el equipo.",
+      "options": [
+        {
+          "text": "Verdadero",
+          "isCorrect": true
+        },
+        {
+          "text": "Falso",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "La política de acceso permite desplazar una reserva al administrador en cualquier caso y al docente cuando el titular es un estudiante; la reserva desplazada queda en estado PREEMPTED y el operador pierde el control de inmediato. Fuente: Mazo Castro (2026j)."
+    },
+    {
+      "key": "q5",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "Eres el operador del equipo y se cierra la última pestaña conectada a la plataforma. Con la configuración por defecto, ¿qué ocurre con el control?",
+      "options": [
+        {
+          "text": "Se inicia un período de gracia de 15 segundos; si no te reconectas, el control queda libre.",
+          "isCorrect": true
+        },
+        {
+          "text": "Conservas el control hasta el final de la reserva aunque no estés conectado.",
+          "isCorrect": false
+        },
+        {
+          "text": "El servidor envía al equipo un comando para detener la ventilación.",
+          "isCorrect": false
+        },
+        {
+          "text": "El control pasa automáticamente al siguiente estudiante del calendario.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "Solo hay un operador a la vez. Cuando el operador cierra su último socket se inicia un temporizador de VENTILATOR_OPERATOR_GRACE_SECONDS (15 s por defecto); una reconexión lo cancela y, si vence, el control se libera. El servidor nunca envía un comando por su cuenta: solo revoca el control. Fuente: Mazo Castro (2026l)."
+    }
+  ],
+  "sources": [
+    "Mazo Castro, M. (2026e). Variables de entorno de ejemplo con valores por defecto (wt-c-server/.env.example) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026k). Reglas de programación de reservas (wt-c-server/src/features/reservations/domain/services/reservation-scheduling-rules.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026j). Política de acceso a reservas (wt-c-server/src/features/reservations/domain/services/reservation-access-policy.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026l). Comandos del ventilador (wt-c-server/docs/ventilator/commands.md) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026d). Manifiesto del currículo VentyLab (wt-b-server/src/features/curriculum/infrastructure/content-import/curriculum.manifest.ts) [Documentación técnica]. VentyLab."
+  ]
+}

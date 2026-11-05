@@ -1,0 +1,85 @@
+{
+  "id": "c3-workshop-prerequisitos",
+  "type": "WORKSHOP",
+  "title": "Taller: De la fisiología a la indicación de ventilación",
+  "description": "Caso guiado que integra la ecuación del gas alveolar, el equilibrio ácido-base y las indicaciones de la ventilación mecánica.",
+  "levelId": "level-prerequisitos",
+  "moduleId": null,
+  "durationMinutes": null,
+  "scenario": [
+    "Un hombre de 34 años, sin enfermedad pulmonar conocida, llega a urgencias con depresión del nivel de conciencia tras una intoxicación por sedantes. Respira de forma lenta y superficial y responde solo a estímulos dolorosos.",
+    "La gasometría arterial respirando aire ambiente (FiO₂ 0,21, a nivel del mar) muestra: pH 7,21; PaCO₂ 70 mmHg; PaO₂ 55 mmHg; HCO₃⁻ 27 mmol/L.",
+    "Para los cálculos, asuma presión barométrica de 760 mmHg, presión de vapor de agua de 47 mmHg y cociente respiratorio de 0,8."
+  ],
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Aplicando la ecuación del gas alveolar, ¿cuál es la PAO₂ aproximada de este paciente?",
+      "points": 1,
+      "hint": "Calcule primero la presión inspirada de O₂ restando la presión de vapor de agua; luego reste la PaCO₂ dividida por el cociente respiratorio.",
+      "explanation": "PIO₂ = 0,21 × (760 − 47) ≈ 150 mmHg; PAO₂ ≈ 150 − 70/0,8 = 150 − 87,5 ≈ 62 mmHg. La PaCO₂ alta desplaza O₂ del alvéolo. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Aproximadamente 62 mmHg", "isCorrect": true },
+        { "text": "Aproximadamente 100 mmHg", "isCorrect": false },
+        { "text": "Aproximadamente 80 mmHg", "isCorrect": false },
+        { "text": "Aproximadamente 150 mmHg", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Con la PAO₂ calculada y la PaO₂ medida, ¿cuál es el mecanismo más probable de la hipoxemia?",
+      "points": 1,
+      "hint": "Compare la PAO₂ con la PaO₂: piense qué indica una diferencia alveoloarterial pequeña frente a una grande.",
+      "explanation": "La diferencia alveoloarterial es de unos 7 mmHg (62 − 55), un valor bajo: el pulmón transfiere bien el O₂ y la hipoxemia se explica por la caída de la PAO₂ secundaria a hipoventilación. En el cortocircuito o el desequilibrio ventilación/perfusión la diferencia estaría aumentada. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Hipoventilación alveolar con diferencia alveoloarterial conservada.", "isCorrect": true },
+        { "text": "Cortocircuito intrapulmonar.", "isCorrect": false },
+        { "text": "Alteración de la difusión por engrosamiento de la membrana.", "isCorrect": false },
+        { "text": "Desequilibrio ventilación/perfusión grave.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q3",
+      "type": "SINGLE_CHOICE",
+      "prompt": "¿Cómo se interpreta el estado ácido-base de este paciente?",
+      "points": 1,
+      "hint": "Identifique el trastorno primario con el pH y la PaCO₂, y luego compare el cambio del bicarbonato con la compensación que se espera en la fase aguda.",
+      "explanation": "Hay acidemia con PaCO₂ alta: acidosis respiratoria. La PaCO₂ subió unos 30 mmHg y el HCO₃⁻ unos 3 mmol/L, lo que coincide con el aumento esperado en la forma aguda (alrededor de 1 mmol/L por cada 10 mmHg); en la forma crónica el bicarbonato sería claramente más alto. Fuente: Berend et al. (2014).",
+      "options": [
+        { "text": "Acidosis respiratoria aguda.", "isCorrect": true },
+        { "text": "Acidosis respiratoria crónica compensada.", "isCorrect": false },
+        { "text": "Acidosis metabólica con anión gap elevado.", "isCorrect": false },
+        { "text": "Alcalosis metabólica con hipoventilación compensadora.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q4",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "Si el paciente no mejora con el tratamiento inicial, ¿qué hallazgos apoyan la indicación de intubación y ventilación mecánica? Seleccione todos los correctos.",
+      "points": 1,
+      "hint": "Piense en las indicaciones clásicas: protección de la vía aérea, intercambio gaseoso y capacidad ventilatoria.",
+      "explanation": "Apoyan la indicación la incapacidad para proteger la vía aérea por el deterioro de conciencia, la acidosis respiratoria hipercápnica que progresa y la ventilación espontánea insuficiente. Una SpO₂ normal con oxígeno suplementario no descarta la necesidad de soporte, porque el oxígeno puede corregir la saturación sin corregir la hipoventilación ni la hipercapnia. Fuente: Tobin (2013).",
+      "options": [
+        { "text": "Incapacidad para proteger la vía aérea por el deterioro de conciencia.", "isCorrect": true },
+        { "text": "Acidosis respiratoria hipercápnica que progresa.", "isCorrect": true },
+        { "text": "Ventilación espontánea insuficiente para eliminar el CO₂.", "isCorrect": true },
+        { "text": "Una SpO₂ normal tras administrar oxígeno, que demuestra que ya no necesita soporte.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q5",
+      "type": "OPEN_TEXT",
+      "prompt": "Explique, con la ecuación del gas alveolar y la relación entre PaCO₂ y ventilación alveolar, por qué administrar solo oxígeno puede mejorar la PaO₂ de este paciente sin resolver su problema principal, y qué cambia cuando un ventilador aumenta la ventilación alveolar.",
+      "points": 1,
+      "hint": "Separe los dos objetivos: oxigenación y eliminación de CO₂. ¿Qué variable controla cada uno?",
+      "explanation": "Respuesta esperada: al aumentar la FiO₂ sube la PIO₂ y, por la ecuación del gas alveolar, también la PAO₂ y la PaO₂, aunque la ventilación siga baja; por eso la saturación puede mejorar mientras la PaCO₂ y la acidosis persisten o empeoran. La PaCO₂ es inversamente proporcional a la ventilación alveolar (a producción de CO₂ constante): si el ventilador aumenta la ventilación alveolar, baja la PaCO₂, se corrige la acidemia y, al reducirse el término PaCO₂/R, también sube la PAO₂. Fuente: West y Luks (2016)."
+    }
+  ],
+  "sources": [
+    "West, J. B., & Luks, A. M. (2016). West's respiratory physiology: The essentials (10th ed.). Wolters Kluwer.",
+    "Berend, K., de Vries, A. P. J., & Gans, R. O. B. (2014). Physiological approach to assessment of acid–base disturbances. The New England Journal of Medicine, 371(15), 1434–1445. https://doi.org/10.1056/NEJMra1003327",
+    "Tobin, M. J. (Ed.). (2013). Principles and practice of mechanical ventilation (3rd ed.). McGraw-Hill."
+  ]
+}

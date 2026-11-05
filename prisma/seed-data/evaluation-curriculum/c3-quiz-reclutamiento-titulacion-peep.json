@@ -1,0 +1,83 @@
+{
+  "id": "c3-quiz-reclutamiento-titulacion-peep",
+  "type": "QUIZ",
+  "title": "Quiz: Reclutamiento alveolar y titulación de PEEP",
+  "description": "Comprueba la fisiología, la evidencia y los riesgos de las maniobras de reclutamiento, y los métodos de titulación de PEEP en el SDRA.",
+  "levelId": "level-avanzado",
+  "moduleId": "3f6d343e-81c7-544d-a496-af77e7db3c3d",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "prompt": "En el ensayo ART (SDRA moderado a grave), ¿qué resultado obtuvo la estrategia de maniobra de reclutamiento con PEEP titulada por la mejor distensibilidad, frente a una estrategia de PEEP baja?",
+      "points": 1,
+      "explanation": "La estrategia de reclutamiento más PEEP titulada aumentó la mortalidad por cualquier causa a 28 días y se asoció con más barotrauma, por lo que los autores concluyeron que no respalda su uso rutinario. Fuente: Writing Group for the Alveolar Recruitment for Acute Respiratory Distress Syndrome Trial Investigators (2017).",
+      "options": [
+        { "text": "Aumentó la mortalidad a 28 días.", "isCorrect": true },
+        { "text": "Redujo la mortalidad a 28 días.", "isCorrect": false },
+        { "text": "No modificó la mortalidad pero eliminó el barotrauma.", "isCorrect": false },
+        { "text": "Redujo la duración de la ventilación sin efecto en la seguridad.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "prompt": "¿Qué recomienda la guía de la ESICM de 2023 sobre las maniobras de reclutamiento prolongadas de alta presión en pacientes con SDRA?",
+      "points": 1,
+      "explanation": "La guía recomienda no usar de forma rutinaria las maniobras de reclutamiento prolongadas de alta presión (recomendación fuerte) y sugiere tampoco usar de rutina las maniobras breves de alta presión (recomendación débil). Fuente: Grasselli et al. (2023).",
+      "options": [
+        { "text": "Recomienda no utilizarlas de forma rutinaria.", "isCorrect": true },
+        { "text": "Recomienda aplicarlas en todos los pacientes al ingreso.", "isCorrect": false },
+        { "text": "Recomienda aplicarlas cada vez que se desconecta el circuito.", "isCorrect": false },
+        { "text": "No emite ninguna recomendación por falta de estudios.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q3",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "¿Cuáles de los siguientes son métodos descritos para seleccionar la PEEP en el SDRA? Seleccione todos los correctos.",
+      "points": 1,
+      "explanation": "Entre los métodos descritos están las tablas de combinaciones PEEP/FiO₂ del ARDS Network, la titulación decremental buscando la mejor distensibilidad, la estimación de la presión transpulmonar con presión esofágica y la tomografía de impedancia eléctrica. Elegir la PEEP que maximice la presión meseta no es un criterio de titulación: la meta es limitarla. Fuente: Hess y Kacmarek (2019).",
+      "options": [
+        { "text": "Tablas de combinaciones PEEP/FiO₂ del ARDS Network.", "isCorrect": true },
+        { "text": "Titulación decremental buscando la mejor distensibilidad del sistema respiratorio.", "isCorrect": true },
+        { "text": "Presión esofágica para estimar la presión transpulmonar.", "isCorrect": true },
+        { "text": "Tomografía de impedancia eléctrica.", "isCorrect": true },
+        { "text": "Seleccionar la PEEP que produzca la mayor presión meseta posible.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q4",
+      "type": "TRUE_FALSE",
+      "prompt": "La proporción de pulmón potencialmente reclutable varía ampliamente entre pacientes con SDRA, por lo que la respuesta a la PEEP alta no es uniforme.",
+      "points": 1,
+      "explanation": "Verdadero. En el estudio con tomografía de Gattinoni y colaboradores, el porcentaje de tejido reclutable fue muy variable entre pacientes; los de mayor reclutabilidad respondieron mejor a la PEEP, mientras que en los poco reclutables la PEEP alta aporta poco y puede sobredistender. Fuente: Gattinoni et al. (2006).",
+      "options": [
+        { "text": "Verdadero", "isCorrect": true },
+        { "text": "Falso", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q5",
+      "type": "SINGLE_CHOICE",
+      "prompt": "En un paciente pasivo con SDRA se aumenta la PEEP manteniendo el mismo volumen corriente. ¿Qué cambio de la presión de distensión (driving pressure = presión meseta − PEEP) sugiere que la PEEP adicional reclutó alvéolos?",
+      "points": 1,
+      "explanation": "Con volumen corriente constante, la presión de distensión es inversamente proporcional a la distensibilidad. Si baja al subir la PEEP, el volumen se distribuye en más pulmón aireado (reclutamiento); si sube, predomina la sobredistensión. La presión de distensión se asoció con la supervivencia en el SDRA. Fuente: Amato et al. (2015).",
+      "options": [
+        { "text": "Que la presión de distensión disminuya.", "isCorrect": true },
+        { "text": "Que la presión de distensión aumente.", "isCorrect": false },
+        { "text": "Que la presión pico aumente aunque la meseta no cambie.", "isCorrect": false },
+        { "text": "Que la presión meseta aumente lo mismo que la PEEP.", "isCorrect": false }
+      ]
+    }
+  ],
+  "sources": [
+    "Writing Group for the Alveolar Recruitment for Acute Respiratory Distress Syndrome Trial (ART) Investigators. (2017). Effect of lung recruitment and titrated positive end-expiratory pressure (PEEP) vs low PEEP on mortality in patients with acute respiratory distress syndrome: A randomized clinical trial. JAMA, 318(14), 1335–1345. https://doi.org/10.1001/jama.2017.14171",
+    "Grasselli, G., Calfee, C. S., Camporota, L., Poole, D., Amato, M. B. P., Antonelli, M., … European Society of Intensive Care Medicine Taskforce on ARDS. (2023). ESICM guidelines on acute respiratory distress syndrome: Definition, phenotyping and respiratory support strategies. Intensive Care Medicine, 49(7), 727–759. https://doi.org/10.1007/s00134-023-07050-7",
+    "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education.",
+    "Gattinoni, L., Caironi, P., Cressoni, M., Chiumello, D., Ranieri, V. M., Quintel, M., Russo, S., Patroniti, N., Cornejo, R., & Bugedo, G. (2006). Lung recruitment in patients with the acute respiratory distress syndrome. The New England Journal of Medicine, 354(17), 1775–1786. https://doi.org/10.1056/NEJMoa052052",
+    "Amato, M. B. P., Meade, M. O., Slutsky, A. S., Brochard, L., Costa, E. L. V., Schoenfeld, D. A., Stewart, T. E., Briel, M., Talmor, D., Mercat, A., Richard, J.-C. M., Carvalho, C. R. R., & Brower, R. G. (2015). Driving pressure and survival in the acute respiratory distress syndrome. The New England Journal of Medicine, 372(8), 747–755. https://doi.org/10.1056/NEJMsa1410639"
+  ]
+}

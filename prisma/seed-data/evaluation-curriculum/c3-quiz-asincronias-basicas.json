@@ -1,0 +1,81 @@
+{
+  "id": "c3-quiz-asincronias-basicas",
+  "type": "QUIZ",
+  "title": "Quiz: Asincronías paciente-ventilador",
+  "description": "Comprueba el reconocimiento de las asincronías de disparo, de flujo y de ciclado y su relevancia clínica.",
+  "levelId": "level-intermedio",
+  "moduleId": "f9e877f8-7590-592c-ab04-a57e4d309c9a",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "prompt": "En el estudio de Thille y colaboradores sobre ventilación asistida, ¿cuál fue el tipo de asincronía más frecuente?",
+      "points": 1,
+      "explanation": "Los esfuerzos inefectivos (el paciente intenta inspirar pero no logra disparar el ventilador) fueron el patrón más frecuente, seguidos por el doble disparo. Fuente: Thille et al. (2006).",
+      "options": [
+        { "text": "Los esfuerzos inefectivos.", "isCorrect": true },
+        { "text": "El autodisparo.", "isCorrect": false },
+        { "text": "El ciclado tardío.", "isCorrect": false },
+        { "text": "El disparo reverso.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "prompt": "¿Cómo se calcula el índice de asincronía y qué valor se utilizó para definir una asincronía de alta frecuencia?",
+      "points": 1,
+      "explanation": "El índice de asincronía es el número de eventos asincrónicos dividido por la frecuencia respiratoria total (ciclos del ventilador más esfuerzos inefectivos), multiplicado por 100. Un índice mayor del 10 % definió asincronía frecuente y se asoció con mayor duración de la ventilación mecánica; estudios posteriores también lo asociaron con mayor mortalidad (Blanch et al., 2015). Fuente: Thille et al. (2006).",
+      "options": [
+        { "text": "Eventos asincrónicos / (ciclos del ventilador + esfuerzos inefectivos) × 100; asincronía frecuente si es mayor del 10 %.", "isCorrect": true },
+        { "text": "Eventos asincrónicos / ciclos programados × 100; asincronía frecuente si es mayor del 50 %.", "isCorrect": false },
+        { "text": "Esfuerzos inefectivos / volumen corriente × 100; asincronía frecuente si es mayor del 1 %.", "isCorrect": false },
+        { "text": "Frecuencia del paciente − frecuencia programada; asincronía frecuente si la diferencia es positiva.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q3",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "El autodisparo ocurre cuando el ventilador entrega ciclos que el paciente no ha iniciado. ¿Cuáles de las siguientes son causas reconocidas? Seleccione todas las correctas.",
+      "points": 1,
+      "explanation": "El autodisparo aparece cuando una señal ajena al esfuerzo del paciente supera el umbral de disparo: fugas en el circuito o alrededor del tubo, condensado de agua que oscila en el circuito, oscilaciones cardiogénicas y un umbral de disparo demasiado sensible. La sedación profunda no lo causa; por el contrario, reduce el esfuerzo propio. Fuente: Hess y Kacmarek (2019).",
+      "options": [
+        { "text": "Fugas en el circuito o alrededor del tubo endotraqueal.", "isCorrect": true },
+        { "text": "Condensado de agua en el circuito.", "isCorrect": true },
+        { "text": "Oscilaciones cardiogénicas transmitidas a la vía aérea.", "isCorrect": true },
+        { "text": "Umbral de disparo programado con sensibilidad excesiva.", "isCorrect": true },
+        { "text": "Sedación profunda sin esfuerzo inspiratorio.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q4",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Un paciente con alta demanda ventilatoria está en ventilación controlada por volumen con flujo fijo y presenta asincronía de flujo (flujo insuficiente para su demanda). ¿Cuál es una medida adecuada para corregirla?",
+      "points": 1,
+      "explanation": "En VCV el flujo es fijo; si la demanda del paciente lo supera, el esfuerzo deforma la curva de presión y aumenta el trabajo respiratorio. Se corrige aumentando el flujo inspiratorio programado o cambiando a un modo con flujo variable, controlado por presión, que entrega el flujo según la demanda. Fuente: Hess y Kacmarek (2019).",
+      "options": [
+        { "text": "Aumentar el flujo inspiratorio o pasar a un modo con flujo variable controlado por presión.", "isCorrect": true },
+        { "text": "Reducir el flujo inspiratorio para alargar la inspiración.", "isCorrect": false },
+        { "text": "Disminuir la sensibilidad del disparo para que el paciente no inicie ciclos.", "isCorrect": false },
+        { "text": "Aumentar la PEEP hasta que desaparezca el esfuerzo.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q5",
+      "type": "TRUE_FALSE",
+      "prompt": "En el ciclado prematuro, el ventilador termina la inspiración antes de que finalice el esfuerzo inspiratorio del paciente, y el esfuerzo que continúa puede disparar un segundo ciclo (doble disparo).",
+      "points": 1,
+      "explanation": "Verdadero. Cuando el tiempo inspiratorio del ventilador es más corto que el tiempo inspiratorio neural, el paciente sigue inspirando durante la espiración y puede generar un segundo disparo inmediato, con acumulación de volumen. Fuente: Thille et al. (2006).",
+      "options": [
+        { "text": "Verdadero", "isCorrect": true },
+        { "text": "Falso", "isCorrect": false }
+      ]
+    }
+  ],
+  "sources": [
+    "Thille, A. W., Rodriguez, P., Cabello, B., Lellouche, F., & Brochard, L. (2006). Patient-ventilator asynchrony during assisted mechanical ventilation. Intensive Care Medicine, 32(10), 1515–1522. https://doi.org/10.1007/s00134-006-0301-8",
+    "Blanch, L., Villagra, A., Sales, B., Montanya, J., Lucangelo, U., Luján, M., García-Esquirol, O., Chacón, E., Estruga, A., Oliva, J. C., Hernández-Abadia, A., Albaiceta, G. M., Fernández-Mondejar, E., Fernández, R., Lopez-Aguilar, J., Villar, J., Murias, G., & Kacmarek, R. M. (2015). Asynchronies during mechanical ventilation are associated with mortality. Intensive Care Medicine, 41(4), 633–641. https://doi.org/10.1007/s00134-015-3692-6",
+    "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+  ]
+}
