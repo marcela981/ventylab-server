@@ -27,7 +27,9 @@
     "name_must_not_be_empty": "Name must not be empty",
     "name_max_length": "Name must not exceed {constraints.0} characters",
     "image_must_be_valid_url": "Image must be a valid http(s) URL",
-    "image_too_long": "Image URL must not exceed {constraints.0} characters"
+    "image_too_long": "Image URL must not exceed {constraints.0} characters",
+    "theme_mode_invalid": "themeMode must be one of: light, dark",
+    "theme_palette_invalid": "themePalette must be one of: ventylab, univalle"
   },
   "change_password": {
     "current_password_must_be_string": "Current password must be a string",

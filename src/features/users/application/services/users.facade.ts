@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fachada UsersFacade
- * Descripción: API pública de la feature de usuarios para otras features (auth, grupos): consulta de cuentas por ID, detección del superadmin, comparación jerárquica de roles (STUDENT < TEACHER < ADMIN), alta o vinculación con Google y la imagen que se muestra del usuario (foto subida o imagen guardada); devuelve el modelo de lectura UserAccount (con el código de estudiante)
- * Versión: 1.2
+ * Descripción: API pública de la feature de usuarios para otras features (auth, grupos): consulta de cuentas por ID, detección del superadmin, comparación jerárquica de roles (STUDENT < TEACHER < ADMIN), alta o vinculación con Google y la imagen que se muestra del usuario (foto subida o imagen guardada); devuelve el modelo de lectura UserAccount (con el código de estudiante) v1.3: getUserByEmail (recuperación de contraseña) y la preferencia de apariencia en UserAccount
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -50,6 +50,12 @@ export class UsersFacade {
 
       return user.image;
     }
+  }
+
+  public async getUserByEmail(email: string): Promise<UserAccount | undefined> {
+    const user: User | undefined = await this._usersRepository.getByEmail(email);
+
+    return user ? UsersFacade._toAccount(user) : undefined;
   }
 
   public async getUserById(id: string): Promise<UserAccount | undefined> {
@@ -101,6 +107,8 @@ export class UsersFacade {
       refreshTokensRevokedAt: user.refreshTokensRevokedAt,
       createdAt: user.createdAt,
       studentCode: user.studentCode,
+      themeMode: user.themeMode,
+      themePalette: user.themePalette,
     };
   }
 }

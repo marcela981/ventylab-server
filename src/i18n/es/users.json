@@ -27,7 +27,9 @@
     "name_must_not_be_empty": "El nombre no puede estar vacío",
     "name_max_length": "El nombre no puede exceder {constraints.0} caracteres",
     "image_must_be_valid_url": "La imagen debe ser una URL http(s) válida",
-    "image_too_long": "La URL de la imagen no debe superar {constraints.0} caracteres"
+    "image_too_long": "La URL de la imagen no debe superar {constraints.0} caracteres",
+    "theme_mode_invalid": "El modo debe ser uno de: light, dark",
+    "theme_palette_invalid": "La paleta debe ser una de: ventylab, univalle"
   },
   "change_password": {
     "current_password_must_be_string": "La contraseña actual debe ser una cadena de texto",

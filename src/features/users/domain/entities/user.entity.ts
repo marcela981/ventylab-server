@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Entidad User
- * Descripción: Agregado de usuario con datos de perfil, rol, contraseña, estado activo, vínculo con Google, revocación de refresh tokens y código estudiantil opcional asignado por un administrador, y sus eventos y registros de auditoría
- * Versión: 1.4
+ * Descripción: Agregado de usuario con datos de perfil, rol, contraseña, estado activo, vínculo con Google, revocación de refresh tokens y código estudiantil opcional asignado por un administrador, y sus eventos y registros de auditoría v1.5: preferencia de apariencia (themeMode, themePalette) con changeThemePreference, sin auditoría (Ajustes D4)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import {
   UserRoleChangedEvent,
   UserStatusChangedEvent,
 } from "@/features/users/domain/events/user.events";
+import { type ThemeModeValue, type ThemePaletteValue } from "@/features/users/domain/value-objects/theme-preference";
 import { UserRole } from "@/features/users/domain/value-objects/user-role";
 
 export const USER_ENTITY_COLLECTION: string = "users";
@@ -54,6 +55,8 @@ export class User extends AggregateRoot {
   private _refreshTokensRevokedAt?: Date;
   private _studentCode?: string;
   private _avatarMediaId?: string;
+  private _themeMode?: ThemeModeValue;
+  private _themePalette?: ThemePaletteValue;
   private _createdAt: Date;
   private _updatedAt: Date;
   private _auditLogs: AuditLog<UserAuditAction>[];
@@ -71,6 +74,8 @@ export class User extends AggregateRoot {
     refreshTokensRevokedAt,
     studentCode,
     avatarMediaId,
+    themeMode,
+    themePalette,
     createdAt,
     updatedAt,
     auditLogs,
@@ -87,6 +92,8 @@ export class User extends AggregateRoot {
     refreshTokensRevokedAt?: Date;
     studentCode?: string;
     avatarMediaId?: string;
+    themeMode?: ThemeModeValue;
+    themePalette?: ThemePaletteValue;
     createdAt: Date;
     updatedAt: Date;
     auditLogs: AuditLog<UserAuditAction>[];
@@ -104,6 +111,8 @@ export class User extends AggregateRoot {
     this._refreshTokensRevokedAt = refreshTokensRevokedAt;
     this._studentCode = studentCode;
     this._avatarMediaId = avatarMediaId;
+    this._themeMode = themeMode;
+    this._themePalette = themePalette;
     this._createdAt = createdAt;
     this._updatedAt = updatedAt;
     this._auditLogs = auditLogs;
@@ -155,6 +164,14 @@ export class User extends AggregateRoot {
 
   public get avatarMediaId(): string | undefined {
     return this._avatarMediaId;
+  }
+
+  public get themeMode(): ThemeModeValue | undefined {
+    return this._themeMode;
+  }
+
+  public get themePalette(): ThemePaletteValue | undefined {
+    return this._themePalette;
   }
 
   public get createdAt(): Date {
@@ -228,6 +245,8 @@ export class User extends AggregateRoot {
     refreshTokensRevokedAt,
     studentCode,
     avatarMediaId,
+    themeMode,
+    themePalette,
     createdAt,
     updatedAt,
     auditLogs,
@@ -244,6 +263,8 @@ export class User extends AggregateRoot {
     refreshTokensRevokedAt?: Date;
     studentCode?: string;
     avatarMediaId?: string;
+    themeMode?: ThemeModeValue;
+    themePalette?: ThemePaletteValue;
     createdAt: Date;
     updatedAt: Date;
     auditLogs: AuditLog<UserAuditAction>[];
@@ -261,6 +282,8 @@ export class User extends AggregateRoot {
       refreshTokensRevokedAt,
       studentCode,
       avatarMediaId,
+      themeMode,
+      themePalette,
       createdAt,
       updatedAt,
       auditLogs,
@@ -301,6 +324,22 @@ export class User extends AggregateRoot {
 
       this.publishEvent(new UserProfileUpdatedEvent({ entity: this, changes, performedBy }));
     }
+  }
+
+  // Appearance preference (Ajustes D4): a UI choice, not audited; undefined keeps the current value.
+  public changeThemePreference({ mode, palette }: { mode?: ThemeModeValue; palette?: ThemePaletteValue }): boolean {
+    const nextMode: ThemeModeValue | undefined = mode ?? this._themeMode;
+    const nextPalette: ThemePaletteValue | undefined = palette ?? this._themePalette;
+
+    if (nextMode === this._themeMode && nextPalette === this._themePalette) {
+      return false;
+    }
+
+    this._themeMode = nextMode;
+    this._themePalette = nextPalette;
+    this._updatedAt = new Date();
+
+    return true;
   }
 
   /** Sets (or removes with undefined) the uploaded profile photo and returns the previous one so the caller can delete it. */

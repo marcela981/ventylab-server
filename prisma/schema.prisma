@@ -23,12 +23,16 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Identity features
-  isActive               Boolean   @default(true)
-  googleId               String?   @unique
+  isActive               Boolean              @default(true)
+  googleId               String?              @unique
   refreshTokensRevokedAt DateTime? // Refresh tokens issued (iat) before this instant are rejected
-  studentCode            String?   @unique @map("student_code") // Institutional student code, set by an admin
-  avatarMediaId          String?   @map("avatar_media_id") // Uploaded profile photo; UserDTO.image falls back to image (Google) without it
-  avatarMedia            Media?    @relation("UserAvatar", fields: [avatarMediaId], references: [id], onDelete: SetNull)
+  studentCode            String?              @unique @map("student_code") // Institutional student code, set by an admin
+  avatarMediaId          String?              @map("avatar_media_id") // Uploaded profile photo; UserDTO.image falls back to image (Google) without it
+  avatarMedia            Media?               @relation("UserAvatar", fields: [avatarMediaId], references: [id], onDelete: SetNull)
+  // Appearance preference (Ajustes D4): light | dark and ventylab | univalle; null = not chosen yet (system mode, VentyLab).
+  themeMode              String?              @map("theme_mode")
+  themePalette           String?              @map("theme_palette")
+  passwordResetTokens    PasswordResetToken[]
 
   accounts           Account[]
   sessions           Session[]
@@ -123,6 +127,24 @@ model User {
   @@index([isActive])
   @@index([avatarMediaId])
   @@map("users")
+}
+
+// ============================================
+// PasswordResetToken - single-use password reset links (Ajustes D3)
+// ============================================
+// Only the SHA-256 hash of the emailed token is stored; a token expires 30 minutes after it is issued and is
+// consumed (usedAt) by the reset. A new request invalidates the unused tokens of the same user.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 // ============================================

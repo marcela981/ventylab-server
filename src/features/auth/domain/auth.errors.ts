@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Errores de autenticación
- * Descripción: Errores de dominio de credenciales, tokens, revocación, usuario inactivo, inicio de sesión con Google y permisos. v1.2: sin el error del secreto del puente de NextAuth retirado
- * Versión: 1.2
+ * Descripción: Errores de dominio de credenciales, tokens, revocación, usuario inactivo, inicio de sesión con Google y permisos. v1.2: sin el error del secreto del puente de NextAuth retirado v1.3: PasswordResetTokenInvalidError (enlace de recuperación desconocido, vencido o usado)
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -99,5 +99,12 @@ export class GoogleEmailNotVerifiedError extends DomainError {
 export class EmailDomainNotAllowedError extends DomainError {
   public constructor() {
     super("Email domain is not allowed", "auth.email_domain_not_allowed");
+  }
+}
+
+// Unknown, expired or already used password reset link (one generic error: it never says which).
+export class PasswordResetTokenInvalidError extends DomainError {
+  public constructor() {
+    super("Invalid or expired password reset token", "auth.password_reset_token_invalid");
   }
 }

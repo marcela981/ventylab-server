@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Utilidad issueLoginResult
- * Descripción: Emite el mismo par de tokens de acceso y de refresco para cualquier inicio de sesión (local o con Google) y arma el LoginResult. v1.1: sin el puente de NextAuth retirado; opcionalmente fecha el refresh token con un iat explícito (reemisión tras cambiar la contraseña)
- * Versión: 1.2
+ * Descripción: Emite el mismo par de tokens de acceso y de refresco para cualquier inicio de sesión (local o con Google) y arma el LoginResult. v1.1: sin el puente de NextAuth retirado; opcionalmente fecha el refresh token con un iat explícito (reemisión tras cambiar la contraseña) v1.3: el usuario del resultado lleva la preferencia de apariencia
+ * Versión: 1.3
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -25,6 +25,6 @@ export async function issueLoginResult(tokenGenerator: ITokenGenerator, user: Au
   return new LoginResult({
     accessToken,
     refreshToken,
-    user: { id: user.id, email: user.email, name: user.name, role: user.role, image: user.image },
+    user: { id: user.id, email: user.email, name: user.name, role: user.role, image: user.image, themeMode: user.themeMode, themePalette: user.themePalette },
   });
 }

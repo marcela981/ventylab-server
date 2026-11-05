@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapa de errores de dominio
- * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global
- * Versión: 1.44
+ * Descripción: Asocia cada clase de error de dominio con su código de estado HTTP para el filtro global v1.45: PasswordResetTokenInvalidError → 400 (Ajustes D3)
+ * Versión: 1.45
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -69,6 +69,7 @@ import {
   InvalidGoogleTokenError,
   InvalidTokenError,
   PasswordLoginNotAvailableError,
+  PasswordResetTokenInvalidError,
   RefreshTokenExpiredError,
   RefreshTokenInvalidError,
   RefreshTokenRevokedError,
@@ -347,6 +348,7 @@ export const DOMAIN_ERROR_STATUS_MAP: Map<new (...args: any[]) => DomainError, H
   [UnauthorizedError, HttpStatus.UNAUTHORIZED],
   [TokenExpiredError, HttpStatus.UNAUTHORIZED],
   [InvalidTokenError, HttpStatus.UNAUTHORIZED],
+  [PasswordResetTokenInvalidError, HttpStatus.BAD_REQUEST],
   [RefreshTokenExpiredError, HttpStatus.UNAUTHORIZED],
   [RefreshTokenInvalidError, HttpStatus.UNAUTHORIZED],
   [RefreshTokenRevokedError, HttpStatus.UNAUTHORIZED],

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso UpdateProfileUseCase
- * Descripción: Actualiza nombre e imagen del perfil del usuario y publica sus eventos de dominio
- * Versión: 1.0
+ * Descripción: Actualiza nombre e imagen del perfil del usuario y publica sus eventos de dominio v1.1: también guarda la preferencia de apariencia (modo y paleta) del usuario
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -44,6 +44,7 @@ export class UpdateProfileUseCase {
         image: command.image === "" ? null : command.image,
         performedBy: command.performedBy,
       });
+      user.changeThemePreference({ mode: command.themeMode, palette: command.themePalette });
 
       await this._usersRepository.save(user, transaction);
 
