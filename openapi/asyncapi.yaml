@@ -21,7 +21,9 @@ info:
     reservation (after `ventilator:join`). Client messages whose name starts with `ventilator:` are forwarded
     in-process to the features that handle them; any other client message is ignored.
 
-    **Server-sent events**: the AI tutor and simulation assistance routes answer `text/event-stream`.
+    **Server-sent events**: the AI tutor, simulation assistance and monitor help (alarm help and real-mode
+    assistance) routes answer `text/event-stream`. Alarm help streams first send one `rules` event with the
+    deterministic stabilization rules.
     Errors detected before the stream opens keep the JSON error envelope and HTTP status documented in
     openapi.json; once open, the stream sends `delta` events, then one `done` event, or a final `error`
     event (tutor streams first send one `start` event with the conversation and assistant message ids, so a
@@ -203,6 +205,49 @@ channels:
         $ref: "#/components/messages/AssistDone"
       error:
         $ref: "#/components/messages/SseError"
+  simulationAlarmHelpStream:
+    address: "/api/simulation/sessions/{id}/alarm-help"
+    description: "POST, simulation:control. Streams the deterministic rules and the AI suggestion to stabilize an alarm of a simulation session"
+    servers:
+      - $ref: "#/servers/sse"
+    parameters:
+      id:
+        description: Simulation session identifier
+    messages:
+      rules:
+        $ref: "#/components/messages/AlarmHelpRules"
+      delta:
+        $ref: "#/components/messages/SseDelta"
+      done:
+        $ref: "#/components/messages/MonitorHelpDone"
+      error:
+        $ref: "#/components/messages/SseError"
+  realAlarmHelpStream:
+    address: "/api/simulation/real/alarm-help"
+    description: "POST, ventilator:control. Streams the deterministic rules and the AI suggestion to stabilize an alarm of the physical ventilator from the telemetry sent by the client"
+    servers:
+      - $ref: "#/servers/sse"
+    messages:
+      rules:
+        $ref: "#/components/messages/AlarmHelpRules"
+      delta:
+        $ref: "#/components/messages/SseDelta"
+      done:
+        $ref: "#/components/messages/MonitorHelpDone"
+      error:
+        $ref: "#/components/messages/SseError"
+  realAssistStream:
+    address: "/api/simulation/real/assist"
+    description: "POST, ventilator:control. Streams AI assistance on the physical ventilator from the telemetry sent by the client"
+    servers:
+      - $ref: "#/servers/sse"
+    messages:
+      delta:
+        $ref: "#/components/messages/SseDelta"
+      done:
+        $ref: "#/components/messages/MonitorHelpDone"
+      error:
+        $ref: "#/components/messages/SseError"
 operations:
   receiveAuthenticate:
     action: receive
@@ -289,6 +334,18 @@ operations:
     action: send
     channel:
       $ref: "#/channels/simulationAssistStream"
+  streamSimulationAlarmHelp:
+    action: send
+    channel:
+      $ref: "#/channels/simulationAlarmHelpStream"
+  streamRealAlarmHelp:
+    action: send
+    channel:
+      $ref: "#/channels/realAlarmHelpStream"
+  streamRealAssist:
+    action: send
+    channel:
+      $ref: "#/channels/realAssistStream"
 components:
   messages:
     Authenticate:
@@ -622,6 +679,45 @@ components:
             type: string
             enum: [LLM, DETERMINISTIC]
             description: Whether the answer came from the language model or the deterministic fallback
+    AlarmHelpRules:
+      name: "rules"
+      summary: "Deterministic stabilization rules of the alarm, always sent first (SSE: event: rules)"
+      contentType: text/event-stream
+      payload:
+        type: object
+        required: [alarmCode, rules]
+        properties:
+          alarmCode:
+            type: string
+          rules:
+            type: array
+            items:
+              type: object
+              required: [id, text, reference]
+              properties:
+                id:
+                  type: string
+                text:
+                  type: string
+                reference:
+                  type: string
+    MonitorHelpDone:
+      name: "done"
+      summary: "Last event of an alarm help or real-mode assistance answer (SSE: event: done)"
+      contentType: text/event-stream
+      payload:
+        type: object
+        required: [aiCallId, source]
+        properties:
+          aiCallId:
+            type: string
+            description: Rate an LLM answer with ai-ratings targetType AI_CALL and this id
+          source:
+            type: string
+            enum: [LLM, DETERMINISTIC]
+          aiHelpEventId:
+            type: string
+            description: Simulation sessions only; the AI_HELP event of kind ALARM_HELP
     SseError:
       name: "error"
       summary: "The stream failed after it opened (SSE: event: error); the connection closes after it"

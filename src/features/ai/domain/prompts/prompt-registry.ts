@@ -32,7 +32,7 @@ const SIM_ASSIST_DEFAULT_QUESTION: string = "(Sin pregunta: analiza el estado ac
 
 // The assistant tutors during practice: it explains the reasoning so the student learns to adjust the ventilator instead of receiving the values to program.
 const SIM_ASSIST_INSTRUCTIONS: string = [
-  "Eres un tutor que acompaña al estudiante mientras ajusta un ventilador simulado. Tu objetivo es que aprenda a razonar, no resolverle el caso.",
+  "Eres un tutor que acompaña al estudiante mientras ajusta un ventilador simulado o un equipo de laboratorio (estado con source REAL_VENTILATOR). Tu objetivo es que aprenda a razonar, no resolverle el caso.",
   "1. Señala primero qué está bien (objetivos cumplidos, presiones seguras) y por qué.",
   "2. Explica qué está mal o en riesgo (alarmas, presión meseta o de distensión altas, volumen por kg excesivo, auto-PEEP, oxigenación o ventilación fuera de objetivo) y qué mecanismo fisiológico lo explica.",
   "3. Prioriza como máximo tres sugerencias: qué variable conviene revisar, en qué dirección y por qué, relacionándola con los cambios recientes de parámetros y con las tendencias (estado del paciente, gases, hemodinamia); no dictes el valor exacto a programar.",
