@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Configuración de Jest para la suite unitaria con cobertura de reglas de negocio
- * Descripción: Reutiliza la configuración unitaria de package.json (rootDir src) y limita la cobertura al alcance C1 (progreso, calificación de evaluaciones, puntaje y motor de simulación, reservas y desalojo, orquestador y gateway de IA, límites de la configuración de plataforma); exige al menos 80 % de líneas en cada carpeta del alcance por separado y escribe los reportes en coverage/unit (ignorado por git)
- * Versión: 1.0
+ * Descripción: Reutiliza la configuración unitaria de package.json (rootDir src) y limita la cobertura al alcance C1 (progreso, calificación de evaluaciones, puntaje y motor de simulación, reservas y desalojo, orquestador y gateway de IA, límites de la configuración de plataforma); exige al menos 80 % de líneas en cada carpeta del alcance por separado y escribe los reportes en coverage/unit (ignorado por git); v1.1 (ajustes C3): también corre las pruebas de los ayudantes puros de prisma/ (seed e importación)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,6 +24,8 @@ const C1_FOLDERS = Object.values(C1_AREAS).flat();
 module.exports = {
   ...unit,
   rootDir: resolve(REPO_ROOT, "src"),
+  // The seed and import helpers under prisma/ are pure and tested with the unit suite.
+  roots: [resolve(REPO_ROOT, "src"), resolve(REPO_ROOT, "prisma")],
   collectCoverageFrom: [
     ...C1_FOLDERS.map((folder) => `${folder}/**/*.ts`),
     "!**/*.spec.ts",
