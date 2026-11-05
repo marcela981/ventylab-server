@@ -1,0 +1,80 @@
+{
+  "id": "c3-quiz-ventilacion-prono",
+  "type": "QUIZ",
+  "title": "Quiz: Ventilación en decúbito prono",
+  "description": "Comprueba la fisiología del decúbito prono, sus indicaciones según la evidencia, la técnica y las medidas de seguridad.",
+  "levelId": "level-avanzado",
+  "moduleId": "983c20df-a9c5-5f36-8449-070e213f0893",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "¿Cuáles de los siguientes mecanismos explican la mejoría del intercambio gaseoso en decúbito prono? Seleccione todos los correctos.",
+      "points": 1,
+      "explanation": "En prono se reclutan las regiones dorsales, la ventilación y el estrés pulmonar se distribuyen de forma más homogénea y disminuye la compresión del pulmón por el corazón. La perfusión sigue siendo predominantemente dorsal, de modo que coincide mejor con las zonas reclutadas y mejora la relación ventilación/perfusión; no se desplaza principalmente a las regiones ventrales. Fuente: Gattinoni et al. (2013).",
+      "options": [
+        { "text": "Reclutamiento de las regiones pulmonares dorsales.", "isCorrect": true },
+        { "text": "Distribución más homogénea de la ventilación y del estrés pulmonar.", "isCorrect": true },
+        { "text": "Menor compresión del pulmón por el peso del corazón.", "isCorrect": true },
+        { "text": "Desplazamiento de la mayor parte de la perfusión hacia las regiones ventrales.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "prompt": "¿Cuál fue el criterio de gravedad para incluir pacientes en el ensayo PROSEVA?",
+      "points": 1,
+      "explanation": "PROSEVA incluyó pacientes con SDRA grave definido por PaO₂/FiO₂ menor de 150 mmHg con FiO₂ de al menos 0,6, PEEP de al menos 5 cmH₂O y volumen corriente cercano a 6 mL/kg de peso predicho. Fuente: Guérin et al. (2013).",
+      "options": [
+        { "text": "PaO₂/FiO₂ menor de 150 mmHg con FiO₂ de al menos 0,6 y PEEP de al menos 5 cmH₂O.", "isCorrect": true },
+        { "text": "PaO₂/FiO₂ menor de 300 mmHg con cualquier FiO₂.", "isCorrect": false },
+        { "text": "PaO₂/FiO₂ menor de 100 mmHg tras 7 días de ventilación.", "isCorrect": false },
+        { "text": "Cualquier paciente intubado con SpO₂ menor de 94 %.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q3",
+      "type": "SINGLE_CHOICE",
+      "prompt": "En el ensayo PROSEVA, ¿cuál fue la duración mínima de cada sesión de decúbito prono?",
+      "points": 1,
+      "explanation": "El protocolo exigió sesiones de al menos 16 horas consecutivas, iniciadas en la primera hora tras la aleatorización. Las guías posteriores también recomiendan sesiones prolongadas y no breves. Fuente: Guérin et al. (2013).",
+      "options": [
+        { "text": "Al menos 16 horas consecutivas.", "isCorrect": true },
+        { "text": "Al menos 2 horas consecutivas.", "isCorrect": false },
+        { "text": "Al menos 6 horas consecutivas.", "isCorrect": false },
+        { "text": "Exactamente 24 horas, una sola vez.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q4",
+      "type": "TRUE_FALSE",
+      "prompt": "En PROSEVA, el decúbito prono precoz y prolongado redujo la mortalidad a 28 días en pacientes con SDRA grave frente a mantenerlos en supino.",
+      "points": 1,
+      "explanation": "Verdadero. La mortalidad a 28 días fue 16,0 % en el grupo prono frente a 32,8 % en el grupo supino. Por esta evidencia, la guía ATS/ESICM/SCCM recomienda la posición prona durante más de 12 horas al día en el SDRA grave (Fan et al., 2017). Fuente: Guérin et al. (2013).",
+      "options": [
+        { "text": "Verdadero", "isCorrect": true },
+        { "text": "Falso", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q5",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "¿Qué medidas de seguridad son apropiadas al colocar en prono a un paciente ventilado? Seleccione todas las correctas.",
+      "points": 1,
+      "explanation": "Las complicaciones descritas incluyen el desplazamiento o la obstrucción del tubo endotraqueal, la pérdida de accesos vasculares, las úlceras por presión y el edema facial. Se previenen con un equipo coordinado, fijación de la vía aérea y las líneas antes del giro, protección de los puntos de apoyo y verificación del tubo y de la ventilación tras el cambio de posición. La ventilación protectora se mantiene durante el prono. Fuente: Gattinoni et al. (2013).",
+      "options": [
+        { "text": "Realizar el giro con un equipo coordinado y un responsable de la vía aérea.", "isCorrect": true },
+        { "text": "Asegurar el tubo endotraqueal y los accesos vasculares antes del giro.", "isCorrect": true },
+        { "text": "Proteger los puntos de apoyo para prevenir úlceras por presión.", "isCorrect": true },
+        { "text": "Suspender la ventilación protectora mientras el paciente está en prono.", "isCorrect": false }
+      ]
+    }
+  ],
+  "sources": [
+    "Gattinoni, L., Taccone, P., Carlesso, E., & Marini, J. J. (2013). Prone position in acute respiratory distress syndrome: Rationale, indications, and limits. American Journal of Respiratory and Critical Care Medicine, 188(11), 1286–1293. https://doi.org/10.1164/rccm.201308-1532CI",
+    "Guérin, C., Reignier, J., Richard, J.-C., Beuret, P., Gacouin, A., Boulain, T., … PROSEVA Study Group. (2013). Prone positioning in severe acute respiratory distress syndrome. The New England Journal of Medicine, 368(23), 2159–2168. https://doi.org/10.1056/NEJMoa1214103",
+    "Fan, E., Del Sorbo, L., Goligher, E. C., Hodgson, C. L., Munshi, L., Walkey, A. J., … Brochard, L. J. (2017). An official American Thoracic Society/European Society of Intensive Care Medicine/Society of Critical Care Medicine clinical practice guideline: Mechanical ventilation in adult patients with acute respiratory distress syndrome. American Journal of Respiratory and Critical Care Medicine, 195(9), 1253–1263. https://doi.org/10.1164/rccm.201703-0548ST"
+  ]
+}

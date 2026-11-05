@@ -1,0 +1,298 @@
+{
+  "examen-mecanica-l1-final": {
+    "key": "sim1",
+    "type": "SIMULATION",
+    "prompt": "Práctica en el simulador: abra el caso «Pulmón normal: postoperatorio inmediato» (hombre de 45 años, 175 cm, sedado y sin esfuerzo inspiratorio, sin enfermedad pulmonar). Programe una ventilación controlada por volumen con volumen corriente protector según el peso corporal predicho, una frecuencia que mantenga la PaCO₂ normal, una PEEP inicial adecuada para un pulmón sano y la FiO₂ mínima que mantenga la SpO₂ en la meta para un adulto sin riesgo de hipercapnia. Deje la configuración final aplicada al terminar.",
+    "points": 2,
+    "explanation": "Peso predicho (hombre) = 50 + 0,91 × (175 − 152,4) ≈ 70,6 kg; 6-8 mL/kg equivale a unos 424-565 mL. Con los datos del caso, 11-14 respiraciones/min a 500 mL mantienen una PaCO₂ estimada de 35-45 mmHg; la PEEP de 5 cmH₂O es el ajuste inicial habitual en pulmón sano, y la FiO₂ se titula para una SpO₂ de 94-98 %, alcanzable sin superar la FiO₂ inicial de 0,40 porque el paciente tiene gases normales con aire ambiente. Fuente: Acute Respiratory Distress Syndrome Network (2000).",
+    "clinicalCaseId": "engine-normal-lung",
+    "rubric": {
+      "criteria": [
+        {
+          "parameter": "ventilationMode",
+          "expectedValue": "VCV",
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "tidalVolume",
+          "expectedValue": 500,
+          "min": 424,
+          "max": 565,
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "respiratoryRate",
+          "expectedValue": 12,
+          "min": 11,
+          "max": 14,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "peep",
+          "expectedValue": 5,
+          "min": 3,
+          "max": 7,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "fio2",
+          "expectedValue": 40,
+          "min": 21,
+          "max": 40,
+          "priority": "OPCIONAL"
+        }
+      ],
+      "justification": "Derivación a partir de los datos del caso engine-normal-lung. Modo: VCV, el modo inicial del caso, adecuado para un paciente sedado sin esfuerzo. Volumen corriente: talla 175 cm, sexo masculino → peso predicho = 50 + 0,91 × (175 − 152,4) = 70,6 kg (ARDS Network, 2000); objetivo del caso 6-8 mL/kg (Hess y Kacmarek, 2019) → 424-565 mL; esperado 500 mL (≈ 7 mL/kg), el ajuste inicial del caso. Con distensibilidad de 60 mL/cmH₂O, 565 mL dan una presión de distensión de unos 9 cmH₂O, por debajo del límite de 15 cmH₂O (Amato et al., 2015). Frecuencia: objetivo de PaCO₂ 35-45 mmHg (West y Luks, 2016); con VCO₂ de 200 mL/min y espacio muerto de 150 mL del caso, la ecuación de la ventilación alveolar (PaCO₂ = 0,863 × VCO₂ / VA; West y Luks, 2016) a 500 mL da 11-14 respiraciones/min; esperado 12, el ajuste inicial del caso. PEEP: 5 cmH₂O, ajuste inicial del caso (Hess y Kacmarek, 2019); el pulmón normal no es reclutable (Gattinoni et al., 2006); ± 2 cmH₂O es la banda de tolerancia de la plataforma (prisma/seed-clinical-cases.ts). FiO₂ (en porcentaje, convención del comparador): meta de SpO₂ 94-98 % (O'Driscoll et al., 2017); el caso tiene PaO₂ normal con aire ambiente y cortocircuito fisiológico del 5 % (West y Luks, 2016), por lo que cualquier FiO₂ entre 21 % y la FiO₂ inicial del caso (40 %) es aceptable; valores mayores solo añaden hiperoxia. Las estimaciones de PaCO₂ son aproximaciones de estado estable; el resultado final lo determina el motor fisiológico."
+    }
+  },
+  "examen-mecanica-l2-final": {
+    "key": "sim1",
+    "type": "SIMULATION",
+    "prompt": "Práctica en el simulador: abra el caso «Exacerbación de EPOC con hiperinflación dinámica» (hombre de 68 años, 170 cm, EPOC grave, sedado tras la intubación). La programación inicial produce atrapamiento aéreo. Manteniendo el tiempo inspiratorio en 1 s, reprograme el ventilador en modo controlado por volumen para reducir la hiperinflación dinámica, con un volumen corriente según el peso corporal predicho, una PaCO₂ que vuelva hacia la basal crónica del paciente y una FiO₂ ajustada a la meta de saturación propia de la EPOC hipercápnica. Deje la configuración final aplicada al terminar.",
+    "points": 2,
+    "explanation": "Peso predicho = 50 + 0,91 × (170 − 152,4) ≈ 66,0 kg; 6-8 mL/kg equivale a unos 396-528 mL. La constante de tiempo del caso (resistencia 22 cmH₂O/L/s × distensibilidad 0,060 L/cmH₂O) es de unos 1,3 s; con Ti de 1 s, una frecuencia de 12 deja unos 4 s de espiración (≈ 3 constantes de tiempo), frente a 2 s con la frecuencia inicial de 20. La SpO₂ objetivo en la EPOC hipercápnica es 88-92 %. Fuente: Global Initiative for Chronic Obstructive Lung Disease (2024).",
+    "clinicalCaseId": "engine-copd-exacerbation",
+    "rubric": {
+      "criteria": [
+        {
+          "parameter": "ventilationMode",
+          "expectedValue": "VCV",
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "respiratoryRate",
+          "expectedValue": 12,
+          "min": 11,
+          "max": 13,
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "tidalVolume",
+          "expectedValue": 500,
+          "min": 396,
+          "max": 528,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "peep",
+          "expectedValue": 5,
+          "min": 3,
+          "max": 7,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "fio2",
+          "expectedValue": 35,
+          "min": 25,
+          "max": 45,
+          "priority": "IMPORTANTE"
+        }
+      ],
+      "justification": "Derivación a partir de los datos del caso engine-copd-exacerbation. Modo: VCV, el del caso. Volumen corriente: talla 170 cm, sexo masculino → peso predicho = 50 + 0,91 × (170 − 152,4) = 66,0 kg (ARDS Network, 2000); objetivo del caso 6-8 mL/kg (Hess y Kacmarek, 2019) → 396-528 mL; esperado 500 mL (≈ 7,6 mL/kg), el ajuste inicial del caso, que no es el origen del atrapamiento. Frecuencia (criterio crítico): el atrapamiento se debe al tiempo espiratorio corto con resistencia alta (Pepe y Marini, 1982; Marini y Dries, 2019). Constante de tiempo τ = 22 cmH₂O/L/s × 0,060 L/cmH₂O ≈ 1,32 s; vaciar alrededor de 3 τ (≈ 4 s) con Ti de 1 s exige un ciclo de unos 5 s, es decir, frecuencia ≤ 12 (Hess y Kacmarek, 2019). Objetivo de PaCO₂ del caso 50-65 mmHg (volver a la basal crónica y evitar la alcalosis poshipercápnica; Hess y Kacmarek, 2019); con VCO₂ de 220 mL/min y espacio muerto de 220 mL del caso, la ecuación de la ventilación alveolar (PaCO₂ = 0,863 × VCO₂ / VA; West y Luks, 2016) a 500 mL da unas 10,4-13,6 respiraciones/min → rango aceptable 11-13; esperado 12, que además cumple el criterio de 3 τ. PEEP: 5 cmH₂O, la del caso; la PEEP externa no recluta en la EPOC (Marini y Dries, 2019) y el paciente está sedado; ± 2 cmH₂O es la banda de tolerancia de la plataforma (prisma/seed-clinical-cases.ts). FiO₂ (en porcentaje, convención del comparador): meta de SpO₂ 88-92 % (GOLD, 2024); esperado 35 %, la FiO₂ inicial del caso, con la banda de ± 10 puntos de la plataforma. Las estimaciones de PaCO₂ son aproximaciones de estado estable; el resultado final lo determina el motor fisiológico."
+    }
+  },
+  "examen-mecanica-l3-final": {
+    "key": "sim1",
+    "type": "SIMULATION",
+    "prompt": "Práctica en el simulador: abra el caso «SDRA moderado en paciente con obesidad» (mujer de 52 años, 160 cm, 120 kg, SDRA por neumonía), ventilada inicialmente con un volumen corriente calculado por el peso real. Reprograme el ventilador en modo controlado por volumen aplicando ventilación protectora: volumen corriente por peso corporal predicho que respete la presión de distensión, PEEP y FiO₂ según una combinación PEEP/FiO₂ de ARDS Network, y una frecuencia que compense la reducción del volumen corriente sin superar el máximo del protocolo. Puede ajustar el tiempo inspiratorio si lo necesita. Deje la configuración final aplicada al terminar.",
+    "points": 2,
+    "explanation": "Peso predicho (mujer) = 45,5 + 0,91 × (160 − 152,4) ≈ 52,4 kg; 6 mL/kg ≈ 314 mL (los 500 mL iniciales equivalen a unos 9,5 mL/kg). Con distensibilidad de 25 mL/cmH₂O, 314 mL generan una presión de distensión de unos 12,6 cmH₂O; con FiO₂ 0,6 la tabla de PEEP baja indica PEEP 10, y la frecuencia se programa para aproximar la ventilación minuto previa sin superar 35 respiraciones/min. Fuente: Acute Respiratory Distress Syndrome Network (2000).",
+    "clinicalCaseId": "engine-ards-obese",
+    "rubric": {
+      "criteria": [
+        {
+          "parameter": "ventilationMode",
+          "expectedValue": "VCV",
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "tidalVolume",
+          "expectedValue": 314,
+          "min": 210,
+          "max": 375,
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "peep",
+          "expectedValue": 10,
+          "min": 10,
+          "max": 15,
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "fio2",
+          "expectedValue": 60,
+          "min": 50,
+          "max": 70,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "respiratoryRate",
+          "expectedValue": 29,
+          "min": 27,
+          "max": 35,
+          "priority": "IMPORTANTE"
+        }
+      ],
+      "justification": "Derivación a partir de los datos del caso engine-ards-obese (SDRA moderado: PaO₂/FiO₂ 65/0,6 ≈ 108; ARDS Definition Task Force, 2012). Modo: VCV, el del caso y el usado en el protocolo ARDS Network. Volumen corriente: talla 160 cm, sexo femenino → peso predicho = 45,5 + 0,91 × (160 − 152,4) = 52,4 kg (ARDS Network, 2000); esperado 6 mL/kg ≈ 314 mL; mínimo 4 mL/kg ≈ 210 mL (límite inferior del protocolo y del caso); máximo 375 mL, porque con la distensibilidad del caso (25 mL/cmH₂O) un volumen mayor supera una presión de distensión de 15 cmH₂O (Amato et al., 2015). PEEP: con FiO₂ 0,6 la tabla de PEEP baja/FiO₂ alta de ARDS Network asigna PEEP 10 (esperado); la curva de reclutamiento del caso muestra que el cortocircuito sigue bajando hasta PEEP 15 (Gattinoni et al., 2006) y la paciente con obesidad suele requerir PEEP más alta (Pirrone et al., 2016); con PEEP 15 y 314 mL la meseta estimada es de unos 27,6 cmH₂O, dentro del límite de 30 cmH₂O (ARDS Network, 2000) → rango 10-15. FiO₂ (en porcentaje, convención del comparador): esperado 60 %, la del caso, emparejada con PEEP 10 en la tabla; 50-70 % corresponde a las filas de la tabla con PEEP 8-14, para una meta de SpO₂ 88-95 % (ARDS Network, 2000). Frecuencia: el protocolo programa la frecuencia para aproximar la ventilación minuto previa sin superar 35 (ARDS Network, 2000): 500 mL × 18 = 9,0 L/min → 9000/314 ≈ 29 (esperado). Con VCO₂ de 250 mL/min y espacio muerto de 180 mL del caso, la ecuación de la ventilación alveolar (PaCO₂ = 0,863 × VCO₂ / VA; West y Luks, 2016) indica que se necesitan al menos 27 respiraciones/min para mantener la PaCO₂ ≤ 60 mmHg, el máximo de la meta del caso → rango 27-35. A frecuencias altas conviene acortar el tiempo inspiratorio para conservar el tiempo espiratorio (constante de tiempo del caso ≈ 12 × 0,025 = 0,3 s; Hess y Kacmarek, 2019). Las estimaciones de PaCO₂ y de meseta son aproximaciones de estado estable; el resultado final lo determina el motor fisiológico."
+    }
+  },
+  "examen-ventylab-l1-final": {
+    "key": "q11",
+    "type": "SIMULATION",
+    "points": 2,
+    "clinicalCaseId": "engine-normal-lung",
+    "prompt": "Abre en el simulador el caso «Pulmón normal: postoperatorio inmediato» (hombre de 45 años, talla 175 cm, peso real 75 kg, sedado y sin esfuerzo inspiratorio). Programa ventilación controlada por volumen (VCV) con un volumen corriente calculado por peso corporal predicho y una PEEP, una FiO2 y una frecuencia respiratoria que mantengan SpO2 entre 94 y 98 %, PaCO2 entre 35 y 45 mmHg y pH entre 7,35 y 7,45. Deja la configuración estable y entrega la sesión.",
+    "explanation": "El peso corporal predicho del hombre se calcula como 50 + 0,91 × (talla en cm − 152,4): 50 + 0,91 × 22,6 = 70,6 kg. Un volumen corriente protector de 6 a 8 mL/kg de ese peso corresponde a unos 424 a 564 mL (7 mL/kg ≈ 494 mL); usar el peso real (75 kg) sobrestima el volumen. Con el espacio muerto (150 mL) y la producción de CO2 (200 mL/min) del caso, una frecuencia de 12 a 14/min mantiene la PaCO2 entre 35 y 45 mmHg. Fuente: Acute Respiratory Distress Syndrome Network (2000).",
+    "rubric": {
+      "criteria": [
+        {
+          "parameter": "ventilationMode",
+          "expectedValue": "VCV",
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "tidalVolume",
+          "expectedValue": 494,
+          "min": 424,
+          "max": 564,
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "respiratoryRate",
+          "expectedValue": 12,
+          "min": 12,
+          "max": 14,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "peep",
+          "expectedValue": 5,
+          "min": 3,
+          "max": 7,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "fio2",
+          "expectedValue": 40,
+          "min": 30,
+          "max": 50,
+          "priority": "OPCIONAL"
+        }
+      ],
+      "justification": "Caso engine-normal-lung (Mazo Castro, 2026n). Modo: el caso es de ventilación controlada en VCV. Volumen corriente: peso predicho ARDSNet (2000) para hombre de 175 cm = 50 + 0,91 × (175 − 152,4) = 70,6 kg; objetivo del caso 6-8 mL/kg (Hess y Kacmarek, 2019): mínimo 6 × 70,6 = 423,6 → 424 mL, esperado 7 × 70,6 = 494 mL, máximo 8 × 70,6 = 564,8 → 564 mL. Frecuencia: ecuación de ventilación alveolar PaCO2 = 0,863 × VCO2 / VA (West y Luks, 2016) con VCO2 200 mL/min y espacio muerto 150 mL del caso; con Vt 494 mL, VA = 344 mL × FR; PaCO2 ≤ 45 mmHg exige FR ≥ 11,2 → 12 y PaCO2 ≥ 35 mmHg exige FR ≤ 14,3 → 14; el valor inicial del caso (12/min) está en el rango. PEEP: valor inicial del caso, 5 cmH2O (Hess y Kacmarek), con la tolerancia de ±2 cmH2O de la configuración experta sembrada (Mazo Castro, 2026o). FiO2 (en porcentaje, 21-100): valor inicial del caso, 40 %, con la tolerancia de ±10 puntos de la configuración experta sembrada; el objetivo de SpO2 94-98 % (O'Driscoll et al., 2017) guía la titulación, por eso es opcional. Seguridad: presión meseta ≤ 30 cmH2O (ARDSNet, 2000) y de distensión ≤ 15 cmH2O (Amato et al., 2015); con compliance 60 mL/cmH2O, Vt 494 mL y PEEP 5 la meseta estimada es 5 + 494/60 ≈ 13 cmH2O."
+    }
+  },
+  "examen-ventylab-l2-final": {
+    "key": "q11",
+    "type": "SIMULATION",
+    "points": 2,
+    "clinicalCaseId": "engine-normal-lung",
+    "prompt": "Abre en el simulador el caso «Pulmón normal: postoperatorio inmediato» (hombre, talla 175 cm, compliance 60 mL/cmH2O, resistencia 8 cmH2O/L/s). Cambia el modo a ventilación controlada por presión (PCV) con un tiempo inspiratorio de 1 s y programa la presión inspiratoria máxima total (PEEP más presión sobre la PEEP), la PEEP, la frecuencia y la FiO2 para obtener un volumen corriente de 6 a 8 mL/kg de peso corporal predicho con PaCO2 entre 35 y 45 mmHg y SpO2 entre 94 y 98 %. Verifica el volumen entregado en el monitoreo y entrega la sesión.",
+    "explanation": "En PCV el volumen depende de la presión sobre la PEEP, de la compliance y de cuánto se equilibra la presión en el tiempo inspiratorio. La constante de tiempo es resistencia × compliance = 8 × 0,06 = 0,48 s; con 1 s de inspiración (≈ 2,1 constantes) se entrega cerca del 88 % del volumen de equilibrio, por lo que 7 mL/kg (≈ 494 mL) requieren unos 9,4 cmH2O sobre la PEEP: una presión máxima total cercana a 14 cmH2O con PEEP de 5. Fuente: Hess y Kacmarek (2019).",
+    "rubric": {
+      "criteria": [
+        {
+          "parameter": "ventilationMode",
+          "expectedValue": "PCV",
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "maxPressure",
+          "expectedValue": 14,
+          "min": 12,
+          "max": 16,
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "peep",
+          "expectedValue": 5,
+          "min": 3,
+          "max": 7,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "respiratoryRate",
+          "expectedValue": 12,
+          "min": 12,
+          "max": 14,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "fio2",
+          "expectedValue": 40,
+          "min": 30,
+          "max": 50,
+          "priority": "OPCIONAL"
+        }
+      ],
+      "justification": "Caso engine-normal-lung (Mazo Castro, 2026n). maxPressure es la presión inspiratoria máxima total en cmH2O (PEEP + presión sobre la PEEP). Volumen objetivo: peso predicho ARDSNet (2000) 70,6 kg; 6-8 mL/kg = 424-564 mL, 7 mL/kg = 494 mL. Ecuación del movimiento (Hess y Kacmarek, 2019): Vt = C × ΔP × (1 − e^(−Ti/τ)), con C = 60 mL/cmH2O, τ = R × C = 8 cmH2O/L/s × 0,060 L/cmH2O = 0,48 s y Ti = 1 s → fracción 1 − e^(−2,08) ≈ 0,875. ΔP para 494 mL = 494 / (60 × 0,875) ≈ 9,4 → presión total ≈ 5 + 9,4 = 14,4 → 14 cmH2O (esperado). Máximo: 8 mL/kg (564 mL) con Ti 1 s → ΔP 10,7 → 15,7 → 16 cmH2O. Mínimo: 6 mL/kg (424 mL) con equilibrio completo → ΔP 7,1 → 12,1 → 12 cmH2O. Toda la banda deja la presión de distensión por debajo de 15 cmH2O (Amato et al., 2015) y la meseta por debajo de 30 cmH2O (ARDSNet, 2000). Frecuencia: PaCO2 = 0,863 × VCO2 / VA (West y Luks, 2016) con VCO2 200 mL/min y espacio muerto 150 mL; para Vt 494 mL, PaCO2 35-45 mmHg → FR 12-14/min. PEEP y FiO2: valores iniciales del caso (5 cmH2O y 40 %; Hess y Kacmarek) con las tolerancias de ±2 cmH2O y ±10 puntos de la configuración experta sembrada (Mazo Castro, 2026o); FiO2 opcional porque se titula por el objetivo de SpO2 94-98 % (O'Driscoll et al., 2017)."
+    }
+  },
+  "examen-ventylab-l3-final": {
+    "key": "q11",
+    "type": "SIMULATION",
+    "points": 2,
+    "clinicalCaseId": "engine-copd-exacerbation",
+    "prompt": "Abre en el simulador el caso «Exacerbación de EPOC con hiperinflación dinámica» (hombre de 68 años, talla 170 cm, EPOC grave con retención crónica de CO2). La programación inicial en VCV (frecuencia 20/min, tiempo inspiratorio 1 s) produce atrapamiento aéreo. Mantén el modo VCV y el tiempo inspiratorio de 1 s y ajusta el volumen corriente, la frecuencia, la PEEP y la FiO2 para reducir la auto-PEEP, llevar la PaCO2 a la basal del paciente (50 a 65 mmHg) con pH de al menos 7,30 y mantener SpO2 entre 88 y 92 %. Considera que a los 10 minutos aumentan las secreciones. Entrega la sesión con la configuración estable.",
+    "explanation": "En la obstrucción grave la constante de tiempo espiratoria es larga (22 cmH2O/L/s × 0,06 L/cmH2O ≈ 1,3 s): con 20/min y 1 s de inspiración solo quedan 2 s para exhalar (≈ 1,5 constantes) y se genera auto-PEEP. Bajar la frecuencia a unos 14/min alarga la espiración a ≈ 3,3 s (≈ 2,5 constantes) sin elevar la PaCO2 por encima de la basal del paciente; la PEEP externa no recluta en la EPOC y la FiO2 se titula a una SpO2 de 88-92 %. Fuente: Marini y Dries (2019).",
+    "rubric": {
+      "criteria": [
+        {
+          "parameter": "ventilationMode",
+          "expectedValue": "VCV",
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "tidalVolume",
+          "expectedValue": 462,
+          "min": 396,
+          "max": 528,
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "respiratoryRate",
+          "expectedValue": 14,
+          "min": 13,
+          "max": 15,
+          "priority": "CRITICO"
+        },
+        {
+          "parameter": "peep",
+          "expectedValue": 5,
+          "min": 3,
+          "max": 7,
+          "priority": "IMPORTANTE"
+        },
+        {
+          "parameter": "fio2",
+          "expectedValue": 35,
+          "min": 25,
+          "max": 45,
+          "priority": "IMPORTANTE"
+        }
+      ],
+      "justification": "Caso engine-copd-exacerbation (Mazo Castro, 2026n). Volumen corriente: peso predicho ARDSNet (2000) para hombre de 170 cm = 50 + 0,91 × (170 − 152,4) = 66,0 kg; objetivo del caso 6-8 mL/kg (Hess y Kacmarek, 2019): mínimo 6 × 66,0 = 396 mL, esperado 7 × 66,0 = 462 mL, máximo 8 × 66,0 = 528 mL. Frecuencia: ecuación de ventilación alveolar PaCO2 = 0,863 × VCO2 / VA (West y Luks, 2016) con VCO2 220 mL/min y espacio muerto 220 mL del caso; con Vt 462 mL, VA = 242 mL × FR; PaCO2 ≤ 65 mmHg (basal del caso) exige FR ≥ 12,1 → 13 y PaCO2 ≥ 50 mmHg (evitar alcalosis poshipercápnica, objetivo del caso) exige FR ≤ 15,7 → 15; esperado 14/min (PaCO2 estimada ≈ 56 mmHg). Espiración: τ = R × C = 22 cmH2O/L/s × 0,060 L/cmH2O = 1,32 s (Marini y Dries, 2019); con Ti 1 s, FR 14 deja Te ≈ 3,29 s ≈ 2,5 τ frente a 2 s ≈ 1,5 τ con la FR inicial de 20; tras el evento de secreciones (resistencia × 1,3) τ ≈ 1,72 s, por lo que no conviene subir la FR por encima del rango. PEEP: valor inicial del caso, 5 cmH2O, porque la PEEP externa no recluta en la EPOC (Marini y Dries), con la tolerancia de ±2 cmH2O de la configuración experta sembrada (Mazo Castro, 2026o). FiO2 (en porcentaje, 21-100): valor inicial del caso, 35 %, con la tolerancia de ±10 puntos de la configuración experta sembrada; objetivo SpO2 88-92 % en EPOC hipercápnica (Global Initiative for Chronic Obstructive Lung Disease, 2024). Seguridad: auto-PEEP ≤ 5 cmH2O, meseta ≤ 30 cmH2O (ARDSNet, 2000) y presión de distensión ≤ 15 cmH2O (Amato et al., 2015) según los objetivos del caso."
+    }
+  },
+  "sources": [
+    "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801",
+    "ARDS Definition Task Force. (2012). Acute respiratory distress syndrome: The Berlin Definition. JAMA, 307(23), 2526–2533. https://doi.org/10.1001/jama.2012.5669",
+    "Amato, M. B. P., Meade, M. O., Slutsky, A. S., Brochard, L., Costa, E. L. V., Schoenfeld, D. A., Stewart, T. E., Briel, M., Talmor, D., Mercat, A., Richard, J.-C. M., Carvalho, C. R. R., & Brower, R. G. (2015). Driving pressure and survival in the acute respiratory distress syndrome. The New England Journal of Medicine, 372(8), 747–755. https://doi.org/10.1056/NEJMsa1410639",
+    "Gattinoni, L., Caironi, P., Cressoni, M., Chiumello, D., Ranieri, V. M., Quintel, M., Russo, S., Patroniti, N., Cornejo, R., & Bugedo, G. (2006). Lung recruitment in patients with the acute respiratory distress syndrome. The New England Journal of Medicine, 354(17), 1775–1786. https://doi.org/10.1056/NEJMoa052052",
+    "Global Initiative for Chronic Obstructive Lung Disease. (2024). Global strategy for the diagnosis, management, and prevention of chronic obstructive pulmonary disease: 2024 report. https://goldcopd.org/2024-gold-report/",
+    "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education.",
+    "Marini, J. J., & Dries, D. J. (2019). Critical care medicine: The essentials and more (5th ed.). Wolters Kluwer.",
+    "O'Driscoll, B. R., Howard, L. S., Earis, J., & Mak, V. (2017). BTS guideline for oxygen use in adults in healthcare and emergency settings. Thorax, 72(Suppl 1), ii1–ii90. https://doi.org/10.1136/thoraxjnl-2016-209729",
+    "Pepe, P. E., & Marini, J. J. (1982). Occult positive end-expiratory pressure in mechanically ventilated patients with airflow obstruction: The auto-PEEP effect. American Review of Respiratory Disease, 126(1), 166–170. https://doi.org/10.1164/arrd.1982.126.1.166",
+    "Pirrone, M., Fisher, D., Chipman, D., Imber, D. A. E., Corona, J., Bittner, E. A., Kacmarek, R. M., & Berra, L. (2016). Recruitment maneuvers and positive end-expiratory pressure titration in morbidly obese ICU patients. Critical Care Medicine, 44(2), 300–307. https://doi.org/10.1097/CCM.0000000000001387",
+    "West, J. B., & Luks, A. M. (2016). West's respiratory physiology: The essentials (10th ed.). Wolters Kluwer.",
+    "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801",
+    "Amato, M. B. P., Meade, M. O., Slutsky, A. S., Brochard, L., Costa, E. L. V., Schoenfeld, D. A., Stewart, T. E., Briel, M., Talmor, D., Mercat, A., Richard, J.-C. M., Carvalho, C. R. R., & Brower, R. G. (2015). Driving pressure and survival in the acute respiratory distress syndrome. New England Journal of Medicine, 372(8), 747–755. https://doi.org/10.1056/NEJMsa1410639",
+    "O'Driscoll, B. R., Howard, L. S., Earis, J., & Mak, V. (2017). BTS guideline for oxygen use in adults in healthcare and emergency settings. Thorax, 72(Suppl. 1), ii1–ii90. https://doi.org/10.1136/thoraxjnl-2016-209729",
+    "Global Initiative for Chronic Obstructive Lung Disease. (2024). Global strategy for the prevention, diagnosis and management of chronic obstructive pulmonary disease: 2024 report. https://goldcopd.org/2024-gold-report/",
+    "Mazo Castro, M. (2026n). Casos clínicos listos para el motor fisiológico (wt-c-server/src/features/clinical-cases/infrastructure/persistence/seed/engine-ready-clinical-cases.data.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026o). Siembra de casos clínicos y configuración experta (wt-c-server/prisma/seed-clinical-cases.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026p). Rúbrica de simulación de las preguntas de evaluación (wt-c-server/src/features/evaluation/domain/value-objects/simulation-rubric.ts) [Documentación técnica]. VentyLab."
+  ]
+}

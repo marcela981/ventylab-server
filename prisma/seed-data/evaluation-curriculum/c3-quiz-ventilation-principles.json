@@ -1,0 +1,79 @@
+{
+  "id": "c3-quiz-ventilation-principles",
+  "type": "QUIZ",
+  "title": "Quiz: Bases físicas y clínicas de la ventilación",
+  "description": "Comprueba los conceptos de física de los gases, presiones y unidades, y las indicaciones y objetivos de la ventilación mecánica.",
+  "levelId": "level-prerequisitos",
+  "moduleId": "ventilation-principles",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Según la ley de Poiseuille para flujo laminar, si el radio de una vía aérea se reduce a la mitad, ¿qué ocurre con su resistencia?",
+      "points": 1,
+      "explanation": "En flujo laminar la resistencia es inversamente proporcional a la cuarta potencia del radio: al reducir el radio a la mitad, la resistencia aumenta 2⁴ = 16 veces. Por eso pequeñas reducciones del calibre (secreciones, broncoespasmo, tubo de menor diámetro) elevan mucho la resistencia. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Aumenta unas 16 veces.", "isCorrect": true },
+        { "text": "Se duplica.", "isCorrect": false },
+        { "text": "Aumenta unas 4 veces.", "isCorrect": false },
+        { "text": "Se reduce a la mitad.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Una persona sube a gran altitud y sigue respirando aire ambiente. ¿Qué afirmación describe correctamente lo que ocurre con el oxígeno inspirado?",
+      "points": 1,
+      "explanation": "Por la ley de Dalton, la presión parcial de un gas es su fracción multiplicada por la presión total. En altitud la FiO₂ del aire sigue siendo 0,21, pero al bajar la presión barométrica disminuye la PIO₂ y, con ella, la PAO₂. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "La FiO₂ se mantiene en 0,21, pero la presión parcial inspirada de O₂ disminuye porque baja la presión barométrica.", "isCorrect": true },
+        { "text": "La FiO₂ disminuye por debajo de 0,21 y la presión barométrica no cambia.", "isCorrect": false },
+        { "text": "La presión parcial inspirada de O₂ aumenta para compensar la menor densidad del aire.", "isCorrect": false },
+        { "text": "La presión de vapor de agua en la vía aérea desaparece y la PIO₂ queda igual que a nivel del mar.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q3",
+      "type": "TRUE_FALSE",
+      "prompt": "Según la ley de Laplace, con igual tensión superficial un alvéolo de menor radio tiene mayor presión de colapso, y el surfactante contrarresta este efecto al reducir la tensión superficial.",
+      "points": 1,
+      "explanation": "Verdadero. La presión dentro de una esfera es proporcional a 2T/r: a menor radio, mayor presión, de modo que los alvéolos pequeños tenderían a vaciarse en los grandes. El surfactante reduce la tensión superficial, sobre todo a volúmenes bajos, lo que estabiliza los alvéolos y aumenta la distensibilidad. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Verdadero", "isCorrect": true },
+        { "text": "Falso", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q4",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "¿Cuáles de las siguientes situaciones son indicaciones reconocidas para iniciar ventilación mecánica invasiva? Seleccione todas las correctas.",
+      "points": 1,
+      "explanation": "Las indicaciones clásicas son la insuficiencia respiratoria aguda (hipoxémica que no responde al tratamiento o hipercápnica con acidosis progresiva), la apnea o la fatiga de los músculos respiratorios y la incapacidad de proteger la vía aérea por deterioro del nivel de conciencia. Una hipoxemia leve que se corrige con oxígeno de bajo flujo no es por sí misma una indicación. Fuente: Tobin (2013).",
+      "options": [
+        { "text": "Acidosis respiratoria hipercápnica progresiva que no responde al tratamiento inicial.", "isCorrect": true },
+        { "text": "Hipoxemia grave refractaria a la oxigenoterapia.", "isCorrect": true },
+        { "text": "Deterioro de conciencia con incapacidad para proteger la vía aérea.", "isCorrect": true },
+        { "text": "Hipoxemia leve que se corrige con cánula nasal de bajo flujo en un paciente sin trabajo respiratorio aumentado.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q5",
+      "type": "SINGLE_CHOICE",
+      "prompt": "¿Cuál de los siguientes enunciados describe mejor el objetivo general de la ventilación mecánica?",
+      "points": 1,
+      "explanation": "La ventilación mecánica es una medida de soporte: mantiene el intercambio gaseoso y reduce el trabajo respiratorio mientras se trata la causa de la falla, y debe programarse de forma que minimice el daño inducido por el propio ventilador. No cura la enfermedad de base. Fuente: Tobin (2013).",
+      "options": [
+        { "text": "Sostener el intercambio gaseoso y descargar los músculos respiratorios mientras se trata la causa, minimizando el daño asociado al ventilador.", "isCorrect": true },
+        { "text": "Curar la enfermedad pulmonar de base mediante la presión positiva.", "isCorrect": false },
+        { "text": "Normalizar siempre la PaCO₂ y la PaO₂ sin importar las presiones necesarias.", "isCorrect": false },
+        { "text": "Sustituir de forma definitiva la respiración espontánea del paciente.", "isCorrect": false }
+      ]
+    }
+  ],
+  "sources": [
+    "West, J. B., & Luks, A. M. (2016). West's respiratory physiology: The essentials (10th ed.). Wolters Kluwer.",
+    "Tobin, M. J. (Ed.). (2013). Principles and practice of mechanical ventilation (3rd ed.). McGraw-Hill."
+  ]
+}

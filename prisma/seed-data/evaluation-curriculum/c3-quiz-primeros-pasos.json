@@ -1,0 +1,137 @@
+{
+  "id": "c3-quiz-primeros-pasos",
+  "type": "QUIZ",
+  "title": "Quiz: Primeros pasos en VentyLab",
+  "description": "Comprueba que conoces el uso del tutor IA, los tipos de evaluación y la forma en que se publican los resultados en VentyLab.",
+  "levelId": "ventylab-principiante",
+  "moduleId": "2a77461f-8570-5df3-8201-18ac67a737f5",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "Mientras estudias una lección, le preguntas al tutor IA qué parámetros debería programar a un paciente real que atenderás mañana. ¿Cómo está diseñado el tutor para responder?",
+      "options": [
+        {
+          "text": "Recuerda que su fin es exclusivamente educativo, que no reemplaza el juicio clínico y orienta la respuesta al aprendizaje.",
+          "isCorrect": true
+        },
+        {
+          "text": "Entrega la configuración exacta del ventilador para ese paciente.",
+          "isCorrect": false
+        },
+        {
+          "text": "Rechaza cualquier pregunta que no sea sobre la navegación de la plataforma.",
+          "isCorrect": false
+        },
+        {
+          "text": "Envía la consulta al docente del grupo para que la responda.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "El prompt de sistema común del asistente de VentyLab establece que sus respuestas son exclusivamente educativas, que no reemplazan el juicio clínico de un profesional ni deben usarse para decidir sobre pacientes reales y que, ante una solicitud para un paciente real, debe recordar este límite y orientar la respuesta al aprendizaje. Fuente: Mazo Castro (2026c)."
+    },
+    {
+      "key": "q2",
+      "type": "TRUE_FALSE",
+      "points": 1,
+      "prompt": "Al entregar un quiz, VentyLab muestra de inmediato la nota y las respuestas correctas.",
+      "options": [
+        {
+          "text": "Verdadero",
+          "isCorrect": false
+        },
+        {
+          "text": "Falso",
+          "isCorrect": true
+        }
+      ],
+      "explanation": "Ningún tipo de evaluación (quiz, taller o examen) revisa las respuestas durante el intento ni publica la nota al cerrarlo: los resultados se liberan solo desde la calificación docente. El indicador heredado de mostrar resultados inmediatamente se conserva sin efecto. Fuente: Mazo Castro (2026b)."
+    },
+    {
+      "key": "q3",
+      "type": "MULTIPLE_CHOICE",
+      "points": 1,
+      "prompt": "El docente libera los resultados de tu intento con el alcance «nota y respuestas». ¿Qué información pasas a ver? Selecciona todas las correctas.",
+      "options": [
+        {
+          "text": "Las respuestas correctas y sus explicaciones.",
+          "isCorrect": true
+        },
+        {
+          "text": "El puntaje obtenido en cada pregunta.",
+          "isCorrect": true
+        },
+        {
+          "text": "La retroalimentación generada con IA.",
+          "isCorrect": true
+        },
+        {
+          "text": "Las respuestas que dieron los demás estudiantes del grupo.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "El alcance GRADE libera solo el puntaje, la nota y si se aprobó; el alcance GRADE_AND_ANSWERS agrega las respuestas correctas, las explicaciones, las rúbricas, el puntaje por pregunta y la retroalimentación IA. Hasta la liberación el estudiante no recibe ninguno de esos datos, y en ningún caso se muestran respuestas de otros estudiantes. Fuente: Mazo Castro (2026a)."
+    },
+    {
+      "key": "q4",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "Con la configuración por defecto de la plataforma, ¿en qué escala se expresa la nota de una evaluación y cuál es la nota mínima aprobatoria?",
+      "options": [
+        {
+          "text": "Escala de 0,0 a 5,0; aprobación desde 3,0.",
+          "isCorrect": true
+        },
+        {
+          "text": "Escala de 0 a 100; aprobación desde 60.",
+          "isCorrect": false
+        },
+        {
+          "text": "Escala de 0,0 a 10,0; aprobación desde 6,0.",
+          "isCorrect": false
+        },
+        {
+          "text": "Escala de 0,0 a 5,0; aprobación desde 4,0.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "La calificación de un intento calcula una nota de 0,0 a 5,0 con un decimal, y la variable EVALUATION_PASSING_GRADE fija la nota mínima aprobatoria, cuyo valor por defecto es 3,0. Fuente: Mazo Castro (2026f)."
+    },
+    {
+      "key": "q5",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "¿Cuáles son los tres tipos de evaluación que maneja VentyLab?",
+      "options": [
+        {
+          "text": "Quizzes, talleres y exámenes.",
+          "isCorrect": true
+        },
+        {
+          "text": "Quizzes, foros y exámenes.",
+          "isCorrect": false
+        },
+        {
+          "text": "Autoevaluaciones, rúbricas y proyectos.",
+          "isCorrect": false
+        },
+        {
+          "text": "Talleres, simulaciones libres y encuestas.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "El dominio de evaluación define los tipos QUIZ, WORKSHOP y EXAM, que en la plataforma se presentan como quizzes, talleres y exámenes; la lección del módulo «Primeros pasos» se titula precisamente «Evaluaciones: quizzes, talleres y exámenes». Fuente: Mazo Castro (2026b)."
+    }
+  ],
+  "sources": [
+    "Mazo Castro, M. (2026a). Alcance de la liberación de resultados (wt-c-server/src/features/evaluation/domain/value-objects/results-release-scope.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026b). Tipos de evaluación EXAM, QUIZ y WORKSHOP (wt-c-server/src/features/evaluation/domain/value-objects/evaluation-type.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026c). Registro de plantillas de prompts de IA y prompt de sistema común (wt-c-server/src/features/ai/domain/prompts/prompt-registry.ts; common-system-prompt.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026f). Validación de variables de entorno (wt-c-server/src/common/infrastructure/config/env.validation.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026r). Calificación de intentos de evaluación (wt-c-server/src/features/evaluation/domain/services/evaluation-attempt-grader.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026d). Manifiesto del currículo VentyLab (wt-b-server/src/features/curriculum/infrastructure/content-import/curriculum.manifest.ts) [Documentación técnica]. VentyLab."
+  ]
+}

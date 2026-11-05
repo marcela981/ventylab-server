@@ -1,0 +1,136 @@
+{
+  "id": "c3-exam-prerequisitos",
+  "type": "EXAM",
+  "title": "Examen final: Prerrequisitos de ventilación mecánica",
+  "description": "Evaluación sumativa de fisiología respiratoria y bases físicas y clínicas de la ventilación, con una práctica en el simulador.",
+  "levelId": "level-prerequisitos",
+  "moduleId": null,
+  "durationMinutes": 60,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "prompt": "En un pulmón normal en posición erguida, ¿cómo varía la relación ventilación/perfusión entre el vértice y la base?",
+      "points": 1,
+      "explanation": "Tanto la ventilación como la perfusión aumentan hacia la base, pero la perfusión aumenta más; por eso la relación ventilación/perfusión es más alta en el vértice y más baja en la base. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Es más alta en el vértice que en la base.", "isCorrect": true },
+        { "text": "Es más alta en la base que en el vértice.", "isCorrect": false },
+        { "text": "Es idéntica en todas las regiones.", "isCorrect": false },
+        { "text": "Es cero en el vértice porque allí no hay ventilación.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "prompt": "La distensibilidad pulmonar es el cambio de volumen por unidad de cambio de presión. ¿Qué par de enfermedades la modifica en sentidos opuestos?",
+      "points": 1,
+      "explanation": "En la fibrosis pulmonar el tejido se vuelve más rígido y la distensibilidad disminuye; en el enfisema la destrucción del tejido elástico la aumenta. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "La fibrosis la disminuye y el enfisema la aumenta.", "isCorrect": true },
+        { "text": "La fibrosis la aumenta y el enfisema la disminuye.", "isCorrect": false },
+        { "text": "Ambas la aumentan.", "isCorrect": false },
+        { "text": "Ninguna de las dos la modifica.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q3",
+      "type": "TRUE_FALSE",
+      "prompt": "El aumento de la PCO₂, de la concentración de H⁺, de la temperatura y del 2,3-DPG desplaza la curva de disociación de la hemoglobina hacia la derecha, lo que facilita la liberación de O₂ en los tejidos.",
+      "points": 1,
+      "explanation": "Verdadero. Ese desplazamiento a la derecha reduce la afinidad de la hemoglobina por el O₂ y favorece su entrega en los tejidos metabólicamente activos (efecto Bohr en el caso de la PCO₂ y el H⁺). Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Verdadero", "isCorrect": true },
+        { "text": "Falso", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q4",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Con hemoglobina de 15 g/dL, SaO₂ de 97 % y PaO₂ de 100 mmHg, y usando 1,39 mL de O₂ por gramo de hemoglobina y 0,003 mL de O₂ por 100 mL de sangre por mmHg, ¿cuál es el contenido arterial de O₂ aproximado?",
+      "points": 1,
+      "explanation": "O₂ unido = 1,39 × 15 × 0,97 ≈ 20,2 mL/100 mL; O₂ disuelto = 0,003 × 100 = 0,3 mL/100 mL; total ≈ 20,5 mL de O₂ por 100 mL de sangre. Casi todo corresponde al O₂ unido a la hemoglobina. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Aproximadamente 20,5 mL de O₂ por 100 mL", "isCorrect": true },
+        { "text": "Aproximadamente 15,0 mL de O₂ por 100 mL", "isCorrect": false },
+        { "text": "Aproximadamente 0,3 mL de O₂ por 100 mL", "isCorrect": false },
+        { "text": "Aproximadamente 30,0 mL de O₂ por 100 mL", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q5",
+      "type": "SINGLE_CHOICE",
+      "prompt": "¿Qué mecanismo de hipoxemia se caracteriza porque la PaO₂ no alcanza el nivel esperado aunque el paciente respire O₂ al 100 %?",
+      "points": 1,
+      "explanation": "En el cortocircuito la sangre que pasa por unidades no ventiladas no entra en contacto con el gas alveolar, de modo que aumentar la FiO₂ apenas corrige la hipoxemia. En la hipoventilación y en el desequilibrio ventilación/perfusión la PaO₂ sí aumenta de forma marcada con O₂ al 100 %. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "El cortocircuito.", "isCorrect": true },
+        { "text": "La hipoventilación.", "isCorrect": false },
+        { "text": "El desequilibrio ventilación/perfusión leve.", "isCorrect": false },
+        { "text": "La disminución de la presión barométrica.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q6",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "Relacione las leyes de los gases con la fisiología respiratoria. Seleccione todas las afirmaciones correctas.",
+      "points": 1,
+      "explanation": "Ley de Boyle: al aumentar el volumen torácico disminuye la presión alveolar. Ley de Dalton: cada gas ejerce una presión parcial proporcional a su fracción. Ley de Henry: el gas disuelto es proporcional a su presión parcial. Ley de Fick: la difusión es proporcional al área e inversamente proporcional al grosor de la membrana, por lo que su engrosamiento la reduce. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Boyle: al expandirse el tórax en la inspiración, la presión alveolar disminuye.", "isCorrect": true },
+        { "text": "Dalton: la presión parcial de un gas es su fracción multiplicada por la presión total.", "isCorrect": true },
+        { "text": "Henry: la cantidad de gas disuelto es proporcional a su presión parcial.", "isCorrect": true },
+        { "text": "Fick: la difusión aumenta cuando la membrana alveolocapilar se engrosa.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q7",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Si la producción de CO₂ se mantiene constante y la ventilación alveolar se duplica, ¿qué ocurre con la PaCO₂?",
+      "points": 1,
+      "explanation": "Según la ecuación de la ventilación alveolar, la PaCO₂ es proporcional a la producción de CO₂ e inversamente proporcional a la ventilación alveolar: al duplicar la ventilación alveolar, la PaCO₂ se reduce aproximadamente a la mitad. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Se reduce aproximadamente a la mitad.", "isCorrect": true },
+        { "text": "Se duplica.", "isCorrect": false },
+        { "text": "No cambia.", "isCorrect": false },
+        { "text": "Se reduce a la cuarta parte.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q8",
+      "type": "TRUE_FALSE",
+      "prompt": "El surfactante pulmonar aumenta la tensión superficial alveolar y, por eso, disminuye la distensibilidad pulmonar.",
+      "points": 1,
+      "explanation": "Falso. El surfactante reduce la tensión superficial, lo que aumenta la distensibilidad, estabiliza los alvéolos pequeños y ayuda a evitar el edema y la atelectasia. Su déficit produce pulmones rígidos con tendencia al colapso. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Verdadero", "isCorrect": false },
+        { "text": "Falso", "isCorrect": true }
+      ]
+    },
+    {
+      "key": "q9",
+      "type": "SIMULATION",
+      "prompt": "Práctica en el simulador: abra el caso «Pulmón normal: postoperatorio inmediato» (hombre de 45 años, 175 cm, sedado y sin esfuerzo inspiratorio, sin enfermedad pulmonar). Programe el ventilador en un modo controlado por volumen con un volumen corriente protector calculado por peso corporal predicho y una frecuencia que mantenga la PaCO₂ dentro de los valores normales. Deje la configuración final aplicada al terminar.",
+      "points": 2,
+      "explanation": "Peso predicho (hombre) = 50 + 0,91 × (175 − 152,4) ≈ 70,6 kg; un volumen corriente de 6-8 mL/kg corresponde a unos 424-565 mL, y 500 mL equivale a unos 7 mL/kg. Con los datos del caso (producción de CO₂ de 200 mL/min y espacio muerto de 150 mL), la ecuación de la ventilación alveolar estima una PaCO₂ de 35-45 mmHg con frecuencias de 11 a 14 respiraciones/min a 500 mL. Fuente: Acute Respiratory Distress Syndrome Network (2000).",
+      "clinicalCaseId": "engine-normal-lung",
+      "rubric": {
+        "criteria": [
+          { "parameter": "ventilationMode", "expectedValue": "VCV", "priority": "IMPORTANTE" },
+          { "parameter": "tidalVolume", "expectedValue": 500, "min": 424, "max": 565, "priority": "CRITICO" },
+          { "parameter": "respiratoryRate", "expectedValue": 12, "min": 11, "max": 14, "priority": "IMPORTANTE" },
+          { "parameter": "peep", "expectedValue": 5, "min": 3, "max": 7, "priority": "OPCIONAL" }
+        ],
+        "justification": "Derivación a partir de los datos del caso engine-normal-lung. Modo: VCV, el modo inicial del caso, adecuado para un paciente sedado sin esfuerzo. Volumen corriente: talla 175 cm y sexo masculino → peso predicho = 50 + 0,91 × (175 − 152,4) = 70,6 kg (fórmula de ARDS Network, 2000); el objetivo del caso es 6-8 mL/kg de peso predicho (Hess y Kacmarek, 2019), es decir 424-565 mL; valor esperado 500 mL (≈ 7 mL/kg), el ajuste inicial del caso. Con distensibilidad de 60 mL/cmH₂O, 565 mL generan una presión de distensión de unos 9 cmH₂O, por debajo de 15 cmH₂O (Amato et al., 2015). Frecuencia: objetivo de PaCO₂ 35-45 mmHg (West y Luks, 2016); con producción de CO₂ de 200 mL/min y espacio muerto de 150 mL del caso, la ecuación de la ventilación alveolar (PaCO₂ = 0,863 × VCO₂ / VA; West y Luks, 2016) a 500 mL da 11-14 respiraciones/min; valor esperado 12, el ajuste inicial del caso. PEEP: 5 cmH₂O, el ajuste inicial del caso (Hess y Kacmarek, 2019); el pulmón normal no es reclutable (Gattinoni et al., 2006); el rango de ± 2 cmH₂O sigue la banda de tolerancia de la plataforma (prisma/seed-clinical-cases.ts). Las estimaciones de PaCO₂ son aproximaciones de estado estable; la respuesta final la determina el motor fisiológico."
+      }
+    }
+  ],
+  "sources": [
+    "West, J. B., & Luks, A. M. (2016). West's respiratory physiology: The essentials (10th ed.). Wolters Kluwer.",
+    "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801",
+    "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education.",
+    "Amato, M. B. P., Meade, M. O., Slutsky, A. S., Brochard, L., Costa, E. L. V., Schoenfeld, D. A., Stewart, T. E., Briel, M., Talmor, D., Mercat, A., Richard, J.-C. M., Carvalho, C. R. R., & Brower, R. G. (2015). Driving pressure and survival in the acute respiratory distress syndrome. The New England Journal of Medicine, 372(8), 747–755. https://doi.org/10.1056/NEJMsa1410639",
+    "Gattinoni, L., Caironi, P., Cressoni, M., Chiumello, D., Ranieri, V. M., Quintel, M., Russo, S., Patroniti, N., Cornejo, R., & Bugedo, G. (2006). Lung recruitment in patients with the acute respiratory distress syndrome. The New England Journal of Medicine, 354(17), 1775–1786. https://doi.org/10.1056/NEJMoa052052"
+  ]
+}

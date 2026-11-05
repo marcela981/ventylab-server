@@ -1,0 +1,79 @@
+{
+  "id": "c3-quiz-respiratory-physiology",
+  "type": "QUIZ",
+  "title": "Quiz: Fisiología respiratoria esencial",
+  "description": "Comprueba los conceptos de anatomía funcional, mecánica de la respiración espontánea e intercambio y transporte de O₂ y CO₂.",
+  "levelId": "level-prerequisitos",
+  "moduleId": "respiratory-physiology",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "prompt": "En la anatomía funcional de la vía aérea, ¿qué caracteriza a la zona de conducción (desde la tráquea hasta los bronquiolos terminales)?",
+      "points": 1,
+      "explanation": "La zona de conducción transporta, calienta y humidifica el gas, pero no tiene alvéolos y por eso no participa en el intercambio gaseoso: constituye el espacio muerto anatómico. El intercambio empieza en la zona respiratoria, a partir de los bronquiolos respiratorios. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "No intercambia gases y forma el espacio muerto anatómico.", "isCorrect": true },
+        { "text": "Es la región donde ocurre la mayor parte de la difusión de O₂.", "isCorrect": false },
+        { "text": "Está formada exclusivamente por alvéolos y sacos alveolares.", "isCorrect": false },
+        { "text": "Su volumen aumenta en proporción directa al volumen corriente.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Durante una inspiración espontánea tranquila, ¿qué secuencia explica la entrada de aire a los alvéolos?",
+      "points": 1,
+      "explanation": "Al contraerse el diafragma aumenta el volumen torácico, la presión intrapleural se hace más negativa, el pulmón se expande y la presión alveolar cae por debajo de la atmosférica; ese gradiente genera el flujo inspiratorio. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "El diafragma se contrae, la presión intrapleural se vuelve más negativa y la presión alveolar queda por debajo de la atmosférica.", "isCorrect": true },
+        { "text": "El diafragma se relaja y la presión alveolar se vuelve más positiva que la atmosférica.", "isCorrect": false },
+        { "text": "La presión intrapleural se vuelve positiva y empuja el aire hacia los alvéolos.", "isCorrect": false },
+        { "text": "La retracción elástica del pulmón aspira el aire sin participación muscular.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q3",
+      "type": "TRUE_FALSE",
+      "prompt": "En reposo, la espiración es normalmente un proceso pasivo que depende de la retracción elástica del pulmón y de la pared torácica.",
+      "points": 1,
+      "explanation": "Verdadero. En la respiración tranquila la espiración no requiere contracción muscular: el pulmón y la pared torácica vuelven a su posición de equilibrio por su retracción elástica. Los músculos espiratorios se reclutan en el ejercicio o cuando aumenta la demanda ventilatoria. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Verdadero", "isCorrect": true },
+        { "text": "Falso", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q4",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Una persona respira aire ambiente (FiO₂ 0,21) a nivel del mar (presión barométrica 760 mmHg, presión de vapor de agua 47 mmHg) con PaCO₂ de 40 mmHg y cociente respiratorio de 0,8. Según la ecuación del gas alveolar, ¿cuál es la PAO₂ aproximada?",
+      "points": 1,
+      "explanation": "PIO₂ = 0,21 × (760 − 47) ≈ 150 mmHg; PAO₂ ≈ PIO₂ − PaCO₂/R = 150 − 40/0,8 = 150 − 50 = 100 mmHg. La ecuación muestra que, a FiO₂ constante, un aumento de la PaCO₂ reduce la PAO₂. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "Aproximadamente 100 mmHg", "isCorrect": true },
+        { "text": "Aproximadamente 150 mmHg", "isCorrect": false },
+        { "text": "Aproximadamente 160 mmHg", "isCorrect": false },
+        { "text": "Aproximadamente 60 mmHg", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q5",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "Sobre el transporte de O₂ y CO₂ en la sangre, seleccione todas las afirmaciones correctas.",
+      "points": 1,
+      "explanation": "La mayor parte del O₂ viaja unido a la hemoglobina; la fracción disuelta es pequeña y proporcional a la PO₂ (ley de Henry). El CO₂ se transporta sobre todo como bicarbonato, además de carbaminocompuestos y forma disuelta, y difunde con más facilidad que el O₂ por su mayor solubilidad. Fuente: West y Luks (2016).",
+      "options": [
+        { "text": "La mayor parte del O₂ arterial viaja unido a la hemoglobina.", "isCorrect": true },
+        { "text": "El O₂ disuelto en plasma es proporcional a la PO₂.", "isCorrect": true },
+        { "text": "La forma principal de transporte del CO₂ es el bicarbonato.", "isCorrect": true },
+        { "text": "La mayor parte del O₂ viaja disuelto en el plasma.", "isCorrect": false },
+        { "text": "El CO₂ difunde a través de la membrana alveolocapilar con más dificultad que el O₂.", "isCorrect": false }
+      ]
+    }
+  ],
+  "sources": [
+    "West, J. B., & Luks, A. M. (2016). West's respiratory physiology: The essentials (10th ed.). Wolters Kluwer."
+  ]
+}

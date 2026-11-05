@@ -1,0 +1,80 @@
+{
+  "id": "c3-quiz-gasometria-arterial",
+  "type": "QUIZ",
+  "title": "Quiz: Gasometría arterial",
+  "description": "Comprueba la interpretación sistemática del equilibrio ácido-base y el uso de la gasometría para ajustar el ventilador.",
+  "levelId": "level-intermedio",
+  "moduleId": "9c1342e4-4917-5eb8-8233-44733fca56b3",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Un paciente presenta pH 7,25, PaCO₂ 60 mmHg y HCO₃⁻ 26 mmol/L. Si en la acidosis respiratoria aguda se espera un aumento del HCO₃⁻ de alrededor de 1 mmol/L por cada 10 mmHg de aumento de la PaCO₂, ¿cuál es la interpretación más probable?",
+      "points": 1,
+      "explanation": "El pH bajo con PaCO₂ elevada indica acidosis respiratoria. Partiendo de valores normales (PaCO₂ 40 mmHg, HCO₃⁻ 24 mmol/L), un aumento de 20 mmHg haría esperar un HCO₃⁻ cercano a 26 mmol/L en la fase aguda, que es lo observado; en la forma crónica la compensación renal sería mucho mayor. Fuente: Berend et al. (2014).",
+      "options": [
+        { "text": "Acidosis respiratoria aguda.", "isCorrect": true },
+        { "text": "Acidosis respiratoria crónica compensada.", "isCorrect": false },
+        { "text": "Acidosis metabólica con compensación respiratoria.", "isCorrect": false },
+        { "text": "Alcalosis metabólica primaria.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "prompt": "En una acidosis metabólica con HCO₃⁻ de 12 mmol/L, ¿qué PaCO₂ se espera si la compensación respiratoria es adecuada, según la fórmula de Winter (PaCO₂ = 1,5 × HCO₃⁻ + 8 ± 2)?",
+      "points": 1,
+      "explanation": "PaCO₂ esperada = 1,5 × 12 + 8 = 26 mmHg (± 2, es decir, 24-28 mmHg). Una PaCO₂ medida por encima de ese rango sugiere una acidosis respiratoria asociada; por debajo, una alcalosis respiratoria asociada. Fuente: Berend et al. (2014).",
+      "options": [
+        { "text": "Entre 24 y 28 mmHg", "isCorrect": true },
+        { "text": "Entre 38 y 42 mmHg", "isCorrect": false },
+        { "text": "Entre 14 y 18 mmHg", "isCorrect": false },
+        { "text": "Entre 44 y 48 mmHg", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q3",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "¿Cuáles de los siguientes pasos forman parte de una interpretación sistemática del equilibrio ácido-base? Seleccione todos los correctos.",
+      "points": 1,
+      "explanation": "El análisis ordenado incluye valorar el pH (acidemia o alcalemia), identificar el trastorno primario a partir de la PaCO₂ y el HCO₃⁻, comprobar si la compensación es la esperada para detectar trastornos mixtos y calcular la brecha aniónica cuando hay acidosis metabólica. La compensación casi nunca lleva el pH a la normalidad completa. Fuente: Berend et al. (2014).",
+      "options": [
+        { "text": "Determinar si existe acidemia o alcalemia a partir del pH.", "isCorrect": true },
+        { "text": "Identificar el trastorno primario con la PaCO₂ y el HCO₃⁻.", "isCorrect": true },
+        { "text": "Verificar si la compensación es la esperada para detectar trastornos mixtos.", "isCorrect": true },
+        { "text": "Calcular la brecha aniónica en presencia de acidosis metabólica.", "isCorrect": true },
+        { "text": "Asumir que la compensación siempre normaliza por completo el pH.", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q4",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Un paciente pasivo en VCV tiene frecuencia de 12 respiraciones/min y PaCO₂ de 50 mmHg. Se desea una PaCO₂ de 40 mmHg sin cambiar el volumen corriente y suponiendo que el espacio muerto y la producción de CO₂ no cambian. ¿Qué frecuencia aproximada debe programarse?",
+      "points": 1,
+      "explanation": "La PaCO₂ es inversamente proporcional a la ventilación alveolar. Con volumen corriente constante: frecuencia nueva = frecuencia actual × PaCO₂ actual / PaCO₂ deseada = 12 × 50/40 = 15 respiraciones/min. Fuente: Hess y Kacmarek (2019).",
+      "options": [
+        { "text": "15 respiraciones/min", "isCorrect": true },
+        { "text": "10 respiraciones/min", "isCorrect": false },
+        { "text": "20 respiraciones/min", "isCorrect": false },
+        { "text": "24 respiraciones/min", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q5",
+      "type": "TRUE_FALSE",
+      "prompt": "En el paciente ventilado, la PaO₂ se ajusta principalmente con la FiO₂ y la presión media de la vía aérea (por ejemplo, la PEEP), mientras que la PaCO₂ se ajusta principalmente con la ventilación minuto (volumen corriente y frecuencia).",
+      "points": 1,
+      "explanation": "Verdadero. La oxigenación depende sobre todo de la FiO₂ y de la presión media de la vía aérea, que mantiene abiertas las unidades alveolares; la eliminación de CO₂ depende de la ventilación alveolar, determinada por el volumen corriente, la frecuencia y el espacio muerto. Fuente: Hess y Kacmarek (2019).",
+      "options": [
+        { "text": "Verdadero", "isCorrect": true },
+        { "text": "Falso", "isCorrect": false }
+      ]
+    }
+  ],
+  "sources": [
+    "Berend, K., de Vries, A. P. J., & Gans, R. O. B. (2014). Physiological approach to assessment of acid–base disturbances. The New England Journal of Medicine, 371(15), 1434–1445. https://doi.org/10.1056/NEJMra1003327",
+    "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education."
+  ]
+}

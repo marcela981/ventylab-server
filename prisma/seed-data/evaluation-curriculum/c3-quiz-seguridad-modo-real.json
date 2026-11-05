@@ -1,0 +1,137 @@
+{
+  "id": "c3-quiz-seguridad-modo-real",
+  "type": "QUIZ",
+  "title": "Quiz: Seguridad en el modo real",
+  "description": "Comprueba que conoces las salvaguardas del envío de comandos al ventilador físico, los rangos seguros y la respuesta ante fallas.",
+  "levelId": "ventylab-avanzado",
+  "moduleId": "687af28f-cdd1-53a3-ae11-ed188f51cd47",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "Con la configuración por defecto, ¿cuál es la PEEP máxima que la plataforma acepta enviar al ventilador físico?",
+      "options": [
+        {
+          "text": "10 cmH2O.",
+          "isCorrect": false
+        },
+        {
+          "text": "15 cmH2O.",
+          "isCorrect": true
+        },
+        {
+          "text": "20 cmH2O.",
+          "isCorrect": false
+        },
+        {
+          "text": "25 cmH2O.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "Además de los rangos compartidos (PEEP de 0 a 20 cmH2O), cada comando se valida contra límites de seguridad más estrictos: VENTILATOR_SAFETY_MAX_PEEP vale 15 cmH2O por defecto y nunca puede ser más laxo que el límite compartido. Fuente: Mazo Castro (2026l)."
+    },
+    {
+      "key": "q2",
+      "type": "TRUE_FALSE",
+      "points": 1,
+      "prompt": "Si el asistente de IA detecta un parámetro fuera de rango, puede enviar por sí mismo un comando al ventilador físico para corregirlo.",
+      "options": [
+        {
+          "text": "Verdadero",
+          "isCorrect": false
+        },
+        {
+          "text": "Falso",
+          "isCorrect": true
+        }
+      ],
+      "explanation": "La IA solo orienta y sugiere: el único camino hacia el equipo físico es el módulo de comandos, que exige una reserva activa y que quien envía tenga el control exclusivo de operador. Cada comando lo envía una persona, a propósito, y el servidor nunca envía comandos por su cuenta. Fuente: Mazo Castro (2026l)."
+    },
+    {
+      "key": "q3",
+      "type": "MULTIPLE_CHOICE",
+      "points": 1,
+      "prompt": "¿Cuáles de estos comandos rechaza la validación con la configuración por defecto? Selecciona todas las correctas.",
+      "options": [
+        {
+          "text": "Un comando con relación I:E invertida (tiempo inspiratorio mayor que el espiratorio).",
+          "isCorrect": true
+        },
+        {
+          "text": "Un comando cuyo tiempo espiratorio resultante es menor de 0,3 s.",
+          "isCorrect": true
+        },
+        {
+          "text": "Un comando en PCV con presión límite igual a la PEEP.",
+          "isCorrect": true
+        },
+        {
+          "text": "Un comando en VCV con volumen corriente de 450 mL, frecuencia de 14/min, PEEP de 5 cmH2O y FiO2 de 0,4.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "La validación exige un tiempo espiratorio de al menos 0,3 s, una relación I:E que no supere VENTILATOR_SAFETY_MAX_IE_RATIO (1 por defecto, por lo que se rechazan las relaciones invertidas) y una presión límite mayor que la PEEP. El comando de VCV propuesto está dentro de los rangos y de los límites de seguridad (volumen máximo de 700 mL y frecuencia máxima de 35/min por defecto). Fuente: Mazo Castro (2026l)."
+    },
+    {
+      "key": "q4",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "Termina tu reserva mientras el equipo está ventilando con tus últimos ajustes. ¿Qué hace la plataforma?",
+      "options": [
+        {
+          "text": "Revoca tu control de operador; no envía ningún comando al equipo.",
+          "isCorrect": true
+        },
+        {
+          "text": "Envía un comando que devuelve el equipo a los valores de fábrica.",
+          "isCorrect": false
+        },
+        {
+          "text": "Apaga el equipo de forma remota.",
+          "isCorrect": false
+        },
+        {
+          "text": "Mantiene tu control hasta que inicie la siguiente reserva.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "Al completarse, cancelarse o desplazarse la reserva, el control se revoca de inmediato; la revocación solo quita el control y nunca cambia los ajustes del dispositivo, porque el servidor no envía comandos por su cuenta. Fuente: Mazo Castro (2026q)."
+    },
+    {
+      "key": "q5",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "El equipo deja de reportar telemetría o el broker está desconectado, e intentas enviar un cambio de parámetros. ¿Qué responde la plataforma?",
+      "options": [
+        {
+          "text": "Rechaza el comando por equipo fuera de línea y no lo aplica.",
+          "isCorrect": true
+        },
+        {
+          "text": "Guarda el comando y lo envía cuando vuelva la conexión, sin avisar.",
+          "isCorrect": false
+        },
+        {
+          "text": "Aplica el cambio en el simulador digital en lugar del equipo.",
+          "isCorrect": false
+        },
+        {
+          "text": "Envía el comando de todas formas y lo marca como aplicado.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "Cuando el dispositivo está inactivo, el broker desconectado o la publicación falla, la petición responde 503 con el código ventilator-commands.device_offline y el comando queda registrado como REJECTED; la consola solo muestra los valores que el equipo reporta. Fuente: Mazo Castro (2026l)."
+    }
+  ],
+  "sources": [
+    "Mazo Castro, M. (2026l). Comandos del ventilador (wt-c-server/docs/ventilator/commands.md) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026m). Límites compartidos de los parámetros del ventilador (wt-c-server/src/common/domain/ventilator/ventilator-limits.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026e). Variables de entorno de ejemplo con valores por defecto (wt-c-server/.env.example) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026q). ADR 0006: un único operador del ventilador físico (wt-c-server/docs/adr/0006-single-ventilator-operator.md) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026c). Registro de plantillas de prompts de IA y prompt de sistema común (wt-c-server/src/features/ai/domain/prompts/prompt-registry.ts; common-system-prompt.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026d). Manifiesto del currículo VentyLab (wt-b-server/src/features/curriculum/infrastructure/content-import/curriculum.manifest.ts) [Documentación técnica]. VentyLab."
+  ]
+}

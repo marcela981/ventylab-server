@@ -1,0 +1,141 @@
+{
+  "id": "c3-quiz-casos-sesiones-ia",
+  "type": "QUIZ",
+  "title": "Quiz: Casos clínicos, sesiones y retroalimentación",
+  "description": "Comprueba que sabes usar los casos clínicos y el paciente propio, cómo se califican las sesiones del simulador y los límites del coaching de IA.",
+  "levelId": "ventylab-intermedio",
+  "moduleId": "7fd5f9f0-4711-5cc1-8758-0761737103f1",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "Creas un paciente propio y registras su frecuencia cardiaca, su temperatura y su puntaje de Glasgow. ¿Qué efecto tienen estos datos en la simulación?",
+      "options": [
+        {
+          "text": "Solo se muestran como información del paciente; no modifican la mecánica respiratoria ni el intercambio gaseoso.",
+          "isCorrect": true
+        },
+        {
+          "text": "Recalculan la compliance y la resistencia del sistema respiratorio.",
+          "isCorrect": false
+        },
+        {
+          "text": "Determinan la FiO2 inicial del ventilador.",
+          "isCorrect": false
+        },
+        {
+          "text": "Cambian automáticamente el caso base por uno de mayor dificultad.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "El servicio del paciente propio traduce a ajustes del caso base la condición, el sexo, la edad, el peso, la talla, la frecuencia respiratoria inicial, la SpO2 (para la PaO2 inicial) y la presión arterial; la frecuencia cardiaca, la temperatura, el Glasgow, el nombre, el diagnóstico, las alergias, los antecedentes, el patrón respiratorio y la dificultad solo se muestran. Fuente: Mazo Castro (2026i)."
+    },
+    {
+      "key": "q2",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "Inicias una sesión del simulador en modo examen y la rúbrica usa la política de asistencia por defecto. ¿Qué ocurre si pides ayuda al asistente de IA?",
+      "options": [
+        {
+          "text": "La asistencia de IA está deshabilitada para esa sesión.",
+          "isCorrect": true
+        },
+        {
+          "text": "La asistencia funciona igual que en el modo libre y no afecta la nota.",
+          "isCorrect": false
+        },
+        {
+          "text": "El asistente programa los parámetros correctos por ti.",
+          "isCorrect": false
+        },
+        {
+          "text": "La asistencia se habilita después de la primera alarma.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "Las sesiones tienen dos modos, FREE y EXAM. La política de asistencia por defecto de la rúbrica es DISABLED, y en una sesión de examen el asistente solo responde si la rúbrica usa ALLOWED_WITH_PENALTY, en cuyo caso cada uso registrado puede penalizar la nota. Fuente: Mazo Castro (2026s)."
+    },
+    {
+      "key": "q3",
+      "type": "MULTIPLE_CHOICE",
+      "points": 1,
+      "prompt": "¿Qué criterios considera la rúbrica por defecto con la que se califica una sesión del simulador? Selecciona todas las correctas.",
+      "options": [
+        {
+          "text": "Los objetivos clínicos alcanzados.",
+          "isCorrect": true
+        },
+        {
+          "text": "El tiempo hasta estabilizar al paciente.",
+          "isCorrect": true
+        },
+        {
+          "text": "El porcentaje de tiempo en rango durante los últimos minutos.",
+          "isCorrect": true
+        },
+        {
+          "text": "Las violaciones de los límites de seguridad.",
+          "isCorrect": true
+        },
+        {
+          "text": "La cantidad de veces que se usó el multiplicador de tiempo.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "La rúbrica por defecto combina cuatro criterios ponderados: objetivos alcanzados (TARGETS_REACHED), tiempo de estabilización (TIME_TO_STABILIZE), tiempo en rango (TIME_IN_RANGE) y violaciones de seguridad (SAFETY_VIOLATIONS, con presión meseta máxima de 30 cmH2O, presión de distensión de 15 cmH2O, 8 mL/kg de peso predicho y auto-PEEP de 5 cmH2O); el uso de la IA puede sumarse como AI_ASSIST_USAGE. El multiplicador de tiempo no es un criterio. Fuente: Mazo Castro (2026h)."
+    },
+    {
+      "key": "q4",
+      "type": "TRUE_FALSE",
+      "points": 1,
+      "prompt": "El asistente de IA del simulador está diseñado para dictarte el valor exacto que debes programar en cada parámetro.",
+      "options": [
+        {
+          "text": "Verdadero",
+          "isCorrect": false
+        },
+        {
+          "text": "Falso",
+          "isCorrect": true
+        }
+      ],
+      "explanation": "La plantilla SIM_ASSIST indica al asistente que señale qué va bien, qué está en riesgo y qué variable conviene revisar, en qué dirección y por qué, sin dictar el valor exacto a programar, para que el estudiante aprenda a razonar. Fuente: Mazo Castro (2026c)."
+    },
+    {
+      "key": "q5",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "prompt": "¿Qué multiplicadores de tiempo admite una sesión del simulador?",
+      "options": [
+        {
+          "text": "1×, 2× y 4×.",
+          "isCorrect": true
+        },
+        {
+          "text": "1×, 5× y 10×.",
+          "isCorrect": false
+        },
+        {
+          "text": "Solo 1×; el tiempo no se puede acelerar.",
+          "isCorrect": false
+        },
+        {
+          "text": "Cualquier valor entre 0,5× y 8×.",
+          "isCorrect": false
+        }
+      ],
+      "explanation": "Los valores de las sesiones de simulación definen los multiplicadores de tiempo 1, 2 y 4; cualquier otro valor se rechaza. Fuente: Mazo Castro (2026g)."
+    }
+  ],
+  "sources": [
+    "Mazo Castro, M. (2026i). Paciente propio: traducción del formulario a ajustes del caso base (wt-c-server/src/features/simulation/domain/patient/patient-overrides.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026g). Valores de las sesiones de simulación con eventos (wt-c-server/src/features/simulation/domain/value-objects/simulation-session-values.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026h). Rúbrica de calificación de simulaciones (wt-c-server/src/features/simulation/domain/scoring/simulation-rubric.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026c). Registro de plantillas de prompts de IA y prompt de sistema común (wt-c-server/src/features/ai/domain/prompts/prompt-registry.ts; common-system-prompt.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026s). Asistencia de IA en la simulación (wt-c-server/src/features/simulation/application/assist/assist-simulation.usecase.ts) [Documentación técnica]. VentyLab.",
+    "Mazo Castro, M. (2026d). Manifiesto del currículo VentyLab (wt-b-server/src/features/curriculum/infrastructure/content-import/curriculum.manifest.ts) [Documentación técnica]. VentyLab."
+  ]
+}

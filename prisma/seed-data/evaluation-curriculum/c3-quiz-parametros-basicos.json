@@ -1,0 +1,80 @@
+{
+  "id": "c3-quiz-parametros-basicos",
+  "type": "QUIZ",
+  "title": "Quiz: Parámetros ventilatorios básicos",
+  "description": "Comprueba el cálculo del volumen corriente por peso corporal predicho, la relación entre frecuencia, tiempos e I:E, y los primeros ajustes de FiO₂ y PEEP.",
+  "levelId": "level-beginner",
+  "moduleId": "12369cc3-13d2-5c35-b16f-55a372d9ae29",
+  "durationMinutes": null,
+  "scenario": null,
+  "questions": [
+    {
+      "key": "q1",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Una mujer mide 165 cm. Con la fórmula del peso corporal predicho de ARDS Network (mujer: 45,5 + 0,91 × [talla en cm − 152,4]), ¿qué rango de volumen corriente corresponde a 6-8 mL/kg?",
+      "points": 1,
+      "explanation": "Peso predicho = 45,5 + 0,91 × (165 − 152,4) = 45,5 + 11,5 ≈ 57 kg. A 6-8 mL/kg el volumen corriente queda entre unos 342 y 456 mL. Usar el peso real en lugar del peso predicho sobrestima el volumen en personas con sobrepeso. Fuente: Acute Respiratory Distress Syndrome Network (2000).",
+      "options": [
+        { "text": "Entre unos 342 y 456 mL", "isCorrect": true },
+        { "text": "Entre unos 420 y 560 mL", "isCorrect": false },
+        { "text": "Entre unos 270 y 360 mL", "isCorrect": false },
+        { "text": "Entre unos 495 y 660 mL", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q2",
+      "type": "TRUE_FALSE",
+      "prompt": "El peso corporal predicho se calcula a partir de la talla y el sexo, no del peso real, porque el tamaño pulmonar se relaciona con la talla.",
+      "points": 1,
+      "explanation": "Verdadero. El peso predicho depende solo de la talla y el sexo; el volumen pulmonar se relaciona con la talla y no aumenta con la masa corporal, por eso el volumen corriente se ajusta por peso predicho. Fuente: Acute Respiratory Distress Syndrome Network (2000).",
+      "options": [
+        { "text": "Verdadero", "isCorrect": true },
+        { "text": "Falso", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q3",
+      "type": "SINGLE_CHOICE",
+      "prompt": "En un modo controlado se programan una frecuencia de 15 respiraciones/min y un tiempo inspiratorio de 1 s. ¿Cuál es la relación I:E resultante?",
+      "points": 1,
+      "explanation": "Duración del ciclo = 60/15 = 4 s; tiempo espiratorio = 4 − 1 = 3 s; I:E = 1:3. Si se aumenta la frecuencia sin cambiar el tiempo inspiratorio, se acorta el tiempo espiratorio. Fuente: Hess y Kacmarek (2019).",
+      "options": [
+        { "text": "1:3", "isCorrect": true },
+        { "text": "1:4", "isCorrect": false },
+        { "text": "1:2", "isCorrect": false },
+        { "text": "1:1", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q4",
+      "type": "SINGLE_CHOICE",
+      "prompt": "Con un volumen corriente de 450 mL y una frecuencia de 14 respiraciones/min, ¿cuál es la ventilación minuto?",
+      "points": 1,
+      "explanation": "Ventilación minuto = volumen corriente × frecuencia = 0,45 L × 14 = 6,3 L/min. Una parte de ese volumen ventila el espacio muerto y no participa en la eliminación de CO₂. Fuente: Hess y Kacmarek (2019).",
+      "options": [
+        { "text": "6,3 L/min", "isCorrect": true },
+        { "text": "4,5 L/min", "isCorrect": false },
+        { "text": "3,2 L/min", "isCorrect": false },
+        { "text": "9,0 L/min", "isCorrect": false }
+      ]
+    },
+    {
+      "key": "q5",
+      "type": "MULTIPLE_CHOICE",
+      "prompt": "Sobre los primeros ajustes de FiO₂ y PEEP en un adulto recién intubado, seleccione todas las afirmaciones correctas.",
+      "points": 1,
+      "explanation": "La FiO₂ se titula según la saturación objetivo para evitar tanto la hipoxemia como la hiperoxia; en la mayoría de los adultos sin riesgo de hipercapnia la meta de SpO₂ es 94-98 %. En pulmones sin enfermedad suele iniciarse una PEEP baja, alrededor de 5 cmH₂O, que luego se ajusta (Hess y Kacmarek, 2019). Mantener FiO₂ alta sin necesidad no aporta beneficio. Fuente: O'Driscoll et al. (2017).",
+      "options": [
+        { "text": "La FiO₂ debe titularse según una saturación objetivo y no dejarse alta sin necesidad.", "isCorrect": true },
+        { "text": "En la mayoría de los adultos sin riesgo de hipercapnia, la meta de SpO₂ es 94-98 %.", "isCorrect": true },
+        { "text": "En un pulmón sin enfermedad suele iniciarse una PEEP baja, alrededor de 5 cmH₂O.", "isCorrect": true },
+        { "text": "Conviene mantener FiO₂ 1,0 durante todo el soporte para asegurar la oxigenación.", "isCorrect": false }
+      ]
+    }
+  ],
+  "sources": [
+    "Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. The New England Journal of Medicine, 342(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801",
+    "Hess, D. R., & Kacmarek, R. M. (2019). Essentials of mechanical ventilation (4th ed.). McGraw-Hill Education.",
+    "O'Driscoll, B. R., Howard, L. S., Earis, J., & Mak, V. (2017). BTS guideline for oxygen use in adults in healthcare and emergency settings. Thorax, 72(Suppl 1), ii1–ii90. https://doi.org/10.1136/thoraxjnl-2016-209729"
+  ]
+}
