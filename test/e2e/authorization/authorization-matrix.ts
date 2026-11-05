@@ -219,6 +219,7 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "GET /api/groups/:id/members": STUDENT_UP, // groups:read_own
   "GET /api/groups/:id/supervisions": ADMIN_ONLY, // groups:manage_supervisions
   "GET /api/groups/mine": STUDENT_UP, // groups:read_own
+  "GET /api/groups/student-memberships": TEACHER_UP, // groups:manage_members
   "PATCH /api/groups/:id": TEACHER_UP, // groups:update
   "PATCH /api/groups/:id/lead": TEACHER_UP, // groups:update
   "POST /api/groups": TEACHER_UP, // groups:create

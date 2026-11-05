@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los suscriptores de notificaciones
- * Descripción: Verifica por cada evento de catálogo los destinatarios, el tipo y el texto de plantilla, la expansión de grupos en una sola inserción en lote, que el actor que desplaza una reserva nunca recibe el aviso, persistir antes de emitir notification:new, el aviso de ventilador fuera de línea solo a titulares de la reserva activa y que los errores se registran sin propagarse
- * Versión: 1.1
+ * Descripción: Verifica por cada evento de catálogo los destinatarios, el tipo y el texto de plantilla, la expansión de grupos en una sola inserción en lote, que el actor que desplaza una reserva nunca recibe el aviso, persistir antes de emitir notification:new, el aviso de ventilador fuera de línea solo a titulares de la reserva activa y que los errores se registran sin propagarse; v1.2: estudiante agregado a un grupo
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -211,6 +211,12 @@ describe("NotificationsEventsHandlers", () => {
       (handlers: NotificationsEventsHandlers): Promise<void> => handlers.handleRoleChanged({ ...META, userId: "student-1", previousRole: "STUDENT", newRole: "TEACHER" }),
       "ROLE_CHANGED",
       "Tu rol cambió",
+    ],
+    [
+      "group.studentAdded",
+      (handlers: NotificationsEventsHandlers): Promise<void> => handlers.handleGroupStudentAdded({ ...META, groupId: "group-1", groupName: "Grupo A", userId: "student-1" }),
+      "GROUP_MEMBER_ADDED",
+      "Te agregaron al grupo Grupo A",
     ],
   ])("notifies the target user of %s", async (_name: string, act: (handlers: NotificationsEventsHandlers) => Promise<void>, type: string, title: string) => {
     const { handlers, repository, emitToUser } = harness();

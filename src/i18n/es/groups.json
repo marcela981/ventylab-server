@@ -30,12 +30,14 @@
   "supervisions_retrieved": "Supervisiones obtenidas correctamente",
   "supervision_added": "Supervisión agregada correctamente",
   "supervision_removed": "Supervisión retirada correctamente",
+  "student_memberships_retrieved": "Las membresías de estudiantes se obtuvieron correctamente",
   "validation": {
     "name_required": "El nombre es obligatorio",
     "user_id_required": "userId es obligatorio",
     "max_students_invalid": "maxStudents debe ser un número entero mayor que 0",
     "depth_invalid": "depth debe ser un número entero",
     "type_invalid": "type debe ser STUDENT o TEACHER",
+    "user_ids_invalid": "userIds debe ser una lista de 1 a 100 IDs de usuario",
     "student_group_id_required": "studentGroupId es obligatorio"
   }
 }

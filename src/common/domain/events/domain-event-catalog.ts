@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Catálogo tipado de eventos de dominio
- * Descripción: Mapa nombre de catálogo -> carga útil de los eventos de dominio que consumen los suscriptores transversales (notificaciones, auditoría, analítica), el contrato CatalogDomainEvent que implementan los eventos publicados también bajo un nombre de catálogo y la guarda de tipo que usa el bus
- * Versión: 1.0
+ * Descripción: Mapa nombre de catálogo -> carga útil de los eventos de dominio que consumen los suscriptores transversales (notificaciones, auditoría, analítica), el contrato CatalogDomainEvent que implementan los eventos publicados también bajo un nombre de catálogo y la guarda de tipo que usa el bus; v1.1: group.studentAdded (estudiante agregado a un grupo STUDENT)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -104,6 +104,12 @@ export interface VentilatorDeviceOnlinePayload extends CatalogEventMeta {
   readonly at: Date;
 }
 
+export interface GroupStudentAddedPayload extends CatalogEventMeta {
+  readonly groupId: string;
+  readonly groupName: string;
+  readonly userId: string;
+}
+
 export interface DomainEventCatalog {
   "reservation.created": ReservationCreatedPayload;
   "reservation.cancelled": ReservationCancelledPayload;
@@ -112,6 +118,7 @@ export interface DomainEventCatalog {
   "grade.published": GradePublishedPayload;
   "grade.feedbackReady": GradeFeedbackReadyPayload;
   "evaluation.attemptReset": EvaluationAttemptResetPayload;
+  "group.studentAdded": GroupStudentAddedPayload;
   "user.roleChanged": UserRoleChangedPayload;
   "user.statusChanged": UserStatusChangedPayload;
   "ventilator.deviceOffline": VentilatorDeviceOfflinePayload;

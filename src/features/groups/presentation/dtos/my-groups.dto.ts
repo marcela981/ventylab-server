@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de los grupos propios
- * Descripción: Formas de respuesta documentadas en Swagger para GET /api/groups/mine: grupo STUDENT del estudiante (nombre, líder, miembros con nombre y grupos TEACHER que lo supervisan) y lista de membresías del usuario
- * Versión: 1.0
+ * Descripción: Formas de respuesta documentadas en Swagger para GET /api/groups/mine: grupo STUDENT del estudiante (nombre, líder, miembros con nombre y grupos TEACHER que lo supervisan) y lista de membresías del usuario; grupo STUDENT activo de un usuario (consulta por lotes de quien gestiona miembros)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -23,6 +23,19 @@ export class GroupNameDTO {
   public constructor({ id, name }: { id: string; name: string }) {
     this.id = id;
     this.name = name;
+  }
+}
+
+export class StudentMembershipDTO {
+  @ApiProperty({ description: "User ID", example: "cm5student01" })
+  public userId: string;
+
+  @ApiProperty({ description: "Active STUDENT group of the user", type: GroupNameDTO })
+  public group: GroupNameDTO;
+
+  public constructor({ userId, group }: { userId: string; group: GroupNameDTO }) {
+    this.userId = userId;
+    this.group = group;
   }
 }
 

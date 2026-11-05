@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Plantillas de notificaciones
- * Descripción: Único punto con los textos en español (copia de producto para estudiantes y docentes) de cada tipo de notificación y sus referencias de enlace profundo, construidos a partir de la carga útil del evento de dominio de catálogo
- * Versión: 1.1
+ * Descripción: Único punto con los textos en español (copia de producto para estudiantes y docentes) de cada tipo de notificación y sus referencias de enlace profundo, construidos a partir de la carga útil del evento de dominio de catálogo; v1.2: estudiante agregado a un grupo
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import {
   type EvaluationAttemptResetPayload,
   type GradeFeedbackReadyPayload,
   type GradePublishedPayload,
+  type GroupStudentAddedPayload,
   type ReservationCancelledPayload,
   type ReservationPreemptedPayload,
   type UserRoleChangedPayload,
@@ -40,6 +41,7 @@ export const NOTIFICATION_TEMPLATES: {
   feedbackReady(payload: GradeFeedbackReadyPayload): NotificationContent;
   attemptReset(payload: EvaluationAttemptResetPayload): NotificationContent;
   roleChanged(payload: UserRoleChangedPayload): NotificationContent;
+  groupMemberAdded(payload: GroupStudentAddedPayload): NotificationContent;
   ventilatorOffline(payload: VentilatorDeviceOfflinePayload, reservationId: string): NotificationContent;
 } = {
   reservationPreempted: (payload: ReservationPreemptedPayload): NotificationContent => ({
@@ -83,6 +85,12 @@ export const NOTIFICATION_TEMPLATES: {
     title: "Tu rol cambió",
     body: `Tu rol en VentyLab ahora es ${ROLE_LABELS[payload.newRole] ?? payload.newRole}.`,
     data: { previousRole: payload.previousRole, newRole: payload.newRole },
+  }),
+  groupMemberAdded: (payload: GroupStudentAddedPayload): NotificationContent => ({
+    type: "GROUP_MEMBER_ADDED",
+    title: `Te agregaron al grupo ${payload.groupName}`,
+    body: `Ahora formas parte del grupo "${payload.groupName}". Puedes verlo en Mi grupo.`,
+    data: { groupId: payload.groupId },
   }),
   ventilatorOffline: (payload: VentilatorDeviceOfflinePayload, reservationId: string): NotificationContent => ({
     type: "VENTILATOR_OFFLINE",

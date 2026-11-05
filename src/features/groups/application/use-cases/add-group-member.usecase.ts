@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso AddGroupMemberUseCase
- * Descripción: Agrega un usuario existente a un grupo dentro del alcance de gestión del ejecutor; valida que el rol del usuario sea admitido por el tipo del grupo, que un estudiante no pertenezca a otro grupo STUDENT activo (bajo pg_advisory_xact_lock por estudiante) y el cupo máximo; la membresía nace como MEMBER con el rol heredado derivado del rol del usuario
- * Versión: 1.1
+ * Descripción: Agrega un usuario existente a un grupo dentro del alcance de gestión del ejecutor; valida que el rol del usuario sea admitido por el tipo del grupo, que un estudiante no pertenezca a otro grupo STUDENT activo (bajo pg_advisory_xact_lock por estudiante) y el cupo máximo; la membresía nace como MEMBER con el rol heredado derivado del rol del usuario; v1.2: una membresía nueva de un estudiante en un grupo STUDENT publica GroupStudentAddedEvent (catálogo group.studentAdded)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { AddGroupMemberCommand } from "@/features/groups/application/commands/ad
 import { GroupAccessService } from "@/features/groups/application/services/group-access.service";
 import { GroupMember } from "@/features/groups/domain/entities/group-member.entity";
 import { type Group } from "@/features/groups/domain/entities/group.entity";
+import { GroupStudentAddedEvent } from "@/features/groups/domain/events/group-member.events";
 import {
   GroupFullError,
   GroupMemberRoleNotAllowedError,
@@ -116,7 +117,12 @@ export class AddGroupMemberUseCase {
 
       await this._groupMembersRepository.save(member, transaction);
 
-      return member.getEvents();
+      // The student is told (notification "Te agregaron al grupo X") only for a new membership of a student group.
+      const joined: DomainEvent[] = !existing && group.isStudentGroup() && isStudentUserRole(user.role)
+        ? [new GroupStudentAddedEvent({ groupId: group.id, groupName: group.name, userId: user.id, performedBy: command.performedBy })]
+        : [];
+
+      return [...member.getEvents(), ...joined];
     });
 
     this._eventBus.publish(events);

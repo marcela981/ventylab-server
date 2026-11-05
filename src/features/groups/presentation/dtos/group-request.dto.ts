@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de petición de grupos
- * Descripción: Validación y documentación Swagger de los cuerpos y filtros de /api/groups (crear con tipo, actualizar, listar, agregar miembro y asignar líder del simulador)
- * Versión: 1.1
+ * Descripción: Validación y documentación Swagger de los cuerpos y filtros de /api/groups (crear con tipo, actualizar, listar, agregar miembro y asignar líder del simulador); v1.2: ids de usuario de la consulta de grupos de estudiantes activos (separados por coma o repetidos, máximo 100)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,10 +9,11 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Type } from "class-transformer";
-import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min } from "class-validator";
+import { Transform, Type } from "class-transformer";
+import { ArrayMaxSize, ArrayNotEmpty, IsArray, IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
 
+import { MAX_STUDENT_MEMBERSHIP_LOOKUP } from "@/features/groups/application/use-cases/get-student-memberships.usecase";
 import { GROUP_MEMBER_ROLE_VALUES } from "@/features/groups/domain/value-objects/group-member-role";
 import { GROUP_TYPE_VALUES } from "@/features/groups/domain/value-objects/group-type";
 
@@ -152,4 +153,20 @@ export class SetSimulatorLeadDTO {
   @IsOptional()
   @IsString({ message: i18nValidationMessage("common.validation.string") })
   public userId?: string | null;
+}
+
+export class GetStudentMembershipsQueryDTO {
+  @ApiProperty({
+    description: `Users whose active STUDENT group is read (comma-separated or repeated query parameter, at most ${MAX_STUDENT_MEMBERSHIP_LOOKUP})`,
+    example: "cm5student01,cm5student02",
+    type: String,
+  })
+  @Transform(({ value }: { value: string | string[] }) =>
+    Array.isArray(value) ? value : typeof value === "string" ? value.split(",").map((item: string) => item.trim()).filter(Boolean) : undefined,
+  )
+  @IsArray({ message: i18nValidationMessage("groups.validation.user_ids_invalid") })
+  @ArrayNotEmpty({ message: i18nValidationMessage("groups.validation.user_ids_invalid") })
+  @ArrayMaxSize(MAX_STUDENT_MEMBERSHIP_LOOKUP, { message: i18nValidationMessage("groups.validation.user_ids_invalid") })
+  @IsString({ each: true, message: i18nValidationMessage("groups.validation.user_ids_invalid") })
+  public userIds: string[];
 }

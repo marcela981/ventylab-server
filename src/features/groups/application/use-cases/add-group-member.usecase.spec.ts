@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del caso de uso AddGroupMemberUseCase
- * Descripción: Verifica el rol admitido por tipo de grupo (422), el único grupo STUDENT activo por estudiante con su bloqueo (409), el alcance de gestión del profesor (403), el usuario inexistente y el alta como MEMBER con el rol heredado
- * Versión: 1.0
+ * Descripción: Verifica el rol admitido por tipo de grupo (422), el único grupo STUDENT activo por estudiante con su bloqueo (409), el alcance de gestión del profesor (403), el usuario inexistente y el alta como MEMBER con el rol heredado; publica group.studentAdded al agregar un estudiante
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import {
 } from "@/features/groups/application/testing/groups-test-doubles-spec";
 import { AddGroupMemberUseCase } from "@/features/groups/application/use-cases/add-group-member.usecase";
 import { type GroupMember } from "@/features/groups/domain/entities/group-member.entity";
+import { GroupStudentAddedEvent } from "@/features/groups/domain/events/group-member.events";
 import {
   GroupManagementForbiddenError,
   GroupMemberRoleNotAllowedError,
@@ -61,6 +62,17 @@ describe("AddGroupMemberUseCase", () => {
     expect(saved.memberRole).toBe("MEMBER");
     expect(saved.role).toBe("STUDENT");
     expect(doubles.publish).toHaveBeenCalled();
+  });
+
+  it("publishes group.studentAdded with the group name so the student is notified", async () => {
+    const doubles: GroupsDoubles = buildDoubles(studentGroupState());
+
+    await buildUseCase(doubles).execute(command("student-1"));
+
+    const published: unknown[] = doubles.publish.mock.calls[0][0] as unknown[];
+    const joined: GroupStudentAddedEvent | undefined = published.find((event: unknown): event is GroupStudentAddedEvent => event instanceof GroupStudentAddedEvent);
+
+    expect(joined?.toCatalogPayload()).toMatchObject({ groupId: "group-1", groupName: "Group group-1", userId: "student-1", actorId: "teacher-1" });
   });
 
   it("rejects a teacher in a student group with 422", async () => {

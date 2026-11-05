@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de grupos
- * Descripción: Endpoints /api/groups: listar (con alcance por rol y, si se acota al solicitante, su relación MANAGED o SUPERVISED con cada grupo), grupos propios (/mine), crear con tipo, consultar, actualizar, eliminar o desactivar grupos, gestionar miembros, asignar el líder del grupo STUDENT y gestionar supervisiones TEACHER→STUDENT (solo ADMIN); el alcance de gestión se aplica en los casos de uso
- * Versión: 1.3
+ * Descripción: Endpoints /api/groups: listar (con alcance por rol y, si se acota al solicitante, su relación MANAGED o SUPERVISED con cada grupo), grupos propios (/mine), crear con tipo, consultar, actualizar, eliminar o desactivar grupos, gestionar miembros, asignar el líder del grupo STUDENT y gestionar supervisiones TEACHER→STUDENT (solo ADMIN); el alcance de gestión se aplica en los casos de uso; v1.4: GET /student-memberships devuelve el grupo STUDENT activo de hasta 100 usuarios para marcar en el buscador de miembros a quien ya tiene grupo
+ * Versión: 1.4
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,6 +35,7 @@ import { GetGroupMembersUseCase } from "@/features/groups/application/use-cases/
 import { GetGroupSupervisionsUseCase } from "@/features/groups/application/use-cases/get-group-supervisions.usecase";
 import { GetGroupsUseCase } from "@/features/groups/application/use-cases/get-groups.usecase";
 import { GetMyGroupsUseCase, type MyGroupsResult } from "@/features/groups/application/use-cases/get-my-groups.usecase";
+import { GetStudentMembershipsUseCase } from "@/features/groups/application/use-cases/get-student-memberships.usecase";
 import { RemoveGroupMemberUseCase } from "@/features/groups/application/use-cases/remove-group-member.usecase";
 import { RemoveGroupSupervisionUseCase } from "@/features/groups/application/use-cases/remove-group-supervision.usecase";
 import { SetSimulatorLeadUseCase } from "@/features/groups/application/use-cases/set-simulator-lead.usecase";
@@ -45,18 +46,20 @@ import {
   type GroupMemberView,
   type GroupSupervisionView,
   type GroupView,
+  type UserActiveStudentGroupView,
 } from "@/features/groups/domain/read-models/group.read-model";
 import { toGroupType } from "@/features/groups/domain/value-objects/group-type";
 import {
   AddGroupMemberDTO,
   CreateGroupDTO,
   GetGroupsQueryDTO,
+  GetStudentMembershipsQueryDTO,
   SetSimulatorLeadDTO,
   UpdateGroupDTO,
 } from "@/features/groups/presentation/dtos/group-request.dto";
 import { AddGroupSupervisionDTO, DeleteGroupResultDTO, GroupSupervisionDTO } from "@/features/groups/presentation/dtos/group-supervision.dto";
 import { GroupDetailDTO, GroupDTO, GroupIdDTO, GroupMemberDTO } from "@/features/groups/presentation/dtos/group.dto";
-import { MyGroupsDTO } from "@/features/groups/presentation/dtos/my-groups.dto";
+import { MyGroupsDTO, StudentMembershipDTO } from "@/features/groups/presentation/dtos/my-groups.dto";
 import { GroupsMapper } from "@/features/groups/presentation/mappers/groups.mapper";
 import { type CurrentCaller, toGroupActor } from "@/features/groups/presentation/types/current-caller";
 
@@ -79,6 +82,7 @@ export class GroupsController {
     private readonly _getGroupSupervisionsUseCase: GetGroupSupervisionsUseCase,
     private readonly _addGroupSupervisionUseCase: AddGroupSupervisionUseCase,
     private readonly _removeGroupSupervisionUseCase: RemoveGroupSupervisionUseCase,
+    private readonly _getStudentMembershipsUseCase: GetStudentMembershipsUseCase,
   ) {}
 
   @Get()
@@ -132,6 +136,27 @@ export class GroupsController {
     return new APIResponseBuilder<MyGroupsDTO>()
       .setData(GroupsMapper.toMyGroupsDTO(result))
       .setMessage(await i18n.t("groups.my_groups_retrieved"))
+      .build();
+  }
+
+  @Get("student-memberships")
+  @RequirePermissions("groups:manage_members")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Get the active student groups of users",
+    description:
+      "For each requested user that belongs to an active STUDENT group, that group (id and name); users without one are absent. A student can belong to only one active STUDENT group, so the member search shows who cannot be added before trying (POST /:id/members answers 409 groups.student_already_in_group)",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Student memberships retrieved successfully", type: StudentMembershipDTO, isArray: true })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
+  @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Forbidden" })
+  public async getStudentMemberships(@Query() query: GetStudentMembershipsQueryDTO, @I18n() i18n: I18nContext): Promise<APIResponse<StudentMembershipDTO[]>> {
+    const rows: UserActiveStudentGroupView[] = await this._getStudentMembershipsUseCase.execute(query.userIds);
+
+    return new APIResponseBuilder<StudentMembershipDTO[]>()
+      .setData(rows.map((row: UserActiveStudentGroupView) => new StudentMembershipDTO({ userId: row.userId, group: { id: row.group.id, name: row.group.name } })))
+      .setMessage(await i18n.t("groups.student_memberships_retrieved"))
       .build();
   }
 
