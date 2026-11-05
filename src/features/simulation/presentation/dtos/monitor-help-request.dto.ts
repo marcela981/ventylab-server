@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de la ayuda del monitor (alarmas y asistencia en modo real)
  * Descripción: Validación de la petición de ayuda de una alarma del simulador y de las peticiones de asistencia y ayuda de alarmas del modo real, que envían la telemetría reciente del equipo (ajustes informados, métricas, alarmas del equipo, límites del cliente, tendencia acotada y caso cargado opcional). La IA nunca envía comandos: solo devuelve sugerencias
- * Versión: 1.0
+ * Versión: 1.1 (state obligatorio)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -15,6 +15,7 @@ import {
   IsArray,
   IsIn,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -142,6 +143,7 @@ export class RealMonitorStateDTO {
 
 export class RealAssistDTO {
   @ApiProperty({ type: RealMonitorStateDTO })
+  @IsObject({ message: i18nValidationMessage("simulation.validation.monitor_state_invalid") })
   @ValidateNested()
   @Type(() => RealMonitorStateDTO)
   public state: RealMonitorStateDTO;
@@ -160,6 +162,7 @@ export class RealAssistDTO {
 
 export class RealAlarmHelpDTO extends SimulationAlarmHelpDTO {
   @ApiProperty({ type: RealMonitorStateDTO })
+  @IsObject({ message: i18nValidationMessage("simulation.validation.monitor_state_invalid") })
   @ValidateNested()
   @Type(() => RealMonitorStateDTO)
   public state: RealMonitorStateDTO;
