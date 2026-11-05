@@ -25,6 +25,7 @@ import { EXAM_ATTEMPT_READER_TOKEN } from "@/features/simulation/application/por
 import { SIMULATION_SEED_GENERATOR_TOKEN } from "@/features/simulation/application/ports/simulation-seed-generator.interface";
 import { PatientSimulationSessionsService } from "@/features/simulation/application/services/patient-simulation-sessions.service";
 import { SimulationAssistContextService } from "@/features/simulation/application/services/simulation-assist-context.service";
+import { SimulationResultsVisibilityService } from "@/features/simulation/application/services/simulation-results-visibility.service";
 import { SimulationSessionAccessService } from "@/features/simulation/application/services/simulation-session-access.service";
 import { SimulationSessionReader } from "@/features/simulation/application/services/simulation-session-reader.service";
 import { SimulationSessionRuntime } from "@/features/simulation/application/services/simulation-session-runtime.service";
@@ -135,6 +136,7 @@ function createSimulationSettings(configService: ConfigService<EnvironmentVariab
     SimulationAssistContextService,
     AssistSimulationUseCase,
     CaseInterpretationService,
+    SimulationResultsVisibilityService,
     AlarmHelpSimulationUseCase,
     RealMonitorHelpUseCase,
   ],

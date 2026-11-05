@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de sesiones de simulación
  * Descripción: Convierte los resultados de los casos de uso de sesiones con eventos (inicio, lote de eventos, estado, resumen, repetición, listado y prueba de caso) en sus DTOs de respuesta con fechas ISO y null para valores ausentes; el formulario guardado del paciente propio (no sus ajustes internos) en el estado, la repetición y el listado
- * Versión: 1.3 (desenlace y línea de tiempo del debriefing en el resumen)
+ * Versión: 1.4 (resultados de EXAM retenidos para el estudiante hasta la liberación docente)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import {
   type SimulationSessionSummaryResult,
   type StartSimulationSessionResult,
 } from "@/features/simulation/application/results/simulation-session.results";
+import { FULL_RESULTS_VISIBILITY, type ResultsVisibility } from "@/features/simulation/application/services/simulation-results-visibility.service";
 import { SimulationFacade } from "@/features/simulation/application/services/simulation.facade";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
 import { type SimulatedPatient } from "@/features/simulation/domain/patient/simulated-patient";
@@ -38,6 +39,11 @@ import {
   StartedSimulationSessionDTO,
 } from "@/features/simulation/presentation/dtos/simulation-session.dto";
 
+// EXAM students must not see target statuses before the teacher releases the answers, not even inside the metrics.
+function withoutTargets<T extends object>(metrics: T): T {
+  return { ...metrics, targets: [] };
+}
+
 export class SimulationSessionsResponseMapper {
   public static toStartedDTO(result: StartSimulationSessionResult): StartedSimulationSessionDTO {
     return new StartedSimulationSessionDTO({
@@ -55,34 +61,38 @@ export class SimulationSessionsResponseMapper {
     return new AppendedSimulationEventsDTO({ accepted: result.accepted, duplicates: result.duplicates, lastSimTimeMs: result.lastSimTimeMs });
   }
 
-  public static toStateDTO(result: SimulationSessionStateResult): SimulationSessionStateDTO {
+  public static toStateDTO(result: SimulationSessionStateResult, visibility: ResultsVisibility = FULL_RESULTS_VISIBILITY): SimulationSessionStateDTO {
     return new SimulationSessionStateDTO({
       id: result.session.id,
       status: result.session.status,
       simTimeMs: result.simTimeMs,
       expiresAt: result.expiresAt?.toISOString() ?? null,
       settings: result.settings,
-      metrics: result.metrics,
+      metrics: visibility.correction ? result.metrics : withoutTargets(result.metrics),
       alarms: [...result.alarms],
-      targets: [...result.targets],
+      targets: visibility.correction ? [...result.targets] : [],
+      resultsWithheld: !visibility.correction,
       patient: SimulationSessionsResponseMapper.toPatientDTO(result.session),
     });
   }
 
-  public static toSummaryDTO(result: SimulationSessionSummaryResult): SimulationSessionSummaryDTO {
+  public static toSummaryDTO(result: SimulationSessionSummaryResult, visibility: ResultsVisibility = FULL_RESULTS_VISIBILITY): SimulationSessionSummaryDTO {
+    const { correction } = visibility;
+
     return new SimulationSessionSummaryDTO({
       id: result.session.id,
       status: result.session.status,
       engineVersion: result.summary.engineVersion,
       simTimeMs: result.summary.simTimeMs,
       durationMs: result.summary.durationMs,
-      finalMetrics: result.summary.finalMetrics,
-      targets: [...result.summary.targets],
-      score: result.summary.score,
-      breakdown: [...result.summary.breakdown],
+      finalMetrics: correction ? result.summary.finalMetrics : withoutTargets(result.summary.finalMetrics),
+      targets: correction ? [...result.summary.targets] : [],
+      score: visibility.score ? result.summary.score : null,
+      breakdown: correction ? [...result.summary.breakdown] : [],
+      resultsWithheld: !visibility.score || !correction,
       aiHelpCount: result.summary.aiHelpCount,
-      outcome: result.summary.outcome ? new SimulationOutcomeDTO({ ...result.summary.outcome }) : null,
-      timeline: (result.summary.timeline ?? []).map(
+      outcome: correction && result.summary.outcome ? new SimulationOutcomeDTO({ ...result.summary.outcome }) : null,
+      timeline: (correction ? (result.summary.timeline ?? []) : []).map(
         (item: DebriefTimelineItem): SimulationDebriefItemDTO => ({
           simTimeMs: item.simTimeMs,
           kind: item.kind,
@@ -117,7 +127,7 @@ export class SimulationSessionsResponseMapper {
     });
   }
 
-  public static toSessionDTO(session: SimulationSession, caseTitle?: string): SimulationSessionDTO {
+  public static toSessionDTO(session: SimulationSession, caseTitle?: string, visibility: ResultsVisibility = FULL_RESULTS_VISIBILITY): SimulationSessionDTO {
     const view: SimulationSessionView = SimulationFacade.toView(session);
 
     return new SimulationSessionDTO({
@@ -135,7 +145,7 @@ export class SimulationSessionsResponseMapper {
       endedAt: view.endedAt?.toISOString() ?? null,
       lastEventAt: view.lastEventAt.toISOString(),
       lastSimTimeMs: view.lastSimTimeMs,
-      score: view.score ?? null,
+      score: visibility.score ? (view.score ?? null) : null,
       patient: SimulationSessionsResponseMapper.toPatientDTO(session),
     });
   }

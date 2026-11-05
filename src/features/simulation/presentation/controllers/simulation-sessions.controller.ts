@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador de sesiones de simulación con eventos
  * Descripción: Endpoints /api/simulation/sessions: inicio de sesión FREE o EXAM, lote de eventos con idempotencia y anti-manipulación de tiempo, estado repetido en el servidor, fin con calificación del servidor, resumen, repetición e historial paginado (/history, porque GET /api/simulation/sessions conserva el contrato heredado); escrituras solo del dueño y lecturas del dueño o de docentes y administradores que gestionan o supervisan su grupo; el inicio acepta un paciente propio
- * Versión: 1.2
+ * Versión: 1.3 (puntaje y corrección de EXAM retenidos para el estudiante hasta la liberación docente)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -30,6 +30,10 @@ import {
   type SimulationSessionSummaryResult,
   type StartSimulationSessionResult,
 } from "@/features/simulation/application/results/simulation-session.results";
+import {
+  type ResultsVisibility,
+  SimulationResultsVisibilityService,
+} from "@/features/simulation/application/services/simulation-results-visibility.service";
 import { type SimulationActor } from "@/features/simulation/application/services/simulation-session-access.service";
 import { AppendSimulationEventsUseCase } from "@/features/simulation/application/use-cases/append-simulation-events.usecase";
 import { EndSimulationSessionUseCase } from "@/features/simulation/application/use-cases/end-simulation-session.usecase";
@@ -87,6 +91,7 @@ export class SimulationSessionsController {
     private readonly _getSimulationSessionReplayUseCase: GetSimulationSessionReplayUseCase,
     private readonly _getSimulationSessionsUseCase: GetSimulationSessionsUseCase,
     private readonly _getSimulationCaseTitlesUseCase: GetSimulationCaseTitlesUseCase,
+    private readonly _resultsVisibility: SimulationResultsVisibilityService,
   ) {}
 
   @Post()
@@ -157,9 +162,10 @@ export class SimulationSessionsController {
     });
 
     const caseTitles: Map<string, string> = await this._getSimulationCaseTitlesUseCase.execute(sessions.data.map((session: SimulationSession): string => session.caseId));
+    const visibility: Map<string, ResultsVisibility> = await this._resultsVisibility.forSessions(sessions.data, this._actor(currentUser));
 
     return new APIResponseBuilder<SimulationSessionDTO[]>()
-      .setData(sessions.data.map((session: SimulationSession): SimulationSessionDTO => SimulationSessionsResponseMapper.toSessionDTO(session, caseTitles.get(session.caseId))))
+      .setData(sessions.data.map((session: SimulationSession): SimulationSessionDTO => SimulationSessionsResponseMapper.toSessionDTO(session, caseTitles.get(session.caseId), visibility.get(session.id))))
       .setPagination(sessions.pagination)
       .setMessage(await i18n.t("simulation.simulation_sessions_retrieved"))
       .build();
@@ -223,7 +229,7 @@ export class SimulationSessionsController {
     const result: SimulationSessionStateResult = await this._getSimulationSessionStateUseCase.execute(id, this._actor(currentUser));
 
     return new APIResponseBuilder<SimulationSessionStateDTO>()
-      .setData(SimulationSessionsResponseMapper.toStateDTO(result))
+      .setData(SimulationSessionsResponseMapper.toStateDTO(result, await this._resultsVisibility.forSession(result.session, this._actor(currentUser))))
       .setMessage(await i18n.t("simulation.simulation_session_state_retrieved"))
       .build();
   }
@@ -252,7 +258,7 @@ export class SimulationSessionsController {
     );
 
     return new APIResponseBuilder<SimulationSessionSummaryDTO>()
-      .setData(SimulationSessionsResponseMapper.toSummaryDTO(result))
+      .setData(SimulationSessionsResponseMapper.toSummaryDTO(result, await this._resultsVisibility.forSession(result.session, this._actor(currentUser))))
       .setMessage(await i18n.t("simulation.simulation_session_ended"))
       .build();
   }
@@ -273,7 +279,7 @@ export class SimulationSessionsController {
     const result: SimulationSessionSummaryResult = await this._getSimulationSessionSummaryUseCase.execute(id, this._actor(currentUser));
 
     return new APIResponseBuilder<SimulationSessionSummaryDTO>()
-      .setData(SimulationSessionsResponseMapper.toSummaryDTO(result))
+      .setData(SimulationSessionsResponseMapper.toSummaryDTO(result, await this._resultsVisibility.forSession(result.session, this._actor(currentUser))))
       .setMessage(await i18n.t("simulation.simulation_session_summary_retrieved"))
       .build();
   }

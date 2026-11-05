@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Flujo e2e de examen práctico con simulación
  * Descripción: Un estudiante abre una sesión de simulación en modo EXAM ligada a una pregunta SIMULATION de su intento, envía eventos de cambio de parámetros, la termina, vincula la sesión a su respuesta y entrega; se verifica que la nota de la pregunta sale de la re-simulación hecha en el servidor (el cliente no envía puntaje) y que el intento queda calificado y publicado, validando cada respuesta contra el contrato OpenAPI
- * Versión: 1.0
+ * Versión: 1.1 (el estudiante no recibe el puntaje de la sesión EXAM antes de la liberación; el docente lo lee del resumen)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -79,7 +79,14 @@ describe("flow: practical exam graded by server-side re-simulation", () => {
 
     expectStatus(ended, 200);
 
-    const sessionScore: number = ended.body.data.score as number;
+    // The student gets no score before the teacher release (ajustes C1); the teacher reads it from the summary.
+    expect(ended.body.data).toMatchObject({ score: null, breakdown: [], resultsWithheld: true });
+
+    const teacherSummary: Response = await api("GET", `/api/simulation/sessions/${sessionId}/summary`, teacherToken);
+
+    expectStatus(teacherSummary, 200);
+
+    const sessionScore: number = teacherSummary.body.data.score as number;
 
     expect(sessionScore).toBeGreaterThanOrEqual(0);
     expect(sessionScore).toBeLessThanOrEqual(1);

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Lector Prisma de intentos de examen para simulación
  * Descripción: Implementa IExamAttemptReader leyendo directamente student_evaluation_attempts y evaluation_questions con PrismaService (dueño, estado, fecha límite y evaluación del intento; tipo, evaluación, caso clínico y rúbrica de la pregunta) sin depender de la feature de evaluaciones
- * Versión: 1.0
+ * Versión: 1.1 (marcas de liberación y lectura por lote)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -24,6 +24,30 @@ interface AttemptRow {
   readonly evaluationId: string;
   readonly status: string;
   readonly deadlineAt: Date | null;
+  readonly gradePublishedAt: Date | null;
+  readonly answersReleasedAt: Date | null;
+}
+
+const ATTEMPT_SELECT: { [K in keyof AttemptRow]: true } = {
+  id: true,
+  userId: true,
+  evaluationId: true,
+  status: true,
+  deadlineAt: true,
+  gradePublishedAt: true,
+  answersReleasedAt: true,
+};
+
+function toAttemptInfo(row: AttemptRow): ExamAttemptInfo {
+  return {
+    id: row.id,
+    userId: row.userId,
+    evaluationId: row.evaluationId,
+    status: row.status,
+    deadlineAt: row.deadlineAt ?? undefined,
+    gradePublishedAt: row.gradePublishedAt ?? undefined,
+    answersReleasedAt: row.answersReleasedAt ?? undefined,
+  };
 }
 
 interface QuestionRow {
@@ -39,16 +63,19 @@ export class ExamAttemptsPrismaRepository implements IExamAttemptReader {
   public constructor(private readonly _prisma: PrismaService) {}
 
   public async getAttempt(attemptId: string): Promise<ExamAttemptInfo | undefined> {
-    const row: AttemptRow | null = await this._prisma.studentEvaluationAttempt.findUnique({
-      where: { id: attemptId },
-      select: { id: true, userId: true, evaluationId: true, status: true, deadlineAt: true },
-    });
+    const row: AttemptRow | null = await this._prisma.studentEvaluationAttempt.findUnique({ where: { id: attemptId }, select: ATTEMPT_SELECT });
 
-    if (!row) {
-      return undefined;
+    return row ? toAttemptInfo(row) : undefined;
+  }
+
+  public async getAttempts(attemptIds: readonly string[]): Promise<ExamAttemptInfo[]> {
+    if (attemptIds.length === 0) {
+      return [];
     }
 
-    return { id: row.id, userId: row.userId, evaluationId: row.evaluationId, status: row.status, deadlineAt: row.deadlineAt ?? undefined };
+    const rows: AttemptRow[] = await this._prisma.studentEvaluationAttempt.findMany({ where: { id: { in: [...attemptIds] } }, select: ATTEMPT_SELECT });
+
+    return rows.map(toAttemptInfo);
   }
 
   public async getQuestion(questionId: string): Promise<ExamQuestionInfo | undefined> {

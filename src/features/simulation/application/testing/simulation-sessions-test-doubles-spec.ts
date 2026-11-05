@@ -156,6 +156,12 @@ export class FakeExamAttemptReader implements IExamAttemptReader {
   public getQuestion(questionId: string): Promise<ExamQuestionInfo | undefined> {
     return Promise.resolve(this.questions.get(questionId));
   }
+
+  public getAttempts(attemptIds: readonly string[]): Promise<ExamAttemptInfo[]> {
+    return Promise.resolve(
+      attemptIds.map((id: string): ExamAttemptInfo | undefined => this.attempts.get(id)).filter((attempt?: ExamAttemptInfo): attempt is ExamAttemptInfo => attempt !== undefined),
+    );
+  }
 }
 
 export class FakeClinicalCasesFacade {

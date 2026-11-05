@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de respuesta de sesiones de simulación
  * Descripción: Serialización de las sesiones con eventos: sesión iniciada con el caso del motor, resultado de un lote de eventos, estado actual, resumen calificado, repetición con aviso de versión del motor, vista de sesión del listado y línea de tiempo de la prueba de caso; el estado, la repetición y la vista del listado llevan el formulario del paciente propio
- * Versión: 1.3 (desenlace del paciente y línea de tiempo del debriefing en el resumen)
+ * Versión: 1.4 (resultados de EXAM retenidos hasta la liberación docente)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -76,8 +76,19 @@ export class SimulationSessionStateDTO {
   @ApiProperty({ description: "Active alarms", type: Object, isArray: true, example: [] })
   public alarms: object[];
 
-  @ApiProperty({ description: "Clinical target status", type: Object, isArray: true, example: [{ id: "SPO2", status: "MET" }] })
+  @ApiProperty({
+    description: "Clinical target status; empty for an EXAM student until the teacher releases the answers",
+    type: Object,
+    isArray: true,
+    example: [{ id: "SPO2", status: "MET" }],
+  })
   public targets: object[];
+
+  @ApiProperty({
+    description: "True when an EXAM student is not shown part of the results yet (the teacher has not released the grade or the answers)",
+    example: false,
+  })
+  public resultsWithheld: boolean;
 
   @ApiProperty({
     description: "Own patient form of a FREE session started with one (shown after a reload, in the list and in the replay); null otherwise",
@@ -159,14 +170,36 @@ export class SimulationSessionSummaryDTO {
   @ApiProperty({ description: "Final engine metrics", type: Object, example: { simTimeMs: 600000 } })
   public finalMetrics: object;
 
-  @ApiProperty({ description: "Final clinical target status", type: Object, isArray: true, example: [{ id: "SPO2", status: "MET" }] })
+  @ApiProperty({
+    description: "Final clinical target status; empty for an EXAM student until the teacher releases the answers",
+    type: Object,
+    isArray: true,
+    example: [{ id: "SPO2", status: "MET" }],
+  })
   public targets: object[];
 
-  @ApiProperty({ description: "Server-computed score between 0 and 1", example: 0.82 })
-  public score: number;
+  @ApiProperty({
+    description: "Server-computed score between 0 and 1; null for an EXAM student until the teacher releases the grade",
+    example: 0.82,
+    nullable: true,
+    type: Number,
+  })
+  public score: number | null;
 
-  @ApiProperty({ description: "Justified score per rubric criterion", type: Object, isArray: true, example: [{ criterion: "TARGETS_REACHED", points: 1 }] })
+  @ApiProperty({
+    description: "Justified score per rubric criterion; empty for an EXAM student until the teacher releases the answers",
+    type: Object,
+    isArray: true,
+    example: [{ criterion: "TARGETS_REACHED", points: 1 }],
+  })
   public breakdown: object[];
+
+  @ApiProperty({
+    description: "True when an EXAM student is not shown part of the results yet (the teacher has not released the grade or the answers)",
+    example: false,
+  })
+  public resultsWithheld: boolean;
+
 
   @ApiProperty({ description: "AI assistance requests during the session", example: 0 })
   public aiHelpCount: number;
@@ -294,7 +327,12 @@ export class SimulationSessionDTO {
   @ApiProperty({ description: "Last accepted simulated time in ms", example: 600000 })
   public lastSimTimeMs: number;
 
-  @ApiProperty({ description: "Stored server-computed score, null until the session ends", example: null, nullable: true, type: Number })
+  @ApiProperty({
+    description: "Stored server-computed score; null until the session ends, and for an EXAM student until the teacher releases the grade",
+    example: null,
+    nullable: true,
+    type: Number,
+  })
   public score: number | null;
 
   @ApiProperty({
