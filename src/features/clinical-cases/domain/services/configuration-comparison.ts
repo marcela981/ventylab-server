@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de dominio de comparación de configuraciones
- * Descripción: Compara la configuración del ventilador del estudiante con la configuración experta usando rangos aceptables (o tolerancia del 10 %), prioridades ponderadas (CRITICO 3, IMPORTANTE 2, OPCIONAL 1) y clasificación de errores, y calcula el puntaje global de 0 a 100
- * Versión: 1.0
+ * Descripción: Compara la configuración del ventilador del estudiante con la configuración experta usando rangos aceptables (o tolerancia del 10 %), prioridades ponderadas (CRITICO 3, IMPORTANTE 2, OPCIONAL 1) y clasificación de errores, y calcula el puntaje global de 0 a 100; solo compara los parámetros que el experto definió y puntúa un parámetro omitido por el estudiante con el piso de su categoría (crítico 0, moderado 40)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -43,7 +43,7 @@ export function compareConfigurations(userConfig: VentilatorConfiguration, exper
   ];
 
   for (const param of paramMappings) {
-    if (param.expert === undefined && param.user === undefined) {
+    if (param.expert === undefined) {
       continue;
     }
 
@@ -138,25 +138,11 @@ export function compareConfigurations(userConfig: VentilatorConfiguration, exper
 function compareParameter(
   key: string,
   userValue: number | undefined,
-  expertValue: number | undefined,
+  expertValue: number,
   acceptableRange?: AcceptableRange,
   priority: string = "OPCIONAL",
 ): ParameterComparison {
-  if (userValue === undefined && expertValue === undefined) {
-    return {
-      parameter: key,
-      userValue: undefined,
-      expertValue: undefined,
-      difference: null,
-      differencePercent: null,
-      withinRange: true,
-      errorClassification: "correcto",
-      priority,
-      acceptableRange,
-    };
-  }
-
-  if (userValue === undefined || expertValue === undefined) {
+  if (userValue === undefined) {
     return {
       parameter: key,
       userValue,
@@ -232,6 +218,11 @@ function getParameterWeight(priority: string): number {
 function calculateParameterScore(comparison: ParameterComparison): number {
   if (comparison.errorClassification === "correcto") {
     return 100;
+  }
+
+  // An omitted parameter has no deviation, so it gets the floor of its classification.
+  if (comparison.userValue === undefined) {
+    return comparison.errorClassification === "critico" ? 0 : 40;
   }
 
   if (comparison.withinRange) {

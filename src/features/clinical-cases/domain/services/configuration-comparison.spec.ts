@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del servicio de comparación de configuraciones
- * Descripción: Documenta las reglas de clasificación (rango aceptable, tolerancia del 10 %, umbrales por prioridad, parámetros omitidos, modo y relación I:E) y de puntaje (fórmulas por clasificación y promedio ponderado por prioridad) de compareConfigurations, con casos en cada límite y justo por encima o por debajo
- * Versión: 1.0
+ * Descripción: Documenta las reglas de clasificación (rango aceptable, tolerancia del 10 %, umbrales por prioridad, parámetros omitidos, parámetros no definidos por el experto, modo y relación I:E) y de puntaje (fórmulas por clasificación, piso para los parámetros omitidos y promedio ponderado por prioridad) de compareConfigurations, con casos en cada límite y justo por encima o por debajo
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -169,11 +169,42 @@ describe("compareConfigurations", () => {
       expect(result.criticalErrors).toEqual([]);
     });
 
-    // DIFFERENCE: rule 7 does not define the deviation of an omitted parameter. The code leaves
-    // differencePercent as null and scores it as |d| = 0, so an omitted parameter gets 100 points
-    // (critical: max(0, 100 - 0) = 100; moderate: max(40, 100 - 0) = 100) even though it is
-    // classified as an error. Expected by the thesis: an omitted parameter lowers the score.
-    it.todo("penalizes the score of an omitted parameter (code currently scores it as 100)");
+    // An omitted parameter has no deviation, so it gets the floor of its classification.
+    it("scores an omitted CRITICO parameter with the critical floor of 0", () => {
+      const { result }: SingleParameterResult = compareSingle({ user: undefined, priority: "CRITICO" });
+
+      expect(result.score).toBe(0);
+    });
+
+    it.each<Priority>(["IMPORTANTE", "OPCIONAL"])("scores an omitted %s parameter with the moderate floor of 40", (priority: Priority) => {
+      const { result }: SingleParameterResult = compareSingle({ user: undefined, priority });
+
+      expect(result.score).toBe(40);
+    });
+  });
+
+  describe("parameters the expert did not define", () => {
+    it("ignores a parameter the student filled in but the expert did not define", () => {
+      const withoutExtra: ConfigurationComparison = buildMixedComparison();
+      const withExtra: ConfigurationComparison = buildMixedComparison({ maxPressure: 35 });
+
+      expect(withExtra.parameters.map((p: ParameterComparison) => p.parameter)).not.toContain("maxPressure");
+      expect(withExtra.totalParameters).toBe(withoutExtra.totalParameters);
+      expect(withExtra.score).toBe(withoutExtra.score);
+      expect(withExtra.criticalErrors).toEqual(withoutExtra.criticalErrors);
+    });
+
+    it("ignores it even when the student value deviates and the parameter has a priority", () => {
+      const result: ConfigurationComparison = compareConfigurations(
+        buildUser({ tidalVolume: 450, maxPressure: 80 }),
+        buildExpert({ tidalVolume: 450, parameterPriorities: { maxPressure: "CRITICO" } }),
+      );
+
+      expect(result.parameters.map((p: ParameterComparison) => p.parameter)).toEqual(["tidalVolume", "ventilationMode"]);
+      expect(result.totalParameters).toBe(2);
+      expect(result.score).toBe(100);
+      expect(result.criticalErrors).toEqual([]);
+    });
   });
 
   describe("rule 5: ventilation mode", () => {
@@ -328,6 +359,25 @@ describe("compareConfigurations", () => {
       expect(worst.score).toBe(0);
       expect(best.score).toBe(100);
     });
+
+    it("lowers the global score when the student omits a parameter of an otherwise identical configuration", () => {
+      const expert: ExpertConfigurationData = buildExpert({
+        tidalVolume: 450,
+        fio2: 40,
+        peep: 10,
+        parameterPriorities: { tidalVolume: "CRITICO", fio2: "CRITICO", peep: "IMPORTANTE" },
+      });
+
+      const complete: ConfigurationComparison = compareConfigurations(buildUser({ tidalVolume: 450, fio2: 40, peep: 10 }), expert);
+      const withoutPeep: ConfigurationComparison = compareConfigurations(buildUser({ tidalVolume: 450, fio2: 40 }), expert);
+
+      // Complete: every parameter correct -> 100.
+      // Without PEEP: mode 100*3 + tidalVolume 100*3 + fio2 100*3 + peep (omitted, moderate floor) 40*2 = 980
+      // Total weight: 3 + 3 + 3 + 2 = 11 -> 980 / 11 = 89.0909... -> rounded to two decimals = 89.09
+      expect(complete.score).toBe(100);
+      expect(withoutPeep.score).toBeCloseTo(89.09, 2);
+      expect(withoutPeep.totalParameters).toBe(complete.totalParameters);
+    });
   });
 
   describe("rule 9: configuration identical to the expert", () => {
@@ -375,9 +425,9 @@ describe("compareConfigurations", () => {
   });
 });
 
-function buildMixedComparison(): ConfigurationComparison {
+function buildMixedComparison(userOverrides: Partial<VentilatorConfiguration> = {}): ConfigurationComparison {
   return compareConfigurations(
-    buildUser({ tidalVolume: 450, peep: 13, fio2: 70, respiratoryRate: 21.5 }),
+    buildUser({ tidalVolume: 450, peep: 13, fio2: 70, respiratoryRate: 21.5, ...userOverrides }),
     buildExpert({
       tidalVolume: 450,
       peep: 10,
