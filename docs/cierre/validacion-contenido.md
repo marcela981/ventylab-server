@@ -1095,3 +1095,93 @@ Qué validar en cada lección: exactitud de las cifras y umbrales frente a la fu
 - [seguridad-modo-real/recorrido-falla-durante-practica] Ayuda de IA en modo real (solo sugiere, nunca envía comandos): en implementación por el Bloque A.
 - [seguridad-modo-real/higiene-y-cierre] Pasos de cierre tomados del protocolo de prueba (§9); confirmar que el laboratorio los adopta para las prácticas.
 
+
+## Bloque A
+
+Simulador (ajustes post-revisión, 2026-11-04). Motor `2.0.0` con evolución del paciente, reglas "¿Cómo estabilizar?" por alarma, interpretación del caso por IA y envío automático al ventilador físico. Diseño: `DISENO_AJUSTES_A.md` (fuera del repositorio). Las referencias completas de esta sección están al final de ella, en APA 7.
+
+Convención: "convención de simulación" indica un valor elegido para que el escenario sea educativo; no existe una cifra publicada que lo fije y debe validarlo el colaborador médico.
+
+### A.1 Modelo de evolución del paciente (`src/features/simulation/domain/engine/patient-evolution.ts`)
+
+| Ítem | Fuente | Qué validar | Estado |
+|---|---|---|---|
+| Umbrales de agresión: SpO2 < 88 %, pH < 7,20, Pmeseta > 30 cmH2O, presión de distensión > 15 cmH2O, auto-PEEP > máximo del caso (5 por defecto), PAM < 65 mmHg | ARDS Network (2000); Hickling et al. (1990); Amato et al. (2015); Evans et al. (2021) | Que cada umbral sea adecuado para declarar al paciente "inestable" en un simulador educativo | pendiente de validación experta |
+| Umbrales críticos: SpO2 < 75 %, pH < 7,00, PAM < 50 mmHg | Convención de simulación; no hay un umbral validado de paro hipoxémico (Mort, 2004) | Pertinencia de los umbrales que inician la exposición crítica | pendiente de validación experta |
+| Gravedad bidireccional: sube con agresiones (`progressionRatePerMin` más `viliRatePerMin` si hay riesgo de lesión por el ventilador), baja sin agresiones (`recoveryRatePerMin`); reduce la distensibilidad y aumenta el shunt | Convención de simulación; dirección de los efectos: Gattinoni et al. (2006) | Que la dirección y la magnitud de la mejoría y del deterioro sean plausibles | pendiente de validación experta |
+| Sobredistensión con Pmeseta > 30 cmH2O: +0,015 de shunt y +12 mL de espacio muerto por cmH2O de exceso | Efecto cualitativo: Gattinoni et al. (2006); Luecke y Pelosi (2005). Coeficientes: convención de simulación | Que la PEEP excesiva deje de mejorar la PaO2 y baje la PAM en un rango creíble | pendiente de validación experta |
+| PAM: −15 mmHg × gravedad; −60 mmHg por unidad de pH por debajo de 7,20; −0,5 mmHg por punto de SpO2 por debajo de 80 %; mínimo 30 mmHg con vida, 10 mmHg en paro | Dirección: Pinsky (2018); Kraut y Madias (2010). Coeficientes: convención de simulación | Magnitudes del efecto hemodinámico | pendiente de validación experta |
+| Frecuencia cardíaca: basal del caso (80 lpm por defecto) + 0,8 lpm por punto de SpO2 < 92 % + 0,3 lpm por mmHg de PaCO2 > 45 + 0,8 lpm por mmHg de PAM < 70; máximo 160; bradicardia progresiva hasta 35 lpm en fase crítica; 0 en paro | Dirección: Pinsky (2018); Curley et al. (2010). Ganancias: convención de simulación | Ganancias, techo y forma de la bradicardia previa al paro | pendiente de validación experta |
+| Paro: exposición crítica acumulada ≥ `arrestAfterCriticalMin`; fallecimiento `deathAfterArrestMin` después; el paro es irreversible (no se simula la reanimación) | Convención de simulación; asociación entre hipoxemia y paro: Mort (2004) | Tiempos por caso y la decisión de no simular la reanimación | pendiente de validación experta |
+| Evolución derivada para casos sin bloque propio: progresión = tasa de deterioro del caso, recuperación = la mitad, paro a los 10 min de exposición crítica, fallecimiento 2 min después, FC basal 80; umbrales de hipotensión y de PAM crítica por debajo de la PAM basal del caso (5 y 20 mmHg) | Convención de simulación | Que ningún caso de julio produzca un desenlace injusto (por ejemplo, un caso en choque que muere solo por su PAM basal) | pendiente de validación experta |
+| Alarmas del paciente: SpO2 < 90 %, PAM < 65 mmHg, FC > 120 o < 50 lpm, paro cardíaco | ARDS Network (2000); Evans et al. (2021); límites de FC: valores habituales de monitor (convención) | Umbrales por defecto de las alarmas | pendiente de validación experta |
+| Reloj del paciente = tiempo simulado × multiplicador (igual que el deterioro previo) | Decisión de diseño (§7b A-11) | Que los tiempos por caso se lean en minutos del paciente | pendiente de validación experta |
+
+### A.2 Caso `engine-ards-unstable` ("SDRA grave inestable")
+
+| Ítem | Fuente | Qué validar | Estado |
+|---|---|---|---|
+| Mecánica: Crs 30 mL/cmH2O, R 12 cmH2O/L/s | Arnal et al. (2018) | Valores para un SDRA grave | pendiente de validación experta |
+| Curva de shunt 0,45 / 0,35 / 0,22 / 0,14 / 0,11 con PEEP 0 / 5 / 10 / 15 / 20 | Forma: Gattinoni et al. (2006); efecto de la FiO2 con shunt alto: Benatar et al. (1973). Valores: convención de simulación | Potencial de reclutamiento plausible | pendiente de validación experta |
+| Ajustes iniciales: VCV, Vt 420 mL (6 mL/kg de peso predicho), FR 22, PEEP 5, FiO2 0,9; PaO2/FiO2 ≈ 67 | ARDS Network (2000); ARDS Definition Task Force (2012) | Coherencia de la situación inicial "inestable" | pendiente de validación experta |
+| Evolución: gravedad inicial 0,3 (mínima 0,1), progresión 0,06/min, lesión por ventilador 0,02/min, recuperación 0,04/min, paro a los 4 min de exposición crítica, fallecimiento 2 min después, FC basal 100 | Convención de simulación | Sin intervención el paciente fallece en ≈ 11 min del paciente; con PEEP 12, FiO2 0,8 y Vt 380 mL se recupera (prueba `seed-cases-evolution.spec.ts`) | pendiente de validación experta |
+
+### A.3 Reglas "¿Cómo estabilizar?" (`src/features/simulation/domain/assist/alarm-stabilization-rules.ts`)
+
+| Ítem | Fuente | Qué validar | Estado |
+|---|---|---|---|
+| Secuencia DOPES (desplazamiento, obstrucción, neumotórax, equipo, apilamiento) al final de toda alarma | American Heart Association (2020); Hess y Kacmarek (2019) | Pertinencia como regla general | pendiente de validación experta |
+| Presión alta: comparar pico y meseta; brecha > 10 cmH2O = problema resistivo (aspirar, tubo, broncoespasmo); meseta > 30 = bajar el Vt hacia 6 mL/kg y descartar neumotórax o intubación selectiva | Hess y Kacmarek (2019); ARDS Network (2000); Amato et al. (2015). Brecha de 10 cmH2O: convención | Umbral de la brecha y acciones | pendiente de validación experta |
+| Vt bajo o fuga; Vt alto (6–8 mL/kg de peso predicho); apnea y desconexión (bolsa con O2 al 100 %); FR alta (causas antes de sedar) | Hess y Kacmarek (2019); ARDS Network (2000) | Exactitud y prioridad de las acciones | pendiente de validación experta |
+| Auto-PEEP: alargar el tiempo espiratorio; desconexión breve con hipotensión grave por hiperinsuflación | Blanch et al. (2005); Leatherman (2015) | Seguridad de la recomendación de desconexión breve | pendiente de validación experta |
+| SpO2 baja: verificar la señal y DOPES; combinación PEEP/FiO2 según la tabla de ARDSNet; techo de la FiO2 con shunt alto | ARDS Network (2000); Benatar et al. (1973) | Redacción y prioridad | pendiente de validación experta |
+| PAM baja (meta ≥ 65 mmHg, descartar neumotórax a tensión y auto-PEEP, reducir PEEP o Ti si la oxigenación lo permite); taquicardia, bradicardia y paro | Pinsky (2018); Evans et al. (2021); American Heart Association (2020) | Que el texto no sugiera tratamientos fuera del alcance del simulador | pendiente de validación experta |
+| Alias de alarmas del equipo físico: HIGH_VOLUME → Vt alto, LOW_VOLUME → Vt bajo, LOW_PRESSURE → desconexión o fuga | Decisión de diseño | Correspondencia con los códigos del protocolo del equipo | pendiente de validación experta |
+
+### A.4 IA en el simulador
+
+| Ítem | Fuente | Qué validar | Estado |
+|---|---|---|---|
+| Interpretación del caso (`SIM_CASE_INTERPRETATION` 1.0.0): la IA solo puede mover distensibilidad, resistencia, espacio muerto, VCO2, PAM y FC basales dentro de ±30 % del valor curado y del rango fisiológico del caso, y la escala del shunt dentro de 0,7–1,3 | Decisión de diseño (§7b A-8); rangos: `clinical-case-physiological-ranges.ts` | Que la banda sea segura y útil; revisar una muestra de interpretaciones guardadas en `simulation_sessions.patient_profile` | pendiente de validación experta |
+| Coaching (`SIM_ASSIST` 1.2.0): sugerencias priorizadas con lo que se espera ver en las curvas, sin dictar valores | Instrucciones del prompt; escenarios `sim-*` del protocolo de evaluación de IA | Pertinencia clínica de las respuestas (con la rúbrica experta existente) | pendiente de validación experta |
+| Ayuda de alarmas (`SIM_ALARM_HELP` 1.0.0): complementa las reglas sin repetirlas, como máximo tres acciones, sin indicaciones para pacientes reales | Instrucciones del prompt | Pertinencia y seguridad de las respuestas | pendiente de validación experta |
+
+### A.5 Envío automático al ventilador físico
+
+| Ítem | Fuente | Qué validar | Estado |
+|---|---|---|---|
+| Rangos seguros de envío: límites del motor (`src/common/domain/ventilator/ventilator-limits.ts`: Vt 200–800 mL, FR 5–40, PEEP 0–20, FiO2 0,21–1, Ti 0,5–3 s) acotados por la seguridad del laboratorio (PEEP ≤ 15, presión límite ≤ 40, Vt ≤ 700, FR ≤ 35, I:E ≤ 1) | Rangos conservadores del proyecto; los rangos del fabricante (por ejemplo, Hamilton Medical, s. f.) son límites de hardware, no de seguridad | Contrastar con el protocolo y el manual del equipo físico conectado; el protocolo del equipo prevalece | pendiente de validación experta |
+| Rebote de 500 ms, un comando en vuelo y "Deshacer último cambio" | Decisión de diseño (§7b A-2, A-3) | Que el comportamiento sea seguro con el equipo real | pendiente de validación experta |
+
+### A.6 Curvas de referencia y brechas
+
+| Ítem | Fuente | Qué validar | Estado |
+|---|---|---|---|
+| Formas de onda: VCV (flujo cuadrado o desacelerado, presión en rampa con pico y meseta), PCV (presión cuadrada, flujo desacelerado), PSV (ciclado por flujo, 25 % por defecto), auto-PEEP (flujo espiratorio que no llega a cero) | Hess y Kacmarek (2019); Hess (2005); Blanch et al. (2005) | Comparación visual de las curvas del simulador con las figuras de las fuentes (capturas del Bloque A en el repositorio web) | pendiente de validación experta |
+| Brechas documentadas sin implementar: asincronías (esfuerzo inefectivo, doble disparo, hambre de flujo), tiempo de subida en PCV, quimiorreflejo del esfuerzo, componente metabólico del pH | Thille et al. (2006); Gilstrap y MacIntyre (2013) | Prioridad para una ola siguiente | pendiente de validación experta |
+
+### Referencias del Bloque A
+
+- Acute Respiratory Distress Syndrome Network. (2000). Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and the acute respiratory distress syndrome. *New England Journal of Medicine, 342*(18), 1301–1308. https://doi.org/10.1056/NEJM200005043421801
+- Amato, M. B. P., Meade, M. O., Slutsky, A. S., Brochard, L., Costa, E. L. V., Schoenfeld, D. A., Stewart, T. E., Briel, M., Talmor, D., Mercat, A., Richard, J.-C. M., Carvalho, C. R. R., & Brower, R. G. (2015). Driving pressure and survival in the acute respiratory distress syndrome. *New England Journal of Medicine, 372*(8), 747–755. https://doi.org/10.1056/NEJMsa1410639
+- American Heart Association. (2020). *Pediatric advanced life support provider manual*. American Heart Association.
+- ARDS Definition Task Force. (2012). Acute respiratory distress syndrome: The Berlin definition. *JAMA, 307*(23), 2526–2533. https://doi.org/10.1001/jama.2012.5669
+- Arnal, J.-M., Garnero, A., Saoli, M., & Chatburn, R. L. (2018). Parameters for simulation of adult subjects during mechanical ventilation. *Respiratory Care, 63*(2), 158–168. https://doi.org/10.4187/respcare.05775
+- Benatar, S. R., Hewlett, A. M., & Nunn, J. F. (1973). The use of iso-shunt lines for control of oxygen therapy. *British Journal of Anaesthesia, 45*(7), 711–718. https://doi.org/10.1093/bja/45.7.711
+- Blanch, L., Bernabé, F., & Lucangelo, U. (2005). Measurement of air trapping, intrinsic positive end-expiratory pressure, and dynamic hyperinflation in mechanically ventilated patients. *Respiratory Care, 50*(1), 110–123.
+- Curley, G., Laffey, J. G., & Kavanagh, B. P. (2010). Bench-to-bedside review: Carbon dioxide. *Critical Care, 14*(2), Artículo 220. https://doi.org/10.1186/cc8926
+- Evans, L., Rhodes, A., Alhazzani, W., Antonelli, M., Coopersmith, C. M., French, C., Machado, F. R., Mcintyre, L., Ostermann, M., Prescott, H. C., Schorr, C., Simpson, S., Wiersinga, W. J., Alshamsi, F., Angus, D. C., Arabi, Y., Azevedo, L., Beale, R., Beilman, G., … Levy, M. (2021). Surviving sepsis campaign: International guidelines for management of sepsis and septic shock 2021. *Intensive Care Medicine, 47*(11), 1181–1247. https://doi.org/10.1007/s00134-021-06506-y
+- Gattinoni, L., Caironi, P., Cressoni, M., Chiumello, D., Ranieri, V. M., Quintel, M., Russo, S., Patroniti, N., Cornejo, R., & Bugedo, G. (2006). Lung recruitment in patients with the acute respiratory distress syndrome. *New England Journal of Medicine, 354*(17), 1775–1786. https://doi.org/10.1056/NEJMoa052052
+- Gilstrap, D., & MacIntyre, N. (2013). Patient–ventilator interactions: Implications for clinical management. *American Journal of Respiratory and Critical Care Medicine, 188*(9), 1058–1068. https://doi.org/10.1164/rccm.201212-2214CI
+- Hamilton Medical. (s. f.). *HAMILTON-C6 technical specifications*. https://www.hamilton-medical.com
+- Hess, D. R. (2005). Ventilator waveforms and the physiology of pressure support ventilation. *Respiratory Care, 50*(2), 166–186.
+- Hess, D. R., & Kacmarek, R. M. (2019). *Essentials of mechanical ventilation* (4.ª ed.). McGraw-Hill.
+- Hickling, K. G., Henderson, S. J., & Jackson, R. (1990). Low mortality associated with low volume pressure limited ventilation with permissive hypercapnia in severe adult respiratory distress syndrome. *Intensive Care Medicine, 16*(6), 372–377. https://doi.org/10.1007/BF01735174
+- Kraut, J. A., & Madias, N. E. (2010). Metabolic acidosis: Pathophysiology, diagnosis and management. *Nature Reviews Nephrology, 6*(5), 274–285. https://doi.org/10.1038/nrneph.2010.33
+- Leatherman, J. (2015). Mechanical ventilation for severe asthma. *Chest, 147*(6), 1671–1680. https://doi.org/10.1378/chest.14-1733
+- Luecke, T., & Pelosi, P. (2005). Clinical review: Positive end-expiratory pressure and cardiac output. *Critical Care, 9*(6), 607–621. https://doi.org/10.1186/cc3877
+- Mort, T. C. (2004). The incidence and risk factors for cardiac arrest during emergency tracheal intubation: A justification for incorporating the ASA Guidelines in the remote location. *Journal of Clinical Anesthesia, 16*(7), 508–516. https://doi.org/10.1016/j.jclinane.2004.01.007
+- Pinsky, M. R. (2018). Cardiopulmonary interactions: Physiologic basis and clinical applications. *Annals of the American Thoracic Society, 15*(Suppl. 1), S45–S48. https://doi.org/10.1513/AnnalsATS.201704-339FR
+- Thille, A. W., Rodriguez, P., Cabello, B., Lellouche, F., & Brochard, L. (2006). Patient–ventilator asynchrony during assisted mechanical ventilation. *Intensive Care Medicine, 32*(10), 1515–1522. https://doi.org/10.1007/s00134-006-0301-8
+
+Nota: las referencias se verificaron con sus resúmenes o registros bibliográficos; antes de citarlas como evidencia conviene contrastar páginas y DOI con el texto completo.

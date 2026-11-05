@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Validador de la definición de un caso clínico
  * Descripción: Rechaza valores fisiológicamente implausibles según CLINICAL_CASE_PHYSIOLOGICAL_RANGES (ClinicalCasePhysiologicalRangeError) y definiciones inconsistentes de eventos, objetivos, ajustes y rúbrica (InvalidClinicalCaseDefinitionError)
- * Versión: 1.0
+ * Versión: 1.1 (bloque opcional de evolución del paciente)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,6 +17,7 @@ import { ClinicalCasePhysiologicalRangeError, InvalidClinicalCaseDefinitionError
 import {
   type CaseTargetRange,
   type ClinicalCaseEvent,
+  type ClinicalCaseEvolution,
   type ClinicalCaseMechanics,
   type ClinicalCaseRubric,
   type ClinicalCaseSimulationProfile,
@@ -142,6 +143,10 @@ function assertValidMechanics(mechanics: ClinicalCaseMechanics): void {
   assertInRange("maxComplianceLossFraction", "mechanics.deterioration.maxComplianceLossFraction", mechanics.deterioration.maxComplianceLossFraction);
   assertInRange("maxShuntIncrease", "mechanics.deterioration.maxShuntIncrease", mechanics.deterioration.maxShuntIncrease);
 
+  if (mechanics.evolution !== undefined) {
+    assertValidEvolution(mechanics.evolution);
+  }
+
   let previousPeep: number | undefined;
 
   mechanics.recruitmentCurve.forEach((point: RecruitmentCurvePoint, index: number): void => {
@@ -154,6 +159,21 @@ function assertValidMechanics(mechanics: ClinicalCaseMechanics): void {
 
     previousPeep = point.peepCmH2O;
   });
+}
+
+function assertValidEvolution(evolution: ClinicalCaseEvolution): void {
+  assertInRange("evolutionSeverity", "mechanics.evolution.initialSeverity", evolution.initialSeverity);
+  assertInRange("evolutionSeverity", "mechanics.evolution.minSeverity", evolution.minSeverity);
+  assertInRange("evolutionRatePerMin", "mechanics.evolution.progressionRatePerMin", evolution.progressionRatePerMin);
+  assertInRange("evolutionRatePerMin", "mechanics.evolution.viliRatePerMin", evolution.viliRatePerMin);
+  assertInRange("evolutionRatePerMin", "mechanics.evolution.recoveryRatePerMin", evolution.recoveryRatePerMin);
+  assertInRange("arrestAfterCriticalMin", "mechanics.evolution.arrestAfterCriticalMin", evolution.arrestAfterCriticalMin);
+  assertInRange("deathAfterArrestMin", "mechanics.evolution.deathAfterArrestMin", evolution.deathAfterArrestMin);
+  assertInRange("baselineHeartRateBpm", "mechanics.evolution.baselineHeartRateBpm", evolution.baselineHeartRateBpm);
+
+  if (evolution.minSeverity > evolution.initialSeverity) {
+    throw new InvalidClinicalCaseDefinitionError("mechanics.evolution.minSeverity");
+  }
 }
 
 function assertValidSettings(settings: ClinicalCaseVentilatorSettings): void {

@@ -18,10 +18,14 @@ import { ClinicalCasesModule } from "@/features/clinical-cases/clinical-cases.mo
 import { GroupsModule } from "@/features/groups/groups.module";
 import { ReservationsModule } from "@/features/reservations/reservations.module";
 import { AssistSimulationUseCase } from "@/features/simulation/application/assist/assist-simulation.usecase";
+import { CaseInterpretationService } from "@/features/simulation/application/interpretation/case-interpretation.service";
+import { AlarmHelpSimulationUseCase } from "@/features/simulation/application/monitor-help/alarm-help-simulation.usecase";
+import { RealMonitorHelpUseCase } from "@/features/simulation/application/monitor-help/real-monitor-help.usecase";
 import { EXAM_ATTEMPT_READER_TOKEN } from "@/features/simulation/application/ports/exam-attempt-reader.interface";
 import { SIMULATION_SEED_GENERATOR_TOKEN } from "@/features/simulation/application/ports/simulation-seed-generator.interface";
 import { PatientSimulationSessionsService } from "@/features/simulation/application/services/patient-simulation-sessions.service";
 import { SimulationAssistContextService } from "@/features/simulation/application/services/simulation-assist-context.service";
+import { SimulationResultsVisibilityService } from "@/features/simulation/application/services/simulation-results-visibility.service";
 import { SimulationSessionAccessService } from "@/features/simulation/application/services/simulation-session-access.service";
 import { SimulationSessionReader } from "@/features/simulation/application/services/simulation-session-reader.service";
 import { SimulationSessionRuntime } from "@/features/simulation/application/services/simulation-session-runtime.service";
@@ -58,6 +62,7 @@ import { SimulationSessionsPrismaRepository } from "@/features/simulation/infras
 import { SimulatorSessionsPrismaRepository } from "@/features/simulation/infrastructure/persistence/prisma/repositories/simulator-sessions-prisma.repository";
 import { CryptoSimulationSeedGenerator } from "@/features/simulation/infrastructure/random/crypto-simulation-seed.generator";
 import { ClinicalCaseTestRunController } from "@/features/simulation/presentation/controllers/clinical-case-test-run.controller";
+import { MonitorHelpController } from "@/features/simulation/presentation/controllers/monitor-help.controller";
 import { PatientSimulationController } from "@/features/simulation/presentation/controllers/patient-simulation.controller";
 import { SimulationAssistController } from "@/features/simulation/presentation/controllers/simulation-assist.controller";
 import { SimulationSessionsController } from "@/features/simulation/presentation/controllers/simulation-sessions.controller";
@@ -74,7 +79,7 @@ function createSimulationSettings(configService: ConfigService<EnvironmentVariab
 
 @Module({
   imports: [AuthModule, AiModule, UsersModule, GroupsModule, ClinicalCasesModule, ReservationsModule, VentilatorTelemetryModule, VentilatorCommandsModule],
-  controllers: [SimulationController, PatientSimulationController, SimulationSessionsController, SimulationAssistController, ClinicalCaseTestRunController],
+  controllers: [SimulationController, PatientSimulationController, SimulationSessionsController, SimulationAssistController, MonitorHelpController, ClinicalCaseTestRunController],
   providers: [
     {
       provide: SIMULATION_SETTINGS_TOKEN,
@@ -130,6 +135,10 @@ function createSimulationSettings(configService: ConfigService<EnvironmentVariab
     SimulationFacade,
     SimulationAssistContextService,
     AssistSimulationUseCase,
+    CaseInterpretationService,
+    SimulationResultsVisibilityService,
+    AlarmHelpSimulationUseCase,
+    RealMonitorHelpUseCase,
   ],
   exports: [SIMULATOR_SESSIONS_REPOSITORY_TOKEN, SimulationFacade, SimulationAssistContextService],
 })

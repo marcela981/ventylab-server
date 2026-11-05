@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Proveedor de configuración del gateway de IA
  * Descripción: Lectores puros de la configuración del gateway de IA desde ConfigService, usados como valores por defecto de los ajustes de la plataforma y como base de IAiSettingsProvider: valores por defecto de cadena de proveedores, modelos, tiempos límite, tokens y temperatura por caso de uso, sobrescrituras JSON (AI_USE_CASE_SETTINGS, AI_QUOTAS, AI_PRICES) validadas al arrancar, cortocircuito, ajustes del tutor, modelos con precio por proveedor y resolución de la cuota por caso de uso antes del comodín; v1.4: el proveedor externo (external, modelo "default" = AI_EXTERNAL_MODEL) reemplaza a custom en la cadena por defecto y su precio por defecto sale de AI_EXTERNAL_PRICE_INPUT_PER_MTOK/_OUTPUT_PER_MTOK (convertido a USD por mil tokens)
- * Versión: 1.4
+ * Versión: 1.5 (casos de uso del simulador: interpretación del caso y ayuda de alarmas)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -55,6 +55,9 @@ const DEFAULT_USE_CASE_SETTINGS: Readonly<Record<AiUseCaseValue, AiUseCaseSettin
   FREE_CHAT: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 30000, maxOutputTokens: 1024, temperature: 0.6 },
   TOPIC_CHECK: { providerChain: DEFAULT_PROVIDER_CHAIN, models: CHEAPEST_MODELS, timeoutMs: 8000, maxOutputTokens: 64, temperature: 0 },
   SIM_ASSIST: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 20000, maxOutputTokens: 768, temperature: 0.4 },
+  // Runs while a session starts: short timeout, deterministic output; the curated case values are the fallback.
+  SIM_CASE_INTERPRETATION: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 8000, maxOutputTokens: 512, temperature: 0 },
+  SIM_ALARM_HELP: { providerChain: DEFAULT_PROVIDER_CHAIN, models: DEFAULT_MODELS, timeoutMs: 20000, maxOutputTokens: 512, temperature: 0.3 },
 };
 
 const DEFAULT_QUOTAS: Readonly<Record<string, Readonly<Record<string, AiQuotaLimit>>>> = {

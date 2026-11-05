@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Transporte SSE de la asistencia de simulación
  * Descripción: Escribe la asistencia de IA de una sesión de simulación como Server-Sent Events sobre la respuesta Express con el mismo protocolo del tutor (eventos delta, done y error, comentarios de keep-alive), extrae el primer evento antes de abrir el stream para que los errores previos usen el sobre JSON normal y cancela la llamada al modelo cuando el cliente se desconecta
- * Versión: 1.0
+ * Versión: 1.1 (tubería SSE genérica reutilizada por la ayuda de alarmas y la asistencia en modo real)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,7 +28,7 @@ function isWritable(res: Response): boolean {
   return !res.writableEnded && !res.destroyed;
 }
 
-function writeEvent(res: Response, event: string, data: unknown): void {
+export function writeEvent(res: Response, event: string, data: unknown): void {
   if (isWritable(res)) {
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   }
@@ -71,8 +71,18 @@ export function abortOnClientDisconnect(res: Response): AbortController {
 }
 
 export async function pipeAssistStreamToSse(res: Response, events: AsyncIterable<SimulationAssistEvent>, translateError: SseErrorTranslator): Promise<void> {
-  const iterator: AsyncIterator<SimulationAssistEvent> = events[Symbol.asyncIterator]();
-  let next: IteratorResult<SimulationAssistEvent> = await iterator.next();
+  await pipeEventsToSse(res, events, writeAssistEvent, translateError);
+}
+
+/** Awaits the first event before opening the stream, so errors raised before it keep the JSON error envelope */
+export async function pipeEventsToSse<T>(
+  res: Response,
+  events: AsyncIterable<T>,
+  write: (res: Response, event: T) => void,
+  translateError: SseErrorTranslator,
+): Promise<void> {
+  const iterator: AsyncIterator<T> = events[Symbol.asyncIterator]();
+  let next: IteratorResult<T> = await iterator.next();
 
   openStream(res);
 
@@ -86,7 +96,7 @@ export async function pipeAssistStreamToSse(res: Response, events: AsyncIterable
 
   try {
     while (!next.done) {
-      writeAssistEvent(res, next.value);
+      write(res, next.value);
       next = await iterator.next();
     }
   } catch (error: unknown) {

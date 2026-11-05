@@ -419,6 +419,9 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<string, ActorOutcomes>> = {
   "POST /api/simulation/session/save": STUDENT_UP, // simulation:control
   "POST /api/simulation/sessions": STUDENT_UP, // simulation:control
   "POST /api/simulation/sessions/:id/assist": STUDENT_UP, // simulation:control
+  "POST /api/simulation/sessions/:id/alarm-help": STUDENT_UP, // simulation:control
+  "POST /api/simulation/real/alarm-help": STUDENT_UP, // ventilator:control
+  "POST /api/simulation/real/assist": STUDENT_UP, // ventilator:control
   "POST /api/simulation/sessions/:id/end": STUDENT_UP, // simulation:control
   "POST /api/simulation/sessions/:id/events": STUDENT_UP, // simulation:control
 

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Casos de prueba del motor fisiológico
  * Descripción: Constructor de casos clínicos sintéticos y utilidades (tolerancia relativa, hash FNV-1a) compartidas por las pruebas del motor
- * Versión: 1.0
+ * Versión: 1.1 (evolución y hemodinámica configurables)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,7 +14,9 @@ import {
   EngineCase,
   EngineMechanics,
   EngineTargets,
+  EvolutionProfile,
   GasExchangeProfile,
+  HemodynamicProfile,
   PatientEffortProfile,
   VentilatorSettings,
 } from "./engine.types";
@@ -27,6 +29,8 @@ export interface TestCaseOverrides {
   readonly deterioration?: Partial<DeteriorationProfile>;
   readonly targets?: EngineTargets;
   readonly events?: readonly CaseEvent[];
+  readonly hemodynamics?: Partial<HemodynamicProfile>;
+  readonly evolution?: EvolutionProfile;
 }
 
 export function buildTestCase(overrides: TestCaseOverrides = {}): EngineCase {
@@ -48,7 +52,7 @@ export function buildTestCase(overrides: TestCaseOverrides = {}): EngineCase {
       shuntCurve: [{ peepCmH2O: 0, shuntFraction: 0.05 }],
       ...overrides.gasExchange,
     },
-    hemodynamics: { baselineMapMmHg: 85, meanAirwayPressureThresholdCmH2O: 15, mapDropPerCmH2O: 2 },
+    hemodynamics: { baselineMapMmHg: 85, meanAirwayPressureThresholdCmH2O: 15, mapDropPerCmH2O: 2, ...overrides.hemodynamics },
     deterioration: { ratePerMin: 0, maxComplianceLossFraction: 0.3, maxShuntIncrease: 0.2, ...overrides.deterioration },
     initialSettings: {
       mode: "VCV",
@@ -63,6 +67,7 @@ export function buildTestCase(overrides: TestCaseOverrides = {}): EngineCase {
     },
     events: overrides.events ?? [],
     targets: overrides.targets ?? {},
+    ...(overrides.evolution === undefined ? {} : { evolution: overrides.evolution }),
   };
 }
 

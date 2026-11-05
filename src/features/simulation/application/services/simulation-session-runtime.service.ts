@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de ejecución de sesiones de simulación
  * Descripción: Carga el caso del motor de una sesión con ClinicalCasesFacade, sus eventos y su rúbrica (pregunta de examen, rúbrica del caso o la rúbrica por defecto con los umbrales fijados en el evento START al iniciar la sesión, o los configurados para sesiones sin esa copia, así un cambio del ajuste no altera calificaciones pasadas), valida el multiplicador de tiempo contra los permitidos, repite la simulación en el servidor con la semilla y el multiplicador de la sesión, calcula el resumen calificado y aplica las transiciones diferidas: una sesión de examen pasada la fecha límite del intento se termina con su resumen y una sesión sin actividad por más del umbral configurado pasa a ABANDONED, también en barrido para las sesiones activas de un usuario antes de listarlas; el caso de una sesión con paciente propio aplica los ajustes guardados en su patient_profile, así la repetición y la nota reproducen el mismo paciente
- * Versión: 1.4
+ * Versión: 1.5 (versión del motor de la sesión al cargar su caso)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,6 +16,7 @@ import { generateId } from "@/common/domain/utils/generate-id";
 import { type Paginated } from "@/common/domain/utils/paginated";
 import { ClinicalCasesFacade } from "@/features/clinical-cases/application/services/clinical-cases.facade";
 import { type ClinicalCaseSnapshot } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
+import { applyInterpretation, type InterpretationValues } from "@/features/simulation/application/interpretation/case-interpretation";
 import {
   EXAM_ATTEMPT_READER_TOKEN,
   type ExamAttemptInfo,
@@ -27,9 +28,9 @@ import {
   SIMULATION_SESSION_SETTINGS_TOKEN,
   type SimulationSessionSettings,
 } from "@/features/simulation/application/tokens/simulation-session-settings.token";
-import { replay, EngineValidationError, type ReplayResult } from "@/features/simulation/domain/engine";
+import { ENGINE_VERSION, replay, EngineValidationError, type ReplayResult } from "@/features/simulation/domain/engine";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
-import { type PatientOverrides } from "@/features/simulation/domain/patient/patient-overrides";
+import { type PatientOverrides, type StoredCaseInterpretation } from "@/features/simulation/domain/patient/patient-overrides";
 import {
   type SimulationEventRecord,
   type SimulationSessionSummary,
@@ -45,6 +46,7 @@ import {
   type SimulationRubricThresholds,
   type SimulationScore,
 } from "@/features/simulation/domain/scoring";
+import { buildSessionDebrief, type SessionDebrief } from "@/features/simulation/domain/sessions/simulation-session-debrief";
 import { toEngineEvents } from "@/features/simulation/domain/sessions/simulation-session-events";
 import { readStartRubricThresholds, resolveSessionRubric } from "@/features/simulation/domain/sessions/simulation-session-rubric";
 import {
@@ -62,6 +64,11 @@ export interface SimulationSessionContext {
 }
 
 export type SimulationEndReason = "CLIENT" | "DEADLINE";
+
+/** The case definition with the engine parameters interpreted at session start */
+export function withInterpretation(definition: SimulationCaseDefinition, applied: InterpretationValues): SimulationCaseDefinition {
+  return { ...definition, engineCase: applyInterpretation(definition.engineCase, applied) };
+}
 
 const ACTIVE_SWEEP_LIMIT: number = 100;
 
@@ -87,10 +94,14 @@ export class SimulationSessionRuntime {
     }
   }
 
-  public async loadCase(caseId: string, overrides?: PatientOverrides): Promise<SimulationCaseDefinition> {
+  /** The engine case for an engine version: sessions recorded before 2.0.0 get no patient evolution */
+  public async loadCase(caseId: string, overrides?: PatientOverrides, engineVersion: string = ENGINE_VERSION): Promise<SimulationCaseDefinition> {
     const snapshot: ClinicalCaseSnapshot = await this._loadSnapshot(caseId);
 
-    return SimulationSessionRuntime._toDefinition(overrides ? SimulationCaseMapper.withPatient(snapshot, overrides) : snapshot);
+    return SimulationSessionRuntime._toDefinition(
+      overrides ? SimulationCaseMapper.withPatient(snapshot, overrides) : snapshot,
+      engineVersion,
+    );
   }
 
   /**
@@ -108,7 +119,10 @@ export class SimulationSessionRuntime {
 
   /** The engine case of a session: its case with the overrides of its own patient, if any */
   public async loadSessionCase(session: SimulationSession): Promise<SimulationCaseDefinition> {
-    return await this.loadCase(session.caseId, session.patientProfile?.overrides);
+    const definition: SimulationCaseDefinition = await this.loadCase(session.caseId, session.patientProfile?.overrides, session.engineVersion);
+    const interpretation: StoredCaseInterpretation | undefined = session.patientProfile?.interpretation;
+
+    return interpretation === undefined ? definition : withInterpretation(definition, interpretation.applied);
   }
 
   public async loadContext(session: SimulationSession, transaction?: unknown): Promise<SimulationSessionContext> {
@@ -155,6 +169,11 @@ export class SimulationSessionRuntime {
 
   public async computeSummary(context: SimulationSessionContext, untilMs: number, now: Date): Promise<SimulationSessionSummary> {
     const { result, score, aiHelpCount } = await this.computeScore(context, untilMs);
+    const debrief: SessionDebrief = buildSessionDebrief(
+      result,
+      toEngineEvents(context.events),
+      context.caseDefinition.engineCase.initialSettings,
+    );
 
     return {
       engineVersion: context.session.engineVersion,
@@ -165,6 +184,8 @@ export class SimulationSessionRuntime {
       score: score.score,
       breakdown: score.breakdown,
       aiHelpCount,
+      outcome: debrief.outcome,
+      timeline: debrief.timeline,
     };
   }
 
@@ -281,8 +302,8 @@ export class SimulationSessionRuntime {
     return snapshot;
   }
 
-  private static _toDefinition(snapshot: ClinicalCaseSnapshot): SimulationCaseDefinition {
-    const definition: SimulationCaseDefinition | undefined = SimulationCaseMapper.toDefinition(snapshot);
+  private static _toDefinition(snapshot: ClinicalCaseSnapshot, engineVersion: string = ENGINE_VERSION): SimulationCaseDefinition {
+    const definition: SimulationCaseDefinition | undefined = SimulationCaseMapper.toDefinition(snapshot, engineVersion);
 
     if (!definition) {
       throw new SimulationCaseNotReadyError();

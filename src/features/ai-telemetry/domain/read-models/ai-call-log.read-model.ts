@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de la telemetría de IA
  * Descripción: Tipos de la bitácora de llamadas de IA (entrada a registrar sin texto de prompt ni de respuesta, resumen de una llamada, fila exportable, consumo por usuario y estadísticas agregadas por día y por proveedor) y los valores de caso de uso y estado, incluida la referencia que marca las sondas de salud de los proveedores; v1.4: proveedor deterministic de las respuestas de respaldo sin IA; v1.5: idioma, motivo de fin, temperatura, máximo de tokens de salida, rastro de intentos e id de petición del proveedor en la entrada y en la fila exportable
- * Versión: 1.5
+ * Versión: 1.6 (casos de uso del simulador: interpretación del caso y ayuda de alarmas)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,7 +16,9 @@ export type AiTelemetryUseCaseValue =
   | "MODULE_QA"
   | "FREE_CHAT"
   | "TOPIC_CHECK"
-  | "SIM_ASSIST";
+  | "SIM_ASSIST"
+  | "SIM_CASE_INTERPRETATION"
+  | "SIM_ALARM_HELP";
 
 export const AI_TELEMETRY_USE_CASE_VALUES: readonly AiTelemetryUseCaseValue[] = [
   "GRADE_FEEDBACK",
@@ -27,6 +29,8 @@ export const AI_TELEMETRY_USE_CASE_VALUES: readonly AiTelemetryUseCaseValue[] = 
   "FREE_CHAT",
   "TOPIC_CHECK",
   "SIM_ASSIST",
+  "SIM_CASE_INTERPRETATION",
+  "SIM_ALARM_HELP",
 ] as const;
 
 export type AiCallStatusValue = "SUCCESS" | "ERROR" | "FALLBACK" | "BLOCKED_OFFTOPIC" | "QUOTA_EXCEEDED" | "ABORTED";

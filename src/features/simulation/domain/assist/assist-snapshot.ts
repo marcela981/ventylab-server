@@ -1,16 +1,18 @@
 /*
  * Funcionalidad: Instantánea de la simulación para la asistencia
  * Descripción: Construye un resumen compacto y determinista (JSON de a lo sumo 3000 caracteres) del estado de una sesión de simulación para el asistente de IA: datos clínicos del caso ficticio, modo, ajustes del ventilador, métricas del último ciclo, gases, alarmas, objetivos y cambios recientes de parámetros. No admite ni incluye identificadores del estudiante; si excede el límite descarta primero los cambios más antiguos
- * Versión: 1.0
+ * Versión: 1.1 (estado del paciente y tendencias de los últimos minutos del paciente para el coaching)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { Alarm, EngineMetrics, PatientSex, TargetStatus, VentilatorSettings } from "../engine";
+import { Alarm, EngineMetrics, PatientSex, PatientStatus, TargetStatus, VentilatorSettings } from "../engine";
 
-export const ASSIST_SNAPSHOT_MAX_LENGTH: number = 3000;
+export const ASSIST_SNAPSHOT_MAX_LENGTH: number = 4000;
+/** Trend window of the coaching, in patient minutes (sim time × multiplier), one point per patient minute */
+export const ASSIST_TREND_WINDOW_MIN: number = 5;
 export const ASSIST_MAX_RECENT_CHANGES: number = 10;
 
 const TITLE_MAX_LENGTH: number = 120;
@@ -39,6 +41,42 @@ export interface AssistParamChange {
   readonly previous?: Partial<VentilatorSettings>;
 }
 
+export interface AssistTrendPoint {
+  readonly simTimeMs: number;
+  readonly spo2Percent: number;
+  readonly paco2MmHg: number;
+  readonly ph: number;
+  readonly mapMmHg: number;
+  readonly heartRateBpm: number | null;
+  readonly plateauPressureCmH2O: number | null;
+  readonly autoPeepCmH2O: number | null;
+  readonly status: PatientStatus | null;
+}
+
+/** One point per patient minute over the last ASSIST_TREND_WINDOW_MIN patient minutes of a 1-second metrics timeline */
+export function buildAssistTrends(timeline: readonly EngineMetrics[], timeMultiplier: number): AssistTrendPoint[] {
+  const stepSnapshots: number = Math.max(1, Math.round(60 / Math.max(1, timeMultiplier)));
+  const points: AssistTrendPoint[] = [];
+
+  for (let index: number = timeline.length - 1; index >= 0 && points.length <= ASSIST_TREND_WINDOW_MIN; index -= stepSnapshots) {
+    const metrics: EngineMetrics = timeline[index];
+
+    points.unshift({
+      simTimeMs: metrics.simTimeMs,
+      spo2Percent: metrics.gasExchange.spo2Percent,
+      paco2MmHg: metrics.gasExchange.paco2MmHg,
+      ph: metrics.gasExchange.ph,
+      mapMmHg: metrics.hemodynamics.meanArterialPressureMmHg,
+      heartRateBpm: metrics.hemodynamics.heartRateBpm,
+      plateauPressureCmH2O: metrics.lastCycle?.plateauPressureCmH2O ?? null,
+      autoPeepCmH2O: metrics.lastCycle?.autoPeepCmH2O ?? null,
+      status: metrics.patient?.status ?? null,
+    });
+  }
+
+  return points;
+}
+
 export interface AssistSnapshotInput {
   readonly caseSummary: AssistCaseSummary;
   readonly mode: AssistMode;
@@ -47,6 +85,7 @@ export interface AssistSnapshotInput {
   readonly alarms: readonly Alarm[];
   readonly targets: readonly TargetStatus[];
   readonly recentChanges: readonly AssistParamChange[];
+  readonly trends?: readonly AssistTrendPoint[];
 }
 
 type SnapshotValue = string | number | boolean | null | SnapshotValue[] | { [key: string]: SnapshotValue };
@@ -74,16 +113,19 @@ const SETTING_KEYS: readonly (keyof VentilatorSettings)[] = [
 
 export function buildAssistSnapshot(input: AssistSnapshotInput): string {
   const changes: AssistParamChange[] = selectRecentChanges(input.recentChanges);
+  const trends: AssistTrendPoint[] = [...(input.trends ?? [])];
   let includeSummary: boolean = true;
 
   for (;;) {
-    const text: string = JSON.stringify(snapshotObject(input, changes, includeSummary));
+    const text: string = JSON.stringify(snapshotObject(input, changes, includeSummary, trends));
 
     if (text.length <= ASSIST_SNAPSHOT_MAX_LENGTH) {
       return text;
     }
 
-    if (changes.length > 0) {
+    if (trends.length > 0) {
+      trends.shift();
+    } else if (changes.length > 0) {
       changes.shift();
     } else if (includeSummary) {
       includeSummary = false;
@@ -105,11 +147,48 @@ function selectRecentChanges(changes: readonly AssistParamChange[]): AssistParam
   return ordered.slice(Math.max(0, ordered.length - ASSIST_MAX_RECENT_CHANGES));
 }
 
-function snapshotObject(input: AssistSnapshotInput, changes: readonly AssistParamChange[], includeSummary: boolean): SnapshotObject {
+function snapshotObject(
+  input: AssistSnapshotInput,
+  changes: readonly AssistParamChange[],
+  includeSummary: boolean,
+  trends: readonly AssistTrendPoint[],
+): SnapshotObject {
   const { metrics } = input;
   const cycle: EngineMetrics["lastCycle"] = metrics.lastCycle;
+  const patient: EngineMetrics["patient"] = metrics.patient;
+  const evolution: SnapshotObject =
+    patient === null
+      ? {}
+      : {
+        patient: {
+          status: patient.status,
+          severity: round(patient.severity, 2),
+          heartRateBpm: round(patient.heartRateBpm, 0),
+          insults: [...patient.insults],
+        },
+      };
+  const trendObject: SnapshotObject =
+    trends.length === 0
+      ? {}
+      : {
+        trends: trends.map(
+          (point: AssistTrendPoint): SnapshotObject => ({
+            atS: round(point.simTimeMs / 1000, 0),
+            spo2: round(point.spo2Percent, 1),
+            paco2: round(point.paco2MmHg, 0),
+            ph: round(point.ph, 2),
+            map: round(point.mapMmHg, 0),
+            hr: nullableRound(point.heartRateBpm, 0),
+            pplat: nullableRound(point.plateauPressureCmH2O, 1),
+            autoPeep: nullableRound(point.autoPeepCmH2O, 1),
+            status: point.status,
+          }),
+        ),
+      };
 
   return {
+    ...evolution,
+    ...trendObject,
     case: caseObject(input.caseSummary, includeSummary),
     mode: input.mode,
     simTimeS: round(metrics.simTimeMs / 1000, 1),

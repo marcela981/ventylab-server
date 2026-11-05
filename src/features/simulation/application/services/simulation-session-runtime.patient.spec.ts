@@ -13,6 +13,7 @@ import { type StartSimulationSessionResult } from "@/features/simulation/applica
 import { type SimulationSessionContext } from "@/features/simulation/application/services/simulation-session-runtime.service";
 import {
   createSimulationTestContext,
+  caseInterpretationAnswering,
   FixedSeedGenerator,
   normalLungSnapshot,
   type SimulationTestContext,
@@ -57,6 +58,7 @@ describe("SimulationSessionRuntime with an own patient", () => {
       context.transactionManager,
       context.clinicalCases.asFacade(),
       context.runtime,
+      caseInterpretationAnswering(),
     );
 
     return await useCase.execute(new StartSimulationSessionCommand({ userId: "student-1", mode: "FREE", timeMultiplier: 1, patient: PATIENT }));

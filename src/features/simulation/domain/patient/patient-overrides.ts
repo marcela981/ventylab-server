@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Ajustes del motor para el paciente simulado propio
  * Descripción: Servicio de dominio puro y versionado que traduce el formulario del paciente propio en ajustes absolutos del caso base: compliance y resistencia por condición con los valores de julio (compliance −0,5 por año sobre 60 y −1 % por punto de IMC sobre 30, mínimo 15), sexo, edad, peso y talla, frecuencia respiratoria inicial del ventilador, PaO2 inicial por la inversa de Severinghaus a partir de la SpO2 y PAM basal desde PAS/PAD, todo acotado a los rangos fisiológicos de los casos; elige el caso base por condición. FC, temperatura, Glasgow, nombre, diagnóstico, alergias, antecedentes, patrón respiratorio y dificultad solo se muestran
- * Versión: 0.1
+ * Versión: 0.2 (perfil con la interpretación del caso al iniciar)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -99,11 +99,21 @@ export interface PatientOverrides {
   readonly baselineMapMmHg?: number;
 }
 
+/** Engine parameters interpreted at session start (AI or curated); stored as plain data, see case-interpretation.ts */
+export interface StoredCaseInterpretation {
+  readonly source: string;
+  readonly applied: Readonly<Record<string, number>>;
+  readonly [key: string]: unknown;
+}
+
 /** What a session stores so that replay and grading rebuild the same patient whatever the mapping becomes */
 export interface SimulationPatientProfile {
-  readonly form: SimulatedPatient;
-  readonly overrides: PatientOverrides;
-  readonly mappingVersion: number;
+  /** Own patient only */
+  readonly form?: SimulatedPatient;
+  readonly overrides?: PatientOverrides;
+  readonly mappingVersion?: number;
+  /** Case interpretation of a FREE session started with the engine 2.0.0 */
+  readonly interpretation?: StoredCaseInterpretation;
 }
 
 export function baseCaseIdForCondition(condition: PatientConditionValue): string {

@@ -10,6 +10,8 @@
  */
 import { type ITransactionManager } from "@/common/application/persistence/transaction-manager.interface";
 import { Paginated } from "@/common/domain/utils/paginated";
+import { type AiGateway } from "@/features/ai/application/services/ai-gateway";
+import { type AiResult } from "@/features/ai/domain/results/ai-result";
 import { type ClinicalCasesFacade } from "@/features/clinical-cases/application/services/clinical-cases.facade";
 import { ClinicalCaseNotFoundError, ClinicalCaseUnavailableError } from "@/features/clinical-cases/domain/clinical-cases.errors";
 import {
@@ -18,6 +20,7 @@ import {
 } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
 import { assertValidClinicalCaseDefinition } from "@/features/clinical-cases/domain/services/clinical-case-definition-validator";
 import { type GroupsFacade } from "@/features/groups/application/services/groups.facade";
+import { CaseInterpretationService } from "@/features/simulation/application/interpretation/case-interpretation.service";
 import {
   type ExamAttemptInfo,
   type ExamQuestionInfo,
@@ -153,6 +156,12 @@ export class FakeExamAttemptReader implements IExamAttemptReader {
   public getQuestion(questionId: string): Promise<ExamQuestionInfo | undefined> {
     return Promise.resolve(this.questions.get(questionId));
   }
+
+  public getAttempts(attemptIds: readonly string[]): Promise<ExamAttemptInfo[]> {
+    return Promise.resolve(
+      attemptIds.map((id: string): ExamAttemptInfo | undefined => this.attempts.get(id)).filter((attempt?: ExamAttemptInfo): attempt is ExamAttemptInfo => attempt !== undefined),
+    );
+  }
 }
 
 export class FakeClinicalCasesFacade {
@@ -218,6 +227,22 @@ export class FakeGroupsFacade {
   public asFacade(): GroupsFacade {
     return this as unknown as GroupsFacade;
   }
+}
+
+/** Case interpretation whose AI answers with `content`, or is unavailable when `content` is undefined */
+export function caseInterpretationAnswering(content?: string): CaseInterpretationService {
+  const result: AiResult = { content: content ?? "", source: "LLM", provider: "fake", model: "fake", aiCallId: "ai-call-interpretation" };
+  const gateway: Pick<AiGateway, "complete"> = {
+    complete: async (): Promise<AiResult> => {
+      if (content === undefined) {
+        throw new Error("AI unavailable");
+      }
+
+      return await Promise.resolve(result);
+    },
+  };
+
+  return new CaseInterpretationService(gateway as AiGateway);
 }
 
 export class FixedSeedGenerator implements ISimulationSeedGenerator {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Resolvedor Prisma de objetivos de valoración de IA
  * Descripción: Implementa IRatingTargetResolver. GRADE_FEEDBACK: el objetivo es el id de una fila de grade_feedbacks (general o por pregunta) en estado READY de un intento con calificación publicada; destinatario = dueño del intento y aiCallId = última llamada SUCCESS o FALLBACK enlazada al intento (refType evaluation_attempt) leída con AiTelemetryFacade. MESSAGE: id de un ai_messages con rol ASSISTANT; destinatario = dueño de la conversación y aiCallId del mensaje. NOTES_ANALYSIS: el análisis no se persiste, el objetivo es el aiCallId de la llamada (caso de uso NOTES_ANALYSIS) leído con AiTelemetryFacade. SIM_ASSIST: id de un simulation_events de tipo AI_HELP; destinatario = dueño de la sesión de simulación (simulation_sessions.user_id) y aiCallId = campo aiCallId del payload del evento cuando es texto; un mensaje del tutor informa el alcance de su conversación y, si quedó incompleto (respuesta detenida, sin aiCallId), enlaza su llamada ABORTED por la referencia ai_message
- * Versión: 1.3
+ * Versión: 1.4 (AI_CALL: llamada de IA sin persistencia propia de un caso de uso valorable)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,7 +13,11 @@ import { type Prisma } from "@prisma/client";
 
 import { PrismaService } from "@/common/infrastructure/persistence/prisma/prisma.service";
 import { type IRatingTargetResolver, type RatingTarget } from "@/features/ai-ratings/application/ports/rating-target-resolver.interface";
-import { type AiRatingScopeValue, type AiRatingTargetTypeValue } from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
+import {
+  AI_RATING_TARGET_USE_CASES,
+  type AiRatingScopeValue,
+  type AiRatingTargetTypeValue,
+} from "@/features/ai-ratings/domain/read-models/ai-rating.read-model";
 import { AiTelemetryFacade } from "@/features/ai-telemetry/application/ai-telemetry.facade";
 import { type AiCallStatusValue, type AiCallSummary } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
 
@@ -60,6 +64,8 @@ export class RatingTargetPrismaResolver implements IRatingTargetResolver {
         return this._resolveNotesAnalysis(targetId);
       case "SIM_ASSIST":
         return this._resolveSimAssist(targetId);
+      case "AI_CALL":
+        return this._resolveAiCall(targetId);
     }
   }
 
@@ -105,6 +111,17 @@ export class RatingTargetPrismaResolver implements IRatingTargetResolver {
     }
 
     return { recipientUserId: row.session.userId, aiCallId: payloadAiCallId(row.payload) };
+  }
+
+  // Unpersisted answers (simulator alarm help, real-mode assistance): the target is the call itself, of a ratable use case.
+  private async _resolveAiCall(aiCallId: string): Promise<RatingTarget | undefined> {
+    const call: AiCallSummary | undefined = await this._aiTelemetryFacade.getCallById(aiCallId);
+
+    if (!call || !call.userId || !AI_RATING_TARGET_USE_CASES.AI_CALL.includes(call.useCase)) {
+      return undefined;
+    }
+
+    return { recipientUserId: call.userId, aiCallId: call.id };
   }
 
   private async _resolveNotesAnalysis(aiCallId: string): Promise<RatingTarget | undefined> {

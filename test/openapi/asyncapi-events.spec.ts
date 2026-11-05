@@ -124,7 +124,7 @@ describe("AsyncAPI contract coverage", () => {
   it("should find the realtime events emitted in src", () => {
     expect(emitted.size).toBeGreaterThanOrEqual(18);
     expect(received).toEqual(new Set<string>(["authenticate", "ventilator:join", "ventilator:heartbeat"]));
-    expect(sse).toEqual(new Set<string>(["start", "delta", "done", "error"]));
+    expect(sse).toEqual(new Set<string>(["start", "rules", "delta", "done", "error"]));
   });
 
   it("should document every emitted and received Socket.io event in asyncapi.yaml and the TypeScript contract", () => {

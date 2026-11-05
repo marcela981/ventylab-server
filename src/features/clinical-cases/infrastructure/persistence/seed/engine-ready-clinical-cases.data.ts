@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Casos clínicos listos para el motor fisiológico
- * Descripción: Datos de siembra de cuatro casos simulables (pulmón normal, SDRA en paciente obeso, exacerbación de EPOC y crisis asmática) con cada valor numérico dentro de CLINICAL_CASE_PHYSIOLOGICAL_RANGES y su fuente bibliográfica; los consumen prisma/seed-clinical-cases.ts y el sembrador de arranque, que también reutiliza su rúbrica por defecto
- * Versión: 1.1
+ * Descripción: Datos de siembra de cinco casos simulables (pulmón normal, SDRA en paciente obeso, exacerbación de EPOC, crisis asmática y SDRA grave inestable con evolución hacia el paro si no se corrige) con cada valor numérico dentro de CLINICAL_CASE_PHYSIOLOGICAL_RANGES y su fuente bibliográfica; los consumen prisma/seed-clinical-cases.ts y el sembrador de arranque, que también reutiliza su rúbrica por defecto
+ * Versión: 1.2 (caso inestable engine-ards-unstable con evolución del paciente)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,7 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type ClinicalCaseContent } from "@/features/clinical-cases/domain/entities/clinical-case.entity";
-import { type ClinicalCaseRubric } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
+import { type ClinicalCaseEvolution, type ClinicalCaseRubric } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
 
 export interface EngineReadySeedCase {
   readonly id: string;
@@ -34,6 +34,24 @@ export function buildDefaultRubric(autoPeepMaxCmH2O: number): ClinicalCaseRubric
     ],
   };
 }
+
+export const UNSTABLE_ARDS_CASE_ID: string = "engine-ards-unstable";
+
+/**
+ * Evolution of the unstable ARDS case (engine 2.0.0). Educational simulation convention, pending expert validation:
+ * no published value fixes these rates or times. Untreated, the patient turns critical in ~6 patient-minutes and dies
+ * in ~11-12; with PEEP raised per the ARDSNet table and a protective Vt the severity falls and SpO2 recovers.
+ */
+export const UNSTABLE_ARDS_EVOLUTION: ClinicalCaseEvolution = {
+  initialSeverity: 0.3,
+  minSeverity: 0.1,
+  progressionRatePerMin: 0.06,
+  viliRatePerMin: 0.02,
+  recoveryRatePerMin: 0.04,
+  arrestAfterCriticalMin: 4,
+  deathAfterArrestMin: 2,
+  baselineHeartRateBpm: 100,
+};
 
 export const ENGINE_READY_CLINICAL_CASES: readonly EngineReadySeedCase[] = [
   {
@@ -358,6 +376,97 @@ export const ENGINE_READY_CLINICAL_CASES: readonly EngineReadySeedCase[] = [
         },
         defaultRubric: buildDefaultRubric(10),
       },
+    },
+  },
+  {
+    id: UNSTABLE_ARDS_CASE_ID,
+    content: {
+      title: "SDRA grave inestable",
+      description:
+        "Hombre de 58 años con SDRA grave por neumonía, recién intubado con PEEP baja; la hipoxemia es refractaria a la FiO2 y empeora si no se ajusta la ventilación.",
+      summary: "SDRA grave (PaO2/FiO2 ~67) con alto potencial de reclutamiento; sin intervención evoluciona al paro hipoxémico.",
+      history: {
+        presentIllness: "Neumonía bilateral con insuficiencia respiratoria aguda; intubado en urgencias y conectado con PEEP de 5 y FiO2 de 0,9.",
+        relevantHistory: ["Tabaquismo activo", "Diabetes mellitus tipo 2"],
+      },
+      patientAge: 58,
+      patientWeight: 82,
+      mainDiagnosis: "SDRA grave por neumonía",
+      comorbidities: ["Diabetes mellitus tipo 2"],
+      labData: { ph: 7.38, paco2: 40, pao2: 60, hco3: 24, fio2: 0.9 },
+      difficulty: "ADVANCED",
+      pathology: "SDRA",
+      educationalGoal:
+        "Reconocer la hipoxemia refractaria por shunt, subir la PEEP según la tabla PEEP/FiO2 con volumen protector y vigilar la presión meseta y la hemodinamia antes de que el paciente llegue al paro.",
+      simulation: {
+        patientSex: "MALE",
+        // 175 cm -> predicted body weight 70.6 kg (ARDSNet 2000 formula)
+        patientHeightCm: 175,
+        mechanics: {
+          // ARDS Crs median 39 (IQR 32-50) mL/cmH2O in passive patients (Arnal JM et al. Respir Care 2018;63:158-68); lower end for severe ARDS
+          complianceMlPerCmH2O: 30,
+          // ARDS inspiratory resistance ~12 cmH2O/L/s (Arnal 2018)
+          resistanceCmH2OPerLps: 12,
+          // Raised physiological dead space in early ARDS (Nuckton TJ et al. NEJM 2002;346:1281-6)
+          deadSpaceMl: 150,
+          // Resting VCO2 ~200 mL/min, raised with fever (West)
+          vco2MlPerMin: 220,
+          // Acute illness without chronic compensation (West)
+          bicarbonateMmolPerL: 24,
+          // Mild anaemia of critical illness (West)
+          hemoglobinGPerDl: 12,
+          // Normal arteriovenous O2 difference (West)
+          arteriovenousO2DifferenceMlPerDl: 5,
+          // High shunt: FiO2 barely raises PaO2 above ~30 % shunt (Benatar SR et al. Br J Anaesth 1973;45:711-8)
+          basalShuntFraction: 0.35,
+          // Recruitable lung: shunt falls with PEEP (Gattinoni L et al. NEJM 2006;354:1775-86); curve values are a model choice
+          recruitmentCurve: [
+            { peepCmH2O: 0, shuntFraction: 0.45 },
+            { peepCmH2O: 5, shuntFraction: 0.35 },
+            { peepCmH2O: 10, shuntFraction: 0.22 },
+            { peepCmH2O: 15, shuntFraction: 0.14 },
+            { peepCmH2O: 20, shuntFraction: 0.11 },
+          ],
+          // Deep sedation without effort; Ti/Ttot 0.35 (Tobin 1983)
+          patientEffort: { amplitudeCmH2O: 0, rateBpm: 0, inspiratoryFraction: 0.35 },
+          // MAP 80 mmHg; Paw threshold/drop are model parameters (Pinsky MR. Ann Am Thorac Soc 2018;15:S45-8)
+          hemodynamics: { baselineMapMmHg: 80, meanAirwayPressureThresholdCmH2O: 15, mapDropPerCmH2O: 1.5 },
+          // PaO2 reaches ~90 % of its new value within ~5 min after an FiO2 step (Cakar N et al. Intensive Care Med 2001;27:655-9)
+          gasTimeConstants: { paco2TimeConstantMin: 3, oxygenTimeConstantS: 10 },
+          // Severity effects on compliance and shunt (model parameters)
+          deterioration: { ratePerMin: 0.06, maxComplianceLossFraction: 0.3, maxShuntIncrease: 0.3 },
+          // UNSTABLE_ARDS_EVOLUTION: educational convention, pending expert validation
+          evolution: UNSTABLE_ARDS_EVOLUTION,
+        },
+        // Vt 420 mL = 6 mL/kg PBW; PEEP 5 with FiO2 0.9 is far below the ARDSNet lower PEEP/FiO2 table (14-18 at 0.9)
+        initialVentilatorSettings: {
+          mode: "VCV",
+          tidalVolumeMl: 420,
+          respiratoryRateBpm: 22,
+          peepCmH2O: 5,
+          fio2: 0.9,
+          inspiratoryTimeS: 0.8,
+          flowPattern: "SQUARE",
+          inspiratoryPauseS: 0,
+        },
+        // PaO2/FiO2 60/0.9 = 67: severe ARDS (ARDS Definition Task Force, JAMA 2012;307:2526-33)
+        initialState: { paco2MmHg: 40, pao2MmHg: 60 },
+        events: [],
+        targets: {
+          // ARDSNet 2000 goals: SpO2 88-95%, pH 7.30-7.45, Pplat <= 30, Vt 4-8 mL/kg PBW
+          spo2Percent: { min: 88, max: 95 },
+          paco2MmHg: { min: 35, max: 60 },
+          ph: { min: 7.3, max: 7.45 },
+          plateauPressureMaxCmH2O: 30,
+          // Driving pressure <= 15 cmH2O (Amato 2015 NEJM)
+          drivingPressureMaxCmH2O: 15,
+          tidalVolumePerKgPbw: { min: 4, max: 8 },
+          autoPeepMaxCmH2O: 5,
+        },
+        defaultRubric: buildDefaultRubric(5),
+      },
+      // Bedside vitals at the start (tachycardia of hypoxemia)
+      initialVitals: { heartRateBpm: 100, respiratoryRateBpm: 22, spo2Percent: 89, systolicMmHg: 110, diastolicMmHg: 65 },
     },
   },
 ];

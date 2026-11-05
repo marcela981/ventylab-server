@@ -2160,8 +2160,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Publish attempt grade
-         * @description Publishes the grade of a GRADED attempt and notifies the student with grade:published; idempotent (an already published grade keeps its date)
+         * Release attempt results
+         * @description Releases to the student the grade of a GRADED attempt (scope GRADE) or the grade with the correct answers, explanations, rubrics, per-question points and AI feedback (scope GRADE_AND_ANSWERS, the default); notifies grade:published when the grade is released; idempotent (what was already released keeps its date). Until then the student only sees the attempt as submitted
          *
          *     **Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.
          */
@@ -2182,8 +2182,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Publish evaluation grades
-         * @description Publishes every GRADED unpublished attempt of the evaluation (optionally one group) within the caller's scope and notifies each student; returns how many were published
+         * Release evaluation results
+         * @description Releases the results of every GRADED attempt of the evaluation (optionally one group) within the caller's scope: the grade only (scope GRADE) or the grade with the answers and AI feedback (scope GRADE_AND_ANSWERS, the default); attempts still in progress or pending review are left out; returns how many attempts changed
          *
          *     **Required access:** bearer token holding `evaluations:grade`; minimum role TEACHER.
          */
@@ -2849,6 +2849,28 @@ export interface paths {
          *     **Required access:** bearer token holding `groups:read_own`; minimum role STUDENT.
          */
         get: operations["getMyGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/student-memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the active student groups of users
+         * @description For each requested user that belongs to an active STUDENT group, that group (id and name); users without one are absent. A student can belong to only one active STUDENT group, so the member search shows who cannot be added before trying (POST /:id/members answers 409 groups.student_already_in_group)
+         *
+         *     **Required access:** bearer token holding `groups:manage_members`; minimum role TEACHER.
+         */
+        get: operations["getStudentMemberships"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3864,28 +3886,6 @@ export interface paths {
         get: operations["getMyEvaluations"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/my-evaluations/attempts/{attemptId}/answers/{questionId}/check": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Check evaluation answer
-         * @description Immediate feedback (QUIZ and WORKSHOP choice questions): saves the selected options of the own attempt in progress, reveals whether they are correct with the correct options and the explanation, and locks the answer (a later save or check answers 409); the score is still computed only at submission
-         *
-         *     **Required access:** bearer token holding `evaluations:attempt`; minimum role STUDENT.
-         */
-        post: operations["checkAnswer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5646,6 +5646,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/simulation/real/alarm-help": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * How to stabilize an alarm of the physical ventilator
+         * @description Deterministic rules for the alarm with the recent telemetry sent by the client, then an AI suggestion. Responds text/event-stream: `event: rules` with `{alarmCode, rules: [{id, text, reference}]}` (deterministic, always first in the alarm help), `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, source}` (plus `aiHelpEventId` for a simulation session; `source` is LLM or DETERMINISTIC; rate an LLM answer with ai-ratings targetType AI_CALL, targetId = aiCallId, surface SIM_ALARM for alarms), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts use the regular JSON error envelope. The AI only suggests: it never sends commands to a ventilator.
+         *
+         *     **Required access:** bearer token holding `ventilator:control`; minimum role STUDENT.
+         */
+        post: operations["realAlarmHelp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulation/real/assist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AI assistance on the physical ventilator
+         * @description Guidance on the recent telemetry sent by the client and the loaded case, optionally answering a question. Responds text/event-stream: `event: rules` with `{alarmCode, rules: [{id, text, reference}]}` (deterministic, always first in the alarm help), `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, source}` (plus `aiHelpEventId` for a simulation session; `source` is LLM or DETERMINISTIC; rate an LLM answer with ai-ratings targetType AI_CALL, targetId = aiCallId, surface SIM_ALARM for alarms), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts use the regular JSON error envelope. The AI only suggests: it never sends commands to a ventilator.
+         *
+         *     **Required access:** bearer token holding `ventilator:control`; minimum role STUDENT.
+         */
+        post: operations["realAssist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/simulation/reserve": {
         parameters: {
             query?: never;
@@ -5762,6 +5806,28 @@ export interface paths {
         get: operations["getSimulationSessions"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulation/sessions/{id}/alarm-help": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * How to stabilize an alarm of my active simulation session
+         * @description Deterministic rules for the alarm in the current context, then an AI suggestion. EXAM sessions follow the assistance policy of the evaluation (ALLOWED_WITH_PENALTY only); every completed answer is recorded as an AI_HELP event of kind ALARM_HELP. Responds text/event-stream: `event: rules` with `{alarmCode, rules: [{id, text, reference}]}` (deterministic, always first in the alarm help), `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, source}` (plus `aiHelpEventId` for a simulation session; `source` is LLM or DETERMINISTIC; rate an LLM answer with ai-ratings targetType AI_CALL, targetId = aiCallId, surface SIM_ALARM for alarms), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts use the regular JSON error envelope. The AI only suggests: it never sends commands to a ventilator.
+         *
+         *     **Required access:** bearer token holding `simulation:control`; minimum role STUDENT.
+         */
+        post: operations["alarmHelp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8428,7 +8494,7 @@ export interface components {
              * @example POPUP
              * @enum {string}
              */
-            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
+            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST" | "SIM_ALARM";
             /**
              * @description Rated output id
              * @example cm1x2y3z40000abcd1234efgh
@@ -8439,7 +8505,7 @@ export interface components {
              * @example MESSAGE
              * @enum {string}
              */
-            targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+            targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
             /**
              * @description Trust and confidence in the answer (1–5)
              * @example 3
@@ -9470,34 +9536,6 @@ export interface components {
              * @example 2026-0001
              */
             studentCode: string | null;
-        };
-        CheckEvaluationAnswerDTO: {
-            /**
-             * @description Selected option IDs to check (choice questions)
-             * @example [
-             *       "cm5option01"
-             *     ]
-             */
-            selectedOptionIds: string[];
-        };
-        CheckEvaluationAnswerResponseDTO: {
-            /**
-             * @description Correct option IDs
-             * @example [
-             *       "cm5option01"
-             *     ]
-             */
-            correctOptionIds: string[];
-            /**
-             * @description Teacher explanation
-             * @example PEEP keeps the alveoli open
-             */
-            explanation: string | null;
-            /**
-             * @description Whether the selected options are exactly the correct ones
-             * @example true
-             */
-            isCorrect: boolean;
         };
         ClinicalCaseAttemptsDTO: {
             /** @description Attempts, most recent first */
@@ -12971,38 +13009,6 @@ export interface components {
              */
             score: number;
         };
-        GradedQuestionDTO: {
-            /**
-             * @description Correct option identifier
-             * @example q1-a
-             */
-            correctOptionId: string;
-            /**
-             * @description Question explanation
-             * @example PEEP keeps the alveoli open
-             */
-            explanation: string | null;
-            /**
-             * @description Feedback of the selected option
-             * @example Review the definition of PEEP
-             */
-            feedback: string | null;
-            /**
-             * @description Whether the selected option is correct
-             * @example false
-             */
-            isCorrect: boolean;
-            /**
-             * @description Question identifier
-             * @example q1
-             */
-            questionId: string;
-            /**
-             * @description Option selected by the user, empty when unanswered
-             * @example q1-b
-             */
-            selectedOptionId: string;
-        };
         GradingAnswerDTO: {
             /**
              * @description Answer ID (null when the student did not answer)
@@ -13068,6 +13074,12 @@ export interface components {
             /** @description One entry per question with the student answer and its scores */
             answers: components["schemas"]["GradingAnswerDTO"][];
             /**
+             * Format: date-time
+             * @description When the correct answers, explanations and AI feedback were released to the student
+             * @example null
+             */
+            answersReleasedAt: string | null;
+            /**
              * @description Assignment ID (null for legacy attempts)
              * @example cm5assignment01
              */
@@ -13100,7 +13112,7 @@ export interface components {
             grade: number | null;
             /**
              * Format: date-time
-             * @description When the grade was published to the student
+             * @description When the grade was released to the student
              * @example null
              */
             gradePublishedAt: string | null;
@@ -13169,6 +13181,12 @@ export interface components {
         };
         GradingAttemptListItemDTO: {
             /**
+             * Format: date-time
+             * @description When the answers and AI feedback were released (null while unreleased)
+             * @example null
+             */
+            answersReleasedAt: string | null;
+            /**
              * @description Assignment ID
              * @example cm5assignment01
              */
@@ -13195,7 +13213,7 @@ export interface components {
             grade: number | null;
             /**
              * Format: date-time
-             * @description When the grade was published (null while unpublished)
+             * @description When the grade was released (null while unreleased)
              * @example 2026-10-06T09:00:00.000Z
              */
             gradePublishedAt: string | null;
@@ -13570,6 +13588,49 @@ export interface components {
              * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
              */
             id: string;
+        };
+        GroupMemberAddedNotificationDTO: {
+            /**
+             * @description Body shown to the user
+             * @example Ya puedes consultar tu calificación: 8 de 10 puntos (aprobada).
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the notification was created
+             * @example 2026-10-11T14:00:00.000Z
+             */
+            createdAt: string;
+            /** @description Student group the user joined */
+            data: components["schemas"]["GroupMemberAddedNotificationDataDTO"] | null;
+            /**
+             * @description Notification ID
+             * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the notification was read (null while unread)
+             * @example null
+             */
+            readAt: string | null;
+            /**
+             * @description Title shown to the user
+             * @example Calificación publicada
+             */
+            title: string;
+            /**
+             * @description Notification type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "GROUP_MEMBER_ADDED";
+        };
+        GroupMemberAddedNotificationDataDTO: {
+            /**
+             * @description ID of the student group the user joined
+             * @example cm5group01
+             */
+            groupId: string;
         };
         GroupMemberDTO: {
             /**
@@ -16186,6 +16247,11 @@ export interface components {
         };
         MyEvaluationAttemptDTO: {
             /**
+             * @description Whether the teacher released the correct answers and the AI feedback
+             * @example false
+             */
+            answersReleased: boolean;
+            /**
              * @description Attempt number
              * @example 1
              */
@@ -16217,7 +16283,7 @@ export interface components {
              */
             passed?: boolean;
             /**
-             * @description Whether the grade is published
+             * @description Whether the teacher released the grade
              * @example true
              */
             published: boolean;
@@ -16775,7 +16841,7 @@ export interface components {
              *       "evaluationId": "01932e9f-1234-7abc-9def-1a2b3c4d5e6f"
              *     }
              */
-            data: (components["schemas"]["ReservationPreemptedNotificationDataDTO"] | components["schemas"]["ReservationCancelledNotificationDataDTO"] | components["schemas"]["EvaluationActivatedNotificationDataDTO"] | components["schemas"]["GradePublishedNotificationDataDTO"] | components["schemas"]["FeedbackReadyNotificationDataDTO"] | components["schemas"]["AttemptResetNotificationDataDTO"] | components["schemas"]["RoleChangedNotificationDataDTO"] | components["schemas"]["VentilatorOfflineNotificationDataDTO"]) | null;
+            data: (components["schemas"]["ReservationPreemptedNotificationDataDTO"] | components["schemas"]["ReservationCancelledNotificationDataDTO"] | components["schemas"]["EvaluationActivatedNotificationDataDTO"] | components["schemas"]["GradePublishedNotificationDataDTO"] | components["schemas"]["FeedbackReadyNotificationDataDTO"] | components["schemas"]["AttemptResetNotificationDataDTO"] | components["schemas"]["RoleChangedNotificationDataDTO"] | components["schemas"]["GroupMemberAddedNotificationDataDTO"] | components["schemas"]["VentilatorOfflineNotificationDataDTO"]) | null;
             /**
              * @description Notification ID
              * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
@@ -16797,7 +16863,7 @@ export interface components {
              * @example GRADE_PUBLISHED
              * @enum {string}
              */
-            type: "RESERVATION_PREEMPTED" | "RESERVATION_CANCELLED" | "EVALUATION_ACTIVATED" | "GRADE_PUBLISHED" | "FEEDBACK_READY" | "ATTEMPT_RESET" | "ROLE_CHANGED" | "VENTILATOR_OFFLINE";
+            type: "RESERVATION_PREEMPTED" | "RESERVATION_CANCELLED" | "EVALUATION_ACTIVATED" | "GRADE_PUBLISHED" | "FEEDBACK_READY" | "ATTEMPT_RESET" | "ROLE_CHANGED" | "GROUP_MEMBER_ADDED" | "VENTILATOR_OFFLINE";
         };
         OverrideDataDTO: {
             /** @description Extra cards inserted in the lesson, LESSON only */
@@ -17472,18 +17538,6 @@ export interface components {
              */
             withinRange: boolean;
         };
-        PartialClosedScoreDTO: {
-            /**
-             * @description Closed (choice) questions answered correctly
-             * @example 3
-             */
-            correct: number;
-            /**
-             * @description Closed (choice) questions in the evaluation
-             * @example 4
-             */
-            total: number;
-        };
         PatientDTO: {
             /** @description Arterial blood gas */
             arterialBloodGas: Record<string, never> | null;
@@ -18059,10 +18113,16 @@ export interface components {
         };
         PublishAttemptGradeResponseDTO: {
             /**
-             * @description Whether it was already published (nothing changed)
+             * @description Whether everything requested was already released (nothing changed)
              * @example false
              */
             alreadyPublished: boolean;
+            /**
+             * Format: date-time
+             * @description When the answers, explanations and AI feedback were released; null while only the grade is released
+             * @example null
+             */
+            answersReleasedAt: string | null;
             /**
              * @description Attempt ID
              * @example 01932e9f-1234-7abc-9def-1a2b3c4d5e6f
@@ -18086,10 +18146,17 @@ export interface components {
              * @example cm5group01
              */
             groupId?: string;
+            /**
+             * @description What the student gets: GRADE (score, grade and passed only) or GRADE_AND_ANSWERS (also the correct answers, explanations, rubrics, per-question points and AI feedback)
+             * @default GRADE_AND_ANSWERS
+             * @example GRADE
+             * @enum {string}
+             */
+            scope: "GRADE" | "GRADE_AND_ANSWERS";
         };
         PublishGradesResponseDTO: {
             /**
-             * @description Number of grades published by this call
+             * @description Number of attempts whose release changed with this call (grade published and/or answers released)
              * @example 12
              */
             publishedCount: number;
@@ -18172,24 +18239,7 @@ export interface components {
              */
             attemptId: string;
             /**
-             * @description Number of correct answers
-             * @example 4
-             */
-            correctAnswers: number;
-            /** @description Per-question grading */
-            gradedQuestions: components["schemas"]["GradedQuestionDTO"][];
-            /**
-             * @description Whether the attempt reached the passing score
-             * @example true
-             */
-            passed: boolean;
-            /**
-             * @description Score from 0 to 100
-             * @example 80
-             */
-            score: number;
-            /**
-             * @description Number of questions in the quiz
+             * @description Number of questions in the quiz (the score and the corrections are released by the teacher)
              * @example 5
              */
             totalQuestions: number;
@@ -18362,6 +18412,191 @@ export interface components {
              */
             status: "ready" | "not_ready";
         };
+        RealAlarmHelpDTO: {
+            /**
+             * @description Alarm code (engine or ventilator), e.g. HIGH_PRESSURE, LOW_SPO2
+             * @example HIGH_PRESSURE
+             */
+            alarmCode: string;
+            /**
+             * @description Answer language; defaults to the request language
+             * @example es
+             * @enum {string}
+             */
+            language?: "en" | "es";
+            state: components["schemas"]["RealMonitorStateDTO"];
+        };
+        RealAssistDTO: {
+            /**
+             * @description Answer language; defaults to the request language
+             * @example es
+             * @enum {string}
+             */
+            language?: "en" | "es";
+            /**
+             * @description User question
+             * @example ¿Qué reviso primero?
+             */
+            question?: string;
+            state: components["schemas"]["RealMonitorStateDTO"];
+        };
+        RealMonitorLimitsDTO: {
+            /**
+             * @description Client high pressure limit (cmH2O)
+             * @example 40
+             */
+            highPressureCmH2O?: number;
+            /**
+             * @description Client high respiratory rate limit (breaths/min)
+             * @example 35
+             */
+            highRespiratoryRateBpm?: number;
+            /**
+             * @description Client high exhaled volume limit (mL)
+             * @example 800
+             */
+            highTidalVolumeMl?: number;
+            /**
+             * @description Client low exhaled volume limit (mL)
+             * @example 200
+             */
+            lowTidalVolumeMl?: number;
+        };
+        RealMonitorMetricsDTO: {
+            /**
+             * @description Auto-PEEP (cmH2O)
+             * @example 1
+             */
+            autoPeepCmH2O?: number;
+            /**
+             * @description End-tidal CO2 (mmHg)
+             * @example 38
+             */
+            etco2MmHg?: number;
+            /**
+             * @description Exhaled tidal volume (mL)
+             * @example 440
+             */
+            exhaledTidalVolumeMl?: number;
+            /**
+             * @description Measured respiratory rate (breaths/min)
+             * @example 16
+             */
+            measuredRespiratoryRateBpm?: number;
+            /**
+             * @description Minute volume (L/min)
+             * @example 7
+             */
+            minuteVolumeLpm?: number;
+            /**
+             * @description Peak pressure of the last breath (cmH2O)
+             * @example 28
+             */
+            peakPressureCmH2O?: number;
+            /**
+             * @description Plateau pressure (cmH2O)
+             * @example 24
+             */
+            plateauPressureCmH2O?: number;
+            /**
+             * @description SpO2 (%)
+             * @example 94
+             */
+            spo2Percent?: number;
+            /**
+             * @description Total PEEP (cmH2O)
+             * @example 9
+             */
+            totalPeepCmH2O?: number;
+        };
+        RealMonitorSettingsDTO: {
+            /**
+             * @description Reported FiO2 (fraction)
+             * @example 0.5
+             */
+            fio2?: number;
+            /**
+             * @description Reported inspiratory pressure (cmH2O above PEEP)
+             * @example 15
+             */
+            inspiratoryPressureCmH2O?: number;
+            /**
+             * @description Reported inspiratory time (s)
+             * @example 1
+             */
+            inspiratoryTimeS?: number;
+            /**
+             * @description Reported PEEP (cmH2O)
+             * @example 8
+             */
+            peepCmH2O?: number;
+            /**
+             * @description Reported pressure support (cmH2O)
+             * @example 10
+             */
+            pressureSupportCmH2O?: number;
+            /**
+             * @description Reported respiratory rate (breaths/min)
+             * @example 16
+             */
+            respiratoryRateBpm?: number;
+            /**
+             * @description Reported tidal volume (mL)
+             * @example 450
+             */
+            tidalVolumeMl?: number;
+        };
+        RealMonitorStateDTO: {
+            /**
+             * @description Active alarm codes of the ventilator and the client limits
+             * @example [
+             *       "HIGH_PRESSURE"
+             *     ]
+             */
+            alarms?: string[];
+            /**
+             * @description Clinical case loaded on the monitor, if any
+             * @example engine-ards-obese
+             */
+            caseId?: string;
+            limits?: components["schemas"]["RealMonitorLimitsDTO"];
+            metrics?: components["schemas"]["RealMonitorMetricsDTO"];
+            /**
+             * @description Reported ventilation mode
+             * @example VCV
+             */
+            mode?: string;
+            settings?: components["schemas"]["RealMonitorSettingsDTO"];
+            /** @description Recent window, newest last */
+            trend?: components["schemas"]["RealMonitorTrendPointDTO"][];
+        };
+        RealMonitorTrendPointDTO: {
+            /**
+             * @description Exhaled tidal volume (mL)
+             * @example 440
+             */
+            exhaledTidalVolumeMl?: number;
+            /**
+             * @description Peak pressure (cmH2O)
+             * @example 28
+             */
+            peakPressureCmH2O?: number;
+            /**
+             * @description Respiratory rate (breaths/min)
+             * @example 16
+             */
+            respiratoryRateBpm?: number;
+            /**
+             * @description Seconds before now (0 = latest)
+             * @example 30
+             */
+            secondsAgo: number;
+            /**
+             * @description SpO2 (%)
+             * @example 94
+             */
+            spo2Percent?: number;
+        };
         RealtimeHealthDTO: {
             /**
              * @description Authenticated WebSocket users
@@ -18524,6 +18759,15 @@ export interface components {
              * @example SecurePass123
              */
             password: string;
+        };
+        ReleaseAttemptResultsDTO: {
+            /**
+             * @description What the student gets: GRADE (score, grade and passed only) or GRADE_AND_ANSWERS (also the correct answers, explanations, rubrics, per-question points and AI feedback)
+             * @default GRADE_AND_ANSWERS
+             * @example GRADE
+             * @enum {string}
+             */
+            scope: "GRADE" | "GRADE_AND_ANSWERS";
         };
         RenameAiConversationDTO: {
             /**
@@ -19605,6 +19849,19 @@ export interface components {
              */
             temperatureC?: number;
         };
+        SimulationAlarmHelpDTO: {
+            /**
+             * @description Alarm code (engine or ventilator), e.g. HIGH_PRESSURE, LOW_SPO2
+             * @example HIGH_PRESSURE
+             */
+            alarmCode: string;
+            /**
+             * @description Answer language; defaults to the request language
+             * @example es
+             * @enum {string}
+             */
+            language?: "en" | "es";
+        };
         SimulationAssistDTO: {
             /**
              * @description Answer language; defaults to the request language
@@ -19617,6 +19874,26 @@ export interface components {
              * @example ¿Por qué sigue sonando la alarma de presión alta?
              */
             question?: string;
+        };
+        SimulationDebriefItemDTO: {
+            /** @description Changed settings of a decision */
+            changes?: components["schemas"]["SimulationSettingChangeDTO"][];
+            /**
+             * @description Alarm code or patient status (absent for decisions)
+             * @example LOW_SPO2
+             */
+            code?: string;
+            /**
+             * @description Item kind
+             * @example DECISION
+             * @enum {string}
+             */
+            kind: "DECISION" | "ALARM" | "PATIENT_STATUS";
+            /**
+             * @description Simulated time in ms
+             * @example 15000
+             */
+            simTimeMs: number;
         };
         SimulationEventDTO: {
             /**
@@ -19687,6 +19964,29 @@ export interface components {
             /** @description WebSocket connections */
             ws: components["schemas"]["RealtimeHealthDTO"];
         };
+        SimulationOutcomeDTO: {
+            /**
+             * @description Simulated time of the cardiac arrest, in ms
+             * @example 600000
+             */
+            arrestAtMs: number | null;
+            /**
+             * @description Simulated time of death, in ms
+             * @example 630000
+             */
+            deceasedAtMs: number | null;
+            /**
+             * @description Simulated time the patient first turned critical, in ms
+             * @example 360000
+             */
+            firstCriticalAtMs: number | null;
+            /**
+             * @description Final patient status; null for sessions without patient evolution (engine 1.0.0)
+             * @example DECEASED
+             * @enum {string|null}
+             */
+            status: "STABLE" | "UNSTABLE" | "CRITICAL" | "ARREST" | "DECEASED" | null;
+        };
         SimulationSessionDTO: {
             /**
              * @description Exam attempt ID
@@ -19741,7 +20041,7 @@ export interface components {
              */
             questionId: string | null;
             /**
-             * @description Stored server-computed score, null until the session ends
+             * @description Stored server-computed score; null until the session ends, and for an EXAM student until the teacher releases the grade
              * @example null
              */
             score: number | null;
@@ -19840,6 +20140,11 @@ export interface components {
             /** @description Own patient form of a FREE session started with one (shown after a reload, in the list and in the replay); null otherwise */
             patient: components["schemas"]["SimulatedPatientDTO"] | null;
             /**
+             * @description True when an EXAM student is not shown part of the results yet (the teacher has not released the grade or the answers)
+             * @example false
+             */
+            resultsWithheld: boolean;
+            /**
              * @description Current ventilator settings
              * @example {
              *       "mode": "VCV",
@@ -19858,7 +20163,7 @@ export interface components {
              */
             status: string;
             /**
-             * @description Clinical target status
+             * @description Clinical target status; empty for an EXAM student until the teacher releases the answers
              * @example [
              *       {
              *         "id": "SPO2",
@@ -19875,7 +20180,7 @@ export interface components {
              */
             aiHelpCount: number;
             /**
-             * @description Justified score per rubric criterion
+             * @description Justified score per rubric criterion; empty for an EXAM student until the teacher releases the answers
              * @example [
              *       {
              *         "criterion": "TARGETS_REACHED",
@@ -19906,11 +20211,18 @@ export interface components {
              * @example 0192f1c2-7c1e-7a8b-9c0d-1e2f3a4b5c6d
              */
             id: string;
+            /** @description Patient outcome; null for summaries stored before the engine 2.0.0 */
+            outcome: components["schemas"]["SimulationOutcomeDTO"] | null;
             /**
-             * @description Server-computed score between 0 and 1
+             * @description True when an EXAM student is not shown part of the results yet (the teacher has not released the grade or the answers)
+             * @example false
+             */
+            resultsWithheld: boolean;
+            /**
+             * @description Server-computed score between 0 and 1; null for an EXAM student until the teacher releases the grade
              * @example 0.82
              */
-            score: number;
+            score: number | null;
             /**
              * @description Simulated time scored in ms
              * @example 600000
@@ -19922,7 +20234,7 @@ export interface components {
              */
             status: string;
             /**
-             * @description Final clinical target status
+             * @description Final clinical target status; empty for an EXAM student until the teacher releases the answers
              * @example [
              *       {
              *         "id": "SPO2",
@@ -19931,6 +20243,25 @@ export interface components {
              *     ]
              */
             targets: Record<string, never>[];
+            /** @description Debrief timeline: decisions, alarm onsets and patient status changes in simulated time order (at most 200) */
+            timeline: components["schemas"]["SimulationDebriefItemDTO"][];
+        };
+        SimulationSettingChangeDTO: {
+            /**
+             * @description Ventilator setting
+             * @example peepCmH2O
+             */
+            field: string;
+            /**
+             * @description Previous value
+             * @example 5
+             */
+            from: (number | string) | null;
+            /**
+             * @description New value
+             * @example 12
+             */
+            to: number | string;
         };
         SimulatorSessionDTO: {
             /**
@@ -20429,31 +20760,6 @@ export interface components {
              */
             textAnswer: string | null;
         };
-        StudentAnswerRevealDTO: {
-            /**
-             * @description Correct option IDs
-             * @example [
-             *       "cm5option01"
-             *     ]
-             */
-            correctOptionIds: string[];
-            /**
-             * @description Teacher explanation
-             * @example PEEP keeps the alveoli open
-             */
-            explanation: string | null;
-            /**
-             * @description Whether the checked answer is correct
-             * @example false
-             */
-            isCorrect: boolean;
-            /**
-             * Format: date-time
-             * @description When the answer was checked (it is locked since then)
-             * @example 2026-10-06T08:05:00.000Z
-             */
-            revealedAt: string;
-        };
         StudentAssignmentCheckDTO: {
             /**
              * @description Whether the student is assigned to the teacher
@@ -20472,6 +20778,11 @@ export interface components {
             teacherId: string;
         };
         StudentAttemptDetailDTO: {
+            /**
+             * @description Whether the teacher released the correct answers, explanations, rubrics, per-question points and AI feedback
+             * @example false
+             */
+            answersReleased: boolean;
             /**
              * @description Assignment ID
              * @example cm5assignment01
@@ -20505,15 +20816,13 @@ export interface components {
              * @example 10
              */
             maxScore?: number;
-            /** @description Correct closed questions while open questions wait for the teacher (PENDING_REVIEW QUIZ or WORKSHOP attempts only; null otherwise) */
-            partialClosedScore: components["schemas"]["PartialClosedScoreDTO"] | null;
             /**
              * @description Whether the grade reaches the passing grade (published only)
              * @example true
              */
             passed?: boolean;
             /**
-             * @description Whether the grade is published (scores and correct answers are only included then)
+             * @description Whether the teacher released the grade (score, grade and passed are only included then)
              * @example false
              */
             published: boolean;
@@ -20884,6 +21193,15 @@ export interface components {
             /** @description Teacher groups that supervise this group */
             supervisingGroups: components["schemas"]["GroupNameDTO"][];
         };
+        StudentMembershipDTO: {
+            /** @description Active STUDENT group of the user */
+            group: components["schemas"]["GroupNameDTO"];
+            /**
+             * @description User ID
+             * @example cm5student01
+             */
+            userId: string;
+        };
         StudentModuleProgressDTO: {
             /**
              * @description Completed active lessons
@@ -20929,7 +21247,7 @@ export interface components {
              */
             content: string;
             /**
-             * @description Option feedback (only once the grade is published)
+             * @description Option feedback (only once the teacher releases the answers)
              * @example Correct
              */
             feedback?: string | null;
@@ -20939,7 +21257,7 @@ export interface components {
              */
             id: string;
             /**
-             * @description Whether the option is correct (only once the grade is published)
+             * @description Whether the option is correct (only once the teacher releases the answers)
              * @example true
              */
             isCorrect?: boolean;
@@ -21006,11 +21324,11 @@ export interface components {
              */
             clinicalCaseId: string | null;
             /**
-             * @description Points earned (only once the grade is published; null while pending)
+             * @description Points earned (only once the teacher releases the answers; null while pending)
              * @example 1
              */
             earnedScore?: number | null;
-            /** @description Teacher explanation (only once the grade is published) */
+            /** @description Teacher explanation (only once the teacher releases the answers) */
             explanation?: string | null;
             /**
              * @description Hint shown on demand (WORKSHOP evaluations only; null otherwise)
@@ -21038,9 +21356,7 @@ export interface components {
             position: number;
             /** @description Question prompt (Tiptap document) */
             prompt: Record<string, never>;
-            /** @description Correction of an answer the student checked for immediate feedback (QUIZ and WORKSHOP); null when the answer was not checked */
-            reveal: components["schemas"]["StudentAnswerRevealDTO"] | null;
-            /** @description Rubric (only once the grade is published) */
+            /** @description Rubric (only once the teacher releases the answers) */
             rubric?: Record<string, never> | null;
             /**
              * @description Scenario the question belongs to
@@ -22513,7 +22829,7 @@ export interface components {
              * @example POPUP
              * @enum {string}
              */
-            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
+            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST" | "SIM_ALARM";
             /**
              * @description Rated output: the grade feedback id (GRADE_FEEDBACK), the assistant message id (MESSAGE; announced by the SSE start event, so a stopped answer can be rated too) or the AI call id of the analysis (NOTES_ANALYSIS)
              * @example cm1x2y3z40000abcd1234efgh
@@ -22524,7 +22840,7 @@ export interface components {
              * @example MESSAGE
              * @enum {string}
              */
-            targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+            targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
             /**
              * @description Trust and confidence in the answer. Optional Likert score from 1 (worst) to 5 (best); values outside the range are rejected with 422
              * @example 3
@@ -24661,13 +24977,13 @@ export interface operations {
                 /** @description Range end (exclusive, ISO 8601); defaults to now. The range spans at most 366 days */
                 to?: string;
                 /** @description Only ratings of this kind of output */
-                targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+                targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
                 /** @description Only ratings given on this surface; a rating stored without one is read with the surface its target type implies */
-                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
+                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST" | "SIM_ALARM";
                 /** @description Only ratings of answers with this content scope */
                 scope?: "LESSON" | "MODULE" | "PAGE" | "FREE";
                 /** @description Only ratings linked to calls of this use case */
-                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST";
+                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST" | "SIM_CASE_INTERPRETATION" | "SIM_ALARM_HELP";
                 /** @description Only ratings linked to calls served by this provider */
                 provider?: string;
                 /** @description Only ratings linked to calls served by this model */
@@ -24754,13 +25070,13 @@ export interface operations {
                 /** @description Range end (exclusive, ISO 8601); defaults to now. The range spans at most 366 days */
                 to?: string;
                 /** @description Only ratings of this kind of output */
-                targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+                targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
                 /** @description Only ratings given on this surface; a rating stored without one is read with the surface its target type implies */
-                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
+                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST" | "SIM_ALARM";
                 /** @description Only ratings of answers with this content scope */
                 scope?: "LESSON" | "MODULE" | "PAGE" | "FREE";
                 /** @description Only ratings linked to calls of this use case */
-                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST";
+                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST" | "SIM_CASE_INTERPRETATION" | "SIM_ALARM_HELP";
                 /** @description Only ratings linked to calls served by this provider */
                 provider?: string;
                 /** @description Only ratings linked to calls served by this model */
@@ -24849,7 +25165,7 @@ export interface operations {
                 /** @description Range end (exclusive, ISO 8601); defaults to now. The range spans at most 366 days */
                 to?: string;
                 /** @description Only calls of this use case */
-                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST";
+                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST" | "SIM_CASE_INTERPRETATION" | "SIM_ALARM_HELP";
                 /** @description Only calls served by this provider */
                 provider?: string;
                 /** @description Only calls served by this model */
@@ -24934,7 +25250,7 @@ export interface operations {
                 /** @description Range end (exclusive, ISO 8601); defaults to now. The range spans at most 366 days */
                 to?: string;
                 /** @description Only calls of this use case */
-                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST";
+                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST" | "SIM_CASE_INTERPRETATION" | "SIM_ALARM_HELP";
                 /** @description Only calls served by this provider */
                 provider?: string;
                 /** @description Only calls served by this model */
@@ -25534,7 +25850,7 @@ export interface operations {
         parameters: {
             query: {
                 /** @description Kind of AI output */
-                targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+                targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
                 /** @description Rated output id */
                 targetId: string;
             };
@@ -31108,9 +31424,13 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReleaseAttemptResultsDTO"];
+            };
+        };
         responses: {
-            /** @description Grade published successfully */
+            /** @description Results released successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -31121,7 +31441,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Validation error or malformed request */
+            /** @description Validation error */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -34300,6 +34620,76 @@ export interface operations {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
                         data: components["schemas"]["MyGroupsDTO"];
                     };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getStudentMemberships: {
+        parameters: {
+            query: {
+                /** @description Users whose active STUDENT group is read (comma-separated or repeated query parameter, at most 100) */
+                userIds: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Student memberships retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
+                        data: components["schemas"]["StudentMembershipDTO"][];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Unauthorized */
@@ -38830,107 +39220,6 @@ export interface operations {
             };
         };
     };
-    checkAnswer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                attemptId: string;
-                questionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CheckEvaluationAnswerDTO"];
-            };
-        };
-        responses: {
-            /** @description Answer checked successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIResponseEnvelope"] & {
-                        data: components["schemas"]["CheckEvaluationAnswerResponseDTO"];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description The caller lacks the required permission or is not allowed to act on this resource */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Attempt or question not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description The attempt is closed, read-only or past its deadline, or the answer was already checked */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description EXAM evaluation, non-choice question, or options that do not match the question */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Unexpected server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
     getMyGrades: {
         parameters: {
             query?: never;
@@ -39796,7 +40085,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
-                        data: (components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["AttemptResetNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"])[];
+                        data: (components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["AttemptResetNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["GroupMemberAddedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"])[];
                     };
                 };
             };
@@ -40023,7 +40312,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIResponseEnvelope"] & {
-                        data: components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["AttemptResetNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"];
+                        data: components["schemas"]["ReservationPreemptedNotificationDTO"] | components["schemas"]["ReservationCancelledNotificationDTO"] | components["schemas"]["EvaluationActivatedNotificationDTO"] | components["schemas"]["GradePublishedNotificationDTO"] | components["schemas"]["FeedbackReadyNotificationDTO"] | components["schemas"]["AttemptResetNotificationDTO"] | components["schemas"]["RoleChangedNotificationDTO"] | components["schemas"]["GroupMemberAddedNotificationDTO"] | components["schemas"]["VentilatorOfflineNotificationDTO"];
                     };
                 };
             };
@@ -45681,6 +45970,144 @@ export interface operations {
             };
         };
     };
+    realAlarmHelp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RealAlarmHelpDTO"];
+            };
+        };
+        responses: {
+            /** @description Server-sent event stream with the rules and the suggestion */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests or daily AI quota reached (Retry-After header) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    realAssist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RealAssistDTO"];
+            };
+        };
+        responses: {
+            /** @description Server-sent event stream with the answer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests or daily AI quota reached (Retry-After header) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     reserve: {
         parameters: {
             query?: never;
@@ -46220,6 +46647,95 @@ export interface operations {
                 };
             };
             /** @description Too many requests (rate limit or quota); retry after the time given by the Retry-After header when present */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    alarmHelp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulationAlarmHelpDTO"];
+            };
+        };
+        responses: {
+            /** @description Server-sent event stream with the rules and the suggestion */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing permission, session of another user or assistance disabled in this exam */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Simulation session not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The simulation session is not active */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many requests or daily AI quota reached (Retry-After header) */
             429: {
                 headers: {
                     [name: string]: unknown;

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Definición simulable de un caso clínico
  * Descripción: Tipos de los bloques JSON del caso clínico (historia, mecánica respiratoria, ajustes iniciales del ventilador, estado inicial, eventos programados, objetivos y rúbrica) y las vistas que expone la fachada (instantánea del caso y caso listo para simular) con nombres y unidades alineados al motor fisiológico, sin depender de la feature de simulación; antecedentes con alergias y signos vitales iniciales del paciente, solo para mostrar
- * Versión: 1.2
+ * Versión: 1.3 (evolución opcional del paciente en la mecánica)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -72,6 +72,20 @@ export interface DeteriorationProfile {
   readonly maxShuntIncrease: number;
 }
 
+/** Optional time evolution of the patient (engine 2.0.0); without it the session derives one from the deterioration */
+export interface ClinicalCaseEvolution {
+  readonly initialSeverity: number;
+  readonly minSeverity: number;
+  readonly progressionRatePerMin: number;
+  readonly viliRatePerMin: number;
+  readonly recoveryRatePerMin: number;
+  readonly arrestAfterCriticalMin: number;
+  readonly deathAfterArrestMin: number;
+  readonly baselineHeartRateBpm: number;
+  /** Optional overrides of the engine insult and critical thresholds (same names as the engine) */
+  readonly thresholds?: Readonly<Record<string, number>>;
+}
+
 export interface ClinicalCaseMechanics {
   readonly complianceMlPerCmH2O: number;
   readonly resistanceCmH2OPerLps: number;
@@ -86,6 +100,7 @@ export interface ClinicalCaseMechanics {
   readonly hemodynamics: HemodynamicEffectProfile;
   readonly gasTimeConstants: GasTimeConstants;
   readonly deterioration: DeteriorationProfile;
+  readonly evolution?: ClinicalCaseEvolution;
 }
 
 export interface ClinicalCaseVentilatorSettings {

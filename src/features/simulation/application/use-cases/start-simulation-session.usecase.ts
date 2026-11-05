@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso StartSimulationSessionUseCase
  * Descripción: Inicia una sesión de simulación con eventos con un multiplicador de tiempo permitido por los ajustes. Modo libre: caso publicado y listo para simular según ClinicalCasesFacade, sin depender de reservas. Modo examen: intento propio en curso y vigente y pregunta de tipo SIMULATION de la misma evaluación; el caso sale de la pregunta (se ignora el del cliente) y la rúbrica de la pregunta, del caso o la de por defecto debe ser válida. El servidor genera la semilla, fija ENGINE_VERSION, valida el caso en el motor y registra el evento START con una copia de los umbrales vigentes de la rúbrica por defecto, con los que se califica la sesión aunque el ajuste cambie después. Paciente propio (solo modo libre): sin caseId el caso base sale de la condición; buildPatientOverrides resuelve los ajustes, el caso resultante se valida con las reglas de edición de casos y se guardan en patient_profile (formulario, ajustes y versión del mapeo); la respuesta devuelve el caso del motor ya con el paciente
- * Versión: 1.3
+ * Versión: 1.4 (interpretación del caso por IA en sesiones libres)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,8 @@ import { type ITransactionManager, TRANSACTION_MANAGER_TOKEN } from "@/common/ap
 import { generateId } from "@/common/domain/utils/generate-id";
 import { ClinicalCasesFacade } from "@/features/clinical-cases/application/services/clinical-cases.facade";
 import { type StartSimulationSessionCommand } from "@/features/simulation/application/commands/start-simulation-session.command";
+import { type CaseInterpretationRecord } from "@/features/simulation/application/interpretation/case-interpretation";
+import { CaseInterpretationService } from "@/features/simulation/application/interpretation/case-interpretation.service";
 import {
   EXAM_ATTEMPT_READER_TOKEN,
   type ExamAttemptInfo,
@@ -28,7 +30,7 @@ import {
 } from "@/features/simulation/application/ports/simulation-seed-generator.interface";
 import { type StartSimulationSessionResult } from "@/features/simulation/application/results/simulation-session.results";
 import { type SimulationCaseDefinition } from "@/features/simulation/application/services/simulation-case.mapper";
-import { SimulationSessionRuntime } from "@/features/simulation/application/services/simulation-session-runtime.service";
+import { SimulationSessionRuntime, withInterpretation } from "@/features/simulation/application/services/simulation-session-runtime.service";
 import { createSimulation, ENGINE_VERSION, EngineValidationError } from "@/features/simulation/domain/engine";
 import { SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
 import {
@@ -81,6 +83,7 @@ export class StartSimulationSessionUseCase {
     private readonly _transactionManager: ITransactionManager,
     private readonly _clinicalCasesFacade: ClinicalCasesFacade,
     private readonly _runtime: SimulationSessionRuntime,
+    private readonly _caseInterpretation: CaseInterpretationService,
   ) {}
 
   public async execute(command: StartSimulationSessionCommand): Promise<StartSimulationSessionResult> {
@@ -88,7 +91,9 @@ export class StartSimulationSessionUseCase {
 
     const now: Date = new Date();
     const resolved: ResolvedSessionCase =
-      command.mode === EXAM_SIMULATION_MODE ? await this._resolveExamCase(command, now) : await this._resolveFreeCase(command);
+      command.mode === EXAM_SIMULATION_MODE
+        ? await this._resolveExamCase(command, now)
+        : await this._interpret(await this._resolveFreeCase(command), command);
     const seed: number = this._seedGenerator.next();
 
     try {
@@ -139,6 +144,21 @@ export class StartSimulationSessionUseCase {
     });
 
     return { session, expiresAt: resolved.expiresAt, engineCase: resolved.caseDefinition.engineCase };
+  }
+
+  // FREE sessions only: an exam keeps the curated case so every student gets the same patient.
+  private async _interpret(resolved: ResolvedSessionCase, command: StartSimulationSessionCommand): Promise<ResolvedSessionCase> {
+    const interpretation: CaseInterpretationRecord = await this._caseInterpretation.interpret({
+      caseDefinition: resolved.caseDefinition,
+      patient: command.patient,
+      userId: command.userId,
+    });
+
+    return {
+      ...resolved,
+      caseDefinition: withInterpretation(resolved.caseDefinition, interpretation.applied),
+      patientProfile: { ...(resolved.patientProfile ?? {}), interpretation: { ...interpretation } },
+    };
   }
 
   private async _resolveFreeCase(command: StartSimulationSessionCommand): Promise<ResolvedSessionCase> {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Value object AiUseCase
  * Descripción: Enumera los casos de uso del gateway de IA (retroalimentación de calificaciones, análisis de notas, profundización de páginas, preguntas de lección, preguntas de módulo, chat libre, verificación de tema y asistencia en simulación) y valida sus valores
- * Versión: 1.1
+ * Versión: 1.2 (casos de uso del simulador: interpretación del caso y ayuda de alarmas)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,7 +18,9 @@ export type AiUseCaseValue =
   | "MODULE_QA"
   | "FREE_CHAT"
   | "TOPIC_CHECK"
-  | "SIM_ASSIST";
+  | "SIM_ASSIST"
+  | "SIM_CASE_INTERPRETATION"
+  | "SIM_ALARM_HELP";
 
 export const GRADE_FEEDBACK_USE_CASE: AiUseCaseValue = "GRADE_FEEDBACK";
 
@@ -36,6 +38,10 @@ export const TOPIC_CHECK_USE_CASE: AiUseCaseValue = "TOPIC_CHECK";
 
 export const SIM_ASSIST_USE_CASE: AiUseCaseValue = "SIM_ASSIST";
 
+export const SIM_CASE_INTERPRETATION_USE_CASE: AiUseCaseValue = "SIM_CASE_INTERPRETATION";
+
+export const SIM_ALARM_HELP_USE_CASE: AiUseCaseValue = "SIM_ALARM_HELP";
+
 export const AI_USE_CASE_VALUES: readonly AiUseCaseValue[] = [
   GRADE_FEEDBACK_USE_CASE,
   NOTES_ANALYSIS_USE_CASE,
@@ -45,6 +51,8 @@ export const AI_USE_CASE_VALUES: readonly AiUseCaseValue[] = [
   FREE_CHAT_USE_CASE,
   TOPIC_CHECK_USE_CASE,
   SIM_ASSIST_USE_CASE,
+  SIM_CASE_INTERPRETATION_USE_CASE,
+  SIM_ALARM_HELP_USE_CASE,
 ] as const;
 
 export function isAiUseCaseValue(value: string): value is AiUseCaseValue {

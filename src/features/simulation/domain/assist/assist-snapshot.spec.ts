@@ -8,7 +8,19 @@
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { ASSIST_MAX_RECENT_CHANGES, ASSIST_SNAPSHOT_MAX_LENGTH, AssistParamChange, AssistSnapshotInput, buildAssistSnapshot } from "./assist-snapshot";
+import { EngineMetrics, replay } from "../engine";
+import { buildTestCase } from "../engine/engine-test-cases-spec";
+
+import {
+  ASSIST_MAX_RECENT_CHANGES,
+  ASSIST_SNAPSHOT_MAX_LENGTH,
+  ASSIST_TREND_WINDOW_MIN,
+  AssistParamChange,
+  AssistSnapshotInput,
+  AssistTrendPoint,
+  buildAssistSnapshot,
+  buildAssistTrends,
+} from "./assist-snapshot";
 import { buildAssistInput } from "./assist-test-input-spec";
 
 interface ParsedSnapshot {
@@ -81,5 +93,19 @@ describe("buildAssistSnapshot", () => {
     const snapshot: string = buildAssistSnapshot(leaky);
 
     expect(snapshot).not.toMatch(/user-123|correounivalle|Ana Pérez|Juan Gómez|teacher-9|userId|email|Name/);
+  });
+});
+
+describe("buildAssistTrends", () => {
+  it("samples one point per patient minute over the trend window and the snapshot carries them", () => {
+    const timeline: readonly EngineMetrics[] = replay(buildTestCase(), 1, [], 3 * 60000, { noise: false, timeMultiplier: 4 }).metricsTimeline;
+    const trends: AssistTrendPoint[] = buildAssistTrends(timeline, 4);
+    const snapshot: { trends?: unknown[] } = JSON.parse(buildAssistSnapshot({ ...buildAssistInput(), trends })) as { trends?: unknown[] };
+
+    expect(trends).toHaveLength(ASSIST_TREND_WINDOW_MIN + 1);
+    expect(trends[trends.length - 1].simTimeMs).toBe(timeline[timeline.length - 1].simTimeMs);
+    // 60 patient-seconds = 15 simulated seconds at x4
+    expect(trends[1].simTimeMs - trends[0].simTimeMs).toBe(15000);
+    expect(snapshot.trends).toHaveLength(trends.length);
   });
 });
