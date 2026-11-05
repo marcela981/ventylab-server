@@ -8428,7 +8428,7 @@ export interface components {
              * @example POPUP
              * @enum {string}
              */
-            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
+            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST" | "SIM_ALARM";
             /**
              * @description Rated output id
              * @example cm1x2y3z40000abcd1234efgh
@@ -8439,7 +8439,7 @@ export interface components {
              * @example MESSAGE
              * @enum {string}
              */
-            targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+            targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
             /**
              * @description Trust and confidence in the answer (1–5)
              * @example 3
@@ -22577,7 +22577,7 @@ export interface components {
              * @example POPUP
              * @enum {string}
              */
-            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
+            surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST" | "SIM_ALARM";
             /**
              * @description Rated output: the grade feedback id (GRADE_FEEDBACK), the assistant message id (MESSAGE; announced by the SSE start event, so a stopped answer can be rated too) or the AI call id of the analysis (NOTES_ANALYSIS)
              * @example cm1x2y3z40000abcd1234efgh
@@ -22588,7 +22588,7 @@ export interface components {
              * @example MESSAGE
              * @enum {string}
              */
-            targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+            targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
             /**
              * @description Trust and confidence in the answer. Optional Likert score from 1 (worst) to 5 (best); values outside the range are rejected with 422
              * @example 3
@@ -24725,13 +24725,13 @@ export interface operations {
                 /** @description Range end (exclusive, ISO 8601); defaults to now. The range spans at most 366 days */
                 to?: string;
                 /** @description Only ratings of this kind of output */
-                targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+                targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
                 /** @description Only ratings given on this surface; a rating stored without one is read with the surface its target type implies */
-                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
+                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST" | "SIM_ALARM";
                 /** @description Only ratings of answers with this content scope */
                 scope?: "LESSON" | "MODULE" | "PAGE" | "FREE";
                 /** @description Only ratings linked to calls of this use case */
-                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST";
+                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST" | "SIM_CASE_INTERPRETATION" | "SIM_ALARM_HELP";
                 /** @description Only ratings linked to calls served by this provider */
                 provider?: string;
                 /** @description Only ratings linked to calls served by this model */
@@ -24818,13 +24818,13 @@ export interface operations {
                 /** @description Range end (exclusive, ISO 8601); defaults to now. The range spans at most 366 days */
                 to?: string;
                 /** @description Only ratings of this kind of output */
-                targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+                targetType?: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
                 /** @description Only ratings given on this surface; a rating stored without one is read with the surface its target type implies */
-                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
+                surface?: "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST" | "SIM_ALARM";
                 /** @description Only ratings of answers with this content scope */
                 scope?: "LESSON" | "MODULE" | "PAGE" | "FREE";
                 /** @description Only ratings linked to calls of this use case */
-                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST";
+                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST" | "SIM_CASE_INTERPRETATION" | "SIM_ALARM_HELP";
                 /** @description Only ratings linked to calls served by this provider */
                 provider?: string;
                 /** @description Only ratings linked to calls served by this model */
@@ -24913,7 +24913,7 @@ export interface operations {
                 /** @description Range end (exclusive, ISO 8601); defaults to now. The range spans at most 366 days */
                 to?: string;
                 /** @description Only calls of this use case */
-                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST";
+                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST" | "SIM_CASE_INTERPRETATION" | "SIM_ALARM_HELP";
                 /** @description Only calls served by this provider */
                 provider?: string;
                 /** @description Only calls served by this model */
@@ -24998,7 +24998,7 @@ export interface operations {
                 /** @description Range end (exclusive, ISO 8601); defaults to now. The range spans at most 366 days */
                 to?: string;
                 /** @description Only calls of this use case */
-                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST";
+                useCase?: "GRADE_FEEDBACK" | "NOTES_ANALYSIS" | "PAGE_DEEPEN" | "LESSON_QA" | "MODULE_QA" | "FREE_CHAT" | "TOPIC_CHECK" | "SIM_ASSIST" | "SIM_CASE_INTERPRETATION" | "SIM_ALARM_HELP";
                 /** @description Only calls served by this provider */
                 provider?: string;
                 /** @description Only calls served by this model */
@@ -25598,7 +25598,7 @@ export interface operations {
         parameters: {
             query: {
                 /** @description Kind of AI output */
-                targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+                targetType: "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
                 /** @description Rated output id */
                 targetId: string;
             };

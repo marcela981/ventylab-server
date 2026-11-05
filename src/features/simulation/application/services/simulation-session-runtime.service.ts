@@ -16,6 +16,7 @@ import { generateId } from "@/common/domain/utils/generate-id";
 import { type Paginated } from "@/common/domain/utils/paginated";
 import { ClinicalCasesFacade } from "@/features/clinical-cases/application/services/clinical-cases.facade";
 import { type ClinicalCaseSnapshot } from "@/features/clinical-cases/domain/read-models/clinical-case-simulation.read-model";
+import { applyInterpretation, type InterpretationValues } from "@/features/simulation/application/interpretation/case-interpretation";
 import {
   EXAM_ATTEMPT_READER_TOKEN,
   type ExamAttemptInfo,
@@ -29,7 +30,7 @@ import {
 } from "@/features/simulation/application/tokens/simulation-session-settings.token";
 import { ENGINE_VERSION, replay, EngineValidationError, type ReplayResult } from "@/features/simulation/domain/engine";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
-import { type PatientOverrides } from "@/features/simulation/domain/patient/patient-overrides";
+import { type PatientOverrides, type StoredCaseInterpretation } from "@/features/simulation/domain/patient/patient-overrides";
 import {
   type SimulationEventRecord,
   type SimulationSessionSummary,
@@ -63,6 +64,11 @@ export interface SimulationSessionContext {
 }
 
 export type SimulationEndReason = "CLIENT" | "DEADLINE";
+
+/** The case definition with the engine parameters interpreted at session start */
+export function withInterpretation(definition: SimulationCaseDefinition, applied: InterpretationValues): SimulationCaseDefinition {
+  return { ...definition, engineCase: applyInterpretation(definition.engineCase, applied) };
+}
 
 const ACTIVE_SWEEP_LIMIT: number = 100;
 
@@ -113,7 +119,10 @@ export class SimulationSessionRuntime {
 
   /** The engine case of a session: its case with the overrides of its own patient, if any */
   public async loadSessionCase(session: SimulationSession): Promise<SimulationCaseDefinition> {
-    return await this.loadCase(session.caseId, session.patientProfile?.overrides, session.engineVersion);
+    const definition: SimulationCaseDefinition = await this.loadCase(session.caseId, session.patientProfile?.overrides, session.engineVersion);
+    const interpretation: StoredCaseInterpretation | undefined = session.patientProfile?.interpretation;
+
+    return interpretation === undefined ? definition : withInterpretation(definition, interpretation.applied);
   }
 
   public async loadContext(session: SimulationSession, transaction?: unknown): Promise<SimulationSessionContext> {

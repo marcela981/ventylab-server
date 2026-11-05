@@ -18,6 +18,7 @@ import { ClinicalCasesModule } from "@/features/clinical-cases/clinical-cases.mo
 import { GroupsModule } from "@/features/groups/groups.module";
 import { ReservationsModule } from "@/features/reservations/reservations.module";
 import { AssistSimulationUseCase } from "@/features/simulation/application/assist/assist-simulation.usecase";
+import { CaseInterpretationService } from "@/features/simulation/application/interpretation/case-interpretation.service";
 import { EXAM_ATTEMPT_READER_TOKEN } from "@/features/simulation/application/ports/exam-attempt-reader.interface";
 import { SIMULATION_SEED_GENERATOR_TOKEN } from "@/features/simulation/application/ports/simulation-seed-generator.interface";
 import { PatientSimulationSessionsService } from "@/features/simulation/application/services/patient-simulation-sessions.service";
@@ -130,6 +131,7 @@ function createSimulationSettings(configService: ConfigService<EnvironmentVariab
     SimulationFacade,
     SimulationAssistContextService,
     AssistSimulationUseCase,
+    CaseInterpretationService,
   ],
   exports: [SIMULATOR_SESSIONS_REPOSITORY_TOKEN, SimulationFacade, SimulationAssistContextService],
 })

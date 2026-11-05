@@ -2326,7 +2326,8 @@
               "ASSISTANT",
               "NOTES_ANALYSIS",
               "EVALUATION_FEEDBACK",
-              "SIMULATOR_ASSIST"
+              "SIMULATOR_ASSIST",
+              "SIM_ALARM"
             ],
             "example": "POPUP",
             "type": "string"
@@ -2342,7 +2343,8 @@
               "GRADE_FEEDBACK",
               "MESSAGE",
               "NOTES_ANALYSIS",
-              "SIM_ASSIST"
+              "SIM_ASSIST",
+              "AI_CALL"
             ],
             "example": "MESSAGE",
             "type": "string"
@@ -25505,7 +25507,8 @@
               "ASSISTANT",
               "NOTES_ANALYSIS",
               "EVALUATION_FEEDBACK",
-              "SIMULATOR_ASSIST"
+              "SIMULATOR_ASSIST",
+              "SIM_ALARM"
             ],
             "example": "POPUP",
             "type": "string"
@@ -25521,7 +25524,8 @@
               "GRADE_FEEDBACK",
               "MESSAGE",
               "NOTES_ANALYSIS",
-              "SIM_ASSIST"
+              "SIM_ASSIST",
+              "AI_CALL"
             ],
             "example": "MESSAGE",
             "type": "string"
@@ -29412,7 +29416,8 @@
                 "GRADE_FEEDBACK",
                 "MESSAGE",
                 "NOTES_ANALYSIS",
-                "SIM_ASSIST"
+                "SIM_ASSIST",
+                "AI_CALL"
               ],
               "example": "MESSAGE",
               "type": "string"
@@ -29430,7 +29435,8 @@
                 "ASSISTANT",
                 "NOTES_ANALYSIS",
                 "EVALUATION_FEEDBACK",
-                "SIMULATOR_ASSIST"
+                "SIMULATOR_ASSIST",
+                "SIM_ALARM"
               ],
               "example": "POPUP",
               "type": "string"
@@ -29466,7 +29472,9 @@
                 "MODULE_QA",
                 "FREE_CHAT",
                 "TOPIC_CHECK",
-                "SIM_ASSIST"
+                "SIM_ASSIST",
+                "SIM_CASE_INTERPRETATION",
+                "SIM_ALARM_HELP"
               ],
               "example": "FREE_CHAT",
               "type": "string"
@@ -29656,7 +29664,8 @@
                 "GRADE_FEEDBACK",
                 "MESSAGE",
                 "NOTES_ANALYSIS",
-                "SIM_ASSIST"
+                "SIM_ASSIST",
+                "AI_CALL"
               ],
               "example": "MESSAGE",
               "type": "string"
@@ -29674,7 +29683,8 @@
                 "ASSISTANT",
                 "NOTES_ANALYSIS",
                 "EVALUATION_FEEDBACK",
-                "SIMULATOR_ASSIST"
+                "SIMULATOR_ASSIST",
+                "SIM_ALARM"
               ],
               "example": "POPUP",
               "type": "string"
@@ -29710,7 +29720,9 @@
                 "MODULE_QA",
                 "FREE_CHAT",
                 "TOPIC_CHECK",
-                "SIM_ASSIST"
+                "SIM_ASSIST",
+                "SIM_CASE_INTERPRETATION",
+                "SIM_ALARM_HELP"
               ],
               "example": "FREE_CHAT",
               "type": "string"
@@ -29918,7 +29930,9 @@
                 "MODULE_QA",
                 "FREE_CHAT",
                 "TOPIC_CHECK",
-                "SIM_ASSIST"
+                "SIM_ASSIST",
+                "SIM_CASE_INTERPRETATION",
+                "SIM_ALARM_HELP"
               ],
               "example": "FREE_CHAT",
               "type": "string"
@@ -30102,7 +30116,9 @@
                 "MODULE_QA",
                 "FREE_CHAT",
                 "TOPIC_CHECK",
-                "SIM_ASSIST"
+                "SIM_ASSIST",
+                "SIM_CASE_INTERPRETATION",
+                "SIM_ALARM_HELP"
               ],
               "example": "FREE_CHAT",
               "type": "string"
@@ -31312,7 +31328,8 @@
                 "GRADE_FEEDBACK",
                 "MESSAGE",
                 "NOTES_ANALYSIS",
-                "SIM_ASSIST"
+                "SIM_ASSIST",
+                "AI_CALL"
               ],
               "example": "MESSAGE",
               "type": "string"

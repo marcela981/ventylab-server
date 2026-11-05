@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Modelos de lectura de las valoraciones de IA
  * Descripción: Tipos de objetivo valorable y dimensiones QUEST (Tam et al. 2024, npj Digital Medicine), casos de uso de IA esperados por tipo de objetivo, filtros y agregados de estadísticas por caso de uso, proveedor, modelo y versión de prompt, y filas exportables sin identificador de usuario; superficie (POPUP, ACCORDION, ASSISTANT, NOTES_ANALYSIS) y alcance (LESSON, MODULE, PAGE, FREE) de la valoración como filtro, grupo y columna de exportación, con el estado de la llamada (ABORTED para respuestas detenidas)
- * Versión: 1.3
+ * Versión: 1.4 (casos de uso del simulador: interpretación del caso y ayuda de alarmas)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -10,13 +10,29 @@
  */
 import { type AiTelemetryUseCaseValue } from "@/features/ai-telemetry/domain/read-models/ai-call-log.read-model";
 
-export type AiRatingTargetTypeValue = "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST";
+// AI_CALL: an answer that is not persisted elsewhere (simulator alarm help, real-mode assistance); targetId = ai_call_logs.id.
+export type AiRatingTargetTypeValue = "GRADE_FEEDBACK" | "MESSAGE" | "NOTES_ANALYSIS" | "SIM_ASSIST" | "AI_CALL";
 
-export const AI_RATING_TARGET_TYPE_VALUES: readonly AiRatingTargetTypeValue[] = ["GRADE_FEEDBACK", "MESSAGE", "NOTES_ANALYSIS", "SIM_ASSIST"] as const;
+export const AI_RATING_TARGET_TYPE_VALUES: readonly AiRatingTargetTypeValue[] = ["GRADE_FEEDBACK", "MESSAGE", "NOTES_ANALYSIS", "SIM_ASSIST", "AI_CALL"] as const;
 
-export type AiRatingSurfaceValue = "POPUP" | "ACCORDION" | "ASSISTANT" | "NOTES_ANALYSIS" | "EVALUATION_FEEDBACK" | "SIMULATOR_ASSIST";
+export type AiRatingSurfaceValue =
+  | "POPUP"
+  | "ACCORDION"
+  | "ASSISTANT"
+  | "NOTES_ANALYSIS"
+  | "EVALUATION_FEEDBACK"
+  | "SIMULATOR_ASSIST"
+  | "SIM_ALARM";
 
-export const AI_RATING_SURFACE_VALUES: readonly AiRatingSurfaceValue[] = ["POPUP", "ACCORDION", "ASSISTANT", "NOTES_ANALYSIS", "EVALUATION_FEEDBACK", "SIMULATOR_ASSIST"] as const;
+export const AI_RATING_SURFACE_VALUES: readonly AiRatingSurfaceValue[] = [
+  "POPUP",
+  "ACCORDION",
+  "ASSISTANT",
+  "NOTES_ANALYSIS",
+  "EVALUATION_FEEDBACK",
+  "SIMULATOR_ASSIST",
+  "SIM_ALARM",
+] as const;
 
 // Surface a rating without one is read as (no backfill): every target type has a single surface except MESSAGE (popup, accordion or assistant).
 export const AI_RATING_TARGET_DEFAULT_SURFACE: Readonly<Partial<Record<AiRatingTargetTypeValue, AiRatingSurfaceValue>>> = {
@@ -50,6 +66,7 @@ export const AI_RATING_TARGET_USE_CASES: Readonly<Record<AiRatingTargetTypeValue
   MESSAGE: ["PAGE_DEEPEN", "LESSON_QA", "MODULE_QA", "FREE_CHAT"],
   NOTES_ANALYSIS: ["NOTES_ANALYSIS"],
   SIM_ASSIST: ["SIM_ASSIST"],
+  AI_CALL: ["SIM_ALARM_HELP", "SIM_ASSIST"],
 };
 
 // Group value for ratings without a linked AI call (or a call without that attribute).

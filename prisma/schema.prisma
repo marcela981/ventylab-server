@@ -1858,6 +1858,8 @@ enum AiUseCase {
   FREE_CHAT
   TOPIC_CHECK
   SIM_ASSIST
+  SIM_CASE_INTERPRETATION
+  SIM_ALARM_HELP
 }
 
 enum AiCallStatus {
@@ -1889,6 +1891,7 @@ enum AiRatingSurface {
   NOTES_ANALYSIS
   EVALUATION_FEEDBACK
   SIMULATOR_ASSIST
+  SIM_ALARM
 }
 
 // Content scope of the rated answer; derived from the conversation for MESSAGE targets.
@@ -1904,6 +1907,7 @@ enum AiRatingTargetType {
   MESSAGE
   NOTES_ANALYSIS
   SIM_ASSIST
+  AI_CALL
 }
 
 model AiCallLog {

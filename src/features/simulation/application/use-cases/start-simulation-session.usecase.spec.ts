@@ -11,8 +11,10 @@
 import { ClinicalCasePhysiologicalRangeError, ClinicalCaseUnavailableError } from "@/features/clinical-cases/domain/clinical-cases.errors";
 import { StartSimulationSessionCommand } from "@/features/simulation/application/commands/start-simulation-session.command";
 import { type StartSimulationSessionResult } from "@/features/simulation/application/results/simulation-session.results";
+import { type SimulationCaseDefinition } from "@/features/simulation/application/services/simulation-case.mapper";
 import {
   createSimulationTestContext,
+  caseInterpretationAnswering,
   FixedSeedGenerator,
   normalLungSnapshot,
   type SimulationTestContext,
@@ -74,6 +76,7 @@ describe("StartSimulationSessionUseCase", () => {
       context.transactionManager,
       context.clinicalCases.asFacade(),
       context.runtime,
+      caseInterpretationAnswering(),
     );
     context.clinicalCases.cases.set("case-exam", normalLungSnapshot({ id: "case-exam", status: "DRAFT" }));
     context.examReader.attempts.set("attempt-1", {
@@ -99,6 +102,7 @@ describe("StartSimulationSessionUseCase", () => {
       restricted.transactionManager,
       restricted.clinicalCases.asFacade(),
       restricted.runtime,
+      caseInterpretationAnswering(),
     );
 
     const start: Promise<StartSimulationSessionResult> = restrictedUseCase.execute(
@@ -269,6 +273,60 @@ describe("StartSimulationSessionUseCase", () => {
       expect(result.session.caseId).toBe("case-exam");
       expect(result.session.patientProfile).toBeUndefined();
       expect(result.engineCase.mechanics.complianceMlPerCmH2O).toBe(60);
+    });
+  });
+
+  describe("case interpretation", () => {
+    function useCaseWith(content?: string): StartSimulationSessionUseCase {
+      return new StartSimulationSessionUseCase(
+        context.repository,
+        context.examReader,
+        new FixedSeedGenerator(),
+        context.transactionManager,
+        context.clinicalCases.asFacade(),
+        context.runtime,
+        caseInterpretationAnswering(content),
+      );
+    }
+
+    it("applies the AI values within their band, rejects the rest and replays the same patient", async () => {
+      const curated: SimulationCaseDefinition = await context.runtime.loadCase("case-normal");
+      const compliance: number = curated.engineCase.mechanics.complianceMlPerCmH2O * 1.2;
+      const answer: string = JSON.stringify({
+        complianceMlPerCmH2O: compliance,
+        resistanceCmH2OPerLps: curated.engineCase.mechanics.resistanceCmH2OPerLps * 3,
+        trajectory: "STABLE",
+        rationale: "Distensibilidad algo mayor por la historia.",
+      });
+
+      const result: StartSimulationSessionResult = await useCaseWith(answer).execute(
+        new StartSimulationSessionCommand({ userId: STUDENT_ID, mode: "FREE", caseId: "case-normal", timeMultiplier: 1 }),
+      );
+      const replayed: SimulationCaseDefinition = await context.runtime.loadSessionCase(result.session);
+
+      expect(result.session.patientProfile?.interpretation).toMatchObject({ source: "LLM", rejected: ["resistanceCmH2OPerLps"], trajectory: "STABLE" });
+      expect(result.engineCase.mechanics.complianceMlPerCmH2O).toBeCloseTo(compliance, 6);
+      expect(result.engineCase.mechanics.resistanceCmH2OPerLps).toBe(curated.engineCase.mechanics.resistanceCmH2OPerLps);
+      expect(replayed.engineCase).toEqual(result.engineCase);
+    });
+
+    it("keeps the curated values without blocking the start when the AI is unavailable or answers invalid JSON", async () => {
+      const curated: SimulationCaseDefinition = await context.runtime.loadCase("case-normal");
+
+      for (const content of [undefined, "no es JSON"]) {
+        const result: StartSimulationSessionResult = await useCaseWith(content).execute(
+          new StartSimulationSessionCommand({ userId: STUDENT_ID, mode: "FREE", caseId: "case-normal", timeMultiplier: 1 }),
+        );
+
+        expect(result.session.patientProfile?.interpretation?.source).toBe("CURATED");
+        expect(result.engineCase).toEqual(curated.engineCase);
+      }
+    });
+
+    it("never interprets an exam case", async () => {
+      const result: StartSimulationSessionResult = await useCaseWith(JSON.stringify({ complianceMlPerCmH2O: 1 })).execute(examCommand());
+
+      expect(result.session.patientProfile).toBeUndefined();
     });
   });
 });

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registro de plantillas de prompt de IA
  * Descripción: Define una plantilla versionada (semver) por caso de uso de IA con su entrada tipada (LESSON_QA y MODULE_QA comparten la plantilla de preguntas sobre contenido); el contenido externo va siempre delimitado; SIM_ASSIST guía al estudiante (qué va bien, qué revisar y por qué) sin dictar valores y, sin pregunta, analiza el estado actual; v1.3: GRADE_FEEDBACK de evaluaciones y NOTES_ANALYSIS (2.0.0) se arman aquí con entrada estructurada e idioma en lugar de recibir el prompt del consumidor, así promptVersion sigue el texto real; la retroalimentación de casos clínicos sigue enviando su prompt de consumidor (variante 1.0.0 de GRADE_FEEDBACK)
- * Versión: 1.3
+ * Versión: 1.4 (SIM_ASSIST 1.2.0 con tendencias y sugerencias priorizadas; SIM_CASE_INTERPRETATION y SIM_ALARM_HELP)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,11 +14,19 @@ import { delimit } from "@/features/ai/domain/prompts/delimit";
 import { buildGradeFeedbackPrompt, GRADE_FEEDBACK_PROMPT_VERSION, type GradeFeedbackPromptInput } from "@/features/ai/domain/prompts/grade-feedback-prompt";
 import { buildNotesAnalysisPrompt, NOTES_ANALYSIS_PROMPT_VERSION, type NotesAnalysisPromptInput } from "@/features/ai/domain/prompts/notes-analysis-prompt";
 import { type AiMessage, type BuiltPrompt, type PromptTemplate } from "@/features/ai/domain/prompts/prompt-template";
+import {
+  buildSimAlarmHelpPrompt,
+  buildSimCaseInterpretationPrompt,
+  SIM_ALARM_HELP_PROMPT_VERSION,
+  SIM_CASE_INTERPRETATION_PROMPT_VERSION,
+  type SimAlarmHelpPromptInput,
+  type SimCaseInterpretationPromptInput,
+} from "@/features/ai/domain/prompts/simulator-prompts";
 import { type AiUseCaseValue } from "@/features/ai/domain/value-objects/ai-use-case";
 
 export const MAX_TOPIC_CHECK_MESSAGE_LENGTH: number = 2000;
 
-const SIM_ASSIST_STATE_MAX_LENGTH: number = 3000;
+const SIM_ASSIST_STATE_MAX_LENGTH: number = 4000;
 const SIM_ASSIST_QUESTION_MAX_LENGTH: number = 1000;
 const SIM_ASSIST_DEFAULT_QUESTION: string = "(Sin pregunta: analiza el estado actual de la simulación.)";
 
@@ -27,8 +35,9 @@ const SIM_ASSIST_INSTRUCTIONS: string = [
   "Eres un tutor que acompaña al estudiante mientras ajusta un ventilador simulado. Tu objetivo es que aprenda a razonar, no resolverle el caso.",
   "1. Señala primero qué está bien (objetivos cumplidos, presiones seguras) y por qué.",
   "2. Explica qué está mal o en riesgo (alarmas, presión meseta o de distensión altas, volumen por kg excesivo, auto-PEEP, oxigenación o ventilación fuera de objetivo) y qué mecanismo fisiológico lo explica.",
-  "3. Indica qué variable conviene revisar, en qué dirección y por qué, relacionándola con los cambios recientes de parámetros; no dictes el valor exacto a programar.",
-  "4. Si el estudiante hace una pregunta, respóndela con ese mismo enfoque guiado.",
+  "3. Prioriza como máximo tres sugerencias: qué variable conviene revisar, en qué dirección y por qué, relacionándola con los cambios recientes de parámetros y con las tendencias (estado del paciente, gases, hemodinamia); no dictes el valor exacto a programar.",
+  "4. Para cada sugerencia di qué se espera ver en las curvas y en el monitor si funciona (por ejemplo, el flujo espiratorio que llega a cero, una meseta más baja, la SpO2 que sube en minutos).",
+  "5. Si el estudiante hace una pregunta, respóndela con ese mismo enfoque guiado.",
   "Sé breve. Usa solo los datos del estado de la simulación y dilo cuando falte información. No des indicaciones para pacientes reales.",
 ].join("\n");
 
@@ -82,6 +91,8 @@ export interface AiPromptInputs {
   FREE_CHAT: ConversationPromptInput;
   TOPIC_CHECK: TopicCheckPromptInput;
   SIM_ASSIST: SimAssistPromptInput;
+  SIM_CASE_INTERPRETATION: SimCaseInterpretationPromptInput;
+  SIM_ALARM_HELP: SimAlarmHelpPromptInput;
 }
 
 export type AiPromptTemplates = { [K in AiUseCaseValue]: PromptTemplate<AiPromptInputs[K]> };
@@ -181,7 +192,8 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplates = {
   },
   SIM_ASSIST: {
     id: "SIM_ASSIST",
-    version: "1.1.0",
+    // 1.2.0: prioritized suggestions with the expected change on the curves; the state carries trends and the patient status.
+    version: "1.2.0",
     build: (input: SimAssistPromptInput): BuiltPrompt => ({
       system: withCommonSystemPrompt(SIM_ASSIST_INSTRUCTIONS, input.language),
       messages: [
@@ -195,6 +207,16 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplates = {
       ],
       responseFormat: "text",
     }),
+  },
+  SIM_CASE_INTERPRETATION: {
+    id: "SIM_CASE_INTERPRETATION",
+    version: SIM_CASE_INTERPRETATION_PROMPT_VERSION,
+    build: buildSimCaseInterpretationPrompt,
+  },
+  SIM_ALARM_HELP: {
+    id: "SIM_ALARM_HELP",
+    version: SIM_ALARM_HELP_PROMPT_VERSION,
+    build: buildSimAlarmHelpPrompt,
   },
 };
 
