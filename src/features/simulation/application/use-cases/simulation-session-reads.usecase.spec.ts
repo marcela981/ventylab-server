@@ -128,6 +128,15 @@ describe("Simulation session reads", () => {
     expect(replay.engineVersionMismatch).toBe(true);
   });
 
+  it("does not flag a 1.x session on the 2.x engine, which reproduces it exactly", async () => {
+    session = await storeSession(context, { engineVersion: "1.0.0" });
+    const getReplay: GetSimulationSessionReplayUseCase = new GetSimulationSessionReplayUseCase(context.reader, context.runtime);
+
+    const replay: SimulationSessionReplayResult = await getReplay.execute(session.id, OWNER);
+
+    expect(replay.engineVersionMismatch).toBe(false);
+  });
+
   it("lists a student's sessions for a managing teacher and rejects other actors", async () => {
     const listSessions: GetSimulationSessionsUseCase = new GetSimulationSessionsUseCase(context.repository, context.accessService, context.runtime);
     context.groups.studentGroups.set(OWNER.id, "group-1");

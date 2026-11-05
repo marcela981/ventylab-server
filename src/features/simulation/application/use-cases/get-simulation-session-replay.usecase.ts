@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Caso de uso GetSimulationSessionReplayUseCase
  * Descripción: Datos para repetir una sesión legible por el actor: caso del motor, semilla, eventos persistidos, versión del motor y multiplicador de la sesión, junto con la versión actual del motor y si ambas difieren
- * Versión: 1.0
+ * Versión: 1.1 (sin aviso de versión para sesiones 1.x con el motor 2.x, que las reproduce igual)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,7 +17,7 @@ import {
   type SimulationSessionContext,
   SimulationSessionRuntime,
 } from "@/features/simulation/application/services/simulation-session-runtime.service";
-import { ENGINE_VERSION } from "@/features/simulation/domain/engine";
+import { ENGINE_VERSION, engineReplaysVersion } from "@/features/simulation/domain/engine";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
 
 /**
@@ -43,7 +43,7 @@ export class GetSimulationSessionReplayUseCase {
       engineCase: context.caseDefinition.engineCase,
       events: context.events,
       currentEngineVersion: ENGINE_VERSION,
-      engineVersionMismatch: session.engineVersion !== ENGINE_VERSION,
+      engineVersionMismatch: !engineReplaysVersion(session.engineVersion),
     };
   }
 }
