@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Servicio de contexto de asistencia de simulación
  * Descripción: Entrega a la asistencia de IA el estado de una sesión activa del actor (resumen del caso sin datos personales, modo, ajustes vigentes, métricas, alarmas, objetivos y últimos cambios de parámetros, repetidos en el servidor), la política de asistencia de la rúbrica de la sesión y registra en el servidor el evento AI_HELP con el id de la llamada y su origen
- * Versión: 1.1
+ * Versión: 1.2 (tendencias de los últimos minutos del paciente en el contexto del coaching)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,7 +16,7 @@ import {
   type SimulationSessionContext,
   SimulationSessionRuntime,
 } from "@/features/simulation/application/services/simulation-session-runtime.service";
-import { ASSIST_MAX_RECENT_CHANGES, type AssistSnapshotInput } from "@/features/simulation/domain/assist/assist-snapshot";
+import { ASSIST_MAX_RECENT_CHANGES, type AssistSnapshotInput, buildAssistTrends } from "@/features/simulation/domain/assist/assist-snapshot";
 import { type ReplayResult, type VentilatorSettings } from "@/features/simulation/domain/engine";
 import { type SimulationSession } from "@/features/simulation/domain/entities/simulation-session.entity";
 import {
@@ -39,6 +39,9 @@ export interface SimulationAssistContext {
 export interface SimulationAiHelpRecord {
   readonly aiCallId?: string;
   readonly source: AiHelpSourceValue;
+  /** "ALARM_HELP" for the "¿Cómo estabilizar?" answers; absent for the assistant */
+  readonly kind?: string;
+  readonly alarmCode?: string;
 }
 
 @Injectable()
@@ -71,6 +74,7 @@ export class SimulationAssistContextService {
         alarms: result.final.alarms,
         targets: result.final.targets,
         recentChanges: settingsChangesOf(initialSettings, context.events).slice(-ASSIST_MAX_RECENT_CHANGES),
+        trends: buildAssistTrends(result.metricsTimeline, session.timeMultiplier),
       },
     };
   }
@@ -98,8 +102,12 @@ export class SimulationAssistContextService {
         throw new SimulationSessionNotActiveError();
       }
 
-      const payload: Record<string, unknown> =
-        record.aiCallId === undefined ? { source: record.source } : { aiCallId: record.aiCallId, source: record.source };
+      const payload: Record<string, unknown> = {
+        ...(record.aiCallId === undefined ? {} : { aiCallId: record.aiCallId }),
+        source: record.source,
+        ...(record.kind === undefined ? {} : { kind: record.kind }),
+        ...(record.alarmCode === undefined ? {} : { alarmCode: record.alarmCode }),
+      };
 
       await this._sessionsRepository.insertEvents(
         [{ id: eventId, sessionId: session.id, simTimeMs: session.lastSimTimeMs, type: AI_HELP_EVENT_TYPE, payload, receivedAt: now }],
