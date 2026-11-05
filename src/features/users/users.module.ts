@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo UsersModule
- * Descripción: Registra controlador, casos de uso, repositorios (usuarios, estadísticas y membresías de grupo), el correo del superadministrador, el arranque que fuerza su rol ADMIN y los manejadores de eventos de la feature de usuarios; exporta UsersFacade y los proveedores que aún usan otras features; la foto de perfil (subir y quitar con el puerto AVATAR_STORAGE_TOKEN que enlaza la raíz de composición, y resolución de la imagen con el resolvedor de URLs de media)
- * Versión: 1.4
+ * Descripción: Registra controlador, casos de uso, repositorios (usuarios, estadísticas y membresías de grupo), el correo del superadministrador, el arranque que fuerza su rol ADMIN y los manejadores de eventos de la feature de usuarios; exporta UsersFacade y los proveedores que aún usan otras features; la foto de perfil (subir y quitar con el puerto AVATAR_STORAGE_TOKEN que enlaza la raíz de composición, y resolución de la imagen con el resolvedor de URLs de media) v1.5: registra y exporta ResetUserPasswordUseCase (recuperación de contraseña)
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -28,6 +28,7 @@ import { GetStudentsUseCase } from "@/features/users/application/use-cases/get-s
 import { GetUserByIdUseCase } from "@/features/users/application/use-cases/get-user-by-id.usecase";
 import { GetUserStatsUseCase } from "@/features/users/application/use-cases/get-user-stats.usecase";
 import { GetUsersUseCase } from "@/features/users/application/use-cases/get-users.usecase";
+import { ResetUserPasswordUseCase } from "@/features/users/application/use-cases/reset-user-password.usecase";
 import { UpdateProfileUseCase } from "@/features/users/application/use-cases/update-profile.usecase";
 import { USER_GROUP_MEMBERSHIPS_REPOSITORY_TOKEN } from "@/features/users/domain/repositories/user-group-memberships.repository";
 import { USER_STATISTICS_REPOSITORY_TOKEN } from "@/features/users/domain/repositories/user-statistics.repository";
@@ -64,6 +65,7 @@ import { UsersController } from "@/features/users/presentation/controllers/users
     GetUserByIdUseCase,
     UpdateProfileUseCase,
     ChangePasswordUseCase,
+    ResetUserPasswordUseCase,
     ChangeUserRoleUseCase,
     GetUserStatsUseCase,
     GetStudentsUseCase,
@@ -87,6 +89,7 @@ import { UsersController } from "@/features/users/presentation/controllers/users
     GetUserByIdUseCase,
     ChangeUserRoleUseCase,
     ChangePasswordUseCase,
+    ResetUserPasswordUseCase,
     UsersFacade,
   ],
 })

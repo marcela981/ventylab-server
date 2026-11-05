@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Controlador AuthController
- * Descripción: Expone las rutas api/auth de registro, inicio de sesión (local y con Google), refresco, cierre de sesión y perfil, con límites de peticiones estrictos en las rutas que emiten tokens y en el registro. v1.4: se retira la ruta nextauth-token del puente de NextAuth. v1.5: cambio de contraseña propio (5 por minuto) que revoca los refresh tokens y reemite el par de la sesión actual. v1.6: la imagen del usuario de sesión (me) es la foto subida resuelta, como en UserDTO
- * Versión: 1.6
+ * Descripción: Expone las rutas api/auth de registro, inicio de sesión (local y con Google), refresco, cierre de sesión y perfil, con límites de peticiones estrictos en las rutas que emiten tokens y en el registro. v1.4: se retira la ruta nextauth-token del puente de NextAuth. v1.5: cambio de contraseña propio (5 por minuto) que revoca los refresh tokens y reemite el par de la sesión actual. v1.6: la imagen del usuario de sesión (me) es la foto subida resuelta, como en UserDTO v1.7: recuperación de contraseña: POST password/forgot (202 siempre) y POST password/reset, limitadas a 5 por minuto (Ajustes D3)
+ * Versión: 1.7
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -27,7 +27,10 @@ import { GoogleLoginUseCase } from "@/features/auth/application/use-cases/google
 import { LoginUseCase } from "@/features/auth/application/use-cases/login.usecase";
 import { RefreshTokenUseCase } from "@/features/auth/application/use-cases/refresh-token.usecase";
 import { RegisterUseCase } from "@/features/auth/application/use-cases/register.usecase";
+import { RequestPasswordResetUseCase } from "@/features/auth/application/use-cases/request-password-reset.usecase";
+import { ResetPasswordUseCase } from "@/features/auth/application/use-cases/reset-password.usecase";
 import { CurrentUser } from "@/features/auth/presentation/decorators/current-user.decorator";
+import { ForgotPasswordDTO } from "@/features/auth/presentation/dtos/forgot-password.dto";
 import { GoogleLoginDTO } from "@/features/auth/presentation/dtos/google-login.dto";
 import { LoginResponseDTO } from "@/features/auth/presentation/dtos/login-response.dto";
 import { LoginDTO } from "@/features/auth/presentation/dtos/login.dto";
@@ -35,6 +38,7 @@ import { MeResponseDTO } from "@/features/auth/presentation/dtos/me-response.dto
 import { RefreshTokenRequestDTO } from "@/features/auth/presentation/dtos/refresh-token-request.dto";
 import { RefreshTokenResponseDTO } from "@/features/auth/presentation/dtos/refresh-token-response.dto";
 import { RegisterDTO } from "@/features/auth/presentation/dtos/register.dto";
+import { ResetPasswordDTO } from "@/features/auth/presentation/dtos/reset-password.dto";
 import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard";
 import { AuthMapper } from "@/features/auth/presentation/mappers/auth.mapper";
 import { UsersFacade } from "@/features/users/application/services/users.facade";
@@ -47,6 +51,8 @@ const SIGN_IN_RATE_LIMIT: number = 5;
 const REGISTER_RATE_LIMIT: number = 10;
 const REFRESH_RATE_LIMIT: number = 20;
 const CHANGE_PASSWORD_RATE_LIMIT: number = 5;
+// Anonymous password recovery routes: as strict as sign-in (they send email and test reset tokens).
+const PASSWORD_RECOVERY_RATE_LIMIT: number = 5;
 const AUTH_RATE_WINDOW_MS: number = 60000;
 
 @ApiTags("Authentication")
@@ -60,6 +66,8 @@ export class AuthController {
     private readonly _getUserByIdUseCase: GetUserByIdUseCase,
     private readonly _changeOwnPasswordUseCase: ChangeOwnPasswordUseCase,
     private readonly _usersFacade: UsersFacade,
+    private readonly _requestPasswordResetUseCase: RequestPasswordResetUseCase,
+    private readonly _resetPasswordUseCase: ResetPasswordUseCase,
   ) {}
 
   @Post("register")
@@ -187,6 +195,44 @@ export class AuthController {
     return new APIResponseBuilder<LoginResponseDTO>()
       .setData(AuthMapper.toLoginResponseDTO(result))
       .setMessage(await i18n.t("auth.password_changed"))
+      .build();
+  }
+
+  @Post("password/forgot")
+  @Throttle({ default: { limit: PASSWORD_RECOVERY_RATE_LIMIT, ttl: AUTH_RATE_WINDOW_MS } })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({
+    summary: "Request a password reset",
+    description:
+      "Emails a single-use link (valid for 30 minutes) to reset the password of an active account that has a local password; earlier unused links stop working. Always answers 202 without saying whether the email belongs to an account. Limited to 5 requests per minute.",
+  })
+  @ApiResponseDoc({ status: HttpStatus.ACCEPTED, description: "Request accepted (whether or not the account exists)" })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
+  @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many password reset requests" })
+  public async forgotPassword(@Body() dto: ForgotPasswordDTO, @I18n() i18n: I18nContext): Promise<APIResponse<null>> {
+    await this._requestPasswordResetUseCase.execute({ email: dto.email });
+
+    return new APIResponseBuilder<null>()
+      .setMessage(await i18n.t("auth.password_reset_requested"))
+      .build();
+  }
+
+  @Post("password/reset")
+  @Throttle({ default: { limit: PASSWORD_RECOVERY_RATE_LIMIT, ttl: AUTH_RATE_WINDOW_MS } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Reset the password with an emailed link",
+    description:
+      "Sets a new password (8 to 128 characters with an uppercase letter, a lowercase letter and a number) with the token of a password reset link, consumes the token and revokes every refresh token of the account (every session must sign in again). An unknown, expired or used token answers 400. Limited to 5 requests per minute.",
+  })
+  @ApiResponseDoc({ status: HttpStatus.OK, description: "Password reset" })
+  @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error, or an invalid, expired or already used token" })
+  @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many password reset attempts" })
+  public async resetPassword(@Body() dto: ResetPasswordDTO, @I18n() i18n: I18nContext): Promise<APIResponse<null>> {
+    await this._resetPasswordUseCase.execute({ token: dto.token, newPassword: dto.newPassword });
+
+    return new APIResponseBuilder<null>()
+      .setMessage(await i18n.t("auth.password_reset_done"))
       .build();
   }
 

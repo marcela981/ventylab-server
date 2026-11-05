@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Módulo AuthModule
- * Descripción: Módulo global de autenticación: JWT, casos de uso de acceso (local y Google), verificador de ID tokens de Google, dominios de correo permitidos, guards y el verificador de tokens que consume la capa común de tiempo real; depende de UsersModule. v1.4: sin el caso de uso ni el guard del puente de NextAuth retirado
- * Versión: 1.5
+ * Descripción: Módulo global de autenticación: JWT, casos de uso de acceso (local y Google), verificador de ID tokens de Google, dominios de correo permitidos, guards y el verificador de tokens que consume la capa común de tiempo real; depende de UsersModule. v1.4: sin el caso de uso ni el guard del puente de NextAuth retirado v1.6: recuperación de contraseña: casos de uso, repositorio de tokens y la URL de la web para el enlace
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -17,14 +17,19 @@ import { type EnvironmentVariables } from "@/common/infrastructure/config/env.va
 import { GOOGLE_ID_TOKEN_VERIFIER_TOKEN } from "@/features/auth/application/ports/google-id-token-verifier.interface";
 import { TOKEN_GENERATOR_TOKEN } from "@/features/auth/application/ports/token-generator.interface";
 import { ALLOWED_EMAIL_DOMAINS_TOKEN, parseAllowedEmailDomains } from "@/features/auth/application/tokens/allowed-email-domains.token";
+import { PASSWORD_RESET_FRONTEND_URL_TOKEN } from "@/features/auth/application/tokens/password-reset-frontend-url.token";
 import { ChangeOwnPasswordUseCase } from "@/features/auth/application/use-cases/change-own-password.usecase";
 import { GoogleLoginUseCase } from "@/features/auth/application/use-cases/google-login.usecase";
 import { LoginUseCase } from "@/features/auth/application/use-cases/login.usecase";
 import { RefreshTokenUseCase } from "@/features/auth/application/use-cases/refresh-token.usecase";
 import { RegisterUseCase } from "@/features/auth/application/use-cases/register.usecase";
+import { RequestPasswordResetUseCase } from "@/features/auth/application/use-cases/request-password-reset.usecase";
+import { ResetPasswordUseCase } from "@/features/auth/application/use-cases/reset-password.usecase";
+import { PASSWORD_RESET_TOKENS_REPOSITORY_TOKEN } from "@/features/auth/domain/repositories/password-reset-tokens.repository";
 import { GoogleIdTokenVerifier } from "@/features/auth/infrastructure/google/google-id-token-verifier";
 import { JwtAccessTokenVerifier } from "@/features/auth/infrastructure/jwt/jwt-access-token-verifier";
 import { JwtTokenGenerator } from "@/features/auth/infrastructure/jwt/jwt-token-generator";
+import { PasswordResetTokensPrismaRepository } from "@/features/auth/infrastructure/persistence/prisma/password-reset-tokens-prisma.repository";
 import { AuthController } from "@/features/auth/presentation/controllers/auth.controller";
 import { JwtAuthGuard } from "@/features/auth/presentation/guards/jwt-auth.guard";
 import { OptionalJwtAuthGuard } from "@/features/auth/presentation/guards/optional-jwt-auth.guard";
@@ -54,6 +59,17 @@ import { UsersModule } from "@/features/users/users.module";
     RefreshTokenUseCase,
     GoogleLoginUseCase,
     ChangeOwnPasswordUseCase,
+    RequestPasswordResetUseCase,
+    ResetPasswordUseCase,
+    {
+      provide: PASSWORD_RESET_TOKENS_REPOSITORY_TOKEN,
+      useClass: PasswordResetTokensPrismaRepository,
+    },
+    {
+      provide: PASSWORD_RESET_FRONTEND_URL_TOKEN,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<EnvironmentVariables, true>): string => configService.get("FRONTEND_URL", { infer: true }),
+    },
     {
       provide: GOOGLE_ID_TOKEN_VERIFIER_TOKEN,
       useClass: GoogleIdTokenVerifier,

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Prueba e2e de limitación de peticiones
- * Descripción: Enumera las rutas alcanzables sin autenticación (rol mínimo ANONYMOUS, el mismo conjunto que openapi.json marca con x-min-role) y falla si alguna se excluye del ThrottlerGuard global con @SkipThrottle sin estar en una lista de excepciones justificada, si las rutas de registro, inicio de sesión y refresco no tienen un @Throttle más estricto que el global, o si el guard deja de ser global; además comprueba que una petición limitada responde 429 con el código traducido common.too_many_requests, la cabecera Retry-After y el envoltorio documentado, sin escribir error_logs. v1.1: sin la ruta del puente de NextAuth retirado
- * Versión: 1.1
+ * Descripción: Enumera las rutas alcanzables sin autenticación (rol mínimo ANONYMOUS, el mismo conjunto que openapi.json marca con x-min-role) y falla si alguna se excluye del ThrottlerGuard global con @SkipThrottle sin estar en una lista de excepciones justificada, si las rutas de registro, inicio de sesión y refresco no tienen un @Throttle más estricto que el global, o si el guard deja de ser global; además comprueba que una petición limitada responde 429 con el código traducido common.too_many_requests, la cabecera Retry-After y el envoltorio documentado, sin escribir error_logs. v1.1: sin la ruta del puente de NextAuth retirado v1.2: las rutas de recuperación de contraseña también deben tener su propio límite (Ajustes D3)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,12 +37,14 @@ const THROTTLE_EXEMPT_ROUTES: Readonly<Record<string, string>> = {
   "get /api/health/ready": READINESS_EXEMPTION,
 };
 
-// Routes that issue tokens or create accounts must have their own limit below the global one.
+// Routes that issue tokens, create accounts or send password reset email must have their own limit below the global one.
 const SIGN_IN_ROUTES: readonly string[] = [
   "post /api/auth/register",
   "post /api/auth/login",
   "post /api/auth/google",
   "post /api/auth/refresh",
+  "post /api/auth/password/forgot",
+  "post /api/auth/password/reset",
 ];
 
 const LOGIN_RATE_LIMIT: number = 5;
