@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTOs de la ayuda del monitor (alarmas y asistencia en modo real)
  * Descripción: Validación de la petición de ayuda de una alarma del simulador y de las peticiones de asistencia y ayuda de alarmas del modo real, que envían la telemetría reciente del equipo (ajustes informados, métricas, alarmas del equipo, límites del cliente, tendencia acotada y caso cargado opcional). La IA nunca envía comandos: solo devuelve sugerencias
- * Versión: 1.1 (state obligatorio)
+ * Versión: 1.2 (contexto de consola en la ayuda de alarmas de una sesión; en modo real, alarmas con valor, umbral y prioridad, hora y antigüedad de la última lectura del equipo)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,6 +13,7 @@ import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
   IsArray,
+  IsDateString,
   IsIn,
   IsNumber,
   IsObject,
@@ -20,17 +21,20 @@ import {
   IsString,
   Matches,
   MaxLength,
+  Min,
   ValidateNested,
 } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
 
 import { LANGUAGE_VALUES } from "@/common/domain/value-objects/language";
 import { MAX_SIMULATION_ASSIST_QUESTION_LENGTH } from "@/features/simulation/presentation/dtos/simulation-assist-request.dto";
+import { SimulationHelpContextDTO } from "@/features/simulation/presentation/dtos/simulation-help-context.dto";
 
 export const MAX_REAL_MONITOR_ALARMS: number = 20;
 export const MAX_REAL_MONITOR_TREND_POINTS: number = 20;
 const ALARM_CODE_PATTERN: RegExp = /^[A-Z][A-Z0-9_]{1,39}$/;
 const NUMBER_MESSAGE: string = "simulation.validation.number";
+const REAL_ALARM_PRIORITY_VALUES: readonly string[] = ["HIGH", "MEDIUM", "LOW"];
 
 function NumberField(description: string, example: number): PropertyDecorator {
   return (target: object, propertyKey: string | symbol): void => {
@@ -47,7 +51,12 @@ class AlarmCodeField {
   public alarmCode: string;
 }
 
-export class SimulationAlarmHelpDTO extends AlarmCodeField {
+export class SimulationAlarmHelpDTO extends SimulationHelpContextDTO {
+  @ApiProperty({ description: "Alarm code (engine or ventilator), e.g. HIGH_PRESSURE, LOW_SPO2", example: "HIGH_PRESSURE" })
+  @IsString({ message: i18nValidationMessage("simulation.validation.alarm_code_invalid") })
+  @Matches(ALARM_CODE_PATTERN, { message: i18nValidationMessage("simulation.validation.alarm_code_invalid") })
+  public alarmCode: string;
+
   @ApiPropertyOptional({ description: "Answer language; defaults to the request language", enum: LANGUAGE_VALUES, example: "es" })
   @IsOptional()
   @IsIn([...LANGUAGE_VALUES], { message: i18nValidationMessage("simulation.validation.assist_language_invalid") })
@@ -92,6 +101,21 @@ export class RealMonitorTrendPointDTO {
   @NumberField("Exhaled tidal volume (mL)", 440) public exhaledTidalVolumeMl?: number;
   @NumberField("Respiratory rate (breaths/min)", 16) public respiratoryRateBpm?: number;
   @NumberField("SpO2 (%)", 94) public spo2Percent?: number;
+}
+
+export class RealMonitorAlarmDTO {
+  @ApiProperty({ description: "Alarm code", example: "HIGH_PRESSURE" })
+  @IsString({ message: i18nValidationMessage("simulation.validation.alarm_code_invalid") })
+  @Matches(ALARM_CODE_PATTERN, { message: i18nValidationMessage("simulation.validation.alarm_code_invalid") })
+  public code: string;
+
+  @NumberField("Measured value that raised the alarm", 42) public value?: number;
+  @NumberField("Limit it crossed", 40) public threshold?: number;
+
+  @ApiPropertyOptional({ description: "Alarm priority shown by the console", enum: REAL_ALARM_PRIORITY_VALUES, example: "HIGH" })
+  @IsOptional()
+  @IsIn([...REAL_ALARM_PRIORITY_VALUES], { message: i18nValidationMessage("simulation.validation.monitor_state_invalid") })
+  public priority?: string;
 }
 
 export class RealMonitorStateDTO {
@@ -139,6 +163,25 @@ export class RealMonitorStateDTO {
   @IsString({ message: i18nValidationMessage("simulation.validation.monitor_state_invalid") })
   @MaxLength(100, { message: i18nValidationMessage("simulation.validation.monitor_state_invalid") })
   public caseId?: string;
+
+  @ApiPropertyOptional({ description: "Active alarms with their value, limit and priority (same codes as alarms)", type: RealMonitorAlarmDTO, isArray: true })
+  @IsOptional()
+  @IsArray({ message: i18nValidationMessage("simulation.validation.monitor_state_invalid") })
+  @ArrayMaxSize(MAX_REAL_MONITOR_ALARMS, { message: i18nValidationMessage("simulation.validation.monitor_state_invalid") })
+  @ValidateNested({ each: true })
+  @Type(() => RealMonitorAlarmDTO)
+  public alarmDetails?: RealMonitorAlarmDTO[];
+
+  @ApiPropertyOptional({ description: "When the console received the latest telemetry frame (ISO 8601)", example: "2026-11-05T23:48:36.311Z" })
+  @IsOptional()
+  @IsDateString({}, { message: i18nValidationMessage("simulation.validation.monitor_state_invalid") })
+  public lastFrameAt?: string;
+
+  @ApiPropertyOptional({ description: "Age of the latest telemetry frame when the help was asked (ms, console clock); over 2000 the data is stale", example: 120, minimum: 0 })
+  @IsOptional()
+  @IsNumber({ allowNaN: false, allowInfinity: false }, { message: i18nValidationMessage(NUMBER_MESSAGE) })
+  @Min(0, { message: i18nValidationMessage(NUMBER_MESSAGE) })
+  public dataAgeMs?: number;
 }
 
 export class RealAssistDTO {
@@ -160,7 +203,12 @@ export class RealAssistDTO {
   public language?: string;
 }
 
-export class RealAlarmHelpDTO extends SimulationAlarmHelpDTO {
+export class RealAlarmHelpDTO extends AlarmCodeField {
+  @ApiPropertyOptional({ description: "Answer language; defaults to the request language", enum: LANGUAGE_VALUES, example: "es" })
+  @IsOptional()
+  @IsIn([...LANGUAGE_VALUES], { message: i18nValidationMessage("simulation.validation.assist_language_invalid") })
+  public language?: string;
+
   @ApiProperty({ type: RealMonitorStateDTO })
   @IsObject({ message: i18nValidationMessage("simulation.validation.monitor_state_invalid") })
   @ValidateNested()

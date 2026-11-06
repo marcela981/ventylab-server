@@ -25,6 +25,7 @@ import { AssistSimulationCommand } from "@/features/simulation/application/assis
 import { AssistSimulationUseCase } from "@/features/simulation/application/assist/assist-simulation.usecase";
 import { type SimulationAssistStreamResult } from "@/features/simulation/application/assist/simulation-assist-stream.result";
 import { SimulationAssistDTO } from "@/features/simulation/presentation/dtos/simulation-assist-request.dto";
+import { toClientAssistSnapshot } from "@/features/simulation/presentation/dtos/simulation-help-context.dto";
 import {
   abortOnClientDisconnect,
   pipeAssistStreamToSse,
@@ -52,14 +53,14 @@ export class SimulationAssistController {
   @ApiOperation({
     summary: "Ask the AI assistant about my active simulation session",
     description:
-      "Guides the student on the current state of one of their ACTIVE sessions (what is going well, what to review and why), optionally answering a question. EXAM sessions are allowed only when the rubric assistance policy is ALLOWED_WITH_PENALTY; every completed answer is recorded as an AI_HELP event, which the score penalizes in that case. When no AI provider answers, the rule-based advisor answers instead. Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiHelpEventId, aiCallId, source}` (`source` is LLM or DETERMINISTIC; rate the answer with ai-ratings targetType SIM_ASSIST and targetId = aiHelpEventId), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 409, 429 with Retry-After) use the regular JSON error envelope. Closing the connection cancels the AI call and no AI_HELP event is recorded.",
+      "Guides the student on the current state of one of their ACTIVE sessions (what is going well, what to review and why), optionally answering a question. The state is rebuilt by a server replay up to the simulated time the console sends (simTimeMs, validated against the last stored event, the wall-clock bound and the exam deadline); the console snapshot is only compared with it. The answer is checked against that state before it is sent: an answer that claims stability with a critical patient or cites other vitals is regenerated once, then replaced by the rule-based suggestion with notice INCONSISTENT_STATE. EXAM sessions are allowed only when the rubric assistance policy is ALLOWED_WITH_PENALTY; every completed answer is recorded as an AI_HELP event, which the score penalizes in that case. When no AI provider answers, the rule-based advisor answers instead. Responds text/event-stream: `event: delta` with `{text}` per fragment, then `event: done` with `{aiHelpEventId, aiCallId, source, analysis: {simTimeMs, severity, patientStatus}, notice?}` (`source` is LLM or DETERMINISTIC; rate the answer with ai-ratings targetType SIM_ASSIST and targetId = aiHelpEventId), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts (validation, 403, 404, 409, 429 with Retry-After) use the regular JSON error envelope. Closing the connection cancels the AI call and no AI_HELP event is recorded.",
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Server-sent event stream with the answer" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
   @ApiResponseDoc({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Missing permission, session of another user or assistance disabled in this exam" })
+  @ApiResponseDoc({ status: HttpStatus.FORBIDDEN, description: "Missing permission, session of another user, assistance disabled in this exam or simTimeMs ahead of the session bound" })
   @ApiResponseDoc({ status: HttpStatus.NOT_FOUND, description: "Simulation session not found" })
-  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "The simulation session is not active" })
+  @ApiResponseDoc({ status: HttpStatus.CONFLICT, description: "The simulation session is not active, or simTimeMs is behind the last stored event" })
   @ApiResponseDoc({ status: HttpStatus.TOO_MANY_REQUESTS, description: "Too many requests or daily AI quota reached (Retry-After header)" })
   public async assist(
     @Param("id") id: string,
@@ -77,6 +78,9 @@ export class SimulationAssistController {
         question: dto.question,
         language: Language.createOrDefault(dto.language ?? i18n.lang).value,
         signal: controller.signal,
+        simTimeMs: dto.simTimeMs,
+        clientSnapshot: toClientAssistSnapshot(dto.clientSnapshot),
+        unsentChanges: dto.unsentChanges,
       }),
     );
 

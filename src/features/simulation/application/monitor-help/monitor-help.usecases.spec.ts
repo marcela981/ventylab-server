@@ -10,9 +10,15 @@
  */
 import { type AiCallOptions, type AiGateway } from "@/features/ai/application/services/ai-gateway";
 import { type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
+import { analysisOf } from "@/features/simulation/application/assist/assist-simulation.usecase";
 import { ALARM_HELP_KIND, AlarmHelpSimulationUseCase } from "@/features/simulation/application/monitor-help/alarm-help-simulation.usecase";
 import { type MonitorHelpEvent, type MonitorHelpRulesEvent } from "@/features/simulation/application/monitor-help/monitor-help-stream.result";
-import { RealMonitorHelpUseCase, realDeterministicAdvice, type RealMonitorState } from "@/features/simulation/application/monitor-help/real-monitor-help.usecase";
+import {
+  RealMonitorHelpUseCase,
+  realDeterministicAdvice,
+  type RealMonitorState,
+  realStateText,
+} from "@/features/simulation/application/monitor-help/real-monitor-help.usecase";
 import {
   type SimulationAiHelpRecord,
   type SimulationAssistContext,
@@ -55,6 +61,7 @@ function context(mode: "FREE" | "EXAM", assistancePolicy: AssistancePolicy): Sim
     assistancePolicy,
     rubric: { ...DEFAULT_SIMULATION_RUBRIC, assistancePolicy },
     input: { ...buildAssistInput({ cycle: { peakPressureCmH2O: 45, plateauPressureCmH2O: 24 } }), mode },
+    comparison: { check: "NO_CLIENT_SNAPSHOT", differences: [] },
   };
 }
 
@@ -106,9 +113,15 @@ describe("AlarmHelpSimulationUseCase", () => {
     expect(events[0].type).toBe("rules");
     expect((events[0] as MonitorHelpRulesEvent).rules.map((rule: StabilizationRule): string => rule.id)).toContain("HIGH_PRESSURE_RESISTIVE");
     expect(events[1]).toEqual({ type: "delta", text: "Revisa el tubo." });
-    expect(events[2]).toEqual({ type: "done", aiCallId: AI_CALL_ID, source: "LLM", aiHelpEventId: "event-ai-help-1" });
+    expect(events[2]).toEqual({ type: "done", aiCallId: AI_CALL_ID, source: "LLM", aiHelpEventId: "event-ai-help-1", analysis: analysisOf(current) });
     expect(stream.mock.calls[0][0]).toBe("SIM_ALARM_HELP");
-    expect(recordAiHelp).toHaveBeenCalledWith("session-1", "user-1", { aiCallId: AI_CALL_ID, source: "LLM", kind: ALARM_HELP_KIND, alarmCode: "HIGH_PRESSURE" });
+    expect(recordAiHelp).toHaveBeenCalledWith("session-1", "user-1", {
+      aiCallId: AI_CALL_ID,
+      source: "LLM",
+      kind: ALARM_HELP_KIND,
+      alarmCode: "HIGH_PRESSURE",
+      simTimeMs: 40000,
+    });
   });
 
   it("answers with the deterministic advisor when no provider answers", async () => {
@@ -157,8 +170,44 @@ describe("RealMonitorHelpUseCase", () => {
 
     expect(events.map((event: MonitorHelpEvent): string => event.type)).toEqual(["rules", "delta", "done"]);
     expect((events[0] as MonitorHelpRulesEvent).rules.map((rule: StabilizationRule): string => rule.id)).toContain("HIGH_PRESSURE_PLATEAU");
-    expect(events[2]).toEqual({ type: "done", aiCallId: AI_CALL_ID, source: "LLM" });
-    expect(JSON.parse(input.monitorState)).toMatchObject({ source: "REAL_VENTILATOR", alarms: ["HIGH_PRESSURE"] });
+    expect(events[2]).toEqual({ type: "done", aiCallId: AI_CALL_ID, source: "LLM", analysis: { stale: false } });
+    expect(JSON.parse(input.monitorState)).toMatchObject({ source: "REAL_VENTILATOR", alarms: [{ code: "HIGH_PRESSURE" }] });
+  });
+
+  it("puts the alarm details and the age of the latest frame in the state, and flags stale data past 2 s", async () => {
+    const stream: jest.Mock = jest.fn().mockResolvedValue(llmStream("Revisa el circuito."));
+    const stale: RealMonitorState = {
+      ...state,
+      alarmDetails: [{ code: "HIGH_PRESSURE", value: 42, threshold: 40, priority: "HIGH" }],
+      lastFrameAt: "2026-11-05T23:48:36.311Z",
+      dataAgeMs: 3500,
+    };
+
+    const events: MonitorHelpEvent[] = await collect(await useCaseWith(stream).assist({ userId: "user-1", userRole: "STUDENT", state: stale, language: "es" }));
+    const sent: Record<string, unknown> = JSON.parse((stream.mock.calls[0][1] as { simulationState: string }).simulationState) as Record<string, unknown>;
+
+    expect(sent).toMatchObject({ lastFrameAt: stale.lastFrameAt, dataAgeS: 3.5, stale: true, alarms: [{ code: "HIGH_PRESSURE", value: 42, threshold: 40, priority: "HIGH" }] });
+    expect(events.at(-1)).toMatchObject({ type: "done", analysis: { dataAgeMs: 3500, stale: true } });
+  });
+
+  it("cuts the real state by structure so it stays valid JSON", () => {
+    const trend: Record<string, number>[] = Array.from({ length: 20 }, (_value: unknown, index: number) => ({
+      secondsAgo: index,
+      peakPressureCmH2O: 30.123456789 + index,
+      exhaledTidalVolumeMl: 450.123456789,
+      respiratoryRateBpm: 16.123456789,
+      spo2Percent: 94.123456789,
+    }));
+    const alarmDetails: { code: string; value: number; threshold: number; priority: string }[] = Array.from({ length: 20 }, (_value: unknown, index: number) => ({
+      code: `ALARM_CODE_NUMBER_${index}`,
+      value: 1000.123456789,
+      threshold: 999.123456789,
+      priority: "MEDIUM",
+    }));
+    const text: string = realStateText({ ...state, trend, alarmDetails });
+
+    expect(text.length).toBeLessThanOrEqual(4000);
+    expect((JSON.parse(text) as { alarms: unknown[] }).alarms).toHaveLength(21);
   });
 
   it("assists without AI with the first rule of each active alarm", async () => {

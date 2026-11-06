@@ -82,14 +82,14 @@ describe("simulation assist SSE transport", () => {
       response as unknown as Response,
       events([
         { type: "delta", text: "Sube la PEEP" },
-        { type: "done", aiHelpEventId: "help-1", aiCallId: "call-1", source: "LLM" },
+        { type: "done", aiHelpEventId: "help-1", aiCallId: "call-1", source: "LLM", analysis: { simTimeMs: 76200, severity: 0.69, patientStatus: "CRITICAL" } },
       ]),
       translate,
     );
 
     expect(response.chunks).toEqual([
       "event: delta\ndata: {\"text\":\"Sube la PEEP\"}\n\n",
-      "event: done\ndata: {\"aiHelpEventId\":\"help-1\",\"aiCallId\":\"call-1\",\"source\":\"LLM\"}\n\n",
+      "event: done\ndata: {\"aiHelpEventId\":\"help-1\",\"aiCallId\":\"call-1\",\"source\":\"LLM\",\"analysis\":{\"simTimeMs\":76200,\"severity\":0.69,\"patientStatus\":\"CRITICAL\"}}\n\n",
     ]);
     expect(response.writableEnded).toBe(true);
   });

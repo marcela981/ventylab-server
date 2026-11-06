@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Comando de asistencia de simulación
- * Descripción: Datos para pedir asistencia de IA sobre una sesión de simulación activa: sesión, actor (id y rol para la cuota), pregunta opcional del estudiante, idioma de la respuesta y señal de cancelación cuando el cliente se desconecta
- * Versión: 1.0
+ * Descripción: Datos para pedir asistencia de IA sobre una sesión de simulación activa: sesión, actor (id y rol para la cuota), pregunta opcional del estudiante, idioma de la respuesta, tiempo simulado actual de la consola con lo que muestra (para compararlo con la repetición del servidor), si quedaron cambios sin enviar y señal de cancelación cuando el cliente se desconecta
+ * Versión: 1.1 (tiempo simulado y foto de la consola)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -9,6 +9,7 @@
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
 import { type LanguageValue } from "@/common/domain/value-objects/language";
+import { type ClientAssistSnapshot } from "@/features/simulation/domain/assist/assist-context-check";
 
 export class AssistSimulationCommand {
   public readonly sessionId: string;
@@ -17,6 +18,9 @@ export class AssistSimulationCommand {
   public readonly question?: string;
   public readonly language: LanguageValue;
   public readonly signal?: AbortSignal;
+  public readonly simTimeMs?: number;
+  public readonly clientSnapshot?: ClientAssistSnapshot;
+  public readonly unsentChanges?: boolean;
 
   public constructor({
     sessionId,
@@ -25,6 +29,9 @@ export class AssistSimulationCommand {
     question,
     language,
     signal,
+    simTimeMs,
+    clientSnapshot,
+    unsentChanges,
   }: {
     sessionId: string;
     userId: string;
@@ -32,6 +39,9 @@ export class AssistSimulationCommand {
     question?: string;
     language: LanguageValue;
     signal?: AbortSignal;
+    simTimeMs?: number;
+    clientSnapshot?: ClientAssistSnapshot;
+    unsentChanges?: boolean;
   }) {
     this.sessionId = sessionId;
     this.userId = userId;
@@ -39,5 +49,8 @@ export class AssistSimulationCommand {
     this.question = question;
     this.language = language;
     this.signal = signal;
+    this.simTimeMs = simTimeMs;
+    this.clientSnapshot = clientSnapshot;
+    this.unsentChanges = unsentChanges;
   }
 }

@@ -25,6 +25,7 @@ import { AlarmHelpSimulationUseCase } from "@/features/simulation/application/mo
 import { type MonitorHelpEvent } from "@/features/simulation/application/monitor-help/monitor-help-stream.result";
 import { type RealMonitorState, RealMonitorHelpUseCase } from "@/features/simulation/application/monitor-help/real-monitor-help.usecase";
 import { RealAlarmHelpDTO, RealAssistDTO, SimulationAlarmHelpDTO } from "@/features/simulation/presentation/dtos/monitor-help-request.dto";
+import { toClientAssistSnapshot } from "@/features/simulation/presentation/dtos/simulation-help-context.dto";
 import {
   abortOnClientDisconnect,
   pipeEventsToSse,
@@ -39,7 +40,7 @@ const ALARM_HELP_FAILED_CODE: string = "simulation.alarm_help_failed";
 const ASSIST_FAILED_CODE: string = "simulation.assist_failed";
 
 const STREAM_DESCRIPTION: string =
-  "Responds text/event-stream: `event: rules` with `{alarmCode, rules: [{id, text, reference}]}` (deterministic, always first in the alarm help), `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, source}` (plus `aiHelpEventId` for a simulation session; `source` is LLM or DETERMINISTIC; rate an LLM answer with ai-ratings targetType AI_CALL, targetId = aiCallId, surface SIM_ALARM for alarms), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts use the regular JSON error envelope. The AI only suggests: it never sends commands to a ventilator.";
+  "Responds text/event-stream: `event: rules` with `{alarmCode, rules: [{id, text, reference}]}` (deterministic, always first in the alarm help), `event: delta` with `{text}` per fragment, then `event: done` with `{aiCallId, source, analysis, notice?}` (plus `aiHelpEventId` for a simulation session; `analysis` is the state the answer used: `{simTimeMs, severity, patientStatus}` for a session, `{dataAgeMs, stale}` in real mode; `notice` INCONSISTENT_STATE when the AI contradicted the current state twice and the rule-based suggestion was sent; `source` is LLM or DETERMINISTIC; rate an LLM answer with ai-ratings targetType AI_CALL, targetId = aiCallId, surface SIM_ALARM for alarms), or `event: error` with `{code, message}` if the answer fails after it started. Errors before the stream starts use the regular JSON error envelope. The AI only suggests: it never sends commands to a ventilator.";
 
 function writeMonitorHelpEvent(res: Response, event: MonitorHelpEvent): void {
   if (event.type === "rules") {
@@ -58,6 +59,8 @@ function writeMonitorHelpEvent(res: Response, event: MonitorHelpEvent): void {
     aiCallId: event.aiCallId,
     source: event.source,
     ...(event.aiHelpEventId === undefined ? {} : { aiHelpEventId: event.aiHelpEventId }),
+    ...(event.analysis === undefined ? {} : { analysis: event.analysis }),
+    ...(event.notice === undefined ? {} : { notice: event.notice }),
   });
 }
 
@@ -79,7 +82,7 @@ export class MonitorHelpController {
   @ApiProduces(SSE_CONTENT_TYPE)
   @ApiOperation({
     summary: "How to stabilize an alarm of my active simulation session",
-    description: `Deterministic rules for the alarm in the current context, then an AI suggestion. EXAM sessions follow the assistance policy of the evaluation (ALLOWED_WITH_PENALTY only); every completed answer is recorded as an AI_HELP event of kind ALARM_HELP. ${STREAM_DESCRIPTION}`,
+    description: `Deterministic rules for the alarm in the current context, then an AI suggestion. The state is rebuilt by a server replay up to the simulated time the console sends (simTimeMs, validated like the assistance) and the suggestion is checked against it before it is sent. EXAM sessions follow the assistance policy of the evaluation (ALLOWED_WITH_PENALTY only); every completed answer is recorded as an AI_HELP event of kind ALARM_HELP. ${STREAM_DESCRIPTION}`,
   })
   @ApiResponseDoc({ status: HttpStatus.OK, description: "Server-sent event stream with the rules and the suggestion" })
   @ApiResponseDoc({ status: HttpStatus.BAD_REQUEST, description: "Validation error" })
@@ -103,6 +106,9 @@ export class MonitorHelpController {
       alarmCode: dto.alarmCode,
       language: MonitorHelpController._language(dto.language, i18n),
       signal: controller.signal,
+      simTimeMs: dto.simTimeMs,
+      clientSnapshot: toClientAssistSnapshot(dto.clientSnapshot),
+      unsentChanges: dto.unsentChanges,
     });
 
     await this._pipe(res, events, i18n, ALARM_HELP_FAILED_CODE, `session ${id}`);

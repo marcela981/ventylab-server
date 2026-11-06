@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO de solicitud de asistencia de simulación
- * Descripción: Validación de entrada de la asistencia de IA de una sesión de simulación: pregunta opcional del estudiante (máximo 1000 caracteres) e idioma opcional de la respuesta (es o en)
- * Versión: 1.0
+ * Descripción: Validación de entrada de la asistencia de IA de una sesión de simulación: pregunta opcional del estudiante (máximo 1000 caracteres), idioma opcional de la respuesta (es o en) y el contexto de la consola (tiempo simulado actual, cambios sin enviar y foto de lo que muestra)
+ * Versión: 1.1 (contexto de la consola)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -13,10 +13,11 @@ import { IsIn, IsOptional, IsString, MaxLength } from "class-validator";
 import { i18nValidationMessage } from "nestjs-i18n";
 
 import { LANGUAGE_VALUES } from "@/common/domain/value-objects/language";
+import { SimulationHelpContextDTO } from "@/features/simulation/presentation/dtos/simulation-help-context.dto";
 
 export const MAX_SIMULATION_ASSIST_QUESTION_LENGTH: number = 1000;
 
-export class SimulationAssistDTO {
+export class SimulationAssistDTO extends SimulationHelpContextDTO {
   @ApiPropertyOptional({
     description: "Student question; without it the assistant reviews the current state of the simulation",
     example: "¿Por qué sigue sonando la alarma de presión alta?",
