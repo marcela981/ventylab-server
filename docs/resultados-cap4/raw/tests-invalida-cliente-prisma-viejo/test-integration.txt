@@ -1,0 +1,43 @@
+npm notice run ventylab-server@1.0.0 test:integration
+npm notice run jest --ci --config test/jest/jest.integration.config.js --runInBand
+PASS integration test/integration/demo/demo-reset.integration-spec.ts (75.291 s)
+[31m[Nest] 10872  - [39m06/11/2026, 12:04:01 a. m. [31m  ERROR[39m [38;5;3m[AiTelemetryFacade] [39m[31mAI call log write failed: PrismaClientValidationError[39m
+[31m[Nest] 10872  - [39m06/11/2026, 12:04:03 a. m. [31m  ERROR[39m [38;5;3m[AiTelemetryFacade] [39m[31mAI call log write failed: PrismaClientValidationError[39m
+PASS integration test/integration/concurrency/evaluation-feedback-concurrency.integration-spec.ts (24.008 s)
+[31m[Nest] 10872  - [39m06/11/2026, 12:04:09 a. m. [31m  ERROR[39m [38;5;3m[AiTelemetryFacade] [39m[31mAI call log write failed: PrismaClientValidationError[39m
+PASS integration test/integration/concurrency/submissions-concurrency.integration-spec.ts (10.242 s)
+PASS integration test/integration/demo/demo-panels.integration-spec.ts (12.222 s)
+PASS integration test/integration/progress/progress.integration-spec.ts (14.158 s)
+PASS integration test/integration/progress/learning-activity.integration-spec.ts (13.112 s)
+PASS integration test/integration/notes/notes.integration-spec.ts (9.769 s)
+PASS integration test/integration/users/users.integration-spec.ts (9.989 s)
+PASS integration test/integration/content/curriculum-delete.integration-spec.ts (9.021 s)
+PASS integration test/integration/evaluation/evaluation-attempts.integration-spec.ts (8.972 s)
+PASS integration test/integration/groups/groups.integration-spec.ts (10.024 s)
+PASS integration test/integration/evaluation/evaluation-attempts-list.integration-spec.ts (8.426 s)
+PASS integration test/integration/progress/achievements.integration-spec.ts (6.584 s)
+PASS integration test/integration/progress/continue-learning.integration-spec.ts (6.259 s)
+PASS integration test/integration/notifications/notifications.integration-spec.ts (6.52 s)
+[31m[Nest] 10872  - [39m06/11/2026, 12:06:17 a. m. [31m  ERROR[39m [38;5;3m[AiTelemetryFacade] [39m[31mAI call log write failed: PrismaClientValidationError[39m
+PASS integration test/integration/evaluation/grade-feedback-supersession.integration-spec.ts (8.963 s)
+PASS integration test/integration/content/module-lessons-page-count.integration-spec.ts (6.099 s)
+PASS integration test/integration/content/curriculum-lesson-count.integration-spec.ts (5.563 s)
+PASS integration test/integration/content/curriculum-import.integration-spec.ts
+PASS integration test/integration/platform-settings/platform-settings.integration-spec.ts (6.505 s)
+PASS integration test/integration/concurrency/ventilator-preemption-concurrency.integration-spec.ts (5.278 s)
+PASS integration test/integration/infra.integration-spec.ts
+PASS integration test/integration/database/protection-triggers.integration-spec.ts
+[32m[Nest] 10872  - [39m06/11/2026, 12:06:54 a. m. [32m    LOG[39m [38;5;3m[ClinicalCasesBootstrapService] [39m[32mSeed clinical cases: 8 inserted, 0 already present[39m
+[32m[Nest] 10872  - [39m06/11/2026, 12:06:54 a. m. [32m    LOG[39m [38;5;3m[ClinicalCasesBootstrapService] [39m[32mSeed clinical cases: 8 inserted, 0 already present[39m
+[32m[Nest] 10872  - [39m06/11/2026, 12:06:54 a. m. [32m    LOG[39m [38;5;3m[ClinicalCasesBootstrapService] [39m[32mSeed clinical cases: 0 inserted, 8 already present[39m
+PASS integration src/features/clinical-cases/infrastructure/bootstrap/clinical-cases-bootstrap.integration-spec.ts
+[32m[Nest] 10872  - [39m06/11/2026, 12:06:55 a. m. [32m    LOG[39m [38;5;3m[ClinicalCasesBootstrapService] [39m[32mSeed clinical cases: 8 inserted, 0 already present[39m
+[32m[Nest] 10872  - [39m06/11/2026, 12:06:55 a. m. [32m    LOG[39m [38;5;3m[ClinicalCasesBootstrapService] [39m[32mSeed clinical cases: 0 inserted, 8 already present[39m
+PASS integration src/features/reservations/infrastructure/persistence/prisma/reservations-concurrency.integration-spec.ts
+PASS integration test/integration/resilience/event-bus-subscriber-isolation.integration-spec.ts
+
+Test Suites: 26 passed, 26 total
+Tests:       2 skipped, 95 passed, 97 total
+Snapshots:   0 total
+Time:        274.281 s
+Ran all test suites.

@@ -1,0 +1,30 @@
+npm notice run ventylab-server@1.0.0 test:load:telemetry
+npm notice run node scripts/load/run-load.mjs telemetry --out-dir docs/resultados-cap4/raw/telemetry
+[load] http://127.0.0.1:4000/health/ready -> 200
+$ docker network inspect --format {{.Name}} ventylab-local_internal
+ventylab-local_internal
+$ npx tsx scripts/load/seed-load-data.ts
+npm notice run ventylab-server@1.0.0 npx
+npm notice run tsx scripts/load/seed-load-data.ts
+Load data ready: 30 students in group f392fa5e-ae35-5dcd-8fbf-c7d609ffa10e, 0 progress rows cloned, active group reservation 7e0121bb-b84b-5f0f-8aed-fec7c95e7b4f for 90 min
+[load] telemetry phase "mqttx"
+(node:27184) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[measure] 30 clients connected to http://127.0.0.1:4000; warm-up 5 s, measuring 300 s
+telemetry-mqttx
+ventylab-local-node-red-1	0.00%	41.95MiB / 11.53GiB
+ventylab-local-backend-1	1.13%	136.1MiB / 11.53GiB
+ventylab-local-mosquitto-1	0.04%	1.281MiB / 11.53GiB
+ventylab-local-postgres-1	4.20%	90.62MiB / 11.53GiB
+
+[load] telemetry phase "node"
+[measure] 30 clients connected to http://127.0.0.1:4000; warm-up 5 s, measuring 300 s
+telemetry-node
+ventylab-local-node-red-1	0.03%	42.48MiB / 11.53GiB
+ventylab-local-backend-1	1.29%	147.9MiB / 11.53GiB
+ventylab-local-mosquitto-1	0.05%	1.836MiB / 11.53GiB
+ventylab-local-postgres-1	9.63%	77.11MiB / 11.53GiB
+
+[load] mqttx: {"publisher":{"image":"emqx/mqttx-cli:v1.12.1","intervalMs":17,"nominalRate":58.82,"seconds":315,"exitCode":137},"latencyMs":{"endToEndFromDeviceTs":{"count":0,"min":null,"mean":null,"p50":null,"p90":null,"p95":null,"p99":null,"max":null},"brokerRelative":{"count":0,"min":null,"mean":null,"p50":null,"p90":null,"p95":null,"p99":null,"max":null},"serverTsToClient":{"count":258360,"min":-2,"mean":1.79,"p50":1,"p90":4,"p95":5,"p99":9,"max":87},"interBatchGap":{"count":258330,"min":0,"mean":33.25,"p50":33,"p90":34,"p95":35,"p99":39,"max":118}},"framesPerClient":{"count":30,"min":16599,"mean":16599,"p50":16599,"p90":16599,"p95":16599,"p99":16599,"max":16599},"joinRejected":0}
+[load] node: {"publisher":{"published":18600,"elapsedS":310,"effectiveRate":60,"topic":"/ventynet/data","marker":"LOADTEST"},"latencyMs":{"endToEndFromDeviceTs":{"count":540000,"min":1,"mean":21.54,"p50":20,"p90":35,"p95":36,"p99":41,"max":85},"brokerRelative":{"count":539879,"min":0,"mean":19.46,"p50":18,"p90":33,"p95":34,"p99":38,"max":71},"serverTsToClient":{"count":270570,"min":-1,"mean":2.52,"p50":2,"p90":5,"p95":7,"p99":10,"max":39},"interBatchGap":{"count":270540,"min":3,"mean":33.26,"p50":33,"p90":35,"p95":36,"p99":40,"max":77}},"framesPerClient":{"count":30,"min":18000,"mean":18000,"p50":18000,"p90":18000,"p95":18000,"p99":18000,"max":18000},"joinRejected":0}
+[load] results in C:\Users\<usuario>\Documents\Marce\ventylab\ventylab-server\docs\resultados-cap4\raw\telemetry

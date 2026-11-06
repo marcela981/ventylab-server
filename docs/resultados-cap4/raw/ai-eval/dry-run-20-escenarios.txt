@@ -1,0 +1,16 @@
+npm notice run ventylab-server@1.0.0 npx
+npm notice run tsx scripts/ai-eval/run-eval.ts --dry-run
+Run 2026-11-06T11-59-34Z: 20 scenarios x 1 providers x 1 repetitions (dry run)
+  eval-01-respuestas-correctas | fake | #1 | ok | 106 ms
+  eval-02-respuestas-parciales | fake | #1 | ok | 122 ms
+  eval-03-respuestas-incorrectas | fake | #1 | ok | 122 ms
+  eval-04-abierta-parcial-peso-predicho | fake | #1 | ok | 61 ms
+  eval-05-abierta-inyeccion-de-prompt | fake | #1 | ok | 61 ms
+  eval-06-simulacion-parcial | fake | #1 | ok | 45 ms
+  lesson-01-pico-vs-meseta | fake | #1 | ok | 43 ms
+  lesson-02-peep-alta-siempre | fake | #1 | ok | 45 ms
+  lesson-03-paciente-real-limite | fake | #1 | ok | 47 ms
+  page-01-vili-profundizar | fake | #1 | ok | 47 ms
+  page-02-medicion-auto-peep | fake | #1 | ok | 49 ms
+  page-03-presion-distension-mortalidad | fake | #1 | ok | 45 ms
+TypeError: Cannot read properties of undefined (reading 'status')

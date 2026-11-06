@@ -1,0 +1,30 @@
+{
+  "runId": "2026-11-06T11-59-37Z",
+  "dryRun": true,
+  "startedAt": "2026-11-06T11:59:37.727Z",
+  "finishedAt": "2026-11-06T11:59:38.568Z",
+  "gitCommit": "59fc1e929358d8bf047cbc1281beac1d5cdd7fd0",
+  "node": "v24.19.0",
+  "envFileLoaded": false,
+  "providers": [
+    "fake"
+  ],
+  "scenarioIds": [
+    "eval-01-respuestas-correctas",
+    "eval-02-respuestas-parciales",
+    "eval-03-respuestas-incorrectas",
+    "eval-04-abierta-parcial-peso-predicho",
+    "eval-05-abierta-inyeccion-de-prompt",
+    "eval-06-simulacion-parcial",
+    "lesson-01-pico-vs-meseta",
+    "lesson-02-peep-alta-siempre",
+    "lesson-03-paciente-real-limite",
+    "page-01-vili-profundizar",
+    "page-02-medicion-auto-peep",
+    "page-03-presion-distension-mortalidad"
+  ],
+  "repeat": 1,
+  "calls": 12,
+  "failedCalls": 0,
+  "note": "Direct single-provider calls: no gateway fallback chain, retries, circuit breaker, quota or deterministic fallback."
+}

@@ -1,0 +1,43 @@
+npm notice run ventylab-server@1.0.0 test:load:http
+npm notice run node scripts/load/run-load.mjs http --out-dir docs/resultados-cap4/raw/http-30
+[load] http://127.0.0.1:4000/health/ready -> 200
+$ docker network inspect --format {{.Name}} ventylab-local_internal
+ventylab-local_internal
+$ npx tsx scripts/load/seed-load-data.ts
+npm notice run ventylab-server@1.0.0 npx
+npm notice run tsx scripts/load/seed-load-data.ts
+Load data ready: 30 students in group f392fa5e-ae35-5dcd-8fbf-c7d609ffa10e, 249 progress rows cloned, active group reservation 7e0121bb-b84b-5f0f-8aed-fec7c95e7b4f for 90 min
+$ docker run --rm --network ventylab-local_internal -v C:\Users\<usuario>\Documents\Marce\ventylab\ventylab-server\scripts\load\k6:/scripts:ro -v C:\Users\<usuario>\Documents\Marce\ventylab\ventylab-server\docs\resultados-cap4\raw\http-30:/out grafana/k6:1.3.0 run --quiet -e BASE_URL=http://backend:4000 -e GROUP_ID=f392fa5e-ae35-5dcd-8fbf-c7d609ffa10e -e STUDENT_EMAILS=load-student-01@ventylab.load,load-student-02@ventylab.load,load-student-03@ventylab.load,load-student-04@ventylab.load,load-student-05@ventylab.load,load-student-06@ventylab.load,load-student-07@ventylab.load,load-student-08@ventylab.load,load-student-09@ventylab.load,load-student-10@ventylab.load,load-student-11@ventylab.load,load-student-12@ventylab.load,load-student-13@ventylab.load,load-student-14@ventylab.load,load-student-15@ventylab.load,load-student-16@ventylab.load,load-student-17@ventylab.load,load-student-18@ventylab.load,load-student-19@ventylab.load,load-student-20@ventylab.load,load-student-21@ventylab.load,load-student-22@ventylab.load,load-student-23@ventylab.load,load-student-24@ventylab.load,load-student-25@ventylab.load,load-student-26@ventylab.load,load-student-27@ventylab.load,load-student-28@ventylab.load,load-student-29@ventylab.load,load-student-30@ventylab.load -e LOAD_PASSWORD=<demo-password> -e DURATION=3m -e STUDENT_VUS=30 -e TEACHER_VUS=2 -e SUMMARY_PATH=/out/http-summary.json /scripts/http-load.js
+Unable to find image 'grafana/k6:1.3.0' locally
+1.3.0: Pulling from grafana/k6
+4f4fb700ef54: Pulling fs layer
+e488bc2c5497: Pulling fs layer
+9824c27679d3: Pulling fs layer
+14c020c6cf1f: Pulling fs layer
+4f4fb700ef54: Already exists
+ecfdb57cf3d2: Download complete
+e488bc2c5497: Download complete
+9824c27679d3: Download complete
+9824c27679d3: Pull complete
+e488bc2c5497: Pull complete
+14c020c6cf1f: Download complete
+4f4fb700ef54: Pull complete
+14c020c6cf1f: Pull complete
+Digest: sha256:3ddc8b1a33a2c3d8edc6e99b6a762ae36cba08788463458f5e6a7703e14eb77d
+Status: Downloaded newer image for grafana/k6:1.3.0
+
+VUs: 30 students + 2 teachers, duration 3m, think time 1 s, requests 5371 (28.6 req/s)
+progress_overview          n=   998  p50=  131.8  p95=  301.7  p99=  893.6  max=  957.2 ms  errors=0.0 %
+progress_summary           n=   998  p50=  114.0  p95=  216.8  p99=  296.0  max=  374.7 ms  errors=0.0 %
+progress_module            n=   998  p50=   85.7  p95=  167.3  p99=  235.9  max=  311.8 ms  errors=0.0 %
+my_evaluations             n=   998  p50=   58.6  p95=  153.5  p99=  270.7  max=  451.2 ms  errors=0.0 %
+module_full                n=   998  p50=   33.5  p95=   90.9  p99=  135.9  max=  236.8 ms  errors=0.0 %
+analytics_group_dashboard  n=   174  p50=   29.2  p95=  161.9  p99=  446.2  max=  767.7 ms  errors=0.0 %
+evaluations_list           n=   174  p50=   25.9  p95=   77.4  p99=  192.2  max=  226.2 ms  errors=0.0 %
+http
+ventylab-local-node-red-1	0.00%	41.18MiB / 11.53GiB
+ventylab-local-backend-1	1.59%	195.1MiB / 11.53GiB
+ventylab-local-mosquitto-1	0.06%	1.277MiB / 11.53GiB
+ventylab-local-postgres-1	0.10%	96.04MiB / 11.53GiB
+
+[load] results in C:\Users\<usuario>\Documents\Marce\ventylab\ventylab-server\docs\resultados-cap4\raw\http-30

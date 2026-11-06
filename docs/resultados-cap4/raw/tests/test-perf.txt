@@ -1,0 +1,13 @@
+npm notice run ventylab-server@1.0.0 test:perf
+npm notice run node scripts/verify/run-perf.mjs
+PASS src/features/simulation/domain/engine/engine-determinism.spec.ts
+  engine determinism
+    √ produces an identical metrics timeline hash for the same case, seed and events (909 ms)
+    √ changes the hash with a different seed when noise is on and keeps it when noise is off (306 ms)
+    √ replays ten simulated minutes at 50 Hz sampling in under 500 ms (73 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       3 passed, 3 total
+Snapshots:   0 total
+Time:        2.247 s
+Ran all test suites matching engine-determinism\.spec\.ts$.

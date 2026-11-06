@@ -1,0 +1,70 @@
+npm notice run ventylab-server@1.0.0 demo:seed
+npm notice run tsx prisma/demo/run-demo-command.ts seed
+Demo seed finished in 2713 ms. Demo password for every seeded account: <demo-password>
+Rows per business table (audit_logs is append-only and excluded):
+table                       | rows
+----------------------------|------
+accounts                    |     0
+achievements                |     0
+activities                  |     0
+activity_assignments        |     0
+activity_submissions        |     0
+ai_call_logs                |    39
+ai_conversations            |     3
+ai_messages                 |     8
+ai_ratings                  |     3
+app_settings                |     3
+change_logs                 |     0
+clinical_cases              |    11
+content_overrides           |     0
+error_logs                  |     0
+evaluation_answers          |   167
+evaluation_assignments      |    18
+evaluation_attempt_grants   |     0
+evaluation_attempts         |     0
+evaluation_question_options |    57
+evaluation_questions        |    24
+evaluation_scenarios        |     0
+evaluations                 |     9
+expert_configurations       |     0
+grade_feedbacks             |    32
+group_members               |    12
+group_supervisions          |     2
+groups                      |     3
+learning_activity_events    |     0
+lesson_completions          |    23
+lessons                     |     3
+level_prerequisites         |     0
+levels                      |     1
+media                       |     0
+module_prerequisites        |     0
+modules                     |     2
+notes                       |     5
+notifications               |    65
+page_progress               |    45
+page_revisions              |     6
+page_sections               |    12
+pages                       |     6
+password_reset_tokens       |     0
+platform_settings           |     0
+quiz_attempts               |     0
+quizzes                     |     0
+reservations                |     9
+scores                      |     0
+sections                    |     2
+sessions                    |     0
+simulation_events           |    24
+simulation_sessions         |     8
+simulator_sessions          |     0
+steps                       |     0
+student_evaluation_attempts |    64
+teacher_students            |     0
+telemetry_chunks            |     0
+user_activity_days          |     0
+user_progress               |    15
+users                       |    13
+ventilator_commands         |     0
+ventilator_reservations     |     0
+verification_tokens         |     0
+----------------------------|------
+total                       |   694
