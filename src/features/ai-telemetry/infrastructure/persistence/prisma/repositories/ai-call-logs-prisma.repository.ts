@@ -96,6 +96,10 @@ const ROW_SELECT: Record<keyof AiCallLogRowModel, true> = {
   maxOutputTokens: true,
   attemptTrail: true,
   providerRequestId: true,
+  contextHash: true,
+  simTimeMs: true,
+  contextCheck: true,
+  rejectionReason: true,
 };
 
 @Injectable()

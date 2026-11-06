@@ -93,6 +93,10 @@ export class AiCallLogsMapper {
       maxOutputTokens: entry.maxOutputTokens ?? null,
       attemptTrail: entry.attemptTrail ? (entry.attemptTrail as unknown as Prisma.InputJsonArray) : Prisma.DbNull,
       providerRequestId: entry.providerRequestId ?? null,
+      contextHash: entry.contextHash ?? null,
+      simTimeMs: entry.simTimeMs === undefined ? null : Math.round(entry.simTimeMs),
+      contextCheck: entry.contextCheck ?? null,
+      rejectionReason: entry.rejectionReason ?? null,
       ...(entry.createdAt ? { createdAt: entry.createdAt } : {}),
     };
   }
@@ -137,6 +141,10 @@ export class AiCallLogsMapper {
       maxOutputTokens: row.maxOutputTokens ?? undefined,
       attemptTrail: Array.isArray(row.attemptTrail) ? (row.attemptTrail as unknown as AiCallAttemptTrailEntry[]) : undefined,
       providerRequestId: row.providerRequestId ?? undefined,
+      contextHash: row.contextHash ?? undefined,
+      simTimeMs: row.simTimeMs ?? undefined,
+      contextCheck: row.contextCheck ?? undefined,
+      rejectionReason: row.rejectionReason ?? undefined,
     };
   }
 

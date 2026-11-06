@@ -41,7 +41,13 @@ function writeAssistEvent(res: Response, event: SimulationAssistEvent): void {
     return;
   }
 
-  writeEvent(res, "done", { aiHelpEventId: event.aiHelpEventId, aiCallId: event.aiCallId, source: event.source });
+  writeEvent(res, "done", {
+    aiHelpEventId: event.aiHelpEventId,
+    aiCallId: event.aiCallId,
+    source: event.source,
+    analysis: event.analysis,
+    ...(event.notice === undefined ? {} : { notice: event.notice }),
+  });
 }
 
 function openStream(res: Response): void {

@@ -40,6 +40,10 @@ export interface AiCallRecord {
   readonly maxOutputTokens?: number;
   readonly attemptTrail: readonly AiAttemptTrailEntry[];
   readonly providerRequestId?: string;
+  readonly contextHash?: string;
+  readonly simTimeMs?: number;
+  readonly contextCheck?: string;
+  readonly rejectionReason?: string;
 }
 
 export interface IAiCallRecorder {

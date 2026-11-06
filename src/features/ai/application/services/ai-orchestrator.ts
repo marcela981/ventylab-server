@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Orquestador de proveedores de IA
- * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada; v1.4: resuelve el identificador heredado custom como external (sin repetir un proveedor en la cadena) y el modelo "default" o ausente con el modelo por defecto del proveedor; v1.5: la respuesta de respaldo del consumidor se registra como FALLBACK con el proveedor deterministic; v1.6: opciones con sujeto de cuota separado de la atribución (quotaUserId, quotaUserRole); v1.7: telemetría por llamada con idioma, temperatura y máximo de tokens de salida usados, motivo de fin normalizado (error si la llamada falla), id de petición del proveedor, rastro de cada intento (proveedor, modelo, resultado, código y latencia; fallback con el proveedor deterministic) y TTFT también en llamadas sin stream (igual a la latencia total hasta la respuesta); v1.8: espera entre reintentos con retroceso exponencial y jitter completo acotado o el Retry-After del proveedor (acotado); si todos los intentos fallaron por límite de tasa y no hay respaldo, el 503 lleva la hora de reintento más tardía informada
- * Versión: 1.8
+ * Descripción: Recorre la cadena de proveedores de un caso de uso omitiendo los no registrados o con el cortocircuito abierto, aplica tiempo límite por intento con AbortController, un reintento ante errores transitorios, respaldo determinista del consumidor o 503, abortos del llamador, streams con TTFT, registra el resultado de cada llamada sin bloquearla, registra las llamadas bloqueadas por estar fuera de tema sin intentos, expone los ajustes del tutor y la salud de cada proveedor conocido (configurado y foto del cortocircuito), el catálogo de proveedores con los modelos conocidos (con precio o referenciados por los ajustes vigentes de algún caso de uso) y ejecuta la sonda manual de un proveedor: un solo intento sin reintentos con el prompt mínimo, que actualiza el cortocircuito y se registra en la telemetría como cualquier llamada; v1.4: resuelve el identificador heredado custom como external (sin repetir un proveedor en la cadena) y el modelo "default" o ausente con el modelo por defecto del proveedor; v1.5: la respuesta de respaldo del consumidor se registra como FALLBACK con el proveedor deterministic; v1.6: opciones con sujeto de cuota separado de la atribución (quotaUserId, quotaUserRole); v1.7: telemetría por llamada con idioma, temperatura y máximo de tokens de salida usados, motivo de fin normalizado (error si la llamada falla), id de petición del proveedor, rastro de cada intento (proveedor, modelo, resultado, código y latencia; fallback con el proveedor deterministic) y TTFT también en llamadas sin stream (igual a la latencia total hasta la respuesta); v1.8: espera entre reintentos con retroceso exponencial y jitter completo acotado o el Retry-After del proveedor (acotado); si todos los intentos fallaron por límite de tasa y no hay respaldo, el 503 lleva la hora de reintento más tardía informada; v1.9: opciones trace (hash y tiempo simulado del contexto, comparación cliente-servidor) y validate (una respuesta completa que el consumidor descarta se registra con rejectionReason y lo devuelve en el resultado)
+ * Versión: 1.9
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -72,6 +72,16 @@ export interface AiCallOptions {
   readonly signal?: AbortSignal;
   readonly refType?: string;
   readonly refId?: string;
+  /** Context of the call stored with its telemetry (simulator: hash of the state sent and its simulated time) */
+  readonly trace?: AiCallTrace;
+  /** Checks a provider answer once complete; a returned reason discards it (recorded as rejectionReason) */
+  readonly validate?: (content: string) => string | undefined;
+}
+
+export interface AiCallTrace {
+  readonly contextHash?: string;
+  readonly simTimeMs?: number;
+  readonly contextCheck?: string;
 }
 
 export interface AiProbeLimits {
@@ -113,6 +123,7 @@ interface CallTracker {
 interface RecordOutcome {
   readonly status: AiCallStatus;
   readonly completion?: LlmCompletion;
+  readonly rejectionReason?: string;
 }
 
 interface OpenedStream {
@@ -269,9 +280,18 @@ export class AiOrchestrator {
         // Without streaming the first token arrives with the whole answer, so TTFT equals the latency until the response.
         tracker.ttftMs = Date.now() - tracker.startedAt;
 
-        this._record(request, tracker, { status: "SUCCESS", completion });
+        const rejectionReason: string | undefined = request.options.validate?.(completion.text);
 
-        return { content: completion.text, source: "LLM", provider: target.provider.id, model: tracker.model, aiCallId: tracker.id };
+        this._record(request, tracker, { status: "SUCCESS", completion, rejectionReason });
+
+        return {
+          content: completion.text,
+          source: "LLM",
+          provider: target.provider.id,
+          model: tracker.model,
+          aiCallId: tracker.id,
+          ...(rejectionReason === undefined ? {} : { rejectionReason }),
+        };
       } catch (error: unknown) {
         if (this._isCallerAborted(request)) {
           break;
@@ -484,9 +504,21 @@ export class AiOrchestrator {
     tracker.model = final?.model || target.model;
 
     this._pushTrail(tracker, { provider: target.provider.id, model: tracker.model, outcome: "success", latencyMs: Date.now() - opened.startedAt });
-    this._record(request, tracker, { status: "SUCCESS", completion: final ?? { text: content, model: tracker.model } });
+    const rejectionReason: string | undefined = request.options.validate?.(content);
 
-    yield { type: "done", result: { content, source: "LLM", provider: target.provider.id, model: tracker.model, aiCallId: tracker.id } };
+    this._record(request, tracker, { status: "SUCCESS", completion: final ?? { text: content, model: tracker.model }, rejectionReason });
+
+    yield {
+      type: "done",
+      result: {
+        content,
+        source: "LLM",
+        provider: target.provider.id,
+        model: tracker.model,
+        aiCallId: tracker.id,
+        ...(rejectionReason === undefined ? {} : { rejectionReason }),
+      },
+    };
   }
 
   private async _completeWithRetry(target: ProviderTarget, request: AiOrchestrationRequest, settings: AiUseCaseSettings, tracker: CallTracker): Promise<LlmCompletion> {
@@ -741,6 +773,10 @@ export class AiOrchestrator {
       maxOutputTokens: tracker.maxOutputTokens,
       attemptTrail: [...tracker.trail],
       providerRequestId: outcome.completion?.providerRequestId,
+      contextHash: request.options.trace?.contextHash,
+      simTimeMs: request.options.trace?.simTimeMs,
+      contextCheck: request.options.trace?.contextCheck,
+      rejectionReason: outcome.rejectionReason,
     };
 
     try {

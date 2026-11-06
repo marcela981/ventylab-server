@@ -68,7 +68,8 @@
     "assist_language_invalid": "language debe ser es o en",
     "patient_value_out_of_range": "{property} está fuera del rango permitido",
     "alarm_code_invalid": "alarmCode debe ser un código de alarma en mayúsculas (por ejemplo HIGH_PRESSURE)",
-    "monitor_state_invalid": "state contiene un valor inválido"
+    "monitor_state_invalid": "state contiene un valor inválido",
+    "help_context_invalid": "El estado de la consola enviado con la ayuda contiene un valor inválido"
   },
   "alarm_help_failed": "La ayuda de la alarma no pudo terminar la respuesta, inténtalo más tarde"
 }

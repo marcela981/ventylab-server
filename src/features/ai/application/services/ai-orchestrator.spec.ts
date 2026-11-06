@@ -249,6 +249,19 @@ describe("AiOrchestrator", () => {
   });
 
   describe("stream", () => {
+    it("should record the call trace and a rejection reason from the caller's validator, returning it in the result", async () => {
+      const provider: FakeLlmProvider = new FakeLlmProvider("main", { kind: "stream", chunks: ["El paciente ", "está estable"], chunkDelayMs: 10 });
+      const { orchestrator, recorder } = buildOrchestrator([provider]);
+      const trace: { contextHash: string; simTimeMs: number; contextCheck: string } = { contextHash: "a".repeat(64), simTimeMs: 76200, contextCheck: "MATCH" };
+
+      const chunks: AiStreamChunk[] = await settle(
+        collect(orchestrator.stream(buildRequest({ trace, validate: (content: string): string | undefined => (content.includes("estable") ? "inconsistency" : undefined) }))),
+      );
+
+      expect(chunks[chunks.length - 1]).toMatchObject({ type: "done", result: { content: "El paciente está estable", rejectionReason: "inconsistency" } });
+      expect(recorder.last).toMatchObject({ status: "SUCCESS", contextHash: trace.contextHash, simTimeMs: 76200, contextCheck: "MATCH", rejectionReason: "inconsistency" });
+    });
+
     it("should stream deltas, emit a final result and record TTFT", async () => {
       const provider: FakeLlmProvider = new FakeLlmProvider("main", {
         kind: "stream",

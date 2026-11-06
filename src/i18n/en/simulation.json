@@ -68,7 +68,8 @@
     "assist_language_invalid": "language must be es or en",
     "patient_value_out_of_range": "{property} is outside the allowed range",
     "alarm_code_invalid": "alarmCode must be an upper-case alarm code (e.g. HIGH_PRESSURE)",
-    "monitor_state_invalid": "state contains an invalid value"
+    "monitor_state_invalid": "state contains an invalid value",
+    "help_context_invalid": "The console state sent with the help request contains an invalid value"
   },
   "alarm_help_failed": "The alarm help could not finish the answer, try again later"
 }

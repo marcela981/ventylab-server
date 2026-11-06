@@ -16,8 +16,12 @@ import { AiQuotaExceededError } from "@/features/ai/domain/ai.errors";
 import { type SimAssistPromptInput } from "@/features/ai/domain/prompts/prompt-registry";
 import { type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
 import { AssistSimulationCommand } from "@/features/simulation/application/assist/assist-simulation.command";
-import { AssistSimulationUseCase, SIMULATION_ASSIST_REF_TYPE } from "@/features/simulation/application/assist/assist-simulation.usecase";
-import { type SimulationAssistEvent, type SimulationAssistStreamResult } from "@/features/simulation/application/assist/simulation-assist-stream.result";
+import { analysisOf, AssistSimulationUseCase, SIMULATION_ASSIST_REF_TYPE } from "@/features/simulation/application/assist/assist-simulation.usecase";
+import {
+  type SimulationAssistEvent,
+  type SimulationAssistStreamResult,
+  type SimulationHelpAnalysis,
+} from "@/features/simulation/application/assist/simulation-assist-stream.result";
 import {
   type SimulationAiHelpRecord,
   type SimulationAssistContext,
@@ -79,15 +83,18 @@ function assistContext(mode: "FREE" | "EXAM", assistancePolicy: AssistancePolicy
     assistancePolicy,
     rubric: { ...DEFAULT_SIMULATION_RUBRIC, assistancePolicy },
     input: { ...(input ?? buildAssistInput()), mode },
+    comparison: { check: "NO_CLIENT_SNAPSHOT", differences: [] },
   };
 }
+
+const ANALYSIS: SimulationHelpAnalysis = analysisOf(assistContext("FREE", "DISABLED"));
 
 function command(overrides: Partial<{ question: string; signal: AbortSignal }> = {}): AssistSimulationCommand {
   return new AssistSimulationCommand({ sessionId: SESSION_ID, userId: USER_ID, userRole: "STUDENT", language: "es", ...overrides });
 }
 
 describe("AssistSimulationUseCase", () => {
-  let getAssistContext: jest.Mock<Promise<SimulationAssistContext>, [string, string]>;
+  let getAssistContext: jest.Mock<Promise<SimulationAssistContext>, [string, string, unknown]>;
   let recordAiHelp: jest.Mock<Promise<string>, [string, string, SimulationAiHelpRecord]>;
   let stream: jest.Mock<Promise<AsyncIterable<AiStreamChunk>>, StreamCall>;
   let getUserById: jest.Mock;
@@ -110,12 +117,13 @@ describe("AssistSimulationUseCase", () => {
 
     const events: SimulationAssistEvent[] = await collect(result);
 
+    // The answer is held until it is complete and checked against the current state, then sent whole.
     expect(events).toEqual([
-      { type: "delta", text: "La presión meseta " },
-      { type: "delta", text: "está en rango." },
-      { type: "done", aiHelpEventId: AI_HELP_EVENT_ID, aiCallId: AI_CALL_ID, source: "LLM" },
+      { type: "delta", text: "La presión meseta está en rango." },
+      { type: "done", aiHelpEventId: AI_HELP_EVENT_ID, aiCallId: AI_CALL_ID, source: "LLM", analysis: ANALYSIS },
     ]);
-    expect(recordAiHelp).toHaveBeenCalledWith(SESSION_ID, USER_ID, { aiCallId: AI_CALL_ID, source: "LLM" });
+    expect(ANALYSIS.simTimeMs).toBe(40000);
+    expect(recordAiHelp).toHaveBeenCalledWith(SESSION_ID, USER_ID, { aiCallId: AI_CALL_ID, source: "LLM", simTimeMs: 40000 });
     expect(stream).toHaveBeenCalledWith(
       "SIM_ASSIST",
       expect.objectContaining({ question: "¿Cómo va la ventilación?", language: "es" }),
@@ -129,8 +137,46 @@ describe("AssistSimulationUseCase", () => {
     const events: SimulationAssistEvent[] = await collect(await useCase.execute(command()));
 
     expect(events[0]).toEqual({ type: "delta", text: adviseDeterministically(assistContext("FREE", "DISABLED").input, "es") });
-    expect(events[1]).toEqual({ type: "done", aiHelpEventId: AI_HELP_EVENT_ID, aiCallId: AI_CALL_ID, source: "DETERMINISTIC" });
-    expect(recordAiHelp).toHaveBeenCalledWith(SESSION_ID, USER_ID, { aiCallId: AI_CALL_ID, source: "DETERMINISTIC" });
+    expect(events[1]).toEqual({ type: "done", aiHelpEventId: AI_HELP_EVENT_ID, aiCallId: AI_CALL_ID, source: "DETERMINISTIC", analysis: ANALYSIS });
+    expect(recordAiHelp).toHaveBeenCalledWith(SESSION_ID, USER_ID, { aiCallId: AI_CALL_ID, source: "DETERMINISTIC", simTimeMs: 40000 });
+  });
+
+  it("sends the current state with its hash and simulated time to the telemetry and passes the console context through", async () => {
+    await collect(await useCase.execute(new AssistSimulationCommand({
+      sessionId: SESSION_ID,
+      userId: USER_ID,
+      userRole: "STUDENT",
+      language: "es",
+      simTimeMs: 40000,
+      clientSnapshot: { spo2Percent: 96 },
+      unsentChanges: true,
+    })));
+
+    const [, input, options]: StreamCall = stream.mock.calls[0];
+
+    expect(getAssistContext).toHaveBeenCalledWith(SESSION_ID, USER_ID, { simTimeMs: 40000, clientSnapshot: { spo2Percent: 96 }, unsentChanges: true });
+    expect(JSON.parse(input.simulationState)).toMatchObject({ simTime: "00:40", simTimeS: 40 });
+    expect(options.trace).toEqual({ contextHash: expect.stringMatching(/^[0-9a-f]{64}$/u), simTimeMs: 40000, contextCheck: "NO_CLIENT_SNAPSHOT" });
+    expect(options.validate).toEqual(expect.any(Function));
+  });
+
+  it("regenerates an answer that contradicts a critical state and then sends the deterministic suggestion with the notice", async () => {
+    const base: AssistSnapshotInput = buildAssistInput({ alarms: [{ code: "LOW_SPO2", severity: "HIGH", value: 72, threshold: 90 }] });
+
+    getAssistContext.mockResolvedValue(assistContext("FREE", "DISABLED", base));
+    stream.mockImplementation((_useCase: string, _input: SimAssistPromptInput, options: AiCallOptions) =>
+      Promise.resolve(chunksOf([
+        { type: "delta", text: "El paciente está estable." },
+        { type: "done", result: { content: "El paciente está estable.", source: "LLM", aiCallId: AI_CALL_ID, rejectionReason: options.validate?.("El paciente está estable.") } },
+      ])));
+
+    const events: SimulationAssistEvent[] = await collect(await useCase.execute(command()));
+
+    expect(stream).toHaveBeenCalledTimes(2);
+    expect(stream.mock.calls[1][1].correction).toContain("estable");
+    expect(events[0]).toEqual({ type: "delta", text: adviseDeterministically(base, "es") });
+    expect(events[1]).toMatchObject({ type: "done", source: "DETERMINISTIC", notice: "INCONSISTENT_STATE" });
+    expect(recordAiHelp).toHaveBeenCalledWith(SESSION_ID, USER_ID, { aiCallId: AI_CALL_ID, source: "DETERMINISTIC", simTimeMs: 40000 });
   });
 
   it("rejects an exam session whose rubric disables assistance with a 403 error before calling the model", async () => {
@@ -148,7 +194,7 @@ describe("AssistSimulationUseCase", () => {
 
     const events: SimulationAssistEvent[] = await collect(await useCase.execute(command()));
 
-    expect(events.at(-1)).toEqual({ type: "done", aiHelpEventId: AI_HELP_EVENT_ID, aiCallId: AI_CALL_ID, source: "LLM" });
+    expect(events.at(-1)).toEqual({ type: "done", aiHelpEventId: AI_HELP_EVENT_ID, aiCallId: AI_CALL_ID, source: "LLM", analysis: ANALYSIS });
     expect(recordAiHelp).toHaveBeenCalledTimes(1);
   });
 
@@ -185,7 +231,7 @@ describe("AssistSimulationUseCase", () => {
 
     const events: SimulationAssistEvent[] = await collect(await useCase.execute(command()));
 
-    expect(events).toEqual([{ type: "delta", text: "Parcial" }]);
+    expect(events).toEqual([]);
     expect(recordAiHelp).not.toHaveBeenCalled();
   });
 });

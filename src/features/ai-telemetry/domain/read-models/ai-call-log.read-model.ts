@@ -62,6 +62,14 @@ export interface AiCallLogDetails {
   readonly maxOutputTokens?: number;
   readonly attemptTrail?: readonly AiCallAttemptTrailEntry[];
   readonly providerRequestId?: string;
+  /** sha256 of the simulator state actually sent to the provider (no personal data) */
+  readonly contextHash?: string;
+  /** Simulated time (ms) the simulator state was rebuilt at */
+  readonly simTimeMs?: number;
+  /** Client snapshot vs server replay: MATCH, DIVERGED or NO_CLIENT_SNAPSHOT */
+  readonly contextCheck?: string;
+  /** Why a provider answer was discarded after it arrived (inconsistency) */
+  readonly rejectionReason?: string;
 }
 
 // Carries no prompt or response text: only the prompt hash is stored.
