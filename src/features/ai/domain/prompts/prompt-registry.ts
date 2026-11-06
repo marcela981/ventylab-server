@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Registro de plantillas de prompt de IA
  * Descripción: Define una plantilla versionada (semver) por caso de uso de IA con su entrada tipada (LESSON_QA y MODULE_QA comparten la plantilla de preguntas sobre contenido); el contenido externo va siempre delimitado; SIM_ASSIST guía al estudiante (qué va bien, qué revisar y por qué) sin dictar valores y, sin pregunta, analiza el estado actual; v1.3: GRADE_FEEDBACK de evaluaciones y NOTES_ANALYSIS (2.0.0) se arman aquí con entrada estructurada e idioma en lugar de recibir el prompt del consumidor, así promptVersion sigue el texto real; la retroalimentación de casos clínicos sigue enviando su prompt de consumidor (variante 1.0.0 de GRADE_FEEDBACK)
- * Versión: 1.4 (SIM_ASSIST 1.2.0 con tendencias y sugerencias priorizadas; SIM_CASE_INTERPRETATION y SIM_ALARM_HELP)
+ * Versión: 1.5 (SIM_ASSIST 1.3.0 y SIM_ALARM_HELP 1.1.0 sobre el estado actual, con las versiones 1.2.0 y 1.0.0 conservadas y elegibles por promptVersion)
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -16,8 +16,12 @@ import { buildNotesAnalysisPrompt, NOTES_ANALYSIS_PROMPT_VERSION, type NotesAnal
 import { type AiMessage, type BuiltPrompt, type PromptTemplate } from "@/features/ai/domain/prompts/prompt-template";
 import {
   buildSimAlarmHelpPrompt,
+  buildSimAssistCurrentStatePrompt,
   buildSimCaseInterpretationPrompt,
+  SIM_ALARM_HELP_LEGACY_PROMPT_VERSION,
   SIM_ALARM_HELP_PROMPT_VERSION,
+  SIM_ASSIST_LEGACY_PROMPT_VERSION,
+  SIM_ASSIST_PROMPT_VERSION,
   SIM_CASE_INTERPRETATION_PROMPT_VERSION,
   type SimAlarmHelpPromptInput,
   type SimCaseInterpretationPromptInput,
@@ -80,6 +84,30 @@ export interface SimAssistPromptInput {
   readonly simulationState: string;
   readonly question: string;
   readonly language?: LanguageValue;
+  /** Template version to build; omitted, the current one (1.3.0) */
+  readonly promptVersion?: string;
+  /** 1.3.0 regeneration after an incoherent answer: what the previous answer got wrong */
+  readonly correction?: string;
+}
+
+function legacySimAssistPrompt(input: SimAssistPromptInput): BuiltPrompt {
+  return {
+    system: withCommonSystemPrompt(SIM_ASSIST_INSTRUCTIONS, input.language),
+    messages: [
+      {
+        role: "user",
+        content: [
+          delimit("estado_simulacion", input.simulationState, SIM_ASSIST_STATE_MAX_LENGTH),
+          delimit("pregunta", input.question.trim().length > 0 ? input.question : SIM_ASSIST_DEFAULT_QUESTION, SIM_ASSIST_QUESTION_MAX_LENGTH),
+        ].join("\n\n"),
+      },
+    ],
+    responseFormat: "text",
+  };
+}
+
+function simAssistVersion(input: SimAssistPromptInput): string {
+  return input.promptVersion === SIM_ASSIST_LEGACY_PROMPT_VERSION ? SIM_ASSIST_LEGACY_PROMPT_VERSION : SIM_ASSIST_PROMPT_VERSION;
 }
 
 export interface AiPromptInputs {
@@ -193,20 +221,11 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplates = {
   SIM_ASSIST: {
     id: "SIM_ASSIST",
     // 1.2.0: prioritized suggestions with the expected change on the curves; the state carries trends and the patient status.
-    version: "1.2.0",
-    build: (input: SimAssistPromptInput): BuiltPrompt => ({
-      system: withCommonSystemPrompt(SIM_ASSIST_INSTRUCTIONS, input.language),
-      messages: [
-        {
-          role: "user",
-          content: [
-            delimit("estado_simulacion", input.simulationState, SIM_ASSIST_STATE_MAX_LENGTH),
-            delimit("pregunta", input.question.trim().length > 0 ? input.question : SIM_ASSIST_DEFAULT_QUESTION, SIM_ASSIST_QUESTION_MAX_LENGTH),
-          ].join("\n\n"),
-        },
-      ],
-      responseFormat: "text",
-    }),
+    // 1.3.0: the current state with its simulated time, "only the current state" and stabilization first when critical.
+    version: SIM_ASSIST_PROMPT_VERSION,
+    versionFor: simAssistVersion,
+    build: (input: SimAssistPromptInput): BuiltPrompt =>
+      simAssistVersion(input) === SIM_ASSIST_LEGACY_PROMPT_VERSION ? legacySimAssistPrompt(input) : buildSimAssistCurrentStatePrompt(input),
   },
   SIM_CASE_INTERPRETATION: {
     id: "SIM_CASE_INTERPRETATION",
@@ -216,6 +235,8 @@ export const AI_PROMPT_TEMPLATES: AiPromptTemplates = {
   SIM_ALARM_HELP: {
     id: "SIM_ALARM_HELP",
     version: SIM_ALARM_HELP_PROMPT_VERSION,
+    versionFor: (input: SimAlarmHelpPromptInput): string =>
+      input.promptVersion === SIM_ALARM_HELP_LEGACY_PROMPT_VERSION ? SIM_ALARM_HELP_LEGACY_PROMPT_VERSION : SIM_ALARM_HELP_PROMPT_VERSION,
     build: buildSimAlarmHelpPrompt,
   },
 };
