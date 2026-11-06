@@ -1960,6 +1960,11 @@ model AiCallLog {
   // [{provider, model, outcome, errorCode, latencyMs}] per provider attempt (retries included) and the deterministic fallback
   attemptTrail      Json?        @map("attempt_trail")
   providerRequestId String?      @map("provider_request_id")
+  // Simulator AI calls: sha256 of the state sent, its simulated time, client/server comparison and discard reason
+  contextHash       String?      @map("context_hash")
+  simTimeMs         Int?         @map("sim_time_ms")
+  contextCheck      String?      @map("context_check")
+  rejectionReason   String?      @map("rejection_reason")
 
   user     User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   messages AiMessage[]

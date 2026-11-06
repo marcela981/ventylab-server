@@ -69,6 +69,10 @@ export class TelemetryAiCallRecorder implements IAiCallRecorder {
       maxOutputTokens: entry.maxOutputTokens,
       attemptTrail: entry.attemptTrail,
       providerRequestId: entry.providerRequestId,
+      contextHash: entry.contextHash,
+      simTimeMs: entry.simTimeMs,
+      contextCheck: entry.contextCheck,
+      rejectionReason: entry.rejectionReason,
     };
   }
 }

@@ -24,6 +24,8 @@ export interface AiResult {
   readonly provider?: string;
   readonly model?: string;
   readonly aiCallId: string;
+  /** Set when the caller's validator discarded the provider answer (for example "inconsistency") */
+  readonly rejectionReason?: string;
 }
 
 export interface AiDeltaChunk {
