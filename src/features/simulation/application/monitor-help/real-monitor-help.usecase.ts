@@ -13,6 +13,7 @@ import { Injectable } from "@nestjs/common";
 import { type LanguageValue } from "@/common/domain/value-objects/language";
 import { AiGateway } from "@/features/ai/application/services/ai-gateway";
 import { type AiStreamChunk } from "@/features/ai/domain/results/ai-result";
+import { contextHashOf } from "@/features/simulation/application/assist/coherent-assist-answer";
 import { type SimulationHelpAnalysis } from "@/features/simulation/application/assist/simulation-assist-stream.result";
 import { type MonitorHelpEvent } from "@/features/simulation/application/monitor-help/monitor-help-stream.result";
 import { SimulationSessionRuntime } from "@/features/simulation/application/services/simulation-session-runtime.service";
@@ -177,6 +178,7 @@ export class RealMonitorHelpUseCase {
         userRole: command.userRole,
         refType: REAL_MONITOR_REF_TYPE,
         refId: command.userId,
+        trace: { contextHash: contextHashOf(monitorState) },
         fallback: (): string => realDeterministicAdvice(command.state, command.language),
         signal: command.signal,
       },
@@ -196,6 +198,7 @@ export class RealMonitorHelpUseCase {
         userRole: command.userRole,
         refType: REAL_MONITOR_REF_TYPE,
         refId: command.userId,
+        trace: { contextHash: contextHashOf(monitorState) },
         fallback: (): string => realDeterministicAdvice({ ...command.state, alarms: [command.alarmCode] }, command.language),
         signal: command.signal,
       },

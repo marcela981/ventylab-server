@@ -188,6 +188,7 @@ describe("RealMonitorHelpUseCase", () => {
 
     expect(sent).toMatchObject({ lastFrameAt: stale.lastFrameAt, dataAgeS: 3.5, stale: true, alarms: [{ code: "HIGH_PRESSURE", value: 42, threshold: 40, priority: "HIGH" }] });
     expect(events.at(-1)).toMatchObject({ type: "done", analysis: { dataAgeMs: 3500, stale: true } });
+    expect(stream.mock.calls[0][2]).toMatchObject({ trace: { contextHash: expect.stringMatching(/^[0-9a-f]{64}$/u) } });
   });
 
   it("cuts the real state by structure so it stays valid JSON", () => {
