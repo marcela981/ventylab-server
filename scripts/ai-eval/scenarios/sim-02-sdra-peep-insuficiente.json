@@ -137,7 +137,8 @@
             "min": 7.3,
             "max": 7.45
           }
-        ]
+        ],
+        "patient": null
       },
       "alarms": [],
       "targets": [

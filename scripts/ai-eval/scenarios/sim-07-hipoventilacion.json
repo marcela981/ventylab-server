@@ -130,7 +130,8 @@
             "min": null,
             "max": 30
           }
-        ]
+        ],
+        "patient": null
       },
       "alarms": [],
       "targets": [
