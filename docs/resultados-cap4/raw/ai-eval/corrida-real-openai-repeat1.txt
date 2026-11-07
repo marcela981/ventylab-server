@@ -1,0 +1,25 @@
+npm notice run ventylab-server@1.0.0 npx
+npm notice run tsx scripts/ai-eval/run-eval.ts --providers openai --repeat 1
+Run 2026-11-07T11-47-28Z: 20 scenarios x 1 providers x 1 repetitions
+  eval-01-respuestas-correctas | openai | #1 | ok | 4667 ms
+  eval-02-respuestas-parciales | openai | #1 | ok | 5232 ms
+  eval-03-respuestas-incorrectas | openai | #1 | ok | 5399 ms
+  eval-04-abierta-parcial-peso-predicho | openai | #1 | ok | 2911 ms
+  eval-05-abierta-inyeccion-de-prompt | openai | #1 | ok | 3174 ms
+  eval-06-simulacion-parcial | openai | #1 | ok | 2532 ms
+  lesson-01-pico-vs-meseta | openai | #1 | ok | 3418 ms
+  lesson-02-peep-alta-siempre | openai | #1 | ok | 2755 ms
+  lesson-03-paciente-real-limite | openai | #1 | ok | 4319 ms
+  page-01-vili-profundizar | openai | #1 | ok | 14780 ms
+  page-02-medicion-auto-peep | openai | #1 | ok | 15175 ms
+  page-03-presion-distension-mortalidad | openai | #1 | ok | 13069 ms
+  sim-01-sdra-vt-por-peso-real | openai | #1 | ok | 7542 ms
+  sim-02-sdra-peep-insuficiente | openai | #1 | ok | 7572 ms
+  sim-03-epoc-auto-peep | openai | #1 | ok | 8310 ms
+  sim-04-pmeseta-alta-por-peep | openai | #1 | ok | 6818 ms
+  sim-05-presion-distension-alta | openai | #1 | ok | 5762 ms
+  sim-06-asma-relacion-ie-inadecuada | openai | #1 | ok | 7276 ms
+  sim-07-hipoventilacion | openai | #1 | ok | 5838 ms
+  sim-08-hiperventilacion | openai | #1 | ok | 9014 ms
+Results: C:\Users\<usuario>\Documents\Marce\ventylab\ventylab-server\scripts\ai-eval\results\2026-11-07T11-47-28Z\raw.jsonl
+         C:\Users\<usuario>\Documents\Marce\ventylab\ventylab-server\scripts\ai-eval\results\2026-11-07T11-47-28Z\summary.csv

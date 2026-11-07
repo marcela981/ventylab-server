@@ -177,15 +177,30 @@ Los valores de `processingMs`, `totalMs` y `flushMs` se truncaron a 4 decimales;
 
 ### Paso 4 — Evaluación de la IA (OE3)
 
-Archivos: `raw/ai-eval/dry-run-20-escenarios.txt`, `raw/ai-eval/dry-run-12-sin-sim.txt`, `raw/ai-eval/dry-run-2026-11-06T11-59-37Z/` (`raw.jsonl`, `summary.csv`).
+Archivos: `raw/ai-eval/dry-run-20-escenarios.txt`, `raw/ai-eval/dry-run-12-sin-sim.txt`, `raw/ai-eval/dry-run-2026-11-06T11-59-37Z/` (`raw.jsonl`, `summary.csv`), `raw/ai-eval/corrida-real-openai-repeat1.txt` y `raw/ai-eval/2026-11-07T11-47-28Z/` (`raw.jsonl`, `summary.csv`, `run-meta.json`).
 
 | Medición | Resultado |
 |---|---|
 | `run-eval.ts --dry-run` (20 escenarios) | **Falla.** Cargan los 20 escenarios ("20 scenarios x 1 providers x 1 repetitions"), pasan los 12 `eval-*`, `lesson-*` y `page-*`, y el primer `sim-*` aborta con `TypeError: Cannot read properties of undefined (reading 'status')`; no se escribe la carpeta de resultados |
 | `run-eval.ts --dry-run --scenarios eval-,lesson-,page-` | 12/12 ok con el proveedor falso; resultados en `scripts/ai-eval/results/dry-run-2026-11-06T11-59-37Z/` (copiados en `raw/ai-eval/`) |
-| Proveedores con clave en `.env` | ninguno: `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` y `AI_EXTERNAL_*` están comentadas o vacías |
-| Estimación de costo con `--repeat 1` | no medido (no hay proveedores configurados) |
-| Corrida real (TTFT, latencia total, % de JSON válido en GRADE_FEEDBACK, tokens, costo, puntaje auxiliar) | no medido |
+| `run-eval.ts --dry-run` (20 escenarios) después de agregar `"patient": null` a los 8 `sim-*.json` (ver Observación 7) | **20/20 ok** con el proveedor falso, salida 0; resultados en `scripts/ai-eval/results/dry-run-2026-11-07T04-34-21Z/` (copiados en `raw/ai-eval/`), log en `raw/ai-eval/dry-run-20-escenarios-patient-null.txt` |
+| Proveedores evaluados | `openai` (único proveedor de producción), modelo por defecto `gpt-4o-mini`; el modelo que reportó la API es `gpt-4o-mini-2024-07-18`. Sin `AI_USE_CASE_SETTINGS` ni `AI_PRICES` (ver Observación 8) |
+| Corrida real `run-eval.ts --providers openai --repeat 1` | run `2026-11-07T11-47-28Z`, commit `7341675`: 20 llamadas, 0 fallidas, 20 con `finishReason` `stop` |
+| Costo total | no medido: la columna `costUsd` quedó vacía en las 20 filas (ver Observación 8) |
+| `rubric.csv` | sin cambios (lo califica el experto) |
+
+Resultados por caso de uso (proveedor `openai`, `gpt-4o-mini-2024-07-18`, una repetición). Mediana: valor central (promedio de los dos centrales con n par). p95: rango más cercano, el valor en la posición ⌈0,95·n⌉ de la lista ordenada; con n ≤ 8 coincide con el máximo. Puntaje auxiliar: media de `autoCoverage` (criterios automáticos cubiertos / total), no es la calificación del experto.
+
+| Caso de uso | n | TTFT mediana (ms) | TTFT p95 (ms) | Total mediana (ms) | Total p95 (ms) | JSON válido | Tokens entrada (media) | Tokens salida (media) | Costo (USD) | Puntaje auxiliar (media) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| GRADE_FEEDBACK | 6 | 904 | 2375 | 3920.5 | 5399 | 6/6 (100 %) | 760.2 | 200.2 | no medido | 0.933 |
+| LESSON_QA | 3 | 589 | 800 | 3418 | 4319 | no aplica | 391.7 | 156.7 | no medido | 0.667 |
+| PAGE_DEEPEN | 3 | 794 | 848 | 14780 | 15175 | no aplica | 325.0 | 830.0 | no medido | 0.750 |
+| SIM_ASSIST | 8 | 692 | 1044 | 7409 | 9014 | no aplica | 1234.9 | 400.5 | no medido | 0.746 |
+| NOTES_ANALYSIS | 0 | no medido (sin escenarios) | — | — | — | — | — | — | — | — |
+| **Total** | 20 | 746 | 1044 | 5800 | 14780 | 6/6 (100 %) | 829.5 | 368.3 | no medido | 0.791 |
+
+Tokens totales: 16590 de entrada y 7365 de salida. Las medianas, p95 y medias se calcularon sobre `summary.csv`; los valores por llamada están en ese archivo.
 | `rubric.csv` | sin cambios (lo califica el experto) |
 
 ## (c) Observaciones
@@ -196,7 +211,7 @@ Archivos: `raw/ai-eval/dry-run-20-escenarios.txt`, `raw/ai-eval/dry-run-12-sin-s
 4. **RNF-01: cumple en la fase Node** (p95 extremo a extremo de 36 ms, frente a la meta de ≤ 100 ms). En la fase mqttx la latencia extremo a extremo y la broker → cliente no se pueden medir porque el mensaje de mqttx no lleva sello de tiempo ni `seq`. Es una medición local de los segmentos L2–L5: no incluye la red real ni el microcontrolador.
 5. **Fase mqttx, código de salida 137.** El contenedor `mqttx bench pub` lo detiene `run-load.mjs` (`docker stop`) al cumplirse su tiempo máximo; es el comportamiento del orquestador, no un fallo de la medición.
 6. **`docker-stats-*.txt` es una sola instantánea** tomada al terminar cada fase, no el promedio durante la carga.
-7. **Paso 4, dry-run: falla en los 8 escenarios `sim-*`.** `buildAssistSnapshot` (`src/features/simulation/domain/assist/assist-snapshot.ts`, SIM_ASSIST 1.2.0, commit fc43bc9) lee `metrics.patient.status` y solo contempla `patient === null`. Los 8 archivos `scripts/ai-eval/scenarios/sim-*.json` no traen la clave `metrics.patient`, así que llega `undefined` y lanza `TypeError`. No se modificó el código; corregirlo requiere actualizar los escenarios o el adaptador de evaluación.
-8. **Paso 4, corrida real: no medida.** No hay ninguna clave de proveedor de IA activa en `.env`. Por eso quedan sin medir la meta de JSON válido ≥ 98 % en GRADE_FEEDBACK y la de mediana de respuesta de IA ≤ 5 s.
+7. **Paso 4, dry-run: fallaba en los 8 escenarios `sim-*`; corregido en los escenarios.** `buildAssistSnapshot` (`src/features/simulation/domain/assist/assist-snapshot.ts`, SIM_ASSIST 1.2.0, commit fc43bc9) lee `metrics.patient.status` y solo contempla `patient === null`. Los 8 archivos `scripts/ai-eval/scenarios/sim-*.json` no traían la clave `metrics.patient`, así que llegaba `undefined` y se lanzaba `TypeError`. Se agregó `"patient": null` en `input.snapshot.metrics` de los 8 archivos, sin ningún otro cambio, y `src/` quedó intacto. **Los escenarios de SIM_ASSIST usan la forma del motor 1.0.0 (`engineVersion: "1.0.0"`), sin el bloque de evolución del paciente:** `patient` vale `null`, como define `EngineMetrics` para el motor 1.0.0. No se derivó ni se inventó ningún dato de paciente (estado, gravedad, frecuencia cardíaca ni agresiones), así que el prompt de SIM_ASSIST de estos escenarios no lleva el bloque `patient`. Después del cambio, el dry-run da 20/20.
+8. **Paso 4, corrida real con OpenAI solamente.** Producción usa solo OpenAI y el `.env` local tiene únicamente `OPENAI_API_KEY` con saldo (la clave de Gemini está definida, pero sin tokens disponibles), así que la corrida se limitó con `--providers openai`. Se usaron los valores por defecto de `ai-settings.provider.ts` (sin `AI_USE_CASE_SETTINGS`), que son los de producción. No hubo desviación de modelo: no se evaluó Anthropic. Metas: **JSON válido ≥ 98 % en GRADE_FEEDBACK: cumple** (6/6, 100 %; muestra de 6 llamadas). **Mediana de respuesta de IA ≤ 5 s: no se cumple en el total** (5800 ms); por caso de uso cumplen GRADE_FEEDBACK (3920.5 ms) y LESSON_QA (3418 ms), y no cumplen SIM_ASSIST (7409 ms) ni PAGE_DEEPEN (14780 ms, la respuesta más larga: 830 tokens de salida en promedio). En cambio, la mediana del primer token (TTFT) es de 746 ms en el total. **Costo: no medido.** El script calcula el costo con el nombre de modelo que devuelve la API (`gpt-4o-mini-2024-07-18`), y la tabla de precios por defecto solo tiene `gpt-4o-mini`; por eso `costUsd` quedó vacío. No se estimó a mano. Con una entrada para `gpt-4o-mini-2024-07-18` en `AI_PRICES` el script lo calcularía. NOTES_ANALYSIS no tiene escenarios en `scripts/ai-eval/scenarios/`. Con una sola repetición no hay variabilidad entre repeticiones.
 9. **Preparación del entorno.** Para levantar el stack se liberaron, con autorización, los puertos 4000 y 55432: se detuvo el contenedor `ventylab-server-postgres` (proyecto `ventylab-dev`, sin borrar volúmenes). El backend `node dist/main` que ocupaba el puerto 4000 ya había terminado cuando se fue a detener.
 10. **Datos sensibles en los archivos crudos.** En los resúmenes de k6 se reemplazaron los JWT de `setup_data` por `<jwt-redactado>`. En los logs se reemplazaron la contraseña de demostración por `<demo-password>` y el nombre de usuario de Windows en las rutas por `<usuario>`. Los logs se guardaron con extensión `.txt` porque `.gitignore` excluye `*.log`. Los correos que quedan son ficticios (`@ventylab.load` y `@ventylab.demo`).
