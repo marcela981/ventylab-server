@@ -1,0 +1,38 @@
+{
+  "runId": "2026-11-07T11-47-28Z",
+  "dryRun": false,
+  "startedAt": "2026-11-07T11:47:28.114Z",
+  "finishedAt": "2026-11-07T11:49:43.718Z",
+  "gitCommit": "734167599a5dbb2974aa87379b187713800be31c",
+  "node": "v24.19.0",
+  "envFileLoaded": true,
+  "providers": [
+    "openai"
+  ],
+  "scenarioIds": [
+    "eval-01-respuestas-correctas",
+    "eval-02-respuestas-parciales",
+    "eval-03-respuestas-incorrectas",
+    "eval-04-abierta-parcial-peso-predicho",
+    "eval-05-abierta-inyeccion-de-prompt",
+    "eval-06-simulacion-parcial",
+    "lesson-01-pico-vs-meseta",
+    "lesson-02-peep-alta-siempre",
+    "lesson-03-paciente-real-limite",
+    "page-01-vili-profundizar",
+    "page-02-medicion-auto-peep",
+    "page-03-presion-distension-mortalidad",
+    "sim-01-sdra-vt-por-peso-real",
+    "sim-02-sdra-peep-insuficiente",
+    "sim-03-epoc-auto-peep",
+    "sim-04-pmeseta-alta-por-peep",
+    "sim-05-presion-distension-alta",
+    "sim-06-asma-relacion-ie-inadecuada",
+    "sim-07-hipoventilacion",
+    "sim-08-hiperventilacion"
+  ],
+  "repeat": 1,
+  "calls": 20,
+  "failedCalls": 0,
+  "note": "Direct single-provider calls: no gateway fallback chain, retries, circuit breaker, quota or deterministic fallback."
+}

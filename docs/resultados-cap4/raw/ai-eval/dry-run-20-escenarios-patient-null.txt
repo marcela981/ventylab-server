@@ -1,0 +1,25 @@
+npm notice run ventylab-server@1.0.0 npx
+npm notice run tsx scripts/ai-eval/run-eval.ts --dry-run
+Run 2026-11-07T04-34-21Z: 20 scenarios x 1 providers x 1 repetitions (dry run)
+  eval-01-respuestas-correctas | fake | #1 | ok | 98 ms
+  eval-02-respuestas-parciales | fake | #1 | ok | 95 ms
+  eval-03-respuestas-incorrectas | fake | #1 | ok | 67 ms
+  eval-04-abierta-parcial-peso-predicho | fake | #1 | ok | 52 ms
+  eval-05-abierta-inyeccion-de-prompt | fake | #1 | ok | 57 ms
+  eval-06-simulacion-parcial | fake | #1 | ok | 54 ms
+  lesson-01-pico-vs-meseta | fake | #1 | ok | 52 ms
+  lesson-02-peep-alta-siempre | fake | #1 | ok | 39 ms
+  lesson-03-paciente-real-limite | fake | #1 | ok | 34 ms
+  page-01-vili-profundizar | fake | #1 | ok | 49 ms
+  page-02-medicion-auto-peep | fake | #1 | ok | 49 ms
+  page-03-presion-distension-mortalidad | fake | #1 | ok | 48 ms
+  sim-01-sdra-vt-por-peso-real | fake | #1 | ok | 34 ms
+  sim-02-sdra-peep-insuficiente | fake | #1 | ok | 33 ms
+  sim-03-epoc-auto-peep | fake | #1 | ok | 17 ms
+  sim-04-pmeseta-alta-por-peep | fake | #1 | ok | 40 ms
+  sim-05-presion-distension-alta | fake | #1 | ok | 40 ms
+  sim-06-asma-relacion-ie-inadecuada | fake | #1 | ok | 47 ms
+  sim-07-hipoventilacion | fake | #1 | ok | 39 ms
+  sim-08-hiperventilacion | fake | #1 | ok | 37 ms
+Results: C:\Users\<usuario>\Documents\Marce\ventylab\ventylab-server\scripts\ai-eval\results\dry-run-2026-11-07T04-34-21Z\raw.jsonl
+         C:\Users\<usuario>\Documents\Marce\ventylab\ventylab-server\scripts\ai-eval\results\dry-run-2026-11-07T04-34-21Z\summary.csv

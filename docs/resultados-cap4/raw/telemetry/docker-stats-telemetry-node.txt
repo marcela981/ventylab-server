@@ -1,0 +1,5 @@
+telemetry-node
+ventylab-local-node-red-1	0.03%	42.48MiB / 11.53GiB
+ventylab-local-backend-1	1.29%	147.9MiB / 11.53GiB
+ventylab-local-mosquitto-1	0.05%	1.836MiB / 11.53GiB
+ventylab-local-postgres-1	9.63%	77.11MiB / 11.53GiB

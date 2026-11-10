@@ -1,0 +1,5 @@
+test:unit exit=0 wall_s=303
+test:integration exit=0 wall_s=326
+test:e2e exit=1 wall_s=348
+test:perf exit=0 wall_s=5
+DONE

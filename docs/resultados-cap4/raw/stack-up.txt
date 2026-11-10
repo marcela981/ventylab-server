@@ -1,0 +1,711 @@
+ Image eclipse-mosquitto:2.0.20 Pulling 
+ Image eclipse-mosquitto:2.0.20 Pulling 
+ Image nodered/node-red:4.0.9 Pulling 
+ 3feb7da14d0f Pulling fs layer 0B
+ 0a9a5dfd008f Pulling fs layer 0B
+ 536822d30dca Pulling fs layer 0B
+ 42ec265e2954 Pulling fs layer 0B
+ 97c02486c86f Pulling fs layer 0B
+ 6c29a8500e66 Pulling fs layer 0B
+ b8ad66a22f58 Pulling fs layer 0B
+ 3a676a6931f5 Pulling fs layer 0B
+ 0c819a08606b Pulling fs layer 0B
+ 6e68c1f06aa3 Pulling fs layer 0B
+ d2c655ab5b31 Pulling fs layer 0B
+ a13ef429ac3d Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ 729f1adceeac Pulling fs layer 0B
+ 5ddae236ff27 Pulling fs layer 0B
+ 7bdb2a9ac9c6 Pulling fs layer 0B
+ ecce3e0301cd Pulling fs layer 0B
+ d7a069a788e0 Pulling fs layer 0B
+ 8cc209e5911c Pulling fs layer 0B
+ 4f4fb700ef54 Already exists 0B
+ dc6d457a5529 Download complete 0B
+ dc6d457a5529 Download complete 0B
+ 3feb7da14d0f Download complete 0B
+ e704aec04853 Downloading 177.9kB
+ e704aec04853 Download complete 0B
+ e704aec04853 Download complete 0B
+ 3feb7da14d0f Pulling fs layer 0B
+ 0a9a5dfd008f Pulling fs layer 0B
+ 536822d30dca Pulling fs layer 0B
+ 3feb7da14d0f Download complete 0B
+ 536822d30dca Download complete 0B
+ 536822d30dca Download complete 0B
+ 0a9a5dfd008f Downloading 1.049MB
+ ef7293abf915 Download complete 0B
+ 0a9a5dfd008f Downloading 1.049MB
+ 0a9a5dfd008f Downloading 2.097MB
+ 0a9a5dfd008f Downloading 2.097MB
+ 0c819a08606b Download complete 0B
+ 0a9a5dfd008f Download complete 0B
+ 0a9a5dfd008f Download complete 0B
+ 0a9a5dfd008f Extracting 1B
+ 0a9a5dfd008f Extracting 1B
+ 6c29a8500e66 Download complete 0B
+ 0a9a5dfd008f Extracting 1B
+ 0a9a5dfd008f Extracting 1B
+ 42ec265e2954 Downloading 449B
+ b8ad66a22f58 Download complete 0B
+ 0a9a5dfd008f Extracting 1B
+ 0a9a5dfd008f Extracting 1B
+ 42ec265e2954 Download complete 0B
+ 536822d30dca Extracting 1B
+ 536822d30dca Extracting 1B
+ 0a9a5dfd008f Pull complete 0B
+ 0a9a5dfd008f Pull complete 0B
+ 536822d30dca Extracting 1B
+ 536822d30dca Extracting 1B
+ 6e68c1f06aa3 Download complete 0B
+ 536822d30dca Extracting 1B
+ 536822d30dca Extracting 1B
+ 3feb7da14d0f Pull complete 0B
+ 3feb7da14d0f Pull complete 0B
+ 3feb7da14d0f Pull complete 0B
+ 536822d30dca Pull complete 0B
+ 3feb7da14d0f Pull complete 0B
+ 536822d30dca Pull complete 0B
+ Image eclipse-mosquitto:2.0.20 Pulled 
+ Image eclipse-mosquitto:2.0.20 Pulled 
+ 3a676a6931f5 Download complete 0B
+ 97c02486c86f Download complete 0B
+ d2c655ab5b31 Downloading 1.049MB
+ a13ef429ac3d Download complete 0B
+ d2c655ab5b31 Downloading 2.097MB
+ 729f1adceeac Download complete 0B
+ d2c655ab5b31 Downloading 2.097MB
+ d2c655ab5b31 Downloading 4.194MB
+ d2c655ab5b31 Downloading 5.243MB
+ d2c655ab5b31 Downloading 6.291MB
+ d2c655ab5b31 Downloading 7.34MB
+ d2c655ab5b31 Downloading 8.389MB
+ d7a069a788e0 Downloading 1.261MB
+ d2c655ab5b31 Download complete 0B
+ 5ddae236ff27 Downloading 1.049MB
+ d7a069a788e0 Download complete 0B
+ 5ddae236ff27 Downloading 3.146MB
+ 5ddae236ff27 Downloading 5.243MB
+ 5ddae236ff27 Downloading 7.34MB
+ 5ddae236ff27 Downloading 8.389MB
+ 5ddae236ff27 Downloading 9.437MB
+ 5ddae236ff27 Downloading 10.49MB
+ 7bdb2a9ac9c6 Downloading 1.049MB
+ 5ddae236ff27 Downloading 11.53MB
+ 7bdb2a9ac9c6 Downloading 2.097MB
+ 8cc209e5911c Downloading 1.049MB
+ 5ddae236ff27 Downloading 12.58MB
+ 7bdb2a9ac9c6 Downloading 2.097MB
+ 8cc209e5911c Downloading 1.049MB
+ 5ddae236ff27 Downloading 12.58MB
+ 7bdb2a9ac9c6 Downloading 2.097MB
+ 8cc209e5911c Downloading 2.097MB
+ 5ddae236ff27 Downloading 12.58MB
+ 7bdb2a9ac9c6 Downloading 3.146MB
+ 8cc209e5911c Downloading 2.097MB
+ 5ddae236ff27 Downloading 13.63MB
+ 7bdb2a9ac9c6 Downloading 3.146MB
+ 8cc209e5911c Downloading 3.146MB
+ 5ddae236ff27 Downloading 13.63MB
+ 7bdb2a9ac9c6 Downloading 4.194MB
+ 8cc209e5911c Downloading 3.146MB
+ 5ddae236ff27 Downloading 14.68MB
+ 7bdb2a9ac9c6 Downloading 5.243MB
+ 8cc209e5911c Downloading 4.194MB
+ 5ddae236ff27 Downloading 15.73MB
+ 7bdb2a9ac9c6 Downloading 5.243MB
+ 8cc209e5911c Downloading 4.194MB
+ 5ddae236ff27 Downloading 15.73MB
+ 5ddae236ff27 Downloading 16.78MB
+ 7bdb2a9ac9c6 Downloading 6.291MB
+ 8cc209e5911c Downloading 5.243MB
+ 7bdb2a9ac9c6 Downloading 7.34MB
+ 8cc209e5911c Downloading 6.291MB
+ 5ddae236ff27 Downloading 17.83MB
+ 7bdb2a9ac9c6 Downloading 7.34MB
+ 8cc209e5911c Downloading 7.34MB
+ 5ddae236ff27 Downloading 18.87MB
+ 7bdb2a9ac9c6 Downloading 8.389MB
+ 8cc209e5911c Downloading 8.389MB
+ 5ddae236ff27 Download complete 0B
+ 7bdb2a9ac9c6 Downloading 9.437MB
+ 8cc209e5911c Downloading 9.437MB
+ 7bdb2a9ac9c6 Downloading 10.49MB
+ 8cc209e5911c Downloading 10.49MB
+ 7bdb2a9ac9c6 Downloading 11.53MB
+ ecce3e0301cd Download complete 0B
+ 8cc209e5911c Downloading 11.53MB
+ 7bdb2a9ac9c6 Downloading 12.58MB
+ 8cc209e5911c Downloading 12.58MB
+ 7bdb2a9ac9c6 Downloading 13.63MB
+ 8cc209e5911c Downloading 13.63MB
+ 7bdb2a9ac9c6 Downloading 14.68MB
+ 8cc209e5911c Downloading 14.68MB
+ 7bdb2a9ac9c6 Downloading 16.78MB
+ 8cc209e5911c Downloading 16.78MB
+ 7bdb2a9ac9c6 Downloading 17.83MB
+ 8cc209e5911c Downloading 17.83MB
+ 7bdb2a9ac9c6 Downloading 18.87MB
+ 8cc209e5911c Downloading 18.87MB
+ 7bdb2a9ac9c6 Downloading 20.97MB
+ 8cc209e5911c Downloading 20.97MB
+ 7bdb2a9ac9c6 Downloading 22.02MB
+ 8cc209e5911c Downloading 20.97MB
+ 7bdb2a9ac9c6 Downloading 23.07MB
+ 8cc209e5911c Downloading 23.07MB
+ 7bdb2a9ac9c6 Downloading 24.12MB
+ 8cc209e5911c Downloading 24.12MB
+ 7bdb2a9ac9c6 Downloading 25.17MB
+ 8cc209e5911c Downloading 25.17MB
+ 7bdb2a9ac9c6 Downloading 26.21MB
+ 8cc209e5911c Downloading 26.21MB
+ 7bdb2a9ac9c6 Downloading 28.31MB
+ 8cc209e5911c Downloading 27.26MB
+ 7bdb2a9ac9c6 Downloading 29.36MB
+ 8cc209e5911c Downloading 28.31MB
+ 7bdb2a9ac9c6 Downloading 30.41MB
+ 8cc209e5911c Downloading 30.41MB
+ 7bdb2a9ac9c6 Downloading 31.46MB
+ 8cc209e5911c Downloading 31.46MB
+ 7bdb2a9ac9c6 Downloading 32.51MB
+ 8cc209e5911c Downloading 32.51MB
+ 7bdb2a9ac9c6 Downloading 34.6MB
+ 8cc209e5911c Downloading 33.55MB
+ 7bdb2a9ac9c6 Downloading 35.65MB
+ 8cc209e5911c Downloading 34.6MB
+ 7bdb2a9ac9c6 Downloading 36.7MB
+ 8cc209e5911c Downloading 35.65MB
+ 7bdb2a9ac9c6 Downloading 37.75MB
+ 8cc209e5911c Downloading 36.7MB
+ 7bdb2a9ac9c6 Downloading 38.8MB
+ 8cc209e5911c Downloading 37.75MB
+ 7bdb2a9ac9c6 Downloading 39.85MB
+ 8cc209e5911c Downloading 38.8MB
+ 7bdb2a9ac9c6 Downloading 40.89MB
+ 8cc209e5911c Downloading 39.85MB
+ 7bdb2a9ac9c6 Downloading 41.94MB
+ 8cc209e5911c Downloading 40.89MB
+ 7bdb2a9ac9c6 Downloading 42.99MB
+ 8cc209e5911c Downloading 42.95MB
+ 7bdb2a9ac9c6 Downloading 44.04MB
+ 8cc209e5911c Download complete 0B
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 46.14MB
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 47.19MB
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 48.23MB
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 49.28MB
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 50.33MB
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 52.43MB
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 53.48MB
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 54.53MB
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 56.62MB
+ 8cc209e5911c Extracting 1B
+ 7bdb2a9ac9c6 Downloading 57.67MB
+ 8cc209e5911c Extracting 2B
+ 7bdb2a9ac9c6 Downloading 58.72MB
+ 8cc209e5911c Extracting 2B
+ 7bdb2a9ac9c6 Downloading 60.82MB
+ 8cc209e5911c Extracting 2B
+ 7bdb2a9ac9c6 Downloading 61.87MB
+ 8cc209e5911c Extracting 2B
+ 7bdb2a9ac9c6 Downloading 62.91MB
+ 8cc209e5911c Extracting 2B
+ 7bdb2a9ac9c6 Downloading 63.96MB
+ 8cc209e5911c Extracting 2B
+ 7bdb2a9ac9c6 Downloading 65.01MB
+ 8cc209e5911c Extracting 2B
+ 7bdb2a9ac9c6 Downloading 67.11MB
+ 8cc209e5911c Extracting 2B
+ 7bdb2a9ac9c6 Downloading 68.16MB
+ 8cc209e5911c Extracting 3B
+ 7bdb2a9ac9c6 Downloading 69.21MB
+ 8cc209e5911c Extracting 3B
+ 7bdb2a9ac9c6 Downloading 70.25MB
+ 8cc209e5911c Extracting 3B
+ 7bdb2a9ac9c6 Downloading 72.35MB
+ 8cc209e5911c Extracting 3B
+ 7bdb2a9ac9c6 Downloading 73.4MB
+ 8cc209e5911c Extracting 3B
+ 7bdb2a9ac9c6 Downloading 75.5MB
+ 8cc209e5911c Extracting 3B
+ 7bdb2a9ac9c6 Downloading 76.55MB
+ 8cc209e5911c Extracting 3B
+ 7bdb2a9ac9c6 Downloading 77.59MB
+ 8cc209e5911c Extracting 3B
+ 7bdb2a9ac9c6 Downloading 78.64MB
+ 8cc209e5911c Extracting 3B
+ 7bdb2a9ac9c6 Downloading 80.74MB
+ 8cc209e5911c Extracting 4B
+ 7bdb2a9ac9c6 Downloading 82.84MB
+ 8cc209e5911c Extracting 4B
+ 7bdb2a9ac9c6 Downloading 83.89MB
+ 8cc209e5911c Extracting 4B
+ 7bdb2a9ac9c6 Downloading 84.93MB
+ 8cc209e5911c Extracting 4B
+ 7bdb2a9ac9c6 Downloading 87.03MB
+ 8cc209e5911c Extracting 4B
+ 7bdb2a9ac9c6 Downloading 88.08MB
+ 8cc209e5911c Extracting 4B
+ 7bdb2a9ac9c6 Downloading 89.13MB
+ 8cc209e5911c Extracting 4B
+ 7bdb2a9ac9c6 Downloading 90.18MB
+ 8cc209e5911c Extracting 4B
+ 7bdb2a9ac9c6 Downloading 92.27MB
+ 8cc209e5911c Extracting 4B
+ 7bdb2a9ac9c6 Downloading 93.32MB
+ d7a069a788e0 Extracting 1B
+ 8cc209e5911c Pull complete 0B
+ 7bdb2a9ac9c6 Downloading 95.42MB
+ d7a069a788e0 Pull complete 0B
+ 7bdb2a9ac9c6 Downloading 96.47MB
+ 42ec265e2954 Pull complete 0B
+ 7bdb2a9ac9c6 Downloading 97.52MB
+ 0c819a08606b Pull complete 0B
+ b8ad66a22f58 Pull complete 0B
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 99.61MB
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 99.61MB
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 101.7MB
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 102.8MB
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 103.8MB
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 104.9MB
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 107MB
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 109.1MB
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 111.1MB
+ d2c655ab5b31 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 112.2MB
+ d2c655ab5b31 Pull complete 0B
+ 7bdb2a9ac9c6 Downloading 114.3MB
+ 4f4fb700ef54 Pull complete 0B
+ 6c29a8500e66 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 115.3MB
+ 6c29a8500e66 Pull complete 0B
+ 6e68c1f06aa3 Pull complete 0B
+ 3a676a6931f5 Pull complete 0B
+ 7bdb2a9ac9c6 Downloading 117.4MB
+ a13ef429ac3d Pull complete 0B
+ 729f1adceeac Pull complete 0B
+ ecce3e0301cd Pull complete 0B
+ 7bdb2a9ac9c6 Downloading 118.5MB
+ 5ddae236ff27 Extracting 1B
+ 7bdb2a9ac9c6 Downloading 120.4MB
+ 5ddae236ff27 Extracting 1B
+ 7bdb2a9ac9c6 Download complete 0B
+ 5ddae236ff27 Extracting 1B
+ 5ddae236ff27 Extracting 1B
+ 5ddae236ff27 Extracting 1B
+ 5ddae236ff27 Extracting 1B
+ 5ddae236ff27 Extracting 1B
+ 5ddae236ff27 Extracting 1B
+ 5ddae236ff27 Extracting 1B
+ 5ddae236ff27 Extracting 1B
+ 5ddae236ff27 Extracting 1B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 2B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 3B
+ 5ddae236ff27 Extracting 4B
+ 5ddae236ff27 Extracting 4B
+ 5ddae236ff27 Extracting 4B
+ 5ddae236ff27 Pull complete 0B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 1B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 2B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 3B
+ 7bdb2a9ac9c6 Extracting 4B
+ 7bdb2a9ac9c6 Extracting 4B
+ 7bdb2a9ac9c6 Extracting 4B
+ 7bdb2a9ac9c6 Extracting 4B
+ 7bdb2a9ac9c6 Extracting 4B
+ 7bdb2a9ac9c6 Extracting 4B
+ 7bdb2a9ac9c6 Extracting 4B
+ 7bdb2a9ac9c6 Extracting 4B
+ 7bdb2a9ac9c6 Extracting 4B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 5B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 6B
+ 7bdb2a9ac9c6 Extracting 7B
+ 7bdb2a9ac9c6 Extracting 7B
+ 7bdb2a9ac9c6 Extracting 7B
+ 7bdb2a9ac9c6 Extracting 7B
+ 7bdb2a9ac9c6 Extracting 7B
+ 7bdb2a9ac9c6 Extracting 7B
+ 7bdb2a9ac9c6 Extracting 7B
+ 7bdb2a9ac9c6 Extracting 7B
+ 7bdb2a9ac9c6 Extracting 7B
+ 97c02486c86f Pull complete 0B
+ 7bdb2a9ac9c6 Pull complete 0B
+ Image nodered/node-red:4.0.9 Pulled 
+ Image ventylab-server:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 687B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile:
+#2 transferring dockerfile: 4.02kB 0.1s done
+#2 DONE 0.3s
+
+#3 [internal] load metadata for docker.io/library/node:22-alpine
+#3 DONE 2.1s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 1.16kB 0.0s done
+#4 DONE 0.1s
+
+#5 [prisma-cli 1/5] FROM docker.io/library/node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202
+#5 resolve docker.io/library/node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 0.0s done
+#5 DONE 0.5s
+
+#6 [internal] load build context
+#6 transferring context: 3.14MB 4.8s
+#6 transferring context: 7.31MB 9.9s
+#6 ...
+
+#5 [prisma-cli 1/5] FROM docker.io/library/node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202
+#5 sha256:071409a402546fea9e56af710d951a9e0c9bb205e4b1186811677d2c9dcad115 443B / 443B 0.1s done
+#5 sha256:df11f9b3da94f640e357ccc86df09a574dc04df1ad95e012f511f4a02b566cd3 1.26MB / 1.26MB 0.9s done
+#5 sha256:2a9491572f6e8f9c3be47a2d17b7dcd30f264003f2cbeedf9359544b3ca5396c 56.22MB / 56.22MB 7.9s done
+#5 sha256:881fc932939efef04ca120ad44bbd2c0917851eb247aa4995428afb1e80ede17 3.85MB / 3.85MB 1.5s done
+#5 extracting sha256:881fc932939efef04ca120ad44bbd2c0917851eb247aa4995428afb1e80ede17 0.6s done
+#5 extracting sha256:2a9491572f6e8f9c3be47a2d17b7dcd30f264003f2cbeedf9359544b3ca5396c
+#5 ...
+
+#6 [internal] load build context
+#6 ...
+
+#5 [prisma-cli 1/5] FROM docker.io/library/node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202
+#5 extracting sha256:2a9491572f6e8f9c3be47a2d17b7dcd30f264003f2cbeedf9359544b3ca5396c 3.7s done
+#5 extracting sha256:df11f9b3da94f640e357ccc86df09a574dc04df1ad95e012f511f4a02b566cd3 0.1s done
+#5 extracting sha256:071409a402546fea9e56af710d951a9e0c9bb205e4b1186811677d2c9dcad115 0.0s done
+#5 DONE 12.4s
+
+#6 [internal] load build context
+#6 transferring context: 9.61MB 12.7s done
+#6 DONE 12.8s
+
+#7 [deps 2/4] WORKDIR /app
+#7 DONE 3.4s
+
+#8 [prisma-cli 2/5] RUN apk add --no-cache openssl
+#8 2.925 (1/1) Installing openssl (3.5.9-r0)
+#8 2.972 Executing busybox-1.37.0-r31.trigger
+#8 2.997 OK: 11.7 MiB in 20 packages
+#8 DONE 3.4s
+
+#9 [deps 3/4] COPY package.json package-lock.json ./
+#9 DONE 0.1s
+
+#10 [prisma-cli 3/5] WORKDIR /opt/prisma-cli
+#10 DONE 0.1s
+
+#11 [build  3/10] WORKDIR /app
+#11 DONE 0.1s
+
+#12 [prisma-cli 4/5] COPY package-lock.json /tmp/package-lock.json
+#12 DONE 0.1s
+
+#13 [build  4/10] COPY package.json package-lock.json ./
+#13 DONE 0.1s
+
+#14 [build  5/10] RUN npm ci --ignore-scripts
+#14 ...
+
+#15 [deps 4/4] RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+#15 ...
+
+#16 [prisma-cli 5/5] RUN PRISMA_VERSION="$(node -p "require('/tmp/package-lock.json').packages['node_modules/prisma'].version")"   && npm init -y > /dev/null   && npm install --omit=dev --no-audit --no-fund "prisma@${PRISMA_VERSION}"   && npx prisma --version   && npm cache clean --force
+#16 ...
+
+#15 [deps 4/4] RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+#15 14.39 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#15 ...
+
+#14 [build  5/10] RUN npm ci --ignore-scripts
+#14 17.11 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#14 21.87 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#14 26.31 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#14 32.12 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#14 ...
+
+#16 [prisma-cli 5/5] RUN PRISMA_VERSION="$(node -p "require('/tmp/package-lock.json').packages['node_modules/prisma'].version")"   && npm init -y > /dev/null   && npm install --omit=dev --no-audit --no-fund "prisma@${PRISMA_VERSION}"   && npx prisma --version   && npm cache clean --force
+#16 33.02 
+#16 33.02 added 35 packages in 31s
+#16 36.92 prisma                  : 6.19.2
+#16 36.92 @prisma/client          : Not found
+#16 36.92 Computed binaryTarget   : linux-musl-openssl-3.0.x
+#16 36.92 Operating System        : linux
+#16 36.92 Architecture            : x64
+#16 36.92 Node.js                 : v22.23.4
+#16 36.92 TypeScript              : unknown
+#16 36.92 Query Engine (Node-API) : libquery-engine c2990dca591cba766e3b7ef5d9e8a84796e47ab7 (at node_modules/@prisma/engines/libquery_engine-linux-musl-openssl-3.0.x.so.node)
+#16 36.92 PSL                     : @prisma/prisma-schema-wasm 7.1.1-3.c2990dca591cba766e3b7ef5d9e8a84796e47ab7
+#16 36.92 Schema Engine           : schema-engine-cli c2990dca591cba766e3b7ef5d9e8a84796e47ab7 (at node_modules/@prisma/engines/schema-engine-linux-musl-openssl-3.0.x)
+#16 36.92 Default Engines Hash    : c2990dca591cba766e3b7ef5d9e8a84796e47ab7
+#16 36.92 Studio                  : 0.511.0
+#16 37.17 npm warn using --force Recommended protections disabled.
+#16 DONE 38.9s
+
+#15 [deps 4/4] RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+#15 39.75 
+#15 39.75 added 386 packages, and audited 387 packages in 39s
+#15 39.75 
+#15 39.75 82 packages are looking for funding
+#15 39.75   run `npm fund` for details
+#15 40.01 
+#15 40.01 15 vulnerabilities (1 low, 4 moderate, 10 high)
+#15 40.01 
+#15 40.01 To address issues that do not require attention, run:
+#15 40.01   npm audit fix
+#15 40.01 
+#15 40.01 To address all issues (including breaking changes), run:
+#15 40.01   npm audit fix --force
+#15 40.01 
+#15 40.01 Run `npm audit` for details.
+#15 40.01 npm notice
+#15 40.01 npm notice New major version of npm available! 10.9.9 -> 12.2.2
+#15 40.01 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+#15 40.01 npm notice To update run: npm install -g npm@12.2.2
+#15 40.01 npm notice
+#15 40.40 npm warn using --force Recommended protections disabled.
+#15 DONE 41.4s
+
+#14 [build  5/10] RUN npm ci --ignore-scripts
+#14 42.91 npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#14 ...
+
+#17 [runtime  4/12] COPY --from=deps /app/node_modules ./node_modules
+#17 DONE 5.4s
+
+#14 [build  5/10] RUN npm ci --ignore-scripts
+#14 92.72 
+#14 92.72 added 1324 packages, and audited 1325 packages in 2m
+#14 92.72 
+#14 92.72 293 packages are looking for funding
+#14 92.72   run `npm fund` for details
+#14 93.00 
+#14 93.00 50 vulnerabilities (3 low, 32 moderate, 14 high, 1 critical)
+#14 93.00 
+#14 93.00 To address issues that do not require attention, run:
+#14 93.00   npm audit fix
+#14 93.00 
+#14 93.00 To address all issues (including breaking changes), run:
+#14 93.00   npm audit fix --force
+#14 93.00 
+#14 93.00 Run `npm audit` for details.
+#14 93.00 npm notice
+#14 93.00 npm notice New major version of npm available! 10.9.9 -> 12.2.2
+#14 93.00 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+#14 93.00 npm notice To update run: npm install -g npm@12.2.2
+#14 93.00 npm notice
+#14 DONE 93.8s
+
+#18 [build  6/10] COPY prisma/schema.prisma ./prisma/schema.prisma
+#18 DONE 0.9s
+
+#19 [build  7/10] RUN npx prisma generate
+#19 2.397 warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+#19 2.397 For more information, see: https://pris.ly/prisma-config
+#19 2.397 
+#19 4.278 Prisma schema loaded from prisma/schema.prisma
+#19 5.649 
+#19 5.649 ✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 666ms
+#19 5.649 
+#19 5.649 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#19 5.649 
+#19 5.649 Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+#19 5.649 
+#19 DONE 5.7s
+
+#20 [build  8/10] COPY tsconfig.json tsconfig.build.json nest-cli.json ./
+#20 DONE 0.1s
+
+#21 [build  9/10] COPY src ./src
+#21 DONE 1.1s
+
+#22 [build 10/10] RUN npm run build
+#22 0.407 
+#22 0.407 > ventylab-server@1.0.0 build
+#22 0.407 > nest build
+#22 0.407 
+#22 DONE 32.8s
+
+#23 [runtime  5/12] COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+#23 DONE 0.5s
+
+#24 [runtime  6/12] COPY --from=prisma-cli /opt/prisma-cli/node_modules /opt/prisma-cli/node_modules
+#24 DONE 1.3s
+
+#25 [runtime  7/12] COPY --from=build /app/dist ./dist
+#25 DONE 1.1s
+
+#26 [runtime  8/12] COPY prisma/schema.prisma ./prisma/schema.prisma
+#26 DONE 0.1s
+
+#27 [runtime  9/12] COPY prisma/migrations ./prisma/migrations
+#27 DONE 0.1s
+
+#28 [runtime 10/12] COPY package.json ./
+#28 DONE 0.1s
+
+#29 [runtime 11/12] COPY deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+#29 DONE 0.1s
+
+#30 [runtime 12/12] RUN chmod 0755 /usr/local/bin/docker-entrypoint.sh
+#30 DONE 0.3s
+
+#31 exporting to image
+#31 exporting layers
+#31 exporting layers 16.8s done
+#31 exporting manifest sha256:d76ad1128499bba0efd5cdb6eacc5aeaa98d86902d1f51742681a4ae9dcb1386 0.0s done
+#31 exporting config sha256:ad764eae83209a2cfe2450b62de357212f8b4d95ab7d0c1c0d20dd7f86bfa1cf 0.0s done
+#31 exporting attestation manifest sha256:450329c2fce217dc9de505a5319366bef77d0ca9630d4fe440dc580ccc8e0d86 0.0s done
+#31 exporting manifest list sha256:1842e631244ff5b4e5be3c24cd6084056ab2a5412abea6f60afdb84fcb9f2bd0
+#31 exporting manifest list sha256:1842e631244ff5b4e5be3c24cd6084056ab2a5412abea6f60afdb84fcb9f2bd0 0.0s done
+#31 naming to docker.io/library/ventylab-server:local done
+#31 unpacking to docker.io/library/ventylab-server:local
+#31 unpacking to docker.io/library/ventylab-server:local 10.6s done
+#31 DONE 27.6s
+
+#32 resolving provenance for metadata file
+#32 DONE 0.1s
+ Image ventylab-server:local Built 
+ Network ventylab-local-edge Creating 
+ Volume ventylab-local_mosquitto_auth Creating 
+ Volume ventylab-local_postgres_data Creating 
+ Volume ventylab-local_node_red_data Creating 
+ Network ventylab-local_internal Creating 
+ Volume ventylab-local_mosquitto_data Creating 
+ Network ventylab-local_internal Creating 
+ Volume ventylab-local_mosquitto_data Creating 
+ Volume ventylab-local_mosquitto_auth Creating 
+ Network ventylab-local-edge Creating 
+ Volume ventylab-local_postgres_data Creating 
+ Volume ventylab-local_node_red_data Creating 
+ Volume ventylab-local_mosquitto_data Created 
+ Volume ventylab-local_mosquitto_data Created 
+ Volume ventylab-local_mosquitto_auth Created 
+ Volume ventylab-local_mosquitto_auth Created 
+ Volume ventylab-local_postgres_data Created 
+ Volume ventylab-local_postgres_data Created 
+ Volume ventylab-local_node_red_data Created 
+ Volume ventylab-local_node_red_data Created 
+ Network ventylab-local-edge Created 
+ Network ventylab-local-edge Created 
+ Network ventylab-local_internal Created 
+ Network ventylab-local_internal Created 
+ Container ventylab-local-mosquitto-auth-1 Creating 
+ Container ventylab-local-postgres-1 Creating 
+ Container ventylab-local-postgres-1 Created 
+ Container ventylab-local-mosquitto-auth-1 Created 
+ Container ventylab-local-mosquitto-1 Creating 
+ Container ventylab-local-mosquitto-1 Created 
+ Container ventylab-local-node-red-1 Creating 
+ Container ventylab-local-backend-1 Creating 
+ Container ventylab-local-backend-1 Created 
+ Container ventylab-local-node-red-1 Created 
+ Container ventylab-local-mosquitto-auth-1 Starting 
+ Container ventylab-local-postgres-1 Starting 
+ Container ventylab-local-mosquitto-auth-1 Started 
+ Container ventylab-local-mosquitto-auth-1 Waiting 
+ Container ventylab-local-postgres-1 Started 
+ Container ventylab-local-mosquitto-auth-1 Exited 
+ Container ventylab-local-mosquitto-1 Starting 
+ Container ventylab-local-mosquitto-1 Started 
+ Container ventylab-local-mosquitto-1 Waiting 
+ Container ventylab-local-postgres-1 Waiting 
+ Container ventylab-local-mosquitto-1 Waiting 
+ Container ventylab-local-postgres-1 Healthy 
+ Container ventylab-local-mosquitto-1 Healthy 
+ Container ventylab-local-backend-1 Starting 
+ Container ventylab-local-mosquitto-1 Healthy 
+ Container ventylab-local-node-red-1 Starting 
+ Container ventylab-local-backend-1 Started 
+ Container ventylab-local-node-red-1 Started 
+ Container ventylab-local-mosquitto-auth-1 Waiting 
+ Container ventylab-local-mosquitto-1 Waiting 
+ Container ventylab-local-node-red-1 Waiting 
+ Container ventylab-local-postgres-1 Waiting 
+ Container ventylab-local-backend-1 Waiting 
+ Container ventylab-local-mosquitto-1 Healthy 
+ Container ventylab-local-mosquitto-auth-1 Exited 
+ Container ventylab-local-postgres-1 Healthy 
+ Container ventylab-local-node-red-1 Healthy 
+ Container ventylab-local-backend-1 Healthy 

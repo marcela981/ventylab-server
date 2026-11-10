@@ -41,9 +41,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: "4000"
-      MQTT_BROKER_URL: mqtt://mosquitto:1883
-      MQTT_USERNAME: ${MQTT_BACKEND_USERNAME:-ventylab-backend}
-      MQTT_PASSWORD: ${MQTT_BACKEND_PASSWORD:?set MQTT_BACKEND_PASSWORD}
+      MQTT_BROKER_URL: ${MQTT_BROKER_URL:-mqtt://mosquitto:1883}
+      MQTT_USERNAME: ${MQTT_USERNAME-${MQTT_BACKEND_USERNAME:-ventylab-backend}}
+      MQTT_PASSWORD: ${MQTT_PASSWORD-${MQTT_BACKEND_PASSWORD}}
     depends_on:
       mosquitto:
         condition: service_healthy
