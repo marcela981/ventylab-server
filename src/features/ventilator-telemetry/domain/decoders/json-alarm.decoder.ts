@@ -1,14 +1,14 @@
 /*
  * Funcionalidad: Decodificador de alarmas JSON
- * Descripción: Interpreta un objeto JSON con campo type recibido en el tópico de alarmas como VentilatorAlarm (tipo conocido, severidad, mensaje, valores, marca de tiempo y estado); devuelve undefined cuando el mensaje no es una alarma JSON para que el decodificador configurado lo procese
- * Versión: 1.0
+ * Descripción: Interpreta un objeto JSON con campo type recibido en el tópico de alarmas como VentilatorAlarm (tipo conocido, severidad, mensaje, valores, marca de tiempo y estado); devuelve undefined cuando el mensaje no es una alarma JSON para que el decodificador configurado lo procese. v1.1: la marca de tiempo de la alarma solo se toma del dispositivo si es epoch en milisegundos; si no (p. ej. tiempo de encendido) se usa la hora del servidor
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
  * Institución: Universidad del Valle
  * Contacto: marcela.mazo@correounivalle.edu.co
  */
-import { isFiniteNumber, parseJsonObject } from "@/features/ventilator-telemetry/domain/decoders/json-telemetry.decoder";
+import { isEpochMs, isFiniteNumber, parseJsonObject } from "@/features/ventilator-telemetry/domain/decoders/json-telemetry.decoder";
 import { type DecodeResult, decodeFailure } from "@/features/ventilator-telemetry/domain/decoders/telemetry-decoder";
 import {
   type AlarmSeverityValue,
@@ -56,7 +56,7 @@ export function decodeJsonAlarm(buffer: Buffer, now: number): DecodeResult | und
     type: raw.type,
     severity,
     message: typeof raw.message === "string" ? raw.message : defaultAlarmMessage(raw.type, severity),
-    timestamp: isFiniteNumber(raw.timestamp) ? raw.timestamp : now,
+    timestamp: isEpochMs(raw.timestamp) ? raw.timestamp : now,
     active: typeof raw.active === "boolean" ? raw.active : true,
     acknowledged: typeof raw.acknowledged === "boolean" ? raw.acknowledged : false,
   };

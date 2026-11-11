@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Decodificador JSON de telemetría
- * Descripción: Estrategia que valida estrictamente una muestra JSON del ventilador (presión, flujo y volumen numéricos finitos; secuencia, marca de tiempo del dispositivo, modo, parámetros, alarmas, pCO2, SpO2 e identificador opcionales) y la convierte en una trama sin lanzar excepciones
- * Versión: 1.0
+ * Descripción: Estrategia que valida estrictamente una muestra JSON del ventilador (presión, flujo y volumen numéricos finitos; secuencia, marca de tiempo del dispositivo, modo, parámetros, alarmas, pCO2, SpO2 e identificador opcionales) y la convierte en una trama sin lanzar excepciones. v1.1: una marca de tiempo del dispositivo (deviceTs explícito o timestamp heredado) solo se usa como deviceTs si es epoch en milisegundos; un valor finito no epoch (reloj de encendido del firmware) no descarta la trama y se conserva tal cual en deviceClock, sin usarse para latencia, orden ni actividad. v1.2 (revisión R1, M2): epoch en milisegundos solo por debajo de 1e13 (misma ventana que el frontend); un valor mayor (p. ej. microsegundos) va a deviceClock
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -18,13 +18,19 @@ import {
 } from "@/features/ventilator-telemetry/domain/decoders/telemetry-decoder";
 import { type DecodedTelemetry } from "@/features/ventilator-telemetry/domain/value-objects/telemetry-frame";
 
-// Legacy firmware sends `timestamp` either as epoch milliseconds or as uptime; only epoch values are device timestamps
+// Firmware sends its time either as epoch milliseconds or as uptime; only epoch values are device timestamps
 const MIN_EPOCH_MS: number = 1_000_000_000_000;
+// v1.2: and below 1e13 (year 2286), the same window as the frontend (MAX_EPOCH_MS); a larger value is not epoch ms
+const MAX_EPOCH_MS: number = 10_000_000_000_000;
 
 type MutableDecodedTelemetry = { -readonly [K in keyof DecodedTelemetry]: DecodedTelemetry[K] };
 
 export function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+export function isEpochMs(value: unknown): value is number {
+  return isFiniteNumber(value) && value > MIN_EPOCH_MS && value < MAX_EPOCH_MS;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
@@ -80,15 +86,11 @@ export class JsonTelemetryDecoder implements TelemetryDecoder {
       frame.seq = raw.seq as number;
     }
 
-    if (raw.deviceTs !== undefined) {
-      if (!isFiniteNumber(raw.deviceTs)) {
-        return "invalid_device_ts";
-      }
-
-      frame.deviceTs = raw.deviceTs;
-    } else if (isFiniteNumber(raw.timestamp) && raw.timestamp > MIN_EPOCH_MS) {
-      frame.deviceTs = raw.timestamp;
+    if (raw.deviceTs !== undefined && !isFiniteNumber(raw.deviceTs)) {
+      return "invalid_device_ts";
     }
+
+    JsonTelemetryDecoder._applyDeviceTime(frame, raw.deviceTs ?? raw.timestamp);
 
     if (raw.mode !== undefined) {
       if (typeof raw.mode !== "string") {
@@ -139,5 +141,14 @@ export class JsonTelemetryDecoder implements TelemetryDecoder {
     }
 
     return undefined;
+  }
+
+  // A non-epoch device time (e.g. firmware uptime) is kept as an opaque clock, never used as a timestamp
+  private static _applyDeviceTime(frame: MutableDecodedTelemetry, deviceTime: unknown): void {
+    if (isEpochMs(deviceTime)) {
+      frame.deviceTs = deviceTime;
+    } else if (isFiniteNumber(deviceTime)) {
+      frame.deviceClock = deviceTime;
+    }
   }
 }

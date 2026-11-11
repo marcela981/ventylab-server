@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas de los decodificadores de telemetría
- * Descripción: Verifica los decodificadores JSON (validación estricta y campos opcionales), hexadecimal (fusión de tramas parciales y alarmas), automático (JSON y luego hexadecimal), la alarma JSON del tópico de alarmas y la selección por configuración
- * Versión: 1.0
+ * Descripción: Verifica los decodificadores JSON (validación estricta y campos opcionales), hexadecimal (fusión de tramas parciales y alarmas), automático (JSON y luego hexadecimal), la alarma JSON del tópico de alarmas y la selección por configuración. v1.1: la marca de tiempo del dispositivo solo es deviceTs si es epoch; el mensaje real del ventilador (timestamp de encendido, sin deviceId) se acepta y conserva el valor original en deviceClock; la alarma solo usa un timestamp epoch. v1.2 (revisión R1, M2): un valor de 1e13 o más no es epoch en milisegundos (deviceClock)
+ * Versión: 1.2
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -12,7 +12,7 @@ import { AutoTelemetryDecoder } from "@/features/ventilator-telemetry/domain/dec
 import { createTelemetryDecoder } from "@/features/ventilator-telemetry/domain/decoders/create-telemetry-decoder";
 import { HexTelemetryDecoder } from "@/features/ventilator-telemetry/domain/decoders/hex-telemetry.decoder";
 import { decodeJsonAlarm } from "@/features/ventilator-telemetry/domain/decoders/json-alarm.decoder";
-import { JsonTelemetryDecoder } from "@/features/ventilator-telemetry/domain/decoders/json-telemetry.decoder";
+import { isEpochMs, JsonTelemetryDecoder } from "@/features/ventilator-telemetry/domain/decoders/json-telemetry.decoder";
 import { type DecodeResult } from "@/features/ventilator-telemetry/domain/decoders/telemetry-decoder";
 
 const DEVICE_ID: string = "device-test";
@@ -58,14 +58,46 @@ describe("JsonTelemetryDecoder", () => {
     expect(result).toEqual({ ok: true, kind: "frame", frame: payload });
   });
 
-  it("uses a legacy epoch timestamp as device timestamp and ignores a non-epoch one", () => {
+  it("uses a legacy epoch timestamp as device timestamp", () => {
     const decoder: JsonTelemetryDecoder = new JsonTelemetryDecoder(DEVICE_ID);
 
-    const epoch: DecodeResult = decoder.decode(json({ pressure: 1, flow: 1, volume: 1, timestamp: 1_760_000_000_000 }));
-    const uptime: DecodeResult = decoder.decode(json({ pressure: 1, flow: 1, volume: 1, timestamp: 12_345 }));
+    const result: DecodeResult = decoder.decode(json({ pressure: 1, flow: 1, volume: 1, timestamp: 1_760_000_000_000 }));
 
-    expect(epoch.ok && epoch.kind === "frame" ? epoch.frame.deviceTs : undefined).toBe(1_760_000_000_000);
-    expect(uptime.ok && uptime.kind === "frame" ? uptime.frame.deviceTs : "set").toBeUndefined();
+    expect(result).toEqual({ ok: true, kind: "frame", frame: { pressure: 1, flow: 1, volume: 1, deviceId: DEVICE_ID, deviceTs: 1_760_000_000_000 } });
+  });
+
+  it("accepts the real ventilator message: defaults the device id and keeps the uptime timestamp as deviceClock, not deviceTs", () => {
+    const decoder: JsonTelemetryDecoder = new JsonTelemetryDecoder(DEVICE_ID);
+
+    const result: DecodeResult = decoder.decode(Buffer.from("{\"pressure\":26,\"flow\":14.3,\"volume\":401,\"timestamp\":147}", "utf-8"));
+
+    expect(result).toEqual({ ok: true, kind: "frame", frame: { pressure: 26, flow: 14.3, volume: 401, deviceId: DEVICE_ID, deviceClock: 147 } });
+  });
+
+  it("keeps an explicit non-epoch deviceTs as deviceClock without rejecting the frame", () => {
+    const decoder: JsonTelemetryDecoder = new JsonTelemetryDecoder(DEVICE_ID);
+
+    const result: DecodeResult = decoder.decode(json({ pressure: 1, flow: 1, volume: 1, deviceTs: 5_000, timestamp: 1_760_000_000_000 }));
+
+    expect(result).toEqual({ ok: true, kind: "frame", frame: { pressure: 1, flow: 1, volume: 1, deviceId: DEVICE_ID, deviceClock: 5_000 } });
+  });
+
+  it("keeps a timestamp at or above 1e13 (not epoch ms, e.g. microseconds) as deviceClock", () => {
+    const decoder: JsonTelemetryDecoder = new JsonTelemetryDecoder(DEVICE_ID);
+
+    const result: DecodeResult = decoder.decode(json({ pressure: 1, flow: 1, volume: 1, timestamp: 1_760_000_000_000_000 }));
+
+    expect(result).toEqual({ ok: true, kind: "frame", frame: { pressure: 1, flow: 1, volume: 1, deviceId: DEVICE_ID, deviceClock: 1_760_000_000_000_000 } });
+    expect(isEpochMs(9_999_999_999_999)).toBe(true);
+    expect(isEpochMs(10_000_000_000_000)).toBe(false);
+  });
+
+  it("ignores a non-numeric legacy timestamp", () => {
+    const decoder: JsonTelemetryDecoder = new JsonTelemetryDecoder(DEVICE_ID);
+
+    const result: DecodeResult = decoder.decode(json({ pressure: 1, flow: 1, volume: 1, timestamp: "147" }));
+
+    expect(result).toEqual({ ok: true, kind: "frame", frame: { pressure: 1, flow: 1, volume: 1, deviceId: DEVICE_ID } });
   });
 
   it.each([
@@ -80,6 +112,7 @@ describe("JsonTelemetryDecoder", () => {
     ["non numeric setting", json({ pressure: 1, flow: 1, volume: 1, settings: { peep: "5" } }), "invalid_settings"],
     ["non string alarm", json({ pressure: 1, flow: 1, volume: 1, alarms: [1] }), "invalid_alarms"],
     ["empty device id", json({ pressure: 1, flow: 1, volume: 1, deviceId: "" }), "invalid_device_id"],
+    ["string deviceTs", json({ pressure: 1, flow: 1, volume: 1, deviceTs: "1760000000000" }), "invalid_device_ts"],
   ])("rejects %s", (_label: string, buffer: Buffer, reason: string) => {
     const decoder: JsonTelemetryDecoder = new JsonTelemetryDecoder(DEVICE_ID);
 
@@ -180,7 +213,7 @@ describe("decodeJsonAlarm", () => {
       message: "Paw 45",
       currentValue: 45,
       thresholdValue: 40,
-      timestamp: 2_000,
+      timestamp: 1_760_000_000_000,
       active: false,
       acknowledged: true,
     };
@@ -188,6 +221,12 @@ describe("decodeJsonAlarm", () => {
     const result: DecodeResult | undefined = decodeJsonAlarm(json(payload), 1_000);
 
     expect(result).toEqual({ ok: true, kind: "alarm", alarm: payload });
+  });
+
+  it("uses the server time when the alarm timestamp is not epoch ms", () => {
+    const result: DecodeResult | undefined = decodeJsonAlarm(json({ type: "APNEA", timestamp: 147 }), 1_760_000_000_500);
+
+    expect(result !== undefined && result.ok && result.kind === "alarm" ? result.alarm.timestamp : undefined).toBe(1_760_000_000_500);
   });
 
   it("rejects an unknown alarm type", () => {
