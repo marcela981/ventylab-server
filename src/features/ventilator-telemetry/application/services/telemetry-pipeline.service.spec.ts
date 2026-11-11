@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pruebas del pipeline de telemetría
- * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia (con tramas duplicadas contadas aparte), el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas
- * Versión: 1.6
+ * Descripción: Verifica el descarte de mensajes inválidos (contador, sin excepciones y registro limitado), la detección de huecos de secuencia (con tramas duplicadas contadas aparte), el envío por lotes cada VENTILATOR_FLUSH_INTERVAL_MS con emisión volátil a varias salas, el búfer acotado que descarta las tramas más antiguas, las alarmas JSON del tópico de alarmas, las latencias y los oyentes de tramas. v1.7: el mensaje real del ventilador (timestamp de encendido) se emite sin latencia de dispositivo; los mensajes de otros tópicos no refrescan la actividad ni cuentan como inválidos; el desbordamiento del búfer registra una advertencia muestreada
+ * Versión: 1.7
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -35,6 +35,7 @@ interface PipelineFixture {
   readonly publisher: FakeRealtimePublisher;
   readonly metrics: TelemetryMetricsService;
   readonly clock: FakeTelemetryClock;
+  readonly staleness: DeviceStalenessService;
 }
 
 function buildPipeline(overrides: Partial<VentilatorTelemetrySettings> = {}): PipelineFixture {
@@ -57,7 +58,7 @@ function buildPipelineWith(settings: VentilatorTelemetrySettings): PipelineFixtu
     clock,
   );
 
-  return { pipeline, publisher, metrics, clock };
+  return { pipeline, publisher, metrics, clock, staleness };
 }
 
 describe("TelemetryPipelineService", () => {
@@ -100,6 +101,47 @@ describe("TelemetryPipelineService", () => {
       expect(warningsInsideInterval).toBe(1);
       expect(warnSpy).toHaveBeenCalledTimes(2);
       expect(String(warnSpy.mock.calls[1][0])).toContain("2 similar messages suppressed");
+    });
+  });
+
+  describe("real ventilator message", () => {
+    it("emits the uptime-stamped frame in the ventilator:telemetry batch without recording device latency", () => {
+      const { pipeline, publisher, metrics, clock }: PipelineFixture = buildPipeline();
+
+      pipeline.handleMessage(TELEMETRY_TOPIC, Buffer.from("{\"pressure\":26,\"flow\":14.3,\"volume\":401,\"timestamp\":147}", "utf-8"));
+      pipeline.flush();
+      const batch: RecordedEmit[] = publisher.emitsOf("ventilator:telemetry");
+      const snapshot: TelemetryMetricsSnapshot = metrics.snapshot(clock.nowMs);
+
+      expect(batch).toHaveLength(1);
+      expect((batch[0].payload as { frames: TelemetryFrame[] }).frames).toEqual([
+        { pressure: 26, flow: 14.3, volume: 401, deviceId: "ventilab-device-001", deviceClock: 147, serverTs: clock.nowMs },
+      ]);
+      expect(snapshot.deviceLatencyMs.count).toBe(0);
+      expect(metrics.invalidMessages).toBe(0);
+    });
+  });
+
+  describe("topics", () => {
+    it("ignores messages on other topics of the shared connection: no activity, no invalid count, no warning", () => {
+      const { pipeline, publisher, metrics, clock, staleness }: PipelineFixture = buildPipeline();
+
+      pipeline.handleMessage("ventilab/device/001/command/ack", jsonFrame({ commandId: "c-1", status: "APPLIED" }));
+      pipeline.flush();
+
+      expect(staleness.lastMessageAt).toBeUndefined();
+      expect(metrics.invalidMessages).toBe(0);
+      expect(metrics.snapshot(clock.nowMs).totalMessages).toBe(0);
+      expect(publisher.emits).toHaveLength(0);
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it("marks activity for the telemetry topic", () => {
+      const { pipeline, clock, staleness }: PipelineFixture = buildPipeline();
+
+      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1 }));
+
+      expect(staleness.lastMessageAt).toBe(clock.nowMs);
     });
   });
 
@@ -223,6 +265,24 @@ describe("TelemetryPipelineService", () => {
       expect(metrics.bufferDrops).toBe(2);
       expect(metrics.snapshot(clock.nowMs).bufferDrops).toBe(2);
       expect(metrics.lostMessages).toBe(0);
+    });
+
+    it("logs buffer overflow drops with a warning sampled per VENTILATOR_INVALID_LOG_INTERVAL_MS", () => {
+      const { pipeline, clock }: PipelineFixture = buildPipeline({ maxBufferedFrames: 1, invalidLogIntervalMs: 5000 });
+
+      for (let index: number = 0; index < 4; index++) {
+        pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1 }));
+      }
+
+      const warningsInsideInterval: number = warnSpy.mock.calls.length;
+
+      clock.advance(5000);
+      pipeline.handleMessage(TELEMETRY_TOPIC, jsonFrame({ pressure: 1, flow: 1, volume: 1 }));
+
+      expect(warningsInsideInterval).toBe(1);
+      expect(String(warnSpy.mock.calls[0][0])).toContain("dropped 1 oldest frame(s)");
+      expect(warnSpy).toHaveBeenCalledTimes(2);
+      expect(String(warnSpy.mock.calls[1][0])).toContain("2 similar messages suppressed");
     });
 
     it("does not drop anything while the buffer stays below the cap", () => {

@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Pipeline de telemetría del ventilador
- * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia y tramas duplicadas (con ventana de reordenamiento VENTILATOR_SEQ_REORDER_WINDOW y vuelta opcional VENTILATOR_SEQ_WRAP_BITS), actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada intervalo de envío vigente (ajuste de la plataforma, reprogramado sin reiniciar cuando cambia) emite un lote volátil ventilator:telemetry a la sala ventilator y a docentes y administradores, y registra las latencias. v1.5: ya no emite la lectura heredada ventilator:data (sin oyentes en ventilab-web)
- * Versión: 1.5
+ * Descripción: Camino caliente MQTT→Socket.io sin base de datos ni await: decodifica cada mensaje, sella serverTs, detecta huecos de secuencia y tramas duplicadas (con ventana de reordenamiento VENTILATOR_SEQ_REORDER_WINDOW y vuelta opcional VENTILATOR_SEQ_WRAP_BITS), actualiza parámetros y actividad, notifica a los oyentes de tramas y encola en un búfer acotado por VENTILATOR_MAX_BUFFERED_FRAMES que descarta las tramas más antiguas y las cuenta en bufferDrops; cada intervalo de envío vigente (ajuste de la plataforma, reprogramado sin reiniciar cuando cambia) emite un lote volátil ventilator:telemetry a la sala ventilator y a docentes y administradores, y registra las latencias. v1.5: ya no emite la lectura heredada ventilator:data (sin oyentes en ventilab-web). v1.6: solo procesa el tópico de telemetría y el de alarmas (los mensajes de otros tópicos, como los acuses de comandos, no refrescan la actividad ni cuentan como inválidos); el desbordamiento del búfer registra una advertencia muestreada; la latencia del dispositivo solo usa deviceTs epoch
+ * Versión: 1.6
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -19,6 +19,7 @@ import {
   type VentilatorTelemetryBatchPayload,
 } from "@/features/ventilator-telemetry/application/realtime/ventilator-telemetry-events";
 import { DeviceStalenessService } from "@/features/ventilator-telemetry/application/services/device-staleness.service";
+import { SampledWarning } from "@/features/ventilator-telemetry/application/services/sampled-warning";
 import { TelemetryMetricsService } from "@/features/ventilator-telemetry/application/services/telemetry-metrics.service";
 import { TelemetryRecorderService } from "@/features/ventilator-telemetry/application/services/telemetry-recorder.service";
 import {
@@ -52,8 +53,8 @@ export class TelemetryPipelineService {
   private _latestSettings: Readonly<Record<string, number>> | undefined;
   private _timer: ReturnType<typeof setInterval> | undefined;
   private _timerIntervalMs: number | undefined;
-  private _lastInvalidLogAt: number | undefined;
-  private _suppressedInvalid: number = 0;
+  private readonly _invalidWarning: SampledWarning;
+  private readonly _overflowWarning: SampledWarning;
 
   public constructor(
     @Inject(VENTILATOR_TELEMETRY_SETTINGS_TOKEN)
@@ -69,6 +70,12 @@ export class TelemetryPipelineService {
     private readonly _clock: ITelemetryClock,
   ) {
     this._sequence = new SequenceGapTracker({ reorderWindow: _settings.sequenceReorderWindow, wrapBits: _settings.sequenceWrapBits });
+
+    const logIntervalMs = (): number => this._settings.invalidLogIntervalMs;
+    const warn = (message: string): void => this._logger.warn(message);
+
+    this._invalidWarning = new SampledWarning(logIntervalMs, warn);
+    this._overflowWarning = new SampledWarning(logIntervalMs, warn);
   }
 
   public get decoderName(): TelemetryDecoderName {
@@ -126,7 +133,14 @@ export class TelemetryPipelineService {
     };
   }
 
+  // The MQTT connection is shared (e.g. command acks), so only the telemetry and alarm topics are device telemetry
   public handleMessage(topic: string, payload: Buffer): void {
+    const isAlarmTopic: boolean = topic === this._settings.alarmTopic;
+
+    if (!isAlarmTopic && topic !== this._settings.telemetryTopic) {
+      return;
+    }
+
     const receivedAt: number = this._clock.monotonic();
     const now: number = this._clock.now();
 
@@ -134,7 +148,7 @@ export class TelemetryPipelineService {
       this._metrics.recordMessage(now);
       this._staleness.markMessage(now);
 
-      const result: DecodeResult = topic === this._settings.alarmTopic
+      const result: DecodeResult = isAlarmTopic
         ? decodeJsonAlarm(payload, now) ?? this._decoder.decode(payload)
         : this._decoder.decode(payload);
 
@@ -219,6 +233,7 @@ export class TelemetryPipelineService {
 
       this._pending.splice(0, dropped);
       this._metrics.recordBufferDrops(dropped);
+      this._overflowWarning.warn(`Telemetry batch buffer full (VENTILATOR_MAX_BUFFERED_FRAMES=${this._settings.maxBufferedFrames}): dropped ${dropped} oldest frame(s)`, frame.serverTs);
     }
 
     this._pending.push({ frame, receivedAt });
@@ -238,19 +253,6 @@ export class TelemetryPipelineService {
 
   private _dropInvalid(reason: string, now: number): void {
     this._metrics.recordInvalid();
-
-    const last: number | undefined = this._lastInvalidLogAt;
-
-    if (last !== undefined && now - last < this._settings.invalidLogIntervalMs) {
-      this._suppressedInvalid++;
-
-      return;
-    }
-
-    const suppressed: string = this._suppressedInvalid > 0 ? ` (${this._suppressedInvalid} similar messages suppressed)` : "";
-
-    this._logger.warn(`Dropped invalid ventilator message: ${reason}${suppressed}`);
-    this._lastInvalidLogAt = now;
-    this._suppressedInvalid = 0;
+    this._invalidWarning.warn(`Dropped invalid ventilator message: ${reason}`, now);
   }
 }
