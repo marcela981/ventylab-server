@@ -9,8 +9,10 @@
  *                 nulificado al remover, deleteGroup rechaza si hay
  *                 subgrupos, profundidad máxima respetada) y limpia todo
  *                 el árbol en finally. No requiere backend HTTP arriba;
- *                 solo Prisma + DB válida.
- * Versión       : 1.1
+ *                 solo Prisma + DB válida. v1.2: usa el cliente propio de la
+ *                 auditoría (audit-prisma, AUDIT_DATABASE_URL explícita),
+ *                 nunca scripts/lib/prisma (dotenv + DATABASE_URL del .env).
+ * Versión       : 1.2
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -19,7 +21,7 @@
  * Contacto      : marcelamazo189@gmail.com
  */
 
-import { prisma } from '../../lib/prisma';
+import type { PrismaClient } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { type PrismaService } from '../../../src/common/infrastructure/persistence/prisma/prisma.service';
 import { PrismaTransactionManager } from '../../../src/common/infrastructure/persistence/prisma/prisma-transaction.manager';
@@ -42,6 +44,7 @@ import { SetSimulatorLeadCommand } from '../../../src/features/groups/applicatio
 import { RemoveGroupMemberCommand } from '../../../src/features/groups/application/commands/remove-group-member.command';
 import { DeleteGroupCommand } from '../../../src/features/groups/application/commands/delete-group.command';
 import { E2EAuditor, type E2EAuditResult, type Gate, type GateStatus } from '../E2EAuditor';
+import { auditPrisma } from '../audit-prisma';
 
 const AUDIT_TAG = `audit-e2e-${Date.now()}`;
 
@@ -50,7 +53,7 @@ const AUDIT_TAG = `audit-e2e-${Date.now()}`;
 // .env, y tsx no emite metadata de decoradores). Expone la misma
 // superficie que el legacy group.service y relee cada fila con Prisma,
 // porque los casos de uso devuelven void o el id.
-function createGroupService(performedBy: () => string) {
+function createGroupService(prisma: PrismaClient, performedBy: () => string) {
   const db = prisma as unknown as PrismaService;
   const auditLogs = new AuditLogPrismaRepository(db, new RequestContextService());
   const groups = new GroupsPrismaRepository(db, auditLogs);
@@ -110,7 +113,9 @@ export class AdminDashboardAuditor extends E2EAuditor {
     const created: string[] = [];
     let teacherId = '';
     let studentId = '';
-    const Groups = createGroupService(() => teacherId);
+    // v1.2: the audit's own client on AUDIT_DATABASE_URL (never DATABASE_URL nor dotenv); without it this throws.
+    const prisma = await auditPrisma();
+    const Groups = createGroupService(prisma, () => teacherId);
 
     try {
       const teacher = await prisma.user.create({

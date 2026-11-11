@@ -4,11 +4,15 @@
  * Funcionalidad : TelemetryInboundAuditor — Gate G1.
  * Descripción   : Publica N frames sintéticos al topic MQTT que el backend
  *                 está suscribiendo y verifica que lleguen al cliente
- *                 Socket.io como evento `ventilator:data`. Mide latencia
- *                 p50/p95/p99 (publish→receive), pérdida y throughput
- *                 sostenido. Sirve para evidenciar el camino completo
- *                 broker → backend → WebSocket → cliente.
- * Versión       : 1.0
+ *                 Socket.io dentro de los lotes `ventilator:telemetry`
+ *                 ({ frames, serverTs }). Mide latencia p50/p95/p99
+ *                 (publish→receive), pérdida y throughput sostenido.
+ *                 Sirve para evidenciar el camino completo
+ *                 broker → backend → WebSocket → cliente. v1.1: escucha
+ *                 los lotes vigentes y cuenta tramas por seq/deviceId
+ *                 (ventilator:data ya no se emite); credenciales MQTT
+ *                 opcionales del broker local.
+ * Versión       : 1.1
  * Autor         : Marcela Mazo Castro
  * Proyecto      : VentyLab
  * Tesis         : Plataforma educativa interactiva para entrenamiento
@@ -21,6 +25,8 @@ import { connect as mqttConnect } from 'mqtt';
 import { io, Socket } from 'socket.io-client';
 import { E2EAuditor, type E2EAuditResult, type Gate, type GateStatus } from '../E2EAuditor';
 import { E2E_CONFIG } from '../e2e-config';
+
+const AUDIT_DEVICE_ID = 'audit-e2e';
 
 interface FrameSent { id: number; sentAt: number }
 interface FrameRecv { id: number; recvAt: number; sentAt: number }
@@ -38,20 +44,21 @@ export class TelemetryInboundAuditor extends E2EAuditor {
     let socket: Socket | null = null;
 
     try {
-      const mqttOk = await this.connectMqtt().then((c) => { mqttClient = c; return true; }).catch(() => false);
-      if (!mqttOk) {
-        return this.abort(gates, `No fue posible conectar al broker MQTT ${E2E_CONFIG.MQTT_URL}.`);
+      mqttClient = await this.connectMqtt().catch(() => null);
+      if (!mqttClient) {
+        return this.abort(gates, `No fue posible conectar al broker MQTT ${new URL(E2E_CONFIG.MQTT_URL).host}.`);
       }
-      const wsOk = await this.connectSocket().then((s) => { socket = s; return true; }).catch(() => false);
-      if (!wsOk) {
+      socket = await this.connectSocket().catch(() => null);
+      if (!socket) {
         return this.abort(gates, `No fue posible conectar al Socket.io del backend ${E2E_CONFIG.BASE_URL}.`);
       }
 
-      socket!.on('ventilator:data', (payload: any) => {
+      socket!.on('ventilator:telemetry', (batch: { frames?: Array<{ deviceId?: string; seq?: number; deviceTs?: number }> }) => {
         const now = Date.now();
-        const id = typeof payload?.frameId === 'number' ? payload.frameId : -1;
-        const sentAt = typeof payload?.timestamp === 'number' ? payload.timestamp : now;
-        recv.push({ id, recvAt: now, sentAt });
+        for (const frame of batch?.frames ?? []) {
+          if (frame.deviceId !== AUDIT_DEVICE_ID || typeof frame.seq !== 'number') continue;
+          recv.push({ id: frame.seq, recvAt: now, sentAt: frame.deviceTs ?? now });
+        }
       });
 
       // Pequeño settle antes de empezar la ráfaga.
@@ -64,9 +71,9 @@ export class TelemetryInboundAuditor extends E2EAuditor {
           pressure: 12 + (i % 10) * 0.5,
           flow: 30 + (i % 7) * 1.5,
           volume: 400 + (i % 5) * 20,
-          timestamp: sentAt,
-          deviceId: 'audit-e2e',
-          frameId: i,
+          deviceTs: sentAt,
+          deviceId: AUDIT_DEVICE_ID,
+          seq: i,
         });
         mqttClient!.publish(E2E_CONFIG.MQTT_TELEMETRY_TOPIC, payload, { qos: 0 });
         sent.push({ id: i, sentAt });
@@ -94,7 +101,7 @@ export class TelemetryInboundAuditor extends E2EAuditor {
         latencies.length === 0
           ? 'No se recibieron frames con timestamp válido.'
           : `p50=${p50}ms, p95=${p95}ms, p99=${p99}ms (n=${latencies.length})`,
-        'socket.io ventilator:data vs publish timestamp',
+        'socket.io ventilator:telemetry (frame deviceTs) vs publish time',
       ));
       gates.push(this.makeGate(
         'G1.2',
@@ -145,6 +152,8 @@ export class TelemetryInboundAuditor extends E2EAuditor {
   private connectMqtt(): Promise<ReturnType<typeof mqttConnect>> {
     return new Promise((resolve, reject) => {
       const client = mqttConnect(E2E_CONFIG.MQTT_URL, {
+        username: E2E_CONFIG.MQTT_USERNAME,
+        password: E2E_CONFIG.MQTT_PASSWORD,
         connectTimeout: E2E_CONFIG.CONNECT_TIMEOUT_MS,
         reconnectPeriod: 0,
       });
