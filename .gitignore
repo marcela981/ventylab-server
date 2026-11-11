@@ -1,6 +1,6 @@
 # Funcionalidad: Exclusiones de git del backend
-# Descripción: Evita versionar dependencias, artefactos compilados, secretos (.env*), archivos de IDE y del sistema, logs, copias de seguridad de la base de datos (*.sql, *.dump) salvo las migraciones de Prisma (prisma/migrations/**/migration.sql), reportes de cobertura y archivos locales de los asistentes
-# Versión: 1.0
+# Descripción: Evita versionar dependencias, artefactos compilados, secretos (.env*), archivos de IDE y del sistema, logs, copias de seguridad de la base de datos (*.sql, *.dump) salvo las migraciones de Prisma (prisma/migrations/**/migration.sql), reportes de cobertura y archivos locales de los asistentes. v1.1: los registros de evidencia de las verificaciones (docs/verification/evidencia-*/) sí se versionan
+# Versión: 1.1
 # Autor: Marcela Mazo Castro
 # Proyecto: VentyLab
 # Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -37,6 +37,8 @@ Thumbs.db
 # Logs
 logs/
 *.log
+# v1.1: evidence logs of the verification reports are versioned
+!docs/verification/evidencia-*/**/*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

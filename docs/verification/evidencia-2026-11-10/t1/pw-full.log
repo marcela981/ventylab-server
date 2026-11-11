@@ -1,0 +1,644 @@
+npm notice run ventilab-web@0.1.0 npx
+npm notice run playwright test --project=e2e
+
+Running 98 tests using 1 worker
+
+  ✓   1 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as student (2.1s)
+  ✓   2 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as group member (1.5s)
+  ✓   3 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as teacher (1.3s)
+  -   4 [e2e] › e2e\ajustes-b\curriculum-content.spec.ts:60:7 › imported curriculum › no lesson without pages and no empty page
+  -   5 [e2e] › e2e\ajustes-b\curriculum-content.spec.ts:93:7 › imported curriculum › a new student walks a whole Principiante module
+  -   6 [e2e] › e2e\ajustes-b\curriculum-content.spec.ts:106:9 › imported curriculum › staff walks a whole Prerequisitos module
+  -   7 [e2e] › e2e\ajustes-b\curriculum-content.spec.ts:106:9 › imported curriculum › staff walks a whole Principiante module
+  -   8 [e2e] › e2e\ajustes-b\curriculum-content.spec.ts:106:9 › imported curriculum › staff walks a whole Intermedio module
+  -   9 [e2e] › e2e\ajustes-b\curriculum-content.spec.ts:106:9 › imported curriculum › staff walks a whole Avanzado module
+  -  10 [e2e] › e2e\ajustes-b\curriculum-content.spec.ts:106:9 › imported curriculum › staff walks a whole VentyLab module
+  ✘  11 [e2e] › e2e\ajustes-b\render-audit.spec.ts:123:7 › lesson render audit › every block type renders inside the page at every width and scheme (95ms)
+  -  12 [e2e] › e2e\ajustes-b\render-audit.spec.ts:163:7 › lesson render audit › curriculum pages render inside the page at every width and scheme
+  ✓  13 [e2e] › e2e\ajustes-c\results-release.spec.ts:39:5 › (C4) the student sees no key and no grade until the release; grade only, then grade and answers (1.2m)
+  ✓  14 [e2e] › e2e\ajustes-c\visual-audit.spec.ts:57:5 › (C2) evaluation screens by role at 375, 1280 and 1920 px (37.2s)
+  -  15 [e2e] › e2e\ajustes-d\capturas.spec.ts:75:9 › captures ventylab-claro-1280
+  -  16 [e2e] › e2e\ajustes-d\capturas.spec.ts:75:9 › captures ventylab-oscuro-1280
+  -  17 [e2e] › e2e\ajustes-d\capturas.spec.ts:75:9 › captures univalle-claro-1280
+  -  18 [e2e] › e2e\ajustes-d\capturas.spec.ts:75:9 › captures univalle-oscuro-1280
+  -  19 [e2e] › e2e\ajustes-d\capturas.spec.ts:75:9 › captures ventylab-claro-375
+  -  20 [e2e] › e2e\ajustes-d\capturas.spec.ts:75:9 › captures ventylab-oscuro-375
+  -  21 [e2e] › e2e\ajustes-d\capturas.spec.ts:75:9 › captures univalle-claro-375
+  -  22 [e2e] › e2e\ajustes-d\capturas.spec.ts:75:9 › captures univalle-oscuro-375
+  ✓  23 [e2e] › e2e\ajustes-d\cases-grid.spec.ts:20:7 › cases are a card grid without horizontal scroll at 375 px (1.2s)
+  ✓  24 [e2e] › e2e\ajustes-d\cases-grid.spec.ts:20:7 › cases are a card grid without horizontal scroll at 1280 px (1.3s)
+  ✓  25 [e2e] › e2e\ajustes-d\cases-grid.spec.ts:20:7 › cases are a card grid without horizontal scroll at 1920 px (1.4s)
+  ✓  26 [e2e] › e2e\ajustes-d\groups-assignment.spec.ts:30:5 › (1) from the group: grouped students are marked, a new one is added and sees Mi grupo without reloading (11.1s)
+  ✓  27 [e2e] › e2e\ajustes-d\groups-assignment.spec.ts:69:5 › (2) from Estudiantes: Agregar a grupo existente and the student sees it in Mi grupo (5.0s)
+  ✓  28 [e2e] › e2e\ajustes-d\tema.spec.ts:65:7 › sidebar appearance › changing mode and palette persists after reload and follows the user (3.1s)
+  ✓  29 [e2e] › e2e\ajustes-d\tema.spec.ts:103:9 › login in the four combinations › ventylab light: no flash and the tokens of theme-palettes (746ms)
+  ✓  30 [e2e] › e2e\ajustes-d\tema.spec.ts:103:9 › login in the four combinations › ventylab dark: no flash and the tokens of theme-palettes (807ms)
+  ✓  31 [e2e] › e2e\ajustes-d\tema.spec.ts:103:9 › login in the four combinations › univalle light: no flash and the tokens of theme-palettes (758ms)
+  ✓  32 [e2e] › e2e\ajustes-d\tema.spec.ts:103:9 › login in the four combinations › univalle dark: no flash and the tokens of theme-palettes (745ms)
+  ✓  33 [e2e] › e2e\ajustes-d\tema.spec.ts:145:7 › password recovery pages › the forgot page answers with the same notice and an unknown token offers a new link (1.5s)
+  ✓  34 [e2e] › e2e\bloque-a\alarma-ayuda.spec.ts:27:5 › an alarm opens its rules and the AI suggestion, which can be rated (8.1s)
+  ✘  35 [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:89:5 › Asesoría IA analyzes the critical patient on screen, not the initial one (680ms)
+  ✘  36 [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:121:5 › ¿Cómo estabilizar? of the low SpO2 alarm analyzes the current state too (924ms)
+  ✘  37 [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:139:5 › an AI answer that claims stability with a critical patient is replaced by the deterministic suggestion (907ms)
+  -  38 [e2e] › e2e\bloque-a\capturas.spec.ts:44:5 › curves in VCV, PCV and PSV at 1920×1080
+  -  39 [e2e] › e2e\bloque-a\capturas.spec.ts:67:5 › auto-PEEP in the COPD exacerbation at a high rate, 1920×1080
+  -  40 [e2e] › e2e\bloque-a\capturas.spec.ts:80:7 › Monitoreo layout at 1280×720
+  -  41 [e2e] › e2e\bloque-a\capturas.spec.ts:80:7 › Monitoreo layout at 1920×1080
+  ✓  42 [e2e] › e2e\bloque-a\envio-explicito.spec.ts:20:5 › a PEEP change waits for Enviar, goes out as one event and can be undone (13.9s)
+  ✓  43 [e2e] › e2e\bloque-a\mejoria.spec.ts:22:5 › PEEP 12, FiO2 80 % and Vt 380 mL make the unstable patient stable and raise the SpO2 (7.6s)
+  ✘  44 [e2e] › e2e\bloque-a\modo-real-asesoria.spec.ts:37:5 › Asesoría IA of the real monitor echoes the latest telemetry on screen (657ms)
+  ✘  45 [e2e] › e2e\bloque-a\modo-real.spec.ts:43:5 › one command per Enviar, nothing beyond the safe range and undo, with the simulated device (1.1m)
+  ✓  46 [e2e] › e2e\bloque-a\paciente-fallecido.spec.ts:23:5 › left alone at ×4 the unstable ARDS patient dies and the debrief shows it (42.1s)
+  ✘  47 [e2e] › e2e\bloque-a\repeticion.spec.ts:38:5 › the replay of a session with evolution equals the live session and the server summary (14.8s)
+  -  48 [e2e] › e2e\bloque2\capturas.spec.ts:33:5 › student /learn tabs
+  -  49 [e2e] › e2e\bloque2\capturas.spec.ts:47:5 › teacher curriculum with edit mode
+  -  50 [e2e] › e2e\bloque2\capturas.spec.ts:59:5 › viewer, completion dialog, TutorAI and deepen
+  ✘  51 [e2e] › e2e\bloque2\learning-locks.spec.ts:15:5 › (2) locked level and locked lesson: screen with the missing lessons and 403 from the server (31.4s)
+  ✓  52 [e2e] › e2e\bloque2\learning-offline.spec.ts:28:5 › (6) page views made offline are kept and sent once when the network comes back (9.8s)
+  ✓  53 [e2e] › e2e\bloque2\learning-staff.spec.ts:19:5 › (5) staff previews without locks and opens the CMS page editor from the viewer (8.8s)
+  ✓  54 [e2e] › e2e\bloque2\learning-student.spec.ts:55:5 › (1) student continues at the resume point, completes a lesson, continues to the next one and from the curriculum (5.3s)
+  ✓  55 [e2e] › e2e\bloque2\learning-student.spec.ts:129:5 › (4) Mi Progreso reflects the activity: XP, streak and today's day in the calendar (683ms)
+  ✓  56 [e2e] › e2e\bloque2\lesson-viewer-layout.spec.ts:15:5 › lesson index: right column on desktop, drawer button on mobile (2.5s)
+  ✘  57 [e2e] › e2e\bloque2\tutor-ai.spec.ts:31:5 › (3) TutorAI: deepen with streaming, rate it, one question, a note and its AI analysis (33ms)
+  ✓  58 [e2e] › e2e\bloque2\tutor-fallback.spec.ts:18:5 › (cierre IA) Profundizar shows the deterministic fallback with its label and no rating (3.7s)
+  ✓  59 [e2e] › e2e\bloque3\attempt-reset.spec.ts:18:5 › (4) teacher resets an attempt and the student can retry (1.1m)
+  -  60 [e2e] › e2e\bloque3\capturas.spec.ts:37:5 › Block 3 key screens
+  ✓  61 [e2e] › e2e\bloque3\exam-autosubmit.spec.ts:16:5 › (3) exam: SIMULATION question, auto-submit when the time runs out, review and release of the grade alone (1.2m)
+  ✓  62 [e2e] › e2e\bloque3\quiz-feedback.spec.ts:16:5 › (1) quiz: autosave, results held until the teacher release, AI feedback and its rating (4.1s)
+  ✓  63 [e2e] › e2e\bloque3\staff-builder.spec.ts:26:5 › (5) staff creates an evaluation with an image, assigns it to a group in the builder and activates it (21.4s)
+  ✘  64 [e2e] › e2e\bloque3\student-list.spec.ts:18:5 › (6) the student list is grouped by type, track and level (1.0m)
+  ✓  65 [e2e] › e2e\bloque3\workshop-review.spec.ts:18:5 › (2) workshop: hint, open question, teacher review and release of the grade and the answers (15.1s)
+  ✘  66 [e2e] › e2e\bloque4\admin-ai-ratings.spec.ts:81:5 › (8) /admin/ai filters the ratings by surface and exports Bloque 2 and 3 ratings as CSV (814ms)
+  ✘  67 [e2e] › e2e\bloque4\admin-users.spec.ts:27:5 › (4) admin: role change with confirmation, protected superadmin and the Profesores tab (1.0m)
+  ✓  68 [e2e] › e2e\bloque4\back-to-platform.spec.ts:17:5 › (9) "Volver a la plataforma" goes to /simulador (1.9s)
+  -  69 [e2e] › e2e\bloque4\capturas.spec.ts:35:5 › Block 4 key screens
+  ✓  70 [e2e] › e2e\bloque4\directory-group-builder.spec.ts:18:5 › (2) directory: search, select three, Conformar Grupo, the group appears in Grupos and gets a leader (5.6s)
+  ✘  71 [e2e] › e2e\bloque4\lab-group-reservation.spec.ts:23:5 › (3) teacher reserves the ventilator for a group from /teacher/lab and the leader operates it from /simulador (595ms)
+  ✓  72 [e2e] › e2e\bloque4\profile-avatar.spec.ts:19:5 › (6) profile: upload and remove the profile photo (2.3s)
+  ✓  73 [e2e] › e2e\bloque4\profile-password.spec.ts:64:5 › (5) profile: change password → the previous refresh token fails → sign in with the new one (1.1m)
+  ✘  74 [e2e] › e2e\bloque4\student-detail-scope.spec.ts:18:5 › (7) a teacher without supervision gets 403 on another teacher's student (UI and API) (52ms)
+  ✓  75 [e2e] › e2e\bloque4\teacher-student-detail.spec.ts:25:5 › (1) teacher: Panel → General → recent student → detail with its five tabs, without notes or AI chats (4.8s)
+  -  76 [e2e] › e2e\bloque5\capturas.spec.ts:85:7 › Block 5 shell and pages at 1280
+  -  77 [e2e] › e2e\bloque5\capturas.spec.ts:145:7 › Block 5 Monitoreo at 1280
+  -  78 [e2e] › e2e\bloque5\capturas.spec.ts:85:7 › Block 5 shell and pages at 1920
+  -  79 [e2e] › e2e\bloque5\capturas.spec.ts:145:7 › Block 5 Monitoreo at 1920
+  -  80 [e2e] › e2e\bloque5\capturas.spec.ts:187:5 › Block 1 Monitoreo captures with the July layout
+  ✓  81 [e2e] › e2e\bloque5\monitoreo-ia.spec.ts:25:5 › Asesoría IA opens a 380 px drawer, answers with the fake LLM and gives the focus back (8.0s)
+  ✓  82 [e2e] › e2e\bloque5\monitoreo-julio.spec.ts:87:7 › July Monitoreo control order at 1920×1080 (4.5s)
+  ✓  83 [e2e] › e2e\bloque5\monitoreo-julio.spec.ts:87:7 › July Monitoreo control order at 1280×720 (4.5s)
+  ✓  84 [e2e] › e2e\bloque5\monitoreo-orden.spec.ts:81:5 › July Monitoreo order of the Real monitor at 1920×1080 and 1280×720 (8.0s)
+  ✓  85 [e2e] › e2e\bloque5\monitoreo-tarjetas.spec.ts:39:5 › Ajustar hides, moves with the keyboard, persists across a reload and resets (7.3s)
+  ✓  86 [e2e] › e2e\bloque5\monitoreo-tarjetas.spec.ts:98:5 › a corrupt preference or another user's preference leaves the default cards (3.6s)
+  ✓  87 [e2e] › e2e\bloque5\monitoreo-teclado.spec.ts:17:5 › edits wait for Enviar; Escape drops them and Enter sends them (5.8s)
+  ✓  88 [e2e] › e2e\bloque5\sidebar.spec.ts:30:5 › collapse and expand persist, the collapsed avatar opens Opciones and the bell works from the sidebar (3.6s)
+  ✓  89 [e2e] › e2e\simulator-connection.spec.ts:22:5 › holder reserves now, connects with control and sees the real monitor (5.9s)
+  ✓  90 [e2e] › e2e\simulator-connection.spec.ts:58:5 › group leader takes control and a non-leader member observes read-only (6.8s)
+  ✓  91 [e2e] › e2e\simulator-exam.spec.ts:24:5 › a SIMULATION question of an exam opens the console in locked mode (3.5s)
+  ✓  92 [e2e] › e2e\simulator-redirects.spec.ts:24:7 › / redirects to /simulador (1.0s)
+  ✓  93 [e2e] › e2e\simulator-redirects.spec.ts:24:7 › /dashboard redirects to /simulador (1.0s)
+  ✓  94 [e2e] › e2e\simulator-redirects.spec.ts:32:7 › /simulator redirects to /simulador?tab=simular (1.1s)
+  ✓  95 [e2e] › e2e\simulator-redirects.spec.ts:32:7 › /lab redirects to /simulador?tab=conexion (1.1s)
+  ✓  96 [e2e] › e2e\simulator-redirects.spec.ts:32:7 › /lab/live redirects to /simulador?tab=monitoreo (1.2s)
+  ✓  97 [e2e] › e2e\simulator-student.spec.ts:27:5 › student simulates a patient, keeps the session across tabs, finishes it and replays it from Mis sesiones (12.5s)
+  ✓  98 [e2e] › e2e\simulator-student.spec.ts:89:5 › Monitoreo keeps usable curves at 1280×720 with a long case and the case drawer never resizes the console (4.5s)
+
+
+  1) [e2e] › e2e\ajustes-b\render-audit.spec.ts:123:7 › lesson render audit › every block type renders inside the page at every width and scheme 
+
+    Error: Sign-in of superadmin@ventylab.demo failed (401)
+
+       at support\learning.ts:72
+
+      70 |
+      71 |     if (!response.ok()) {
+    > 72 |       throw new Error(`Sign-in of ${email} failed (${response.status()})`);
+         |             ^
+      73 |     }
+      74 |
+      75 |     return ((await response.json()) as Envelope<LoginData>).data;
+        at apiSignIn (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\learning.ts:72:13)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\ajustes-b\render-audit.spec.ts:126:33
+
+    Error Context: test-results\ajustes-b-render-audit-les-66745-e-at-every-width-and-scheme-e2e\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ajustes-b-render-audit-les-66745-e-at-every-width-and-scheme-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ajustes-b-render-audit-les-66745-e-at-every-width-and-scheme-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:89:5 › Asesoría IA analyzes the critical patient on screen, not the initial one 
+
+    Error: apiRequestContext.put: connect ECONNREFUSED 127.0.0.1:4910
+    Call log:
+      - → PUT http://127.0.0.1:4910/__fake-llm/mode
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 15
+
+
+      35 |
+      36 | async function setFakeLlmMode(request: APIRequestContext, mode: string): Promise<void> {
+    > 37 |   const response = await request.put(`${FAKE_LLM_URL}/__fake-llm/mode`, { data: { mode } });
+         |                                  ^
+      38 |
+      39 |   expect(response.ok()).toBe(true);
+      40 | }
+        at setFakeLlmMode (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:37:34)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:91:9
+
+    Error: apiRequestContext.put: connect ECONNREFUSED 127.0.0.1:4910
+    Call log:
+      - → PUT http://127.0.0.1:4910/__fake-llm/mode
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 13
+
+
+      35 |
+      36 | async function setFakeLlmMode(request: APIRequestContext, mode: string): Promise<void> {
+    > 37 |   const response = await request.put(`${FAKE_LLM_URL}/__fake-llm/mode`, { data: { mode } });
+         |                                  ^
+      38 |
+      39 |   expect(response.ok()).toBe(true);
+      40 | }
+        at setFakeLlmMode (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:37:34)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:86:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\bloque-a-asesoria-estado-a-a7eb5--screen-not-the-initial-one-e2e\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\bloque-a-asesoria-estado-a-a7eb5--screen-not-the-initial-one-e2e\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque-a-asesoria-estado-a-a7eb5--screen-not-the-initial-one-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque-a-asesoria-estado-a-a7eb5--screen-not-the-initial-one-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:121:5 › ¿Cómo estabilizar? of the low SpO2 alarm analyzes the current state too 
+
+    Error: apiRequestContext.put: connect ECONNREFUSED 127.0.0.1:4910
+    Call log:
+      - → PUT http://127.0.0.1:4910/__fake-llm/mode
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 15
+
+
+      35 |
+      36 | async function setFakeLlmMode(request: APIRequestContext, mode: string): Promise<void> {
+    > 37 |   const response = await request.put(`${FAKE_LLM_URL}/__fake-llm/mode`, { data: { mode } });
+         |                                  ^
+      38 |
+      39 |   expect(response.ok()).toBe(true);
+      40 | }
+        at setFakeLlmMode (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:37:34)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:123:9
+
+    Error: apiRequestContext.put: connect ECONNREFUSED 127.0.0.1:4910
+    Call log:
+      - → PUT http://127.0.0.1:4910/__fake-llm/mode
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 13
+
+
+      35 |
+      36 | async function setFakeLlmMode(request: APIRequestContext, mode: string): Promise<void> {
+    > 37 |   const response = await request.put(`${FAKE_LLM_URL}/__fake-llm/mode`, { data: { mode } });
+         |                                  ^
+      38 |
+      39 |   expect(response.ok()).toBe(true);
+      40 | }
+        at setFakeLlmMode (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:37:34)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:86:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\bloque-a-asesoria-estado-a-751a7-lyzes-the-current-state-too-e2e\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\bloque-a-asesoria-estado-a-751a7-lyzes-the-current-state-too-e2e\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque-a-asesoria-estado-a-751a7-lyzes-the-current-state-too-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque-a-asesoria-estado-a-751a7-lyzes-the-current-state-too-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:139:5 › an AI answer that claims stability with a critical patient is replaced by the deterministic suggestion 
+
+    Error: apiRequestContext.put: connect ECONNREFUSED 127.0.0.1:4910
+    Call log:
+      - → PUT http://127.0.0.1:4910/__fake-llm/mode
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 24
+
+
+      35 |
+      36 | async function setFakeLlmMode(request: APIRequestContext, mode: string): Promise<void> {
+    > 37 |   const response = await request.put(`${FAKE_LLM_URL}/__fake-llm/mode`, { data: { mode } });
+         |                                  ^
+      38 |
+      39 |   expect(response.ok()).toBe(true);
+      40 | }
+        at setFakeLlmMode (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:37:34)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:141:9
+
+    Error: apiRequestContext.put: connect ECONNREFUSED 127.0.0.1:4910
+    Call log:
+      - → PUT http://127.0.0.1:4910/__fake-llm/mode
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 13
+
+
+      35 |
+      36 | async function setFakeLlmMode(request: APIRequestContext, mode: string): Promise<void> {
+    > 37 |   const response = await request.put(`${FAKE_LLM_URL}/__fake-llm/mode`, { data: { mode } });
+         |                                  ^
+      38 |
+      39 |   expect(response.ok()).toBe(true);
+      40 | }
+        at setFakeLlmMode (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:37:34)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\asesoria-estado-actual.spec.ts:86:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\bloque-a-asesoria-estado-a-73b2a-he-deterministic-suggestion-e2e\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\bloque-a-asesoria-estado-a-73b2a-he-deterministic-suggestion-e2e\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque-a-asesoria-estado-a-73b2a-he-deterministic-suggestion-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque-a-asesoria-estado-a-73b2a-he-deterministic-suggestion-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [e2e] › e2e\bloque-a\modo-real-asesoria.spec.ts:37:5 › Asesoría IA of the real monitor echoes the latest telemetry on screen 
+
+    Error: apiRequestContext.put: connect ECONNREFUSED 127.0.0.1:4910
+    Call log:
+      - → PUT http://127.0.0.1:4910/__fake-llm/mode
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 15
+
+
+      28 |
+      29 | async function setFakeLlmMode(request: APIRequestContext, mode: string): Promise<void> {
+    > 30 |   expect((await request.put(`${FAKE_LLM_URL}/__fake-llm/mode`, { data: { mode } })).ok()).toBe(true);
+         |                         ^
+      31 | }
+      32 |
+      33 | test.afterEach(async ({ request }) => {
+        at setFakeLlmMode (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\modo-real-asesoria.spec.ts:30:25)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\modo-real-asesoria.spec.ts:39:9
+
+    Error: apiRequestContext.put: connect ECONNREFUSED 127.0.0.1:4910
+    Call log:
+      - → PUT http://127.0.0.1:4910/__fake-llm/mode
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 13
+
+
+      28 |
+      29 | async function setFakeLlmMode(request: APIRequestContext, mode: string): Promise<void> {
+    > 30 |   expect((await request.put(`${FAKE_LLM_URL}/__fake-llm/mode`, { data: { mode } })).ok()).toBe(true);
+         |                         ^
+      31 | }
+      32 |
+      33 | test.afterEach(async ({ request }) => {
+        at setFakeLlmMode (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\modo-real-asesoria.spec.ts:30:25)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\modo-real-asesoria.spec.ts:34:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\bloque-a-modo-real-asesori-610ce--latest-telemetry-on-screen-e2e\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\bloque-a-modo-real-asesori-610ce--latest-telemetry-on-screen-e2e\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque-a-modo-real-asesori-610ce--latest-telemetry-on-screen-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque-a-modo-real-asesori-610ce--latest-telemetry-on-screen-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [e2e] › e2e\bloque-a\modo-real.spec.ts:43:5 › one command per Enviar, nothing beyond the safe range and undo, with the simulated device 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator: getByRole('spinbutton', { name: 'Presión positiva al final de la espiración', exact: true })
+    Expected: "false"
+    Timeout: 60000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveAttribute" getByRole('spinbutton', { name: 'Presión positiva al final de la espiración', exact: true }) with timeout 60000ms
+      - waiting for getByRole('spinbutton', { name: 'Presión positiva al final de la espiración', exact: true })
+
+
+      59 |     // Live telemetry from the fake device: the console is editable with the reported PEEP (5 on a fresh device; the
+      60 |     // device keeps the last applied settings, so an interrupted earlier run is brought back to 5 first).
+    > 61 |     await expect(peep).toHaveAttribute("aria-disabled", "false", { timeout: 60_000 });
+         |                        ^
+      62 |     await expect.poll(peepValue, { timeout: 30_000 }).toBeGreaterThan(0);
+      63 |
+      64 |     if ((await peepValue()) !== 5) {
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\modo-real.spec.ts:61:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\bloque-a-modo-real-one-com-f1fbd-o-with-the-simulated-device-e2e\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\bloque-a-modo-real-one-com-f1fbd-o-with-the-simulated-device-e2e\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque-a-modo-real-one-com-f1fbd-o-with-the-simulated-device-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque-a-modo-real-one-com-f1fbd-o-with-the-simulated-device-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [e2e] › e2e\bloque-a\repeticion.spec.ts:38:5 › the replay of a session with evolution equals the live session and the server summary 
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 2
+    Received length: 0
+    Received array:  []
+
+      54 |   const server = summary.finalMetrics;
+      55 |
+    > 56 |   expect(stored.events.filter((event) => event.type === "PARAM_CHANGE")).toHaveLength(2);
+         |                                                                          ^
+      57 |   expect(local.simTimeMs).toBe(server.simTimeMs);
+      58 |   expect({
+      59 |     spo2: close(local.gasExchange.spo2Percent, server.gasExchange.spo2Percent),
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque-a\repeticion.spec.ts:56:74
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\bloque-a-repeticion-the-re-cb36e-sion-and-the-server-summary-e2e\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\bloque-a-repeticion-the-re-cb36e-sion-and-the-server-summary-e2e\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque-a-repeticion-the-re-cb36e-sion-and-the-server-summary-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque-a-repeticion-the-re-cb36e-sion-and-the-server-summary-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [e2e] › e2e\bloque2\learning-locks.spec.ts:15:5 › (2) locked level and locked lesson: screen with the missing lessons and 403 from the server 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator: getByRole('listitem').filter({ has: getByRole('heading', { name: 'Nivel Intermedio', exact: true, level: 4 }) })
+    Expected: "locked"
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveAttribute" getByRole('listitem').filter({ has: getByRole('heading', { name: 'Nivel Intermedio', exact: true, level: 4 }) }) with timeout 30000ms
+      - waiting for getByRole('listitem').filter({ has: getByRole('heading', { name: 'Nivel Intermedio', exact: true, level: 4 }) })
+
+
+      24 |     const level = page.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 4, name: "Nivel Intermedio", exact: true }) });
+      25 |
+    > 26 |     await expect(level).toHaveAttribute("data-status", "locked", { timeout: 30_000 });
+         |                         ^
+      27 |     await expect(level).toContainText("Bloqueado");
+      28 |     await expect(level).toContainText("Completa el nivel anterior para desbloquear");
+      29 |     await expect(page.getByRole("list", { name: "Módulos de Nivel Intermedio" })).toHaveCount(0);
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque2\learning-locks.spec.ts:26:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\bloque2-learning-locks--2--96928-ons-and-403-from-the-server-e2e\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\bloque2-learning-locks--2--96928-ons-and-403-from-the-server-e2e\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque2-learning-locks--2--96928-ons-and-403-from-the-server-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque2-learning-locks--2--96928-ons-and-403-from-the-server-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [e2e] › e2e\bloque2\tutor-ai.spec.ts:31:5 › (3) TutorAI: deepen with streaming, rate it, one question, a note and its AI analysis 
+
+    Error: Sign-in of superadmin@ventylab.demo failed (401)
+
+       at support\learning.ts:72
+
+      70 |
+      71 |     if (!response.ok()) {
+    > 72 |       throw new Error(`Sign-in of ${email} failed (${response.status()})`);
+         |             ^
+      73 |     }
+      74 |
+      75 |     return ((await response.json()) as Envelope<LoginData>).data;
+        at apiSignIn (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\learning.ts:72:13)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque2\tutor-ai.spec.ts:33:17
+
+    Error Context: test-results\bloque2-tutor-ai--3-TutorA-e6bc5--a-note-and-its-AI-analysis-e2e\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque2-tutor-ai--3-TutorA-e6bc5--a-note-and-its-AI-analysis-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque2-tutor-ai--3-TutorA-e6bc5--a-note-and-its-AI-analysis-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [e2e] › e2e\bloque3\student-list.spec.ts:18:5 › (6) the student list is grouped by type, track and level 
+
+    Error: two Mecánica levels with modules in the seeded curriculum
+
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 2
+    Received:    1
+
+      24 |   const ventylab = levels.find((level) => level.track === "ventylab");
+      25 |
+    > 26 |   expect(mecanica.length, "two Mecánica levels with modules in the seeded curriculum").toBeGreaterThanOrEqual(2);
+         |                                                                                        ^
+      27 |   expect(ventylab, "a VentyLab level in the seeded curriculum").toBeDefined();
+      28 |   const [firstLevel, secondLevel] = mecanica as [typeof mecanica[number], typeof mecanica[number]];
+      29 |   const tag = runTag();
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque3\student-list.spec.ts:26:88
+
+    Error Context: test-results\bloque3-student-list--6-th-fa7fe-ped-by-type-track-and-level-e2e\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque3-student-list--6-th-fa7fe-ped-by-type-track-and-level-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque3-student-list--6-th-fa7fe-ped-by-type-track-and-level-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [e2e] › e2e\bloque4\admin-ai-ratings.spec.ts:81:5 › (8) /admin/ai filters the ratings by surface and exports Bloque 2 and 3 ratings as CSV 
+
+    Error: Sign-in of superadmin@ventylab.demo failed (401)
+
+       at support\learning.ts:72
+
+      70 |
+      71 |     if (!response.ok()) {
+    > 72 |       throw new Error(`Sign-in of ${email} failed (${response.status()})`);
+         |             ^
+      73 |     }
+      74 |
+      75 |     return ((await response.json()) as Envelope<LoginData>).data;
+        at apiSignIn (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\learning.ts:72:13)
+        at staffSession (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\panel.ts:33:86)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque4\admin-ai-ratings.spec.ts:121:19
+
+    Error Context: test-results\bloque4-admin-ai-ratings---503f3-oque-2-and-3-ratings-as-CSV-e2e\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque4-admin-ai-ratings---503f3-oque-2-and-3-ratings-as-CSV-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque4-admin-ai-ratings---503f3-oque-2-and-3-ratings-as-CSV-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [e2e] › e2e\bloque4\admin-users.spec.ts:27:5 › (4) admin: role change with confirmation, protected superadmin and the Profesores tab 
+
+    Error: Sign-in of superadmin@ventylab.demo failed (401)
+
+       at support\learning.ts:72
+
+      70 |
+      71 |     if (!response.ok()) {
+    > 72 |       throw new Error(`Sign-in of ${email} failed (${response.status()})`);
+         |             ^
+      73 |     }
+      74 |
+      75 |     return ((await response.json()) as Envelope<LoginData>).data;
+        at apiSignIn (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\learning.ts:72:13)
+        at staffSession (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\panel.ts:33:86)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque4\admin-users.spec.ts:29:17
+
+    Error Context: test-results\bloque4-admin-users--4-adm-93f99-dmin-and-the-Profesores-tab-e2e\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque4-admin-users--4-adm-93f99-dmin-and-the-Profesores-tab-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque4-admin-users--4-adm-93f99-dmin-and-the-Profesores-tab-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [e2e] › e2e\bloque4\lab-group-reservation.spec.ts:23:5 › (3) teacher reserves the ventilator for a group from /teacher/lab and the leader operates it from /simulador 
+
+    Error: Sign-in of superadmin@ventylab.demo failed (401)
+
+       at support\learning.ts:72
+
+      70 |
+      71 |     if (!response.ok()) {
+    > 72 |       throw new Error(`Sign-in of ${email} failed (${response.status()})`);
+         |             ^
+      73 |     }
+      74 |
+      75 |     return ((await response.json()) as Envelope<LoginData>).data;
+        at apiSignIn (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\learning.ts:72:13)
+        at staffSession (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\panel.ts:33:86)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque4\lab-group-reservation.spec.ts:27:17
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\bloque4-lab-group-reservat-f786f--operates-it-from-simulador-e2e\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\bloque4-lab-group-reservat-f786f--operates-it-from-simulador-e2e\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque4-lab-group-reservat-f786f--operates-it-from-simulador-e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque4-lab-group-reservat-f786f--operates-it-from-simulador-e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [e2e] › e2e\bloque4\student-detail-scope.spec.ts:18:5 › (7) a teacher without supervision gets 403 on another teacher's student (UI and API) 
+
+    Error: Sign-in of superadmin@ventylab.demo failed (401)
+
+       at support\learning.ts:72
+
+      70 |
+      71 |     if (!response.ok()) {
+    > 72 |       throw new Error(`Sign-in of ${email} failed (${response.status()})`);
+         |             ^
+      73 |     }
+      74 |
+      75 |     return ((await response.json()) as Envelope<LoginData>).data;
+        at apiSignIn (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\learning.ts:72:13)
+        at staffSession (<home>\Documents\Marce\ventylab\wt-rmc-web\e2e\support\panel.ts:33:86)
+        at <home>\Documents\Marce\ventylab\wt-rmc-web\e2e\bloque4\student-detail-scope.spec.ts:22:17
+
+    Error Context: test-results\bloque4-student-detail-sco-6aa09-acher-s-student-UI-and-API--e2e\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\bloque4-student-detail-sco-6aa09-acher-s-student-UI-and-API--e2e\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\bloque4-student-detail-sco-6aa09-acher-s-student-UI-and-API--e2e\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14 failed
+    [e2e] › e2e\ajustes-b\render-audit.spec.ts:123:7 › lesson render audit › every block type renders inside the page at every width and scheme 
+    [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:89:5 › Asesoría IA analyzes the critical patient on screen, not the initial one 
+    [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:121:5 › ¿Cómo estabilizar? of the low SpO2 alarm analyzes the current state too 
+    [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:139:5 › an AI answer that claims stability with a critical patient is replaced by the deterministic suggestion 
+    [e2e] › e2e\bloque-a\modo-real-asesoria.spec.ts:37:5 › Asesoría IA of the real monitor echoes the latest telemetry on screen 
+    [e2e] › e2e\bloque-a\modo-real.spec.ts:43:5 › one command per Enviar, nothing beyond the safe range and undo, with the simulated device 
+    [e2e] › e2e\bloque-a\repeticion.spec.ts:38:5 › the replay of a session with evolution equals the live session and the server summary 
+    [e2e] › e2e\bloque2\learning-locks.spec.ts:15:5 › (2) locked level and locked lesson: screen with the missing lessons and 403 from the server 
+    [e2e] › e2e\bloque2\tutor-ai.spec.ts:31:5 › (3) TutorAI: deepen with streaming, rate it, one question, a note and its AI analysis 
+    [e2e] › e2e\bloque3\student-list.spec.ts:18:5 › (6) the student list is grouped by type, track and level 
+    [e2e] › e2e\bloque4\admin-ai-ratings.spec.ts:81:5 › (8) /admin/ai filters the ratings by surface and exports Bloque 2 and 3 ratings as CSV 
+    [e2e] › e2e\bloque4\admin-users.spec.ts:27:5 › (4) admin: role change with confirmation, protected superadmin and the Profesores tab 
+    [e2e] › e2e\bloque4\lab-group-reservation.spec.ts:23:5 › (3) teacher reserves the ventilator for a group from /teacher/lab and the leader operates it from /simulador 
+    [e2e] › e2e\bloque4\student-detail-scope.spec.ts:18:5 › (7) a teacher without supervision gets 403 on another teacher's student (UI and API) 
+  30 skipped
+  54 passed (14.2m)
+EXIT 1

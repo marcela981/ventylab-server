@@ -1,0 +1,1034 @@
+npm notice run ventilab-web@0.1.0 npx
+npm notice run vitest run --maxWorkers=2
+
+ RUN  v3.2.7 <home>/Documents/Marce/ventylab/wt-rmc-web
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — status > checks readiness on the client and shows the issues without sending the status
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — status > asks to save before changing the status
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — status > marks a valid evaluation as READY and returns it to DRAFT
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — status > marks a valid evaluation as READY and returns it to DRAFT
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — status > marks a valid evaluation as READY and returns it to DRAFT
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/groups?type=STUDENT&isActive=true
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — status > marks a valid evaluation as READY and returns it to DRAFT
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — status > shows the reloaded readiness issues when the backend refuses READY (422)
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — simulation > picks a published clinical case and saves the rubric in the structural PATCH
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — simulation > picks a published clinical case and saves the rubric in the structural PATCH
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — simulation > recommends a clinical case without blocking READY and says the title filter covers this page only
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — simulation > recommends a clinical case without blocking READY and says the title filter covers this page only
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — simulation > recommends a clinical case without blocking READY and says the title filter covers this page only
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/groups?type=STUDENT&isActive=true
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — simulation > offers no range for a text parameter
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > tracks unsaved changes, guards navigation and saves only the changed metadata
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > tracks unsaved changes, guards navigation and saves only the changed metadata
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > saves the prompt, points and correct answer of a choice question
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > saves the prompt, points and correct answer of a choice question
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > uploads statement media and an option image and saves them with the question and option PATCHes
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > uploads statement media and an option image and saves them with the question and option PATCHes
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > rejects a statement file that is neither an image nor a video before uploading
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > lets a multiple choice question mark several correct options
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > adds a question of the chosen type and deletes a question after confirmation
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > adds a question of the chosen type and deletes a question after confirmation
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > adds a question of the chosen type and deletes a question after confirmation
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > sends the batch reorder of a drag and restores the order when it fails
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > sends the batch reorder of a drag and restores the order when it fails
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > sends the batch reorder of a drag and restores the order when it fails
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > shows the structure-locked banner and opens the duplicate
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > shows the structure-locked banner and opens the duplicate
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > keeps the texts and drops the structural edits when a save hits submitted attempts (409)
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > keeps the texts and drops the structural edits when a save hits submitted attempts (409)
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > shows the client READY issues on the question when a save gets a 422 without issues
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/groups?type=STUDENT&isActive=true
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > shows the client READY issues on the question when a save gets a 422 without issues
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > falls back to the READY hint when a 422 on a save has no client explanation
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/groups?type=STUDENT&isActive=true
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > falls back to the READY hint when a 422 on a save has no client explanation
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > keeps an option text typed while the option is being created and does not create it twice
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+ ✓ src/features/case-editor/application/pages/case-editor.page.test.tsx (6 tests) 17402ms
+   ✓ CaseEditorPage — new case > validates on the client before sending anything and counts the errors per section  2097ms
+   ✓ CaseEditorPage — new case > writes the applied console settings and the sorted events into the POST body, then opens the editor route  6397ms
+   ✓ CaseEditorPage — existing case > loads the definition, shows the PBW and the stored facts, guards unsaved changes and saves with PUT  3424ms
+   ✓ CaseEditorPage — existing case > maps a 422 range violation to its field and a 409 with sessions to the page message  4945ms
+   ✓ CaseEditorPage — existing case > renders the T12 tools slot with the loaded definition  504ms
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > keeps an option text typed while the option is being created and does not create it twice
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+stderr | src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx > EvaluationBuilderPage — edit > keeps an option text typed while the option is being created and does not create it twice
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+ ✓ src/features/evaluation-authoring/application/pages/evaluation-builder.page.test.tsx (20 tests) 19209ms
+   ✓ EvaluationBuilderPage — create > validates, posts the evaluation without the immediate results option and opens its editor  800ms
+   ✓ EvaluationBuilderPage — status > checks readiness on the client and shows the issues without sending the status  950ms
+   ✓ EvaluationBuilderPage — status > asks to save before changing the status  444ms
+   ✓ EvaluationBuilderPage — status > marks a valid evaluation as READY and returns it to DRAFT  1117ms
+   ✓ EvaluationBuilderPage — status > shows the reloaded readiness issues when the backend refuses READY (422)  524ms
+   ✓ EvaluationBuilderPage — simulation > picks a published clinical case and saves the rubric in the structural PATCH  2166ms
+   ✓ EvaluationBuilderPage — simulation > recommends a clinical case without blocking READY and says the title filter covers this page only  629ms
+   ✓ EvaluationBuilderPage — simulation > offers no range for a text parameter  559ms
+   ✓ EvaluationBuilderPage — edit > tracks unsaved changes, guards navigation and saves only the changed metadata  943ms
+   ✓ EvaluationBuilderPage — edit > saves the prompt, points and correct answer of a choice question  1030ms
+   ✓ EvaluationBuilderPage — edit > uploads statement media and an option image and saves them with the question and option PATCHes  1215ms
+   ✓ EvaluationBuilderPage — edit > rejects a statement file that is neither an image nor a video before uploading  371ms
+   ✓ EvaluationBuilderPage — edit > lets a multiple choice question mark several correct options  343ms
+   ✓ EvaluationBuilderPage — edit > adds a question of the chosen type and deletes a question after confirmation  1398ms
+   ✓ EvaluationBuilderPage — edit > sends the batch reorder of a drag and restores the order when it fails  1620ms
+   ✓ EvaluationBuilderPage — edit > shows the structure-locked banner and opens the duplicate  656ms
+   ✓ EvaluationBuilderPage — edit > keeps the texts and drops the structural edits when a save hits submitted attempts (409)  975ms
+   ✓ EvaluationBuilderPage — edit > shows the client READY issues on the question when a save gets a 422 without issues  752ms
+   ✓ EvaluationBuilderPage — edit > falls back to the READY hint when a 422 on a save has no client explanation  804ms
+   ✓ EvaluationBuilderPage — edit > keeps an option text typed while the option is being created and does not create it twice  1906ms
+ ✓ src/features/ventilator-lab/application/pages/lab-reservations.page.test.tsx (17 tests) 11710ms
+   ✓ LabReservationsPage > shows the Bogota week with the default rules and only the backend label to a student  880ms
+   ✓ LabReservationsPage > navigates by week and by day with new range queries  1830ms
+   ✓ LabReservationsPage > books a free slot and revalidates the calendar  1060ms
+   ✓ LabReservationsPage > lets a teacher book over a student's reservation through the preemption dialog  1250ms
+   ✓ LabReservationsPage > tells a teacher booking over another teacher that only an admin can preempt it (T3 review fix S3)  1140ms
+   ✓ LabReservationsPage > does not let a student select occupied slots  594ms
+   ✓ LabReservationsPage > shows the next range's skeleton or error, never the previous range's slots  695ms
+   ✓ LabReservationsPage > caps the durations of the last slot of the range with a reservation of the next day  792ms
+   ✓ LabReservationsPage > offers no duration and disables Reservar when the chosen slot is taken while the dialog is open  869ms
+   ✓ LabReservationsPage > offers no duration while the calendar of new settings loads, then the allowed ones (T4 review fix W1)  1091ms
+ ✓ src/features/simulator/application/pages/session-console.page.test.tsx (41 tests) 25873ms
+   ✓ SessionConsolePage > a deceased patient is shown in the status area and ends the session on its own (Bloque A)  630ms
+   ✓ SessionConsolePage > an unstable patient shows its status and severity without ending the session (Bloque A)  345ms
+   ✓ SessionConsolePage > an edit waits for Enviar, then one PARAM_CHANGE with its id and no time, enqueued with the acknowledged time  428ms
+   ✓ SessionConsolePage > end waits for the acknowledgement of a change the worker has not confirmed yet  368ms
+   ✓ SessionConsolePage > a change the worker rejects shows an error, rolls the setting back and is never sent  417ms
+   ✓ SessionConsolePage > an EXAM alarm without a known assistance policy opens its help without any request (Bloque A)  761ms
+   ✓ SessionConsolePage > FREE pauses, resumes and changes the playback multiplier up to the session multiplier  581ms
+   ✓ SessionConsolePage > a refused event blocks the console as a divergence; reloading rebuilds the session from the server  3301ms
+   ✓ SessionConsolePage > time-ahead refusals: the first reload fast-forwards on the server clock, a repeated one resumes with backlog 0  6541ms
+   ✓ SessionConsolePage > mirrors unsent events to sessionStorage, shows them as pending and sends them with keepalive on page hide  3269ms
+   ✓ SessionConsolePage — EXAM flow (T9) > at the deadline the flush is bounded: POST /end goes out even if the events never reach the server  5234ms
+   ✓ SessionConsolePage — EXAM flow (T9) > a deadline during the student's failing end still returns to the exam (no stranded student)  366ms
+ ✓ src/features/content-editor/application/pages/page-editor.page.test.tsx (12 tests) 11409ms
+   ✓ PageEditorPage > lists the blocks in order with everything saved  621ms
+   ✓ PageEditorPage > marks unsaved changes, guards leaving and saves only the edited block  495ms
+   ✓ PageEditorPage > forgets a confirmed back/forward that ended without a route change  354ms
+   ✓ PageEditorPage > saves added, duplicated, deleted and moved blocks with one reorder  1794ms
+   ✓ PageEditorPage > opens the lazy rich text editor for a new text block  2480ms
+   ✓ PageEditorPage > sends the Tiptap JSON of an edited rich text block  840ms
+   ✓ PageEditorPage > uploads an image so the new block becomes valid and is saved with its media  1097ms
+   ✓ PageEditorPage > clears the block with a note when the uploaded media is already in use  943ms
+   ✓ PageEditorPage > previews the current draft as students see it, unsaved edits included  1883ms
+   ✓ PageEditorPage > keeps the changes and shows the mapped error when the save fails  451ms
+ ✓ src/features/simulator-workspace/application/components/patient-form/patient-form-panel.test.tsx (7 tests) 6677ms
+   ✓ PatientFormPanel > shows the July form and blocks Siguiente with Spanish messages until step 1 is valid  2627ms
+   ✓ PatientFormPanel > keeps the draft when the student switches tabs  712ms
+   ✓ PatientFormPanel > loads a published case with filters and starts the session on it with the edited patient  1180ms
+   ✓ PatientFormPanel > starts a random patient without a case and disables the send while pending  576ms
+   ✓ PatientFormPanel > goes back to the step with an error and shows a start failure in Spanish  1127ms
+ ✓ src/features/grading/application/components/workspace/attempt-review-pane.test.tsx (19 tests) 9354ms
+   ✓ AttemptReviewPane — layout > shows the header, the correct answer and the server rubric breakdown  537ms
+   ✓ AttemptReviewPane — grading > requires a comment to override an automatic score and sends nothing without it  447ms
+   ✓ AttemptReviewPane — grading > sends the override with its comment and the other changed answers, one at a time  758ms
+   ✓ AttemptReviewPane — grading > rejects a score out of range on the client  365ms
+   ✓ AttemptReviewPane — grading > puts the backend 422 codes on their fields  572ms
+   ✓ AttemptReviewPane — grading > keeps the draft of a failed save while the saved one is refreshed  571ms
+   ✓ AttemptReviewPane — review fixes > starts an empty override comment, shows the previous one and requires a new one  661ms
+   ✓ AttemptReviewPane — review fixes > keeps the drafts and asks to reload when the attempt cannot be read after a save  674ms
+   ✓ AttemptReviewPane — release > releases the grade alone with scope GRADE after confirmation, then offers only the answers  758ms
+   ✓ AttemptReviewPane — release > releases the grade and the answers with scope GRADE_AND_ANSWERS after confirmation  719ms
+   ✓ AttemptReviewPane — release > cancels a release without calling the API  529ms
+   ✓ AttemptReviewPane — AI feedback > regenerates and follows the PENDING feedback to READY by polling  514ms
+   ✓ AttemptReviewPane — AI feedback > restarts the stopped polling when the feedback is reloaded  664ms
+   ✓ AttemptReviewPane — regeneration refused > keeps the evaluation.grade_feedback_generation_in_progress refusal visible in the feedback panel  386ms
+   ✓ AttemptReviewPane — regeneration refused > keeps the common.too_many_requests refusal visible in the feedback panel  387ms
+ ✓ src/features/student-space/application/pages/my-notes.page.test.tsx (13 tests) 6408ms
+   ✓ MyNotesPage > groups the notes by module in curriculum order and by lesson with the API titles, without reading lessons  500ms
+   ✓ MyNotesPage > sends the module filter to the server and narrows the modules by section  631ms
+   ✓ MyNotesPage > sends the lesson and lesson page filters of the selected module  672ms
+   ✓ MyNotesPage > searches on the server after a pause and shows the empty state of a search without results  1437ms
+   ✓ MyNotesPage > deletes a note after the confirmation  356ms
+   ✓ MyNotesPage > updates a note saved by the editor in place  390ms
+   ✓ MyNotesPage > keeps the note and shows the server error when the deletion fails  345ms
+   ✓ MyNotesPage > shows the skeleton, not the empty state, while the page before an emptied last page loads  1076ms
+ ✓ src/features/content-editor/application/pages/content-tree.page.test.tsx (11 tests) 4999ms
+   ✓ ContentTreePage > reveals, scrolls to and focuses the node of the ?node= deep link  563ms
+   ✓ ContentTreePage > loads the pages of a lesson only when it is expanded  417ms
+   ✓ ContentTreePage > creates a child with the next order and reads the tree again  557ms
+   ✓ ContentTreePage > validates the form before sending  374ms
+   ✓ ContentTreePage > changes the status with PATCH for sections and PUT for the other kinds  607ms
+   ✓ ContentTreePage > warns before publishing under a draft ancestor  471ms
+   ✓ ContentTreePage > offers to archive a module with student data instead of deleting it  907ms
+   ✓ ContentTreePage > archives a section with PATCH after a student-data 409  434ms
+ ✓ src/features/teacher-dashboard/application/pages/teacher-dashboard.page.test.tsx (13 tests) 5802ms
+   ✓ TeacherDashboardPage > shows the first group with its cards and students from the API  793ms
+   ✓ TeacherDashboardPage > highlights only the students the API flags at risk, with the API reasons in Spanish  352ms
+   ✓ TeacherDashboardPage > marks how the caller follows each group in the selector  322ms
+   ✓ TeacherDashboardPage > filters by name or email and sorts by an API column  508ms
+   ✓ TeacherDashboardPage > expands a row with its progress labelled by the curriculum titles  327ms
+   ✓ TeacherDashboardPage > reads the group of the URL and writes the chosen group to it  301ms
+   ✓ TeacherDashboardPage > never shows the previous group's rows while another group loads  564ms
+   ✓ TeacherDashboardPage > shows the error of the new group instead of the previous group's rows  435ms
+   ✓ TeacherDashboardPage > renders one page of 25 students at a time and goes back to the first page on a new filter  1163ms
+   ✓ TeacherDashboardPage > exports the group CSV from the export endpoint  387ms
+ ✓ src/features/groups/application/pages/group-detail.page.test.tsx (25 tests) 6935ms
+   ✓ GroupDetailPage > shows the group facts and its members  315ms
+   ✓ GroupDetailPage > edits the group sending only the changed fields and validates the student limit  575ms
+   ✓ GroupDetailPage > searches students by role and leaves the current members out  427ms
+   ✓ GroupDetailPage > marks a student who already has an active student group instead of offering Agregar (the server would answer 409)  394ms
+   ✓ GroupDetailPage > adds a member and refreshes the group  525ms
+   ✓ GroupDetailPage > shows the specific message of groups.student_already_in_group  520ms
+   ✓ GroupDetailPage > shows the specific message of groups.member_role_not_allowed  503ms
+   ✓ GroupDetailPage > shows the management permission message on a 403  433ms
+   ✓ GroupDetailPage > lets an admin manage a teacher group: teacher search and no leader  507ms
+   ✓ GroupDetailPage > refetches the supervisions after removing one  453ms
+ ✓ src/features/teacher-dashboard/application/pages/students-directory.page.test.tsx (14 tests) 6272ms
+   ✓ StudentsDirectoryPage — Directorio > lists the server page with code, progress and groups, linking only rows in scope  619ms
+   ✓ StudentsDirectoryPage — Directorio > sends the search to the URL after the debounce, back on page 1  444ms
+   ✓ StudentsDirectoryPage — Conformar Grupo > creates the group, adds every student and closes after July's success  2454ms
+   ✓ StudentsDirectoryPage — Conformar Grupo > shows July's partial failure with the reason of each student and stays open  650ms
+   ✓ StudentsDirectoryPage — Conformar Grupo > keeps the selection when the dialog is cancelled  437ms
+   ✓ StudentsDirectoryPage — Estadísticas > shows the four global cards (TEACHER)  343ms
+   ✓ StudentsDirectoryPage — Agregar a grupo existente > adds the selected students to a chosen group and reports who could not be added  524ms
+ ✓ src/features/ventilator-lab/application/hooks/ventilator-commands.test.tsx (26 tests) 8890ms
+   ✓ useVentilatorCommands > pauses sending for the Retry-After of a 429 with a countdown  2066ms
+   ✓ useVentilatorCommands > keeps the console locked while the lookup finds the command SENT, and follows it to its terminal status (T8 review W2)  3079ms
+ ✓ src/features/simulator-workspace/application/components/monitoring/real/real-monitor.test.tsx (6 tests) 5612ms
+   ✓ RealMonitor > gives the connected operator an editable console, the recording, the latency and editable alarm limits  2608ms
+   ✓ RealMonitor > shows 'Equipo sin datos' only after 2 s without telemetry, until the next batch  2194ms
+   ✓ RealMonitor > keeps the console mounted, read-only, with the reconnection notice while the connection is CONNECTING again  304ms
+ ✓ src/features/admin-console/application/pages/admin-users.page.test.tsx (19 tests) 4409ms
+   ✓ AdminUsersPage > lists the users of the API with the URL filters and writes a filter change to the URL  613ms
+   ✓ AdminUsersPage > warns about the effects of a role change and sends it  366ms
+   ✓ AdminUsersPage > keeps the role dialog open on Escape while the change is pending  461ms
+   ✓ AdminUsersPage > edits the student code with the backend rule and confirms it  301ms
+   ✓ AdminUsersPage tabs > lists the teachers with their groups and distinct students  385ms
+ ✓ src/shared/rubric-editor/application/outcome-rubric-editor.test.tsx (19 tests) 3829ms
+   ✓ OutcomeRubricEditor > adds criteria with the first unused type and disables used types in the other selects  321ms
+   ✓ OutcomeRubricEditor > stops adding once every type is used  759ms
+ ✓ src/features/simulator-workspace/application/components/monitoring/monitoring-panel.test.tsx (6 tests) 3337ms
+   ✓ MonitoringPanel > without a session shows 'Sin señal' and the July guide with its two shortcuts  1273ms
+   ✓ MonitoringPanel > runs the digital session: 'Simulando', the console without alarm limits and the own patient  739ms
+   ✓ MonitoringPanel > 'Finalizar sesión' shows the result in a dialog without navigating, and closing it clears the session  1061ms
+ ✓ src/features/evaluation-authoring/application/pages/evaluations-manage.page.test.tsx (8 tests) 3711ms
+   ✓ EvaluationsManageBody > lists the first page with its details and actions  525ms
+   ✓ EvaluationsManageBody > sends the filters and the debounced search as query params and paginates on the server  872ms
+   ✓ EvaluationsManageBody > steps back to the last available page after archiving the only row of the last page  1425ms
+ ✓ src/features/evaluations/application/pages/attempt-player.page.test.tsx (17 tests) 3307ms
+   ✓ AttemptPlayerPage > renders an unpublished attempt that carries no correctness, explanation or rubric  587ms
+   ✓ AttemptPlayerPage > autosaves a choice with a PUT  333ms
+   ✓ AttemptPlayerPage > gives up after the maximum number of retries of a retryable failure  444ms
+ ✓ src/features/simulator-workspace/application/components/connection/connection-panel.test.tsx (15 tests) 3115ms
+   ✓ ConnectionPanel > shows the two July cards: free ventilator, Reservar ahora enabled, Conectar disabled and the calendar link  454ms
+   ✓ ConnectionPanel > books now for 30 minutes by default and becomes RESERVADO with the remaining time  391ms
+   ✓ ConnectionPanel > offers "Para mi grupo" to a group leader and books the group  464ms
+   ✓ ConnectionPanel > staff over a preemptable conflict confirms "Desplazar y reservar" and resends with confirmPreempt  329ms
+ ✓ src/features/learning/application/pages/lesson-viewer.page.test.tsx (17 tests) 3690ms
+   ✓ LessonViewerPage > renders the July layout: breadcrumb, title, page progress, blocks in order, lesson index and navigation  681ms
+   ✓ LessonViewerPage > opens the lesson completed dialog on the last page, with focus management and no automatic navigation  916ms
+   ✓ LessonViewerPage > registers the view once on Siguiente, navigates and refetches neither the tree nor the module progress  329ms
+ ✓ src/features/ventilator-lab/application/components/create-reservation-dialog.test.tsx (12 tests) 3018ms
+   ✓ CreateReservationDialog holders > books a student without led groups for themselves with the chosen duration and purpose  564ms
+   ✓ CreateReservationDialog holders > lets a group leader book for the group  387ms
+   ✓ CreateReservationDialog holders > lets an admin book for another user found by search  817ms
+ ✓ src/features/groups/application/pages/groups.page.test.tsx (11 tests) 3714ms
+   ✓ GroupsPage > paginates the groups on the client, 10 per page  556ms
+   ✓ GroupsPage > filters by text, type and status  376ms
+   ✓ GroupsPage > creates a student group from the dialog and refreshes the list  690ms
+   ✓ GroupsPage > shows the permission message when the creation is forbidden  335ms
+   ✓ GroupsPage > offers the group type only to admins  435ms
+   ✓ GroupsPage > lets an admin create a teacher group  579ms
+ ✓ src/features/profile/application/pages/profile.page.test.tsx (21 tests) 3184ms
+   ✓ ProfilePage tabs > opens the personal information tab by default  304ms
+ ✓ src/features/learning/application/components/tutor/questions-panel.test.tsx (17 tests) 5700ms
+   ✓ QuestionsPanel > reopens the lesson conversation and shows its history  478ms
+   ✓ QuestionsPanel > streams the answer to a new message and then shows the saved conversation  410ms
+   ✓ QuestionsPanel > switches to the module scope and uses the moduleId  305ms
+   ✓ QuestionsPanel > stops the answer with Detener and reloads the saved conversation  1361ms
+   ✓ QuestionsPanel > labels a saved non-AI fallback answer by its server prefix and offers no rating for it  334ms
+   ✓ QuestionsPanel > rates an answer with surface POPUP and the conversation scope  525ms
+   ✓ QuestionsPanel > adopts the conversation announced by a stopped first message  392ms
+   ✓ QuestionsPanel > re-sends a message that failed mid-stream with Reintentar  320ms
+ ✓ src/features/admin-console/application/pages/admin-settings.page.test.tsx (13 tests) 3348ms
+   ✓ AdminSettingsPage > groups the settings in category tabs kept in the URL and enables reset only for overrides  399ms
+   ✓ AdminSettingsPage > adds and removes the keys of a map setting from its key schema  752ms
+ ✓ src/features/simulator/application/components/assist-panel.test.tsx (15 tests) 3108ms
+   ✓ AI assist panel > streams the answer as it arrives and Detener aborts it without recording it  1000ms
+   ✓ AI assist panel > asks to accept the penalty before every request  721ms
+ ✓ src/features/simulator-workspace/application/pages/simulator-workspace.page.test.tsx (17 tests) 3444ms
+   ✓ SimulatorWorkspacePage > reads nothing until the router is ready  1148ms
+   ✓ SimulatorWorkspacePage > opens Monitoreo for the query {}  353ms
+   ✓ SimulatorWorkspacePage > loads each panel on its first visit and keeps it mounted afterwards  418ms
+   ✓ SimulatorWorkspacePage > keeps the session worker across tab switches (one worker, never terminated)  539ms
+   ✓ SimulatorWorkspacePage > the Simular Paciente panel starts its patient in place and opens Monitoreo  777ms
+ ✓ src/features/admin-console/application/pages/admin-audit.page.test.tsx (8 tests) 2302ms
+   ✓ AdminAuditPage > lists the audit rows with the URL filters sent as the Bogota range  373ms
+   ✓ AdminAuditPage > reads the detail by id and shows only the changed fields, then loads the target history  634ms
+   ✓ AdminAuditPage > fills the action and target type filters from the catalog and states the export row limit  384ms
+ ✓ src/features/ai-chat/application/components/conversation-list.test.tsx (6 tests) 2737ms
+   ✓ ConversationList > sends the scope filter to the listing  535ms
+   ✓ ConversationList > renames inline with Enter and cancels with Escape  342ms
+   ✓ ConversationList > moves back to the last existing page after deleting the only conversation of the last page  1433ms
+ ✓ src/features/notifications/application/pages/notifications.page.test.tsx (12 tests) 2295ms
+   ✓ NotificationsPage > lists the notifications with relative times, unread marks and the envelope pagination  399ms
+   ✓ NotificationsPage > shows a failed action as an error toast  429ms
+ ✓ src/shared/layouts/panel-shell.test.tsx (15 tests) 2197ms
+   ✓ PanelShell navigation > lists the teacher items, marks the active one and hides the admin-only items  385ms
+ ✓ src/features/learning/application/components/tutor/tutor-popup.test.tsx (6 tests) 5215ms
+   ✓ TutorFab and TutorPopup > opens an accessible dialog, closes it with Esc and the close button and returns the focus  3786ms
+   ✓ TutorFab and TutorPopup > moves between the tabs with the keyboard (arrows, Home, End)  454ms
+   ✓ TutorFab and TutorPopup > hands a page suggestion to the deepen accordion: closes the popup, expands it and prefills the question  418ms
+ ✓ src/features/case-editor/application/pages/case-list.page.test.tsx (9 tests) 5606ms
+   ✓ CaseListPage > sends the filters as server query params and shows the status column only when filtered by status  893ms
+   ✓ CaseListPage > asks the server for the next page  869ms
+   ✓ CaseListPage > duplicates a case and opens the editor of the copy  1054ms
+   ✓ CaseListPage > publishes and archives after a confirmation, with PATCH /status  1091ms
+   ✓ CaseListPage > cancels a status change without a request and shows a failure as a toast  721ms
+   ✓ CaseListPage > deletes a row after a confirmation, and offers to archive a case in use  609ms
+ ✓ src/shared/layouts/layouts.test.tsx (33 tests) 2336ms
+ ✓ src/features/teacher-dashboard/application/pages/student-detail.page.test.tsx (20 tests) 2792ms
+   ✓ StudentDetailPage header > shows the profile, code, groups, overall progress and the summary cards without study time  380ms
+ ✓ src/features/content-editor/application/pages/content-prerequisites.page.test.tsx (2 tests) 2109ms
+   ✓ Prerequisites editor > opens a level with its current prerequisites and saves the replaced list  1161ms
+   ✓ Prerequisites editor > lists the other modules grouped by level and explains a 409 cycle naming the dependency  944ms
+ ✓ src/features/ventilator-lab/application/components/reservation-calendar.test.tsx (3 tests) 1839ms
+   ✓ ReservationCalendar time labels > labels every cell with its own time when the rows of consecutive days are not aligned  1185ms
+   ✓ ReservationCalendar time labels > shows the own time in read-only occupied cells too when the rows are not aligned (T4 review fix S1)  393ms
+stderr | src/features/grading/application/pages/evaluation-grading.page.test.tsx > EvaluationGradingPage — tabs
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/analytics/evaluations/ev-1/stats
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+ ✓ src/features/grading/application/pages/evaluation-grading.page.test.tsx (5 tests) 1897ms
+   ✓ EvaluationGradingPage — Revisar > lists every attempt with the July header and opens one through ?attempt=  915ms
+   ✓ EvaluationGradingPage — Revisar > resets an attempt with a mandatory reason  403ms
+   ✓ EvaluationGradingPage — Revisar > explains both reset conflicts and links to the builder to extend the window  324ms
+ ✓ src/features/evaluations/application/pages/attempt-player.layouts.test.tsx (5 tests) 3480ms
+   ✓ AttemptPlayerPage — QUIZ > shows every question and autosaves a single choice with no correction  702ms
+   ✓ AttemptPlayerPage — QUIZ > autosaves a multiple choice without Comprobar respuesta  341ms
+   ✓ AttemptPlayerPage — QUIZ > treats a PUT refused because the answer is locked as final  1772ms
+   ✓ AttemptPlayerPage — WORKSHOP > goes step by step with the hint, no correction after answering, focus and Alt shortcuts  400ms
+ ✓ src/features/admin-console/application/pages/admin-ai-analytics.page.test.tsx (7 tests) 1853ms
+   ✓ AdminAiAnalyticsPage > shows the API totals with a dash for the missing percentiles  361ms
+   ✓ AdminAiAnalyticsPage > offers every surface of the contract and writes the chosen surface and scope to the URL  472ms
+ ✓ src/features/ai-chat/application/components/chat-panel.test.tsx (9 tests) 1998ms
+   ✓ ChatPanel > sends a suggested question from the empty state, streams the answer and offers the rating  424ms
+   ✓ ChatPanel > rates answers with surface ASSISTANT and no scope, also in a lesson conversation and after a stop  501ms
+ ✓ src/features/auth/application/pages/register.page.test.tsx (11 tests) 2126ms
+   ✓ RegisterPage > registers, logs in with the same credentials and goes to the student home  515ms
+ ✓ src/features/grading/application/pages/evaluation-results.page.test.tsx (8 tests) 2598ms
+   ✓ EvaluationResultsBody — statistics > hands the API histogram buckets and question indices to the charts  355ms
+   ✓ EvaluationResultsBody — bulk publish > releases only the grade of every group by default and confirms what the students will see  449ms
+   ✓ EvaluationResultsBody — bulk publish > releases the grade and the answers of one group and toasts the API count  358ms
+   ✓ EvaluationResultsBody — bulk publish > warns about the stats delay and revalidates the stats once after the backend cache window  589ms
+ ✓ src/features/auth/application/pages/login.page.test.tsx (23 tests) 2563ms
+ ✓ src/features/grading/application/pages/grading-queue.page.test.tsx (7 tests) 2291ms
+   ✓ GradingQueueBody > lists the pending attempts oldest first with their age, score and grading link  502ms
+   ✓ GradingQueueBody > sends the evaluation and group filters as query params and paginates on the server  471ms
+   ✓ GradingQueueBody > filters by student on the server with the students of the page and of the chosen group  425ms
+   ✓ GradingQueueBody > offers to clear the filters when they match nothing  469ms
+ ✓ src/features/simulator-workspace/application/components/sessions/sessions-panel.test.tsx (10 tests) 2460ms
+   ✓ SessionsPanel > lists simulated sessions and recordings in one list, newest first  1339ms
+   ✓ SessionsPanel > opens the replay in the panel and goes back to the list  387ms
+   ✓ SessionsPanel > shows the result of a finished session with a link to its replay  406ms
+ ✓ src/shared/ventilator-console/application/ventilator-console.july.test.tsx (14 tests) 1821ms
+   ✓ VentilatorConsole layout="july" > renders the three regions and the left and centre orders of the contract  323ms
+stderr | src/features/evaluation-authoring/application/components/builder/assignment-section.test.tsx > AssignmentSection
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/groups?type=STUDENT&isActive=true
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET http://localhost:4000/api/evaluations/e1/assignments
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+ ✓ src/features/evaluation-authoring/application/components/builder/assignment-section.test.tsx (11 tests) 1907ms
+   ✓ AssignmentSection > lists the activations with window, state and attempts  341ms
+ ✓ src/features/learning/application/components/notes/lesson-notes-panel.test.tsx (11 tests) 2024ms
+   ✓ LessonNotesPanel > creates a note anchored to the current page  502ms
+   ✓ LessonNotesPanel > closes the dialog and shows a dismissible error when the delete fails  412ms
+ ✓ src/features/learning/application/components/tutor/deepen-panel.test.tsx (11 tests) 1632ms
+   ✓ DeepenPanel > shows the July texts and streams the answer progressively, then offers the rating  532ms
+ ✓ src/features/ai-chat/application/components/ai-chat-provider.test.tsx (4 tests) 3332ms
+   ✓ AiChatProvider drawer load failures > closes the drawer, shows a toast and retries the import on the next click  777ms
+   ✓ AiChatProvider drawer load failures > closes the drawer, shows a toast and renders it again on the next click after a render failure  688ms
+   ✓ AiChatProvider drawer load failures > shows the runtime message, not the open-failure one, when the drawer fails after it loaded  1217ms
+   ✓ AiChatProvider drawer load failures > closes the drawer and retries on the next click without a ToastProvider  649ms
+ ✓ src/features/learning/application/components/curriculum/curriculum-tab.test.tsx (11 tests) 1423ms
+ ✓ src/shared/ventilator-console/application/july-controls.test.tsx (22 tests) 2043ms
+   ✓ Real confirmation summary > lists every change, keeps the edits on Escape and sends once from the summary  448ms
+ ✓ src/features/evaluations/application/pages/attempt-result.page.test.tsx (17 tests) 1946ms
+   ✓ AttemptResultPage > loads the correction and the feedback when FEEDBACK_READY arrives after the answers release  720ms
+ ✓ src/features/ventilator-lab/application/hooks/operator-control.test.tsx (18 tests) 3434ms
+   ✓ useOperatorControl > ignores a superseded re-read: an old 'operator' answer never comes back nor arms the release (T9 review fix W2)  343ms
+   ✓ useOperatorControl > ignores an SWR reconnect revalidation answering after a control-changed event, before the re-read (T11 review: T9 residual)  322ms
+ ✓ src/features/case-editor/application/components/case-editor-tools.test.tsx (13 tests) 1767ms
+   ✓ CaseEditorTools — expert validation > validates the stored case after a confirmation, for a caller with the permission  520ms
+ ✓ src/features/ai-chat/application/components/ai-chat-drawer.test.tsx (7 tests) 2595ms
+   ✓ AI chat drawer > opens lazily from the launcher with the chat panel and focuses the composer  633ms
+   ✓ AI chat drawer > keeps the drawer state across a navigation and shows the same conversation again  423ms
+   ✓ AI chat drawer > closes with Esc and returns the focus to the launcher  390ms
+   ✓ AI chat drawer > expands the conversation to /assistant/[id] and closes the drawer  374ms
+   ✓ AI chat drawer > starts a new conversation by remounting the panel without a conversation  377ms
+   ✓ AI chat drawer > closes the drawer and remounts its panel when the full-page chat opens, keeping the conversation  394ms
+ ✓ src/shared/ventilator-console/application/monitor-cards.test.tsx (5 tests) 1230ms
+   ✓ MonitorCards in the July console > applies the preference and adjusts it without re-rendering the console  1187ms
+ ✓ src/features/simulator/application/pages/session-replay.page.test.tsx (12 tests) 1248ms
+ ✓ src/features/ventilator-lab/application/components/my-reservations.test.tsx (10 tests) 1632ms
+   ✓ MyReservations > splits the reservations into upcoming and past with their status labels  311ms
+   ✓ MyReservations > sends nothing when the confirmation is dismissed  308ms
+ ✓ src/features/evaluation-authoring/application/components/staff-hub/staff-evaluations-hub.test.tsx (3 tests) 1611ms
+   ✓ StaffEvaluationsHub > opens Gestionar by default and shows the pending count on Calificar  848ms
+   ✓ StaffEvaluationsHub > opens the tab of the URL and writes the chosen tab with a shallow replace  394ms
+   ✓ StaffEvaluationsHub > lists the READY evaluations with a link to their statistics  364ms
+ ✓ src/features/simulator/composition/register-exam-practical-slot.test.tsx (1 test) 1343ms
+   ✓ register-exam-practical-slot > registers a lazy renderer that the evaluations slot uses  1341ms
+ ✓ src/features/learning/application/pages/module-print.page.test.tsx (8 tests) 1665ms
+   ✓ ModulePrintPage > loads the whole module with a single request  599ms
+   ✓ ModulePrintPage > keeps Descargar PDF disabled until the lazy content blocks have loaded  405ms
+   ✓ ModulePrintPage > enables Descargar PDF and warns when the content blocks of a page fail  405ms
+ ✓ src/features/groups/application/pages/lazy-staff-pages.test.tsx (3 tests) 1405ms
+   ✓ lazy staff groups pages > loads the group list page on demand  649ms
+   ✓ lazy staff groups pages > loads the group detail page on demand  404ms
+   ✓ lazy staff groups pages > shows the reload fallback when a page chunk cannot be loaded  348ms
+ ✓ src/features/ai-chat/application/pages/assistant.page.test.tsx (3 tests) 965ms
+   ✓ AssistantPage > renders the not-found view for an unknown conversation  348ms
+   ✓ AssistantPage > starts an empty chat from "Nueva conversación" after a first turn that never adopted a conversation  328ms
+ ✓ src/shared/design-system/components/toast-provider.test.tsx (8 tests) 2145ms
+   ✓ ToastProvider > keeps only the latest 3 pending toasts behind the visible one  993ms
+stderr | src/features/ventilator-lab/application/pages/lab-recordings.page.test.tsx > LabRecordingPage > states the gaps in the header length and marks them on the time bar (T11 review fix S1/S4)
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at <home>\Documents\Marce\ventylab\wt-rmc-web\src\shared\waveforms\use-waveform-renderer.ts:73:25
+    at Object.react_stack_bottom_frame (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:13249:29)
+    at commitHookPassiveMountEffects (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:13336:11)
+    at reconnectPassiveEffects (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:15832:11)
+    at recursivelyTraverseReconnectPassiveEffects (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:15784:9) undefined
+
+stderr | src/features/ventilator-lab/application/pages/lab-recordings.page.test.tsx > LabRecordingPage > plays a recording in the read-only console with the subsampling note and the transport
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\jsdom\lib\jsdom\browser\not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\jsdom\lib\jsdom\living\nodes\HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\jsdom\lib\jsdom\living\generated\HTMLCanvasElement.js:131:58)
+    at <home>\Documents\Marce\ventylab\wt-rmc-web\src\shared\waveforms\use-waveform-renderer.ts:73:25
+    at Object.react_stack_bottom_frame (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:25989:20)
+    at runWithFiberInDEV (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:874:13)
+    at commitHookEffectListMount (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:13249:29)
+    at commitHookPassiveMountEffects (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:13336:11)
+    at reconnectPassiveEffects (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:15832:11)
+    at recursivelyTraverseReconnectPassiveEffects (<home>\Documents\Marce\ventylab\wt-rmc-web\node_modules\react-dom\cjs\react-dom-client.development.js:15784:9) undefined
+
+ ✓ src/features/ventilator-lab/application/pages/lab-recordings.page.test.tsx (9 tests) 1600ms
+   ✓ LabRecordingPage > states the gaps in the header length and marks them on the time bar (T11 review fix S1/S4)  718ms
+   ✓ LabRecordingPage > plays a recording in the read-only console with the subsampling note and the transport  313ms
+ ✓ src/features/simulator/application/pages/session-result.page.test.tsx (12 tests) 1246ms
+   ✓ SessionResultPage > shows the FREE server summary and the local evolution run in the worker  411ms
+ ✓ src/shared/rich-content/blocks/content-blocks.test.tsx (23 tests) 1258ms
+   ✓ ContentBlocks > renders markdown content through RichContent  385ms
+   ✓ ContentBlocks > sanitizes HTML content before rendering it  347ms
+   ✓ ContentBlocks > renders equations with KaTeX loaded lazily, showing the LaTeX source first  330ms
+ ✓ src/features/student-space/application/pages/my-grades.page.test.tsx (5 tests) 973ms
+ ✓ src/features/evaluations/application/pages/evaluations-list.page.test.tsx (8 tests) 911ms
+ ✓ src/features/ventilator-lab/application/components/recording-control.test.tsx (9 tests) 1661ms
+   ✓ RecordingControl > starts once (double click) and shows the REC mark, stops only after confirming  779ms
+   ✓ RecordingControl > keeps the REC mark when the stop fails (the outcome is unknown)  320ms
+ ✓ src/features/learning/application/components/progress/progress-tab.test.tsx (6 tests) 1069ms
+   ✓ ProgressTab > shows level, streak, calendar, achievements, milestones and skill tree from one request each  544ms
+ ✓ src/shared/ai-rating/ai-rating-widget.test.tsx (8 tests) 1236ms
+   ✓ AiRatingWidget > retries a 404 once (an answer stopped a moment ago may not be stored yet)  396ms
+ ✓ src/features/ventilator-lab/application/components/preempt-reservation-dialog.test.tsx (7 tests) 1002ms
+   ✓ PreemptReservationDialog > resends for the chosen group  346ms
+ ✓ src/features/teacher-dashboard/application/components/general/general-tab.test.tsx (7 tests) 845ms
+   ✓ GeneralTab > greets the teacher, shows the four cards and the recent students of their groups  321ms
+ ✓ src/features/simulator/application/components/alarm-help-panel.test.tsx (9 tests) 892ms
+   ✓ AlarmHelpPanel > shows the rules first, then the AI suggestion with its rating as an AI_CALL of SIM_ALARM  575ms
+ ✓ src/shared/rich-content/rich-content.test.tsx (7 tests) 2005ms
+   ✓ RichContent > renders markdown after the lazy renderer loads, with a loading fallback first  357ms
+   ✓ RichContent > renders math with KaTeX when the content has $ delimiters  331ms
+ ✓ src/shared/ventilator-console/application/july-alerts.test.tsx (6 tests) 1028ms
+   ✓ July alerts > puts the alarm limits in the drawer when the source offers them  306ms
+ ✓ src/features/notifications/application/components/notification-bell.test.tsx (10 tests) 874ms
+ ✓ src/shared/realtime/realtime-provider.test.tsx (15 tests) 1575ms
+ ✓ src/features/admin-console/application/pages/admin-research.page.test.tsx (3 tests) 724ms
+   ✓ AdminResearchPage > explains the export and downloads it for the selected student group  459ms
+ ✓ src/features/ai-chat/application/hooks/use-chat-session.test.tsx (17 tests) 1356ms
+ ✓ src/features/auth/application/pages/password-recovery.pages.test.tsx (6 tests) 828ms
+   ✓ ForgotPasswordPage > validates the email and shows the same notice after sending  331ms
+ ✓ src/features/admin-console/application/components/provider-chain-editor.test.tsx (6 tests) 697ms
+ ✓ src/features/student-space/application/pages/student-home.page.test.tsx (4 tests) 723ms
+   ✓ StudentHomePage > renders every block from one summary request  326ms
+ ✓ src/features/learning/application/components/learn-workspace/learn-workspace.test.tsx (9 tests) 713ms
+ ✓ src/shared/ventilator-console/application/ventilator-console.source-state.test.tsx (11 tests) 698ms
+ ✓ src/features/learning/application/components/home/home-tab.test.tsx (5 tests) 561ms
+ ✓ src/features/simulator/application/components/exam-practical-slot.test.tsx (13 tests) 875ms
+ ✓ src/shared/ventilator-console/application/console-controls.test.tsx (13 tests) 688ms
+(node:17552) TimeoutOverflowWarning: Infinity does not fit into a 32-bit signed integer.
+Timeout duration was set to 1.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17552) TimeoutOverflowWarning: Infinity does not fit into a 32-bit signed integer.
+Timeout duration was set to 1.
+ ✓ src/shared/ai-conversation/application/ai-markdown.test.tsx (5 tests) 533ms
+   ✓ AiMarkdown > renders the markdown of an answer  484ms
+(node:17552) TimeoutOverflowWarning: Infinity does not fit into a 32-bit signed integer.
+Timeout duration was set to 1.
+ ✓ src/features/admin-console/application/pages/system-status.page.test.tsx (4 tests) 691ms
+ ✓ src/shared/rich-content/learning-diagrams.test.ts (141 tests) 673ms
+ ✓ src/shared/layouts/nav-badges.test.tsx (8 tests) 521ms
+ ✓ src/shared/ventilator-console/application/ventilator-console.test.tsx (12 tests) 740ms
+ ✓ src/features/evaluations/application/hooks/use-attempt-feedback.test.tsx (6 tests) 1013ms
+ ✓ src/features/ventilator-lab/application/hooks/reservations-hooks.test.tsx (14 tests) 1222ms
+ ✓ src/features/learning/application/pages/module-resume-resolver.page.test.tsx (8 tests) 637ms
+(node:9032) TimeoutOverflowWarning: Infinity does not fit into a 32-bit signed integer.
+Timeout duration was set to 1.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9032) TimeoutOverflowWarning: Infinity does not fit into a 32-bit signed integer.
+Timeout duration was set to 1.
+ ✓ src/shared/layouts/api-contract-banner.test.tsx (5 tests) 548ms
+ ✓ src/shared/session/auth-provider.test.tsx (16 tests) 559ms
+ ✓ src/shared/ventilator-console/application/alarms-bar.test.tsx (16 tests) 539ms
+ ✓ src/shared/layouts/top-bar-actions.test.tsx (6 tests) 330ms
+ ✓ src/shared/ai-conversation/application/composer.test.tsx (9 tests) 687ms
+ ✓ src/features/evaluation-authoring/application/components/preview/student-preview-dialog.test.tsx (3 tests) 447ms
+ ✓ src/features/ventilator-lab/application/hooks/lab-hooks.test.tsx (10 tests) 1056ms
+ ✓ src/shared/layouts/sidebar-user-card.test.tsx (7 tests) 342ms
+ ✓ src/shared/design-system/components/form-controls.test.tsx (10 tests) 333ms
+ ✓ src/shared/ai-conversation/application/use-streaming-response.test.tsx (13 tests) 871ms
+ ✓ src/shared/layouts/appearance-controls.test.tsx (5 tests) 494ms
+ ✓ src/features/notifications/application/components/achievement-toasts.test.tsx (3 tests) 517ms
+ ✓ src/features/evaluations/application/pages/evaluation-intro.page.test.tsx (7 tests) 492ms
+ ✓ src/features/student-space/application/components/module-notes-analysis.test.tsx (3 tests) 384ms
+ ✓ src/features/teacher-dashboard/application/pages/teacher-workspace.page.test.tsx (6 tests) 792ms
+   ✓ TeacherWorkspacePage > opens General by default with proper tab roles  414ms
+   ✓ TeacherWorkspacePage > opens Por grupo with ?tab=grupo  322ms
+ ✓ src/features/simulator/application/hooks/simulator-hooks.test.tsx (9 tests) 769ms
+ ✓ src/shared/lib/kept-mounted-tab-panels.test.tsx (10 tests) 818ms
+   ✓ KeptMountedTabPanels > loads a panel on its first visit and keeps it mounted and hidden afterwards  373ms
+   ✓ tab list keyboard > selects and focuses the target tab  351ms
+ ✓ src/shared/design-system/components/components.test.tsx (11 tests) 398ms
+ ✓ src/features/ventilator-lab/application/pages/lab-live.lazy-boundary.test.ts (15 tests) 1017ms
+ ✓ src/features/ai-chat/application/hooks/use-conversations.test.tsx (10 tests) 622ms
+ ✓ src/features/grading/application/components/grading-pending-badge-sync.test.tsx (7 tests) 565ms
+   ✓ GradingPendingBadgeSync > feeds the badge with the pending count of the count endpoint  393ms
+ ✓ src/features/groups/application/pages/my-group.page.test.tsx (5 tests) 415ms
+ ✓ src/features/learning/application/hooks/use-page-view-invalidation.test.tsx (3 tests) 462ms
+ ✓ src/shared/session/guards.test.tsx (14 tests) 358ms
+ ✓ src/features/ventilator-lab/application/components/operator-control-bar.test.tsx (2 tests) 454ms
+   ✓ OperatorControlBar > closes the takeover confirmation when the takeover is no longer possible (S3)  421ms
+ ✓ src/features/ventilator-lab/application/components/device-status-nav-indicator.test.tsx (7 tests) 483ms
+ ✓ src/shared/api-client/http-client.test.ts (13 tests) 295ms
+ ✓ src/shared/design-system/components/use-focus-mode.test.tsx (5 tests) 394ms
+ ✓ src/features/ventilator-lab/application/components/upcoming-reservations.test.tsx (3 tests) 358ms
+ ✓ src/shared/session/session-user-cache.test.tsx (2 tests) 222ms
+ ✓ src/features/learning/application/hooks/use-module-lessons.test.tsx (1 test) 235ms
+ ✓ src/features/auth/application/pages/auth-info-pages.test.tsx (4 tests) 220ms
+ ✓ src/shared/waveforms/sweep-canvas.test.tsx (16 tests) 185ms
+ ✓ src/features/ventilator-lab/application/hooks/recording-playback.test.tsx (11 tests) 398ms
+ ✓ src/shared/layouts/status-pages.test.tsx (6 tests) 160ms
+ ✓ src/features/simulator/application/components/divergence-dialog.test.tsx (2 tests) 176ms
+ ✓ src/features/learning/application/hooks/use-scope-conversation.test.tsx (2 tests) 384ms
+ ✓ src/shared/ventilator-console/application/ventilator-console.july-store.test.tsx (1 test) 271ms
+ ✓ src/shared/charts/line-chart.test.tsx (5 tests) 270ms
+ ✓ src/shared/charts/bar-chart.test.tsx (3 tests) 207ms
+ ✓ src/features/content-editor/application/hooks/use-page-editor.test.tsx (2 tests) 276ms
+ ✓ src/shared/media-upload/application/media-upload-field.test.tsx (3 tests) 163ms
+ ✓ src/features/simulator/api/services/simulator.service.test.ts (16 tests) 256ms
+ ✓ src/shared/rich-content/blocks/tiptap-doc-view.test.tsx (6 tests) 191ms
+ ✓ src/shared/ai-conversation/application/use-tutor-turn.test.tsx (7 tests) 322ms
+ ✓ src/features/ventilator-lab/application/hooks/preemption-notice.test.tsx (3 tests) 291ms
+ ✓ src/features/ventilator-lab/application/hooks/use-real-console-adapter.test.tsx (8 tests) 317ms
+ ✓ src/shared/api-client/sse-stream.test.ts (17 tests) 158ms
+ ✓ src/shared/ai-conversation/application/conversation-components.test.tsx (7 tests) 155ms
+ ✓ src/features/ventilator-lab/application/components/command-panel.test.tsx (3 tests) 201ms
+ ✓ src/features/ai-chat/application/components/copy-message-button.test.tsx (2 tests) 132ms
+ ✓ src/shared/api-client/keepalive-auth.test.ts (7 tests) 255ms
+ ✓ src/shared/ventilator-console/application/console-pending-store.test.tsx (9 tests) 156ms
+ ✓ src/features/learning/application/components/notes/note-editor.test.tsx (1 test) 134ms
+ ✓ src/features/learning/application/components/locked-content-screen.test.tsx (2 tests) 115ms
+ ✓ src/features/ventilator-lab/api/services/lab-clock.service.test.ts (3 tests) 84ms
+ ✓ src/features/content-editor/application/hooks/use-sibling-reorder.test.tsx (3 tests) 135ms
+ ✓ src/shared/sim-engine/runtime/replay-parity.test.ts (2 tests) 106ms
+ ✓ src/shared/sim-engine/runtime/sim-loop.test.ts (26 tests) 89ms
+ ✓ src/shared/waveforms/waveform-chart.test.tsx (5 tests) 100ms
+ ✓ src/features/evaluations/application/components/result/feedback-block.test.tsx (2 tests) 83ms
+ ✓ src/features/learning/application/session/progress-outbox.test.tsx (20 tests) 175ms
+ ✓ src/shared/ai-conversation/application/use-streaming-response-terminal.test.tsx (2 tests) 123ms
+ ✓ src/features/content-editor/application/components/page-block-list.test.tsx (2 tests) 93ms
+ ✓ src/features/ventilator-lab/application/entities/breath-detection.test.ts (20 tests) 103ms
+ ✓ src/features/case-editor/application/hooks/use-case-preview.test.ts (9 tests) 107ms
+ ✓ src/features/evaluations/application/hooks/use-attempt.test.tsx (2 tests) 219ms
+ ✓ src/features/ventilator-lab/api/services/reservations.service.test.ts (4 tests) 69ms
+ ✓ src/shared/api-client/api-download.test.ts (7 tests) 97ms
+ ✓ src/shared/layouts/get-layout.test.tsx (3 tests) 71ms
+ ✓ src/features/ai-chat/api/services/ai-chat.service.test.ts (5 tests) 127ms
+ ✓ src/shared/ventilator-console/application/console-store.test.tsx (7 tests) 47ms
+ ✓ src/features/learning/application/hooks/use-page-view-tracker.test.tsx (10 tests) 101ms
+ ✓ src/features/groups/api/services/groups.service.test.ts (4 tests) 67ms
+ ✓ src/shared/session/role-home-redirect.test.tsx (7 tests) 62ms
+ ✓ src/features/ventilator-lab/application/hooks/live-hooks.test.tsx (9 tests) 57ms
+ ✓ src/shared/ventilator-console/application/ventilator-console.live.test.tsx (2 tests) 62ms
+ ✓ src/features/ventilator-lab/api/services/ventilator-control.service.test.ts (2 tests) 95ms
+ ✓ src/shared/session/legacy-redirects.test.ts (42 tests) 74ms
+ ✓ src/features/learning/application/components/print-layout.test.tsx (3 tests) 62ms
+ ✓ src/features/learning/application/hooks/use-note-autosave.test.tsx (6 tests) 38ms
+ ✓ src/shared/sim-engine/runtime/replay-runtime.test.ts (17 tests) 48ms
+ ✓ src/features/content-editor/application/hooks/use-media-uploads.test.tsx (9 tests) 39ms
+ ✓ src/features/evaluation-authoring/application/hooks/use-unsaved-changes-guard.test.tsx (8 tests) 48ms
+ ✓ src/features/simulator/application/session/sim-console-adapter.test.ts (15 tests) 68ms
+ ✓ src/features/admin-console/application/hooks/use-csv-export.test.tsx (6 tests) 31ms
+ ✓ src/features/simulator/application/hooks/use-replay-session.test.tsx (2 tests) 48ms
+ ✓ src/shared/ventilator-console/application/use-console-waveforms.test.ts (5 tests) 52ms
+ ✓ src/shared/session/routes.config.test.ts (45 tests) 45ms
+ ✓ src/shared/layouts/nav-indicators.test.tsx (4 tests) 37ms
+ ✓ src/features/simulator/application/session/session-tab-claim.test.ts (4 tests) 66ms
+ ✓ src/features/auth/api/services/google-identity.service.test.ts (5 tests) 38ms
+ ✓ src/shared/ventilator-console/application/ventilator-console.store.test.tsx (1 test) 38ms
+ ✓ src/features/grading/application/entities/grading-attempt.entity.test.ts (21 tests) 67ms
+ ✓ src/features/simulator/application/hooks/use-exam-deadline.test.tsx (5 tests) 38ms
+ ✓ src/shared/lib/parse-decimal.test.ts (54 tests) 31ms
+ ✓ src/shared/layouts/use-collapsed-preference.test.ts (5 tests) 43ms
+ ✓ src/features/simulator-workspace/application/hooks/use-monitor-cards-pref.test.ts (6 tests) 32ms
+ ✓ src/shared/media-upload/application/use-media-uploader.test.tsx (5 tests) 31ms
+ ✓ src/shared/realtime/use-emit-on-authenticated.test.tsx (6 tests) 42ms
+ ✓ src/features/evaluations/application/hooks/use-attempt-timer.test.tsx (3 tests) 27ms
+ ✓ src/shared/lib/use-url-tab.test.tsx (12 tests) 30ms
+ ✓ src/shared/lib/test-environment.test.tsx (1 test) 30ms
+ ✓ src/features/learning/application/hooks/use-scroll-to-hash.test.tsx (2 tests) 24ms
+ ✓ src/features/learning/application/session/edit-mode-store.test.tsx (3 tests) 25ms
+ ✓ src/features/ventilator-lab/application/entities/real-console.test.ts (22 tests) 23ms
+ ✓ src/shared/design-system/theme/theme-palettes.css.test.ts (5 tests) 30ms
+ ✓ src/features/grading/api/mappers/grading.mapper.test.ts (12 tests) 20ms
+ ✓ src/features/student-space/application/entities/student-space.entity.test.ts (12 tests) 22ms
+ ✓ src/features/simulator-workspace/application/entities/sessions-feed.entity.test.ts (7 tests) 18ms
+ ✓ src/features/evaluation-authoring/api/mappers/evaluation-authoring.mapper.test.ts (4 tests) 18ms
+ ✓ src/features/case-editor/application/entities/case-editor.entities.test.ts (20 tests) 18ms
+ ✓ src/features/simulator/application/session/event-queue.test.ts (12 tests) 22ms
+ ✓ src/features/admin-console/api/mappers/admin-console.mapper.test.ts (4 tests) 20ms
+ ✓ src/features/simulator/application/session/sim-live-state.test.ts (1 test) 20ms
+ ✓ src/features/evaluations/application/entities/autosave-queue.test.ts (11 tests) 20ms
+ ✓ src/features/simulator/application/session/session-bootstrap.test.ts (22 tests) 23ms
+ ✓ src/features/evaluations/application/entities/attempt-timer.test.ts (7 tests) 18ms
+ ✓ src/features/ventilator-lab/application/entities/command-mapper.test.ts (47 tests) 21ms
+ ✓ src/shared/waveforms/playback-clock.test.ts (7 tests) 34ms
+ ✓ scripts/e2e/fake-llm-core.test.mjs (22 tests) 16ms
+ ✓ src/features/admin-console/application/entities/setting-form.entity.test.ts (27 tests) 14ms
+ ✓ scripts/e2e/fake-ventilator-core.test.mjs (21 tests) 14ms
+ ✓ src/features/grading/application/entities/evaluation-results.entity.test.ts (3 tests) 5ms
+ ✓ src/features/ventilator-lab/application/entities/slot-grid.test.ts (20 tests) 14ms
+ ✓ src/shared/sim-engine/runtime/protocol.test.ts (14 tests) 14ms
+ ✓ src/shared/sim-engine/runtime/sim-worker-host.test.ts (7 tests) 18ms
+ ✓ src/features/content-editor/application/entities/page-draft.entity.test.ts (17 tests) 15ms
+ ✓ src/features/evaluation-authoring/application/entities/builder-question.entity.test.ts (20 tests) 14ms
+ ✓ src/features/simulator-workspace/application/entities/patient-form.entity.test.ts (11 tests) 11ms
+ ✓ src/shared/lib/format.test.ts (9 tests) 5ms
+ ✓ src/features/admin-console/application/entities/admin-operations.entity.test.ts (13 tests) 12ms
+ ✓ src/shared/lib/csp.test.ts (13 tests) 13ms
+ ✓ src/shared/rubric-editor/application/outcome-rubric.entity.test.ts (23 tests) 14ms
+ ✓ src/shared/waveforms/waveform-geometry.test.ts (23 tests) 9ms
+ ✓ src/shared/design-system/theme/theme-preference.test.ts (7 tests) 11ms
+ ✓ src/features/teacher-dashboard/application/entities/group-builder.entity.test.ts (5 tests) 41ms
+ ✓ src/features/ventilator-lab/application/entities/operator-control.test.ts (26 tests) 11ms
+ ✓ src/shared/layouts/nav.config.test.ts (29 tests) 10ms
+ ✓ src/features/evaluations/api/mappers/evaluations.mapper.test.ts (13 tests) 10ms
+ ✓ src/features/ventilator-lab/application/entities/command-state.test.ts (61 tests) 27ms
+ ✓ src/features/simulator/application/entities/sim-result.entity.test.ts (14 tests) 11ms
+ ✓ src/features/groups/application/entities/group.entity.test.ts (24 tests) 12ms
+ ✓ src/features/teacher-dashboard/application/entities/teacher-dashboard.entity.test.ts (14 tests) 15ms
+ ✓ src/features/case-editor/application/entities/case-tools.entity.test.ts (11 tests) 11ms
+ ✓ src/features/learning/application/entities/progress-insights.entity.test.ts (10 tests) 14ms
+ ✓ src/shared/lib/retry-import.test.ts (9 tests) 10ms
+ ✓ src/features/groups/api/mappers/groups.mapper.test.ts (21 tests) 11ms
+ ✓ src/features/profile/application/hooks/crop-avatar-image.test.ts (3 tests) 10ms
+ ✓ src/features/simulator-workspace/application/entities/connection-fsm.test.ts (41 tests) 8ms
+ ✓ src/features/ventilator-lab/application/entities/command-queue.test.ts (8 tests) 10ms
+ ✓ src/features/learning/application/entities/curriculum-view.entity.test.ts (20 tests) 9ms
+ ✓ src/features/teacher-dashboard/api/mappers/teacher-dashboard.mapper.test.ts (8 tests) 10ms
+ ✓ src/shared/layouts/panel-nav.config.test.ts (30 tests) 8ms
+ ✓ src/shared/waveforms/waveform-ring-buffer.test.ts (15 tests) 10ms
+ ✓ src/shared/lib/observability/observability.test.ts (6 tests) 12ms
+ ✓ src/shared/rubric-editor/application/parameter-rubric.entity.test.ts (9 tests) 9ms
+ ✓ src/features/teacher-dashboard/application/entities/students-directory.entity.test.ts (11 tests) 8ms
+ ✓ src/features/learning/application/entities/home-activity.entity.test.ts (6 tests) 8ms
+ ✓ src/features/ai-chat/application/entities/ai-chat.entity.test.ts (9 tests) 8ms
+ ✓ src/features/student-space/api/mappers/student-space.mapper.test.ts (9 tests) 8ms
+ ✓ src/features/teacher-dashboard/api/mappers/teacher-general.mapper.test.ts (11 tests) 8ms
+ ✓ src/shared/design-system/theme/theme.test.ts (10 tests) 7ms
+ ✓ src/features/learning/api/mappers/curriculum.mapper.test.ts (7 tests) 9ms
+ ✓ src/features/learning/application/entities/ai-error-messages.test.ts (13 tests) 7ms
+ ✓ src/shared/ventilator-console/application/console-controls.reducer.test.ts (15 tests) 8ms
+ ✓ src/features/ventilator-lab/application/entities/telemetry-latency.test.ts (8 tests) 7ms
+ ✓ src/features/ventilator-lab/application/entities/session-recording.test.ts (14 tests) 8ms
+ ✓ src/features/evaluations/application/entities/evaluation.entity.test.ts (9 tests) 8ms
+ ✓ src/features/ventilator-lab/application/entities/recording-index.test.ts (7 tests) 9ms
+ ✓ src/shared/api-client/api-request.test.ts (7 tests) 7ms
+ ✓ src/features/simulator/application/entities/sim-exam.entity.test.ts (7 tests) 9ms
+ ✓ src/features/ventilator-lab/application/entities/control-revocation.test.ts (11 tests) 8ms
+ ✓ src/features/evaluations/application/entities/attempt-layout.test.ts (3 tests) 8ms
+ ✓ src/features/auth/application/entities/return-to.test.ts (13 tests) 8ms
+ ✓ src/features/simulator-workspace/application/patient-form.mapper.test.ts (11 tests) 9ms
+ ✓ src/features/learning/application/entities/tutor-suggestions.test.ts (4 tests) 8ms
+ ✓ src/features/evaluation-authoring/application/entities/evaluation-builder.entity.test.ts (6 tests) 9ms
+ ✓ src/features/content-editor/api/services/page-blocks.service.test.ts (4 tests) 7ms
+ ✓ src/features/admin-console/application/entities/admin-users.entity.test.ts (7 tests) 6ms
+ ✓ src/shared/sim-engine/runtime/create-sim-worker.test.ts (4 tests) 7ms
+ ✓ src/features/ventilator-lab/application/entities/real-monitor-state.test.ts (5 tests) 7ms
+ ✓ src/features/simulator/application/entities/simulator.entity.test.ts (5 tests) 7ms
+ ✓ src/features/profile/application/entities/password.entity.test.ts (18 tests) 8ms
+ ✓ src/features/ventilator-lab/api/mappers/create-reservation.mapper.test.ts (9 tests) 7ms
+ ✓ src/features/evaluation-authoring/api/mappers/evaluation-preview.mapper.test.ts (4 tests) 9ms
+ ✓ src/shared/layouts/user-menu.config.test.ts (10 tests) 5ms
+ ✓ src/features/learning/application/entities/curriculum.entity.test.ts (9 tests) 6ms
+ ✓ src/features/ventilator-lab/application/entities/command-messages.test.ts (16 tests) 9ms
+ ✓ src/features/grading/api/mappers/grading-attempt.mapper.test.ts (4 tests) 7ms
+ ✓ src/features/ventilator-lab/application/entities/recordings-list.test.ts (6 tests) 8ms
+ ✓ src/features/profile/application/entities/avatar.entity.test.ts (18 tests) 7ms
+ ✓ src/features/evaluation-authoring/application/entities/evaluation-readiness.entity.test.ts (5 tests) 6ms
+ ✓ src/features/simulator/application/entities/sim-debrief.entity.test.ts (7 tests) 7ms
+ ✓ src/features/groups/application/entities/groups-error-messages.test.ts (18 tests) 5ms
+ ✓ src/features/evaluation-authoring/application/entities/evaluation-assignment.entity.test.ts (7 tests) 6ms
+ ✓ src/features/simulator/application/entities/sim-help-context.entity.test.ts (7 tests) 6ms
+ ✓ src/features/ventilator-lab/application/entities/my-reservations.test.ts (7 tests) 6ms
+ ✓ src/shared/waveforms/sweep-painter.test.ts (2 tests) 9ms
+ ✓ src/features/learning/application/entities/learning-urls.test.ts (18 tests) 5ms
+ ✓ src/features/ventilator-lab/api/mappers/reservations.mapper.test.ts (6 tests) 6ms
+ ✓ src/features/auth/application/entities/register.entity.test.ts (11 tests) 7ms
+ ✓ src/shared/api-client/version/api-contract.test.ts (15 tests) 10ms
+ ✓ src/shared/sim-engine/console-binding/cycle-flow.test.ts (4 tests) 7ms
+ ✓ src/features/content-editor/application/entities/content-prerequisites.test.ts (7 tests) 7ms
+ ✓ src/features/notifications/api/mappers/notifications.mapper.test.ts (7 tests) 7ms
+ ✓ src/features/content-editor/application/entities/content-editor-error-messages.test.ts (9 tests) 12ms
+ ✓ src/shared/lib/bogota-time.test.ts (9 tests) 5ms
+ ✓ src/features/simulator-workspace/application/entities/monitor-cards-pref.entity.test.ts (6 tests) 6ms
+ ✓ src/features/learning/application/entities/continue-target.test.ts (9 tests) 5ms
+ ✓ src/features/grading/api/mappers/evaluation-attempts.mapper.test.ts (6 tests) 6ms
+ ✓ src/features/content-editor/application/entities/content-node-link.test.ts (14 tests) 5ms
+ ✓ src/shared/media-upload/api/media.service.test.ts (3 tests) 7ms
+ ✓ src/shared/media-upload/application/media-upload.entity.test.ts (7 tests) 5ms
+ ✓ src/features/content-editor/api/mappers/content-tree.mapper.test.ts (4 tests) 5ms
+ ✓ src/features/ventilator-lab/application/entities/playback-engine.test.ts (6 tests) 5ms
+ ✓ src/shared/ai-conversation/application/ai-error-messages.test.ts (7 tests) 6ms
+ ✓ src/features/admin-console/application/entities/provider-chain.entity.test.ts (6 tests) 5ms
+ ✓ src/features/learning/application/entities/lesson-navigation.test.ts (14 tests) 10ms
+ ✓ src/features/notifications/application/config/notification-links.test.ts (15 tests) 7ms
+ ✓ src/features/auth/application/entities/auth-error-messages.test.ts (17 tests) 8ms
+ ✓ src/features/auth/application/entities/redirect-loop-guard.test.ts (6 tests) 5ms
+ ✓ src/shared/ventilator-console/application/console-format.test.ts (10 tests) 6ms
+ ✓ src/features/evaluations/application/entities/attempt-feedback.test.ts (7 tests) 5ms
+ ✓ src/features/evaluations/application/entities/result-band.test.ts (4 tests) 6ms
+ ✓ src/shared/lib/server-clock.test.ts (7 tests) 5ms
+ ✓ src/features/learning/application/entities/note.entity.test.ts (4 tests) 5ms
+ ✓ src/features/content-editor/application/entities/content-tree-filter.test.ts (4 tests) 5ms
+ ✓ src/features/evaluation-authoring/application/entities/builder-layout.test.ts (6 tests) 6ms
+ ✓ src/features/content-editor/application/entities/content-reorder.test.ts (5 tests) 5ms
+ ✓ src/features/ventilator-lab/application/entities/preemption.test.ts (5 tests) 6ms
+ ✓ src/shared/api-client/version/api-version.mapper.test.ts (11 tests) 5ms
+ ✓ src/features/evaluations/application/entities/group-evaluations.test.ts (3 tests) 5ms
+ ✓ src/features/admin-console/application/entities/date-range.entity.test.ts (5 tests) 9ms
+ ✓ src/features/teacher-dashboard/application/entities/student-detail.entity.test.ts (6 tests) 5ms
+ ✓ src/features/learning/application/session/tutor-prompt-store.test.ts (1 test) 5ms
+ ✓ src/features/admin-console/application/entities/audit-labels.test.ts (14 tests) 6ms
+ ✓ src/features/ventilator-lab/application/entities/real-alarm-limits.test.ts (4 tests) 7ms
+ ✓ src/features/learning/application/entities/lesson-access.entity.test.ts (6 tests) 5ms
+ ✓ src/features/teacher-dashboard/application/config/teacher-dashboard.routes.test.ts (8 tests) 5ms
+ ✓ src/features/profile/application/entities/profile.entity.test.ts (7 tests) 5ms
+ ✓ src/features/simulator-workspace/application/entities/patient-metrics.entity.test.ts (4 tests) 5ms
+ ✓ src/features/student-space/application/entities/student-space-error-messages.test.ts (7 tests) 4ms
+ ✓ src/features/learning/api/mappers/progress.mapper.test.ts (3 tests) 5ms
+ ✓ src/features/learning/application/entities/learning-error-messages.test.ts (9 tests) 5ms
+ ✓ src/features/ventilator-lab/application/entities/lab-entities.test.ts (5 tests) 10ms
+ ✓ src/features/ventilator-lab/application/entities/live-session.test.ts (7 tests) 12ms
+ ✓ src/features/evaluations/application/entities/evaluations-error-messages.test.ts (3 tests) 5ms
+ ✓ src/features/teacher-dashboard/api/mappers/students-directory.mapper.test.ts (4 tests) 4ms
+ ✓ src/features/profile/api/mappers/profile.mapper.test.ts (3 tests) 4ms
+ ✓ src/shared/design-system/theme/theme-palettes.contrast.test.ts (5 tests) 4ms
+ ✓ src/features/ventilator-lab/recordings.entry.test.ts (3 tests) 5ms
+ ✓ src/features/student-space/application/config/student-space.routes.test.ts (3 tests) 5ms
+ ✓ src/shared/media-upload/application/media-error-messages.test.ts (3 tests) 4ms
+ ✓ src/features/learning/api/mappers/gamification.mapper.test.ts (2 tests) 3ms
+ ✓ src/features/evaluations/application/entities/rich-text-math.test.ts (3 tests) 4ms
+ ✓ src/shared/ai-conversation/application/ai-conversation.entity.test.ts (3 tests) 4ms
+ ✓ src/shared/lib/page-title.test.ts (4 tests) 4ms
+ ✓ src/shared/lib/class-names.test.ts (3 tests) 5ms
+ ✓ src/shared/lib/env.test.ts (4 tests) 4ms
+ ✓ src/features/ventilator-lab/application/entities/create-reservation-errors.test.ts (2 tests) 6ms
+ ✓ src/features/ventilator-lab/application/entities/lab-error-messages.test.ts (4 tests) 5ms
+ ✓ src/features/ventilator-lab/application/entities/upcoming-reservations.test.ts (3 tests) 5ms
+ ✓ src/features/admin-console/application/entities/research-dictionary.entity.test.ts (2 tests) 3ms
+
+ Test Files  364 passed (364)
+      Tests  3679 passed (3679)
+   Start at  12:22:14
+   Duration  628.66s (transform 14.62s, setup 179.10s, collect 241.91s, tests 343.96s, environment 365.57s, prepare 44.53s)
+

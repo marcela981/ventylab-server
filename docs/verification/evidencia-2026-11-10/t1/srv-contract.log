@@ -1,0 +1,14 @@
+npm notice run ventylab-server@1.0.0 test:contract
+npm notice run jest --ci --config test/jest/jest.contract.config.js --runInBand
+PASS contract test/uppaal/auth-flow-uppaal.spec.ts (5.598 s)
+PASS contract test/openapi/openapi-completeness.spec.ts
+PASS contract test/uppaal/telemetry-session-gate-uppaal.spec.ts
+PASS contract test/openapi/asyncapi-events.spec.ts
+PASS contract test/uppaal/commands-validation-latency-uppaal.spec.ts
+
+Test Suites: 5 passed, 5 total
+Tests:       20 passed, 20 total
+Snapshots:   0 total
+Time:        12.288 s, estimated 28 s
+Ran all test suites.
+EXIT 0

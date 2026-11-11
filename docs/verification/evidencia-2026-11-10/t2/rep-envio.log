@@ -1,0 +1,13 @@
+npm notice run ventilab-web@0.1.0 npx
+npm notice run playwright test --project=e2e e2e/bloque-a/repeticion.spec.ts e2e/bloque-a/envio-explicito.spec.ts --reporter=list
+
+Running 5 tests using 1 worker
+
+  -  1 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as student
+  -  2 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as group member
+  -  3 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as teacher
+  ✓  4 [e2e] › e2e\bloque-a\envio-explicito.spec.ts:20:5 › a PEEP change waits for Enviar, goes out as one event and can be undone (14.5s)
+  ✓  5 [e2e] › e2e\bloque-a\repeticion.spec.ts:39:5 › the replay of a session with evolution equals the live session and the server summary (22.6s)
+
+  3 skipped
+  2 passed (41.0s)

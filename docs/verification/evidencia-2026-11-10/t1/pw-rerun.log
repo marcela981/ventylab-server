@@ -1,0 +1,34 @@
+npm notice run ventilab-web@0.1.0 npx
+npm notice run playwright test --project=e2e e2e/bloque-a/asesoria-estado-actual.spec.ts e2e/ajustes-b/render-audit.spec.ts e2e/bloque2/tutor-ai.spec.ts e2e/bloque4/admin-ai-ratings.spec.ts e2e/bloque4/admin-users.spec.ts e2e/bloque4/lab-group-reservation.spec.ts e2e/bloque4/student-detail-scope.spec.ts e2e/bloque5
+
+Running 26 tests using 1 worker
+
+  -   1 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as student
+  -   2 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as group member
+  -   3 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as teacher
+  ✓   4 [e2e] › e2e\ajustes-b\render-audit.spec.ts:123:7 › lesson render audit › every block type renders inside the page at every width and scheme (8.9s)
+  -   5 [e2e] › e2e\ajustes-b\render-audit.spec.ts:163:7 › lesson render audit › curriculum pages render inside the page at every width and scheme
+  ✓   6 [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:89:5 › Asesoría IA analyzes the critical patient on screen, not the initial one (22.4s)
+  ✓   7 [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:121:5 › ¿Cómo estabilizar? of the low SpO2 alarm analyzes the current state too (22.1s)
+  ✓   8 [e2e] › e2e\bloque-a\asesoria-estado-actual.spec.ts:139:5 › an AI answer that claims stability with a critical patient is replaced by the deterministic suggestion (21.1s)
+  ✓   9 [e2e] › e2e\bloque2\tutor-ai.spec.ts:31:5 › (3) TutorAI: deepen with streaming, rate it, one question, a note and its AI analysis (13.0s)
+  ✓  10 [e2e] › e2e\bloque4\admin-ai-ratings.spec.ts:81:5 › (8) /admin/ai filters the ratings by surface and exports Bloque 2 and 3 ratings as CSV (5.1s)
+  ✓  11 [e2e] › e2e\bloque4\admin-users.spec.ts:27:5 › (4) admin: role change with confirmation, protected superadmin and the Profesores tab (3.3s)
+  ✓  12 [e2e] › e2e\bloque4\lab-group-reservation.spec.ts:23:5 › (3) teacher reserves the ventilator for a group from /teacher/lab and the leader operates it from /simulador (5.5s)
+  ✓  13 [e2e] › e2e\bloque4\student-detail-scope.spec.ts:18:5 › (7) a teacher without supervision gets 403 on another teacher's student (UI and API) (1.8s)
+  -  14 [e2e] › e2e\bloque5\capturas.spec.ts:85:7 › Block 5 shell and pages at 1280
+  -  15 [e2e] › e2e\bloque5\capturas.spec.ts:145:7 › Block 5 Monitoreo at 1280
+  -  16 [e2e] › e2e\bloque5\capturas.spec.ts:85:7 › Block 5 shell and pages at 1920
+  -  17 [e2e] › e2e\bloque5\capturas.spec.ts:145:7 › Block 5 Monitoreo at 1920
+  -  18 [e2e] › e2e\bloque5\capturas.spec.ts:187:5 › Block 1 Monitoreo captures with the July layout
+  ✓  19 [e2e] › e2e\bloque5\monitoreo-ia.spec.ts:25:5 › Asesoría IA opens a 380 px drawer, answers with the fake LLM and gives the focus back (8.1s)
+  ✓  20 [e2e] › e2e\bloque5\monitoreo-julio.spec.ts:87:7 › July Monitoreo control order at 1920×1080 (4.7s)
+  ✓  21 [e2e] › e2e\bloque5\monitoreo-julio.spec.ts:87:7 › July Monitoreo control order at 1280×720 (5.1s)
+  ✓  22 [e2e] › e2e\bloque5\monitoreo-orden.spec.ts:81:5 › July Monitoreo order of the Real monitor at 1920×1080 and 1280×720 (8.0s)
+  ✓  23 [e2e] › e2e\bloque5\monitoreo-tarjetas.spec.ts:39:5 › Ajustar hides, moves with the keyboard, persists across a reload and resets (6.9s)
+  ✓  24 [e2e] › e2e\bloque5\monitoreo-tarjetas.spec.ts:98:5 › a corrupt preference or another user's preference leaves the default cards (3.6s)
+  ✓  25 [e2e] › e2e\bloque5\monitoreo-teclado.spec.ts:17:5 › edits wait for Enviar; Escape drops them and Enter sends them (5.8s)
+  ✓  26 [e2e] › e2e\bloque5\sidebar.spec.ts:30:5 › collapse and expand persist, the collapsed avatar opens Opciones and the bell works from the sidebar (3.6s)
+
+  9 skipped
+  17 passed (2.6m)

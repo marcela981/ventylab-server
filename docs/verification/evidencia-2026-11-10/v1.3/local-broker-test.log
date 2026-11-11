@@ -1,0 +1,19 @@
+$ node --test scripts/audit-e2e/local-broker.test.ts   # 2026-11-11T06:35:00Z
+(node:16536) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///<home>/Documents/Marce/ventylab/wt-rmc-server/scripts/audit-e2e/local-broker.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\<home>\Documents\Marce\ventylab\wt-rmc-server\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ local brokers are accepted (3.089ms)
+✔ a remote broker needs --allow-remote-test-broker (0.8993ms)
+✔ public brokers are always refused, even with the override (0.4229ms)
+✔ an invalid url is refused without echoing it (0.4222ms)
+✔ the default broker is the local stack port (0.3977ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 475.2637
+EXIT 0

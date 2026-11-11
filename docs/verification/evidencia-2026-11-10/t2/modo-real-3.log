@@ -1,0 +1,11 @@
+npm notice run ventilab-web@0.1.0 npx
+npm notice run playwright test --project=e2e e2e/bloque-a/modo-real.spec.ts --reporter=line
+
+Running 4 tests using 1 worker
+
+[1/4] [setup] › e2e\support\auth.setup.ts:32:8 › sign in as student
+[2/4] [setup] › e2e\support\auth.setup.ts:32:8 › sign in as group member
+[3/4] [setup] › e2e\support\auth.setup.ts:32:8 › sign in as teacher
+[4/4] [e2e] › e2e\bloque-a\modo-real.spec.ts:43:5 › one command per Enviar, nothing beyond the safe range and undo, with the simulated device
+  3 skipped
+  1 passed (14.8s)

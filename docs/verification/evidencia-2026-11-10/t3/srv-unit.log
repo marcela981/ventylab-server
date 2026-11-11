@@ -1,0 +1,448 @@
+npm notice run ventylab-server@1.0.0 test:unit
+npm notice run jest --ci --config test/jest/jest.unit.config.js --coverage --maxWorkers=2 --passWithNoTests && node scripts/verify/print-c1-coverage.mjs --maxWorkers=2
+PASS src/common/presentation/filters/http-exception.filter.spec.ts (11.302 s)
+PASS src/composition/users-ports.module.spec.ts (12.111 s)
+PASS src/features/simulation/application/services/seed-cases-evolution.spec.ts
+PASS src/composition/analytics-ports.module.spec.ts
+PASS src/common/infrastructure/logging/sentry-redaction.spec.ts
+PASS src/features/simulation/domain/engine/engine-determinism.spec.ts
+PASS src/features/ai/ai-errors-http.spec.ts
+PASS src/composition/evaluation-ports.module.spec.ts
+PASS src/features/ventilator-commands/application/uppaal-commands-properties.spec.ts
+PASS src/common/infrastructure/http/http-hardening.spec.ts
+PASS src/composition/composition.module.spec.ts
+PASS src/features/audit-log/presentation/controllers/audit-log.controller.spec.ts
+PASS src/features/ventilator-telemetry/presentation/controllers/ventilator-telemetry.controller.spec.ts
+PASS src/features/simulation/domain/engine/engine-evolution.spec.ts
+PASS src/features/auth/presentation/guards/permissions.guard.spec.ts
+PASS src/features/analytics/presentation/controllers/analytics.controller.spec.ts
+PASS src/features/notifications/presentation/controllers/notifications.controller.spec.ts
+PASS src/features/ventilator-commands/infrastructure/config/ventilator-commands-config.spec.ts
+PASS src/features/ventilator-commands/application/services/command-lifecycle.service.spec.ts
+PASS src/features/audit-log/presentation/dtos/audit-log-request.dto.spec.ts
+[Nest] 22016  - 10/10/2026, 7:00:02 a. m.    WARN [CommandLifecycleService] Ventilator command persistence did not finish within 2000 ms on shutdown
+PASS src/features/simulation/presentation/mappers/simulation-sessions.mapper.spec.ts
+PASS src/features/steps/presentation/controllers/steps.controller.spec.ts
+PASS src/features/ventilator-commands/application/services/operator-control.service.spec.ts
+PASS src/features/simulation/application/services/simulation-results-visibility.service.spec.ts
+PASS src/features/ventilator-commands/infrastructure/lifecycle/ventilator-commands-lifecycle.service.spec.ts
+PASS src/features/system-status/presentation/controllers/system-status.controller.spec.ts
+PASS src/features/ventilator-commands/application/services/command-rate-limiter.service.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:08 p. m.   ERROR [CommandLifecycleService] Ventilator command 01a1cba0-b07f-7233-83d4-1d82143e4d80 (SENT) could not be persisted: database unavailable
+PASS src/features/ventilator-commands/application/use-cases/send-ventilator-command.usecase.spec.ts
+PASS src/features/evaluation/presentation/mappers/student-evaluations.mapper.spec.ts
+PASS src/common/infrastructure/storage/local-disk-file-storage.adapter.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:09 p. m.    WARN [LocalDiskFileStorageAdapter] LocalDiskFileStorageAdapter is active (development only): files are stored under <scratchpad>
+[Nest] 22016  - 11/11/2026, 12:21:09 p. m.    WARN [LocalDiskFileStorageAdapter] LocalDiskFileStorageAdapter is active (development only): files are stored under <scratchpad>
+[Nest] 22016  - 11/11/2026, 12:21:09 p. m.    WARN [LocalDiskFileStorageAdapter] LocalDiskFileStorageAdapter is active (development only): files are stored under <scratchpad>
+[Nest] 22016  - 11/11/2026, 12:21:09 p. m.    WARN [LocalDiskFileStorageAdapter] LocalDiskFileStorageAdapter is active (development only): files are stored under <scratchpad>
+[Nest] 22016  - 11/11/2026, 12:21:09 p. m.    WARN [NoopFileStorageAdapter] NoopFileStorageAdapter is active — uploads are rejected with 503. Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and SUPABASE_STORAGE_BUCKET to enable Supabase Storage.
+PASS src/features/notifications/presentation/dtos/notification.dto.spec.ts
+PASS src/common/presentation/controllers/health.controller.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:10 p. m.    WARN [HealthController] Readiness check failed: Error
+[Nest] 22016  - 11/11/2026, 12:21:10 p. m.    WARN [HealthController] Readiness check failed: OperationTimeoutError
+PASS src/features/ventilator-telemetry/application/uppaal-telemetry-properties.spec.ts
+PASS src/features/simulation/application/use-cases/end-simulation-session.usecase.spec.ts
+PASS src/features/ventilator-telemetry/application/services/telemetry-metrics.service.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:11 p. m.   ERROR [CommandLifecycleService] Ventilator command 01a1cba0-b07f-7233-83d4-1d82143e4d80 (TIMEOUT) could not be persisted: database unavailable
+PASS src/features/evaluation/infrastructure/events/grade-feedback-events.handlers.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:12 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), retrying in 0 ms
+[Nest] 22016  - 11/11/2026, 12:21:12 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), trying the next provider
+[Nest] 22016  - 11/11/2026, 12:21:12 p. m.    WARN [AiOrchestrator] AI provider secondary failed (SERVER), retrying in 0 ms
+[Nest] 22016  - 11/11/2026, 12:21:12 p. m.    WARN [AiOrchestrator] AI provider secondary failed (SERVER), trying the next provider
+PASS src/features/clinical-cases/application/use-cases/clinical-case-visibility.usecase.spec.ts
+PASS src/features/analytics/application/use-cases/get-group-dashboard.usecase.spec.ts
+PASS src/common/infrastructure/realtime/realtime-io.adapter.spec.ts
+PASS src/common/presentation/controllers/version.controller.spec.ts
+PASS src/features/ai-ratings/infrastructure/persistence/prisma/repositories/ai-ratings-prisma.repository.spec.ts
+PASS src/features/simulation/application/use-cases/append-simulation-events.usecase.spec.ts
+PASS src/features/evaluation/presentation/mappers/grade-feedbacks.mapper.spec.ts
+PASS src/features/system-status/application/services/system-status-monitor.service.spec.ts
+PASS src/features/reservations/presentation/mappers/reservations.mapper.spec.ts
+PASS src/features/notifications/infrastructure/events/notifications-bus.spec.ts
+PASS src/features/progress/infrastructure/events/progress-events.handlers.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:16 p. m.    WARN [ProgressEventsHandlers] Lesson activity failed for user U1: db down
+PASS src/features/auth/infrastructure/jwt/jwt-token-generator.spec.ts
+PASS src/features/simulation/domain/scoring/compute-simulation-score.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), retrying in 0 ms
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), trying the next provider
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (TIMEOUT), trying the next provider
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (NETWORK), retrying in 0 ms
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (NETWORK), trying the next provider
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), retrying in 0 ms
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), trying the next provider
+PASS src/features/ai/application/services/ai-gateway-fallback.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (TIMEOUT), trying the next provider
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), retrying in 0 ms
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), trying the next provider
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), retrying in 0 ms
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), trying the next provider
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), retrying in 0 ms
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI provider primary failed (SERVER), trying the next provider
+[Nest] 22016  - 11/11/2026, 12:21:17 p. m.    WARN [AiOrchestrator] AI stream from primary interrupted (NETWORK)
+PASS src/common/infrastructure/realtime/realtime.gateway.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:17 p. m.   DEBUG [RealtimeGateway] Socket socket-1 authenticated as user user-1
+[Nest] 10264  - 11/11/2026, 12:21:17 p. m.   DEBUG [RealtimeGateway] Socket socket-1 authenticated as user user-1
+PASS src/features/system-status/application/services/system-status.service.spec.ts
+PASS src/features/pages/infrastructure/security/sanitize-html.sanitizer.spec.ts
+PASS src/features/lessons/infrastructure/persistence/prisma/repositories/lesson-queries-prisma.repository.spec.ts
+PASS src/features/ai-tutor/presentation/sse/tutor-sse.spec.ts
+PASS src/features/evaluation/infrastructure/simulation/clinical-comparison-practical-score-provider.spec.ts
+PASS src/features/changelog/infrastructure/persistence/prisma/mappers/changelog.mapper.spec.ts
+PASS src/common/infrastructure/events/nest-event-bus.spec.ts
+PASS src/features/notifications/infrastructure/events/notifications-events.handlers.spec.ts
+PASS src/features/users/presentation/mappers/users.mapper.spec.ts
+PASS src/features/evaluation/application/use-cases/get-evaluation-assignments.usecase.spec.ts
+PASS src/features/reservations/infrastructure/events/reservations-events.handlers.spec.ts
+PASS src/features/users/infrastructure/persistence/prisma/repositories/users-prisma.repository.spec.ts
+PASS src/features/clinical-cases/presentation/mappers/clinical-cases.mapper.spec.ts
+PASS src/features/simulation/domain/engine/engine-events.spec.ts
+PASS src/features/analytics/application/use-cases/export-research-dataset.usecase.spec.ts
+PASS src/features/notes/infrastructure/persistence/prisma/repositories/notes-prisma.repository.spec.ts
+PASS src/features/groups/application/use-cases/update-group.usecase.spec.ts
+PASS src/features/simulation/application/assist/assist-simulation.usecase.spec.ts
+PASS src/features/simulation/application/services/simulation-assist-context.service.spec.ts
+PASS src/features/simulation/presentation/sse/simulation-assist-sse.spec.ts
+[Nest] 22016  - 08/10/2026, 7:00:30 a. m.    WARN [SimulationAssistContextService] {"event":"sim_assist_context_divergence","sessionId":"01a11b62-7600-777c-b677-a8648d7e9506","simTimeMs":20000,"unsentChanges":false,"differences":[{"field":"spo2Percent","client":78.09978616520716,"server":98.09978616520716}]}
+PASS src/features/groups/infrastructure/events/group-rooms-events.handlers.spec.ts
+PASS src/features/reservations/application/uppaal-reservations-properties.spec.ts
+PASS src/features/evaluation/application/use-cases/grade-feedback-reads.usecase.spec.ts
+PASS src/features/platform-settings/presentation/mappers/platform-settings.mapper.spec.ts
+PASS src/features/simulation/application/use-cases/run-clinical-case-test.usecase.spec.ts
+PASS src/composition/production-bindings.spec.ts
+PASS src/features/analytics/application/use-cases/get-evaluation-analytics.usecase.spec.ts
+PASS src/features/activities/infrastructure/persistence/prisma/repositories/activity-submissions-prisma.repository.spec.ts
+PASS src/features/ventilator-telemetry/application/services/telemetry-recorder.service.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording started for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording stopped for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording started for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording stopped for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording started for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:32 p. m.     LOG [TelemetryRecorderService] Telemetry recording stopped for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording started for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording stopped for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording started for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording stopped for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording started for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording stopped for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:29 p. m.    WARN [TelemetryRecorderService] Telemetry recording chunks were still being saved after 2000 ms on shutdown
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording started for reservation reservation-1
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.     LOG [TelemetryRecorderService] Telemetry recording stopped for reservation reservation-1
+PASS src/features/simulation/application/monitor-help/monitor-help.usecases.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.   ERROR [AiOrchestrator] Failed to record AI call 01a1cba1-bfae-749c-a9a4-24f05bb59de5: db down
+PASS src/features/ai/application/services/ai-orchestrator.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider first failed (SERVER), retrying in 59 ms
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider first failed (SERVER), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider first failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider first failed (SERVER), retrying in 65 ms
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider first failed (SERVER), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider second failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider first failed (SERVER), retrying in 81 ms
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider first failed (SERVER), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:28 p. m.    WARN [AiOrchestrator] AI provider slow failed (TIMEOUT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider flaky failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:37 p. m.    WARN [AiOrchestrator] AI provider flaky failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:22:17 p. m.    WARN [AiOrchestrator] AI provider flaky failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider main failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:47 p. m.    WARN [AiOrchestrator] AI provider main failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider broken failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI stream from failing interrupted (SERVER)
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider broken failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider first failed (SERVER), retrying in 96 ms
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider first failed (SERVER), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider failing failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:37 p. m.    WARN [AiOrchestrator] AI provider failing failed (CLIENT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider limited failed (RATE_LIMIT), retrying in 2000 ms
+[Nest] 10264  - 11/11/2026, 12:21:29 p. m.    WARN [AiOrchestrator] AI provider limited failed (RATE_LIMIT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:27 p. m.    WARN [AiOrchestrator] AI provider limited failed (RATE_LIMIT), retrying in 1000 ms
+[Nest] 10264  - 11/11/2026, 12:21:28 p. m.    WARN [AiOrchestrator] AI provider limited failed (RATE_LIMIT), trying the next provider
+[Nest] 10264  - 11/11/2026, 12:21:28 p. m.    WARN [AiOrchestrator] AI provider broken failed (CLIENT), trying the next provider
+PASS src/features/simulation/domain/engine/engine-physics.spec.ts
+PASS src/features/simulation/application/use-cases/start-simulation-session.usecase.spec.ts
+[Nest] 10264  - 08/10/2026, 7:00:00 a. m.   DEBUG [CaseInterpretationService] Case interpretation fell back to the curated values (AI_UNAVAILABLE): Error
+[Nest] 10264  - 08/10/2026, 7:00:00 a. m.   DEBUG [CaseInterpretationService] Case interpretation fell back to the curated values (AI_UNAVAILABLE): Error
+[Nest] 10264  - 08/10/2026, 7:00:00 a. m.   DEBUG [CaseInterpretationService] Case interpretation fell back to the curated values (AI_UNAVAILABLE): Error
+[Nest] 10264  - 08/10/2026, 7:00:00 a. m.   DEBUG [CaseInterpretationService] Case interpretation fell back to the curated values (AI_UNAVAILABLE): Error
+[Nest] 10264  - 08/10/2026, 7:00:00 a. m.   DEBUG [CaseInterpretationService] Case interpretation fell back to the curated values (AI_UNAVAILABLE): Error
+PASS src/features/evaluation/application/use-cases/manage-evaluation-assignment.usecase.spec.ts
+PASS src/features/progress/infrastructure/persistence/prisma/repositories/progress-analytics-prisma.repository.spec.ts
+PASS src/features/groups/application/use-cases/get-group-by-id.usecase.spec.ts
+PASS src/features/system-status/infrastructure/process/node-process-metrics.spec.ts
+PASS src/features/users/application/use-cases/reset-user-password.usecase.spec.ts
+PASS src/features/evaluation/application/use-cases/save-evaluation-answer.usecase.spec.ts
+[Nest] 22016  - 26/10/2026, 7:00:00 a. m.   DEBUG [CaseInterpretationService] Case interpretation fell back to the curated values (AI_UNAVAILABLE): Error
+[Nest] 22016  - 26/10/2026, 7:00:00 a. m.   DEBUG [CaseInterpretationService] Case interpretation fell back to the curated values (AI_UNAVAILABLE): Error
+PASS src/features/simulation/application/services/simulation-session-runtime.patient.spec.ts
+[Nest] 22016  - 26/10/2026, 7:00:00 a. m.   DEBUG [CaseInterpretationService] Case interpretation fell back to the curated values (AI_UNAVAILABLE): Error
+PASS src/features/evaluation/application/use-cases/start-evaluation-attempt.usecase.spec.ts
+PASS src/features/evaluation/infrastructure/events/evaluation-events.handlers.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:30 p. m.    WARN [EvaluationEventsHandlers] Activation notification failed for assignment assignment-1: socket down
+[Nest] 22016  - 11/11/2026, 12:21:30 p. m.    WARN [EvaluationEventsHandlers] Grade notification failed for attempt attempt-1: socket down
+PASS src/features/activities/infrastructure/persistence/prisma/repositories/activity-assignments-prisma.repository.spec.ts
+PASS src/common/infrastructure/persistence/audit-log/audit-log-recorder.spec.ts
+PASS src/features/analytics/application/use-cases/get-student-timeline.usecase.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:30 p. m.   DEBUG [AuditLogRecorder] Skipped audit "user_role_changed" on users/u-2: no changed fields, reason or metadata
+[Nest] 10264  - 11/11/2026, 12:21:30 p. m.   DEBUG [AuditLogRecorder] Skipped audit "user_role_changed" on users/u-2: no changed fields, reason or metadata
+PASS src/features/audit-log/application/use-cases/audit-log-queries.usecase.spec.ts
+PASS src/features/simulation/application/services/simulation.facade.spec.ts
+PASS src/features/analytics/infrastructure/security/hmac-pseudonymizer.spec.ts
+PASS src/features/evaluation/infrastructure/persistence/prisma/repositories/evaluation-analytics-prisma.repository.spec.ts
+PASS src/features/ai-ratings/infrastructure/persistence/prisma/resolvers/rating-target-prisma.resolver.spec.ts
+PASS src/features/modules/infrastructure/persistence/prisma/repositories/module-queries-prisma.repository.spec.ts
+PASS src/features/reservations/application/use-cases/create-reservation.usecase.spec.ts
+PASS src/features/reservations/application/use-cases/preempt-reservation.usecase.spec.ts
+PASS src/features/ai-tutor/application/use-cases/deepen-page.usecase.spec.ts
+PASS src/features/modules/application/use-cases/get-module-full.usecase.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:33 p. m.    WARN [AiOrchestrator] AI provider fake failed (CLIENT), trying the next provider
+PASS src/features/clinical-cases/application/use-cases/manage-clinical-case.usecase.spec.ts
+PASS src/features/ai-tutor/infrastructure/content/curriculum-tutor-content-reader.spec.ts
+PASS src/features/progress/infrastructure/persistence/prisma/repositories/learning-progress-prisma.repository.spec.ts
+PASS src/features/quizzes/infrastructure/persistence/prisma/repositories/quizzes-prisma.repository.spec.ts
+PASS src/features/groups/infrastructure/persistence/prisma/repositories/groups-prisma.repository.spec.ts
+PASS src/features/progress/application/use-cases/progress-read-use-cases.spec.ts
+PASS src/features/users/application/use-cases/change-user-status.usecase.spec.ts
+PASS src/features/evaluation/application/use-cases/evaluation-content.usecase.spec.ts
+PASS src/features/ai-tutor/application/services/tutor-turn.service.spec.ts
+PASS src/features/ai-tutor/application/use-cases/ai-conversations.usecase.spec.ts
+PASS src/features/activities/application/use-cases/submit-submission.usecase.spec.ts
+PASS src/features/simulation/application/use-cases/simulation-session-reads.usecase.spec.ts
+PASS src/features/ai-telemetry/infrastructure/persistence/prisma/repositories/ai-call-logs-prisma.repository.spec.ts
+PASS src/features/progress/application/use-cases/record-page-view.usecase.spec.ts
+PASS src/features/evaluation/application/use-cases/evaluation-grading.usecase.spec.ts
+PASS src/features/auth/application/use-cases/google-login.usecase.spec.ts
+PASS src/features/auth/application/use-cases/change-own-password.usecase.spec.ts
+PASS src/features/progress/infrastructure/persistence/prisma/repositories/achievements-prisma.repository.spec.ts
+PASS src/features/curriculum/infrastructure/persistence/prisma/repositories/curriculum-subtree-prisma.repository.spec.ts
+PASS src/features/admin/infrastructure/persistence/prisma/repositories/admin-dashboard-prisma.repository.spec.ts
+PASS src/features/clinical-cases/application/services/evaluation-feedback-generator.service.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:39 p. m.    WARN [EvaluationFeedbackGenerator] AI feedback generation failed (Error); using fallback feedback
+PASS src/features/ai/infrastructure/quota/telemetry-ai-quota-guard.spec.ts
+PASS src/features/groups/application/use-cases/set-simulator-lead.usecase.spec.ts
+PASS src/features/evaluation/domain/services/grade-feedback-context.spec.ts
+PASS src/features/ai/infrastructure/recorders/telemetry-ai-call-recorder.spec.ts
+PASS src/features/ventilator-telemetry/application/services/ventilator-room-access.service.spec.ts
+PASS src/features/notes/infrastructure/ai/ai-text-notes-analyzer.spec.ts
+PASS src/features/ai-tutor/infrastructure/users/users-tutor-personal-data.spec.ts
+PASS src/features/notes/application/services/notes.facade.spec.ts
+PASS src/features/users/infrastructure/persistence/prisma/repositories/user-statistics-prisma.repository.spec.ts
+PASS src/features/auth/application/use-cases/login.usecase.spec.ts
+PASS src/features/ventilator-telemetry/application/services/telemetry-pipeline.performance.spec.ts
+PASS src/features/progress/application/services/learning-progress.facade.spec.ts
+PASS src/features/progress/application/use-cases/record-lesson-progress.usecase.spec.ts
+PASS src/features/simulation/infrastructure/persistence/prisma/repositories/simulation-analytics-prisma.repository.spec.ts
+PASS src/features/ai/application/services/ai-gateway-health.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:42 p. m.    WARN [AiOrchestrator] AI provider gemini failed (CLIENT), trying the next provider
+PASS src/features/progress/application/use-cases/unlock-achievements.usecase.spec.ts
+PASS src/features/ai-telemetry/application/ai-telemetry.facade.spec.ts
+PASS src/features/ai-telemetry/infrastructure/persistence/prisma/repositories/ai-call-log-analytics-prisma.repository.spec.ts
+PASS src/features/platform-settings/application/services/platform-settings.store.spec.ts
+PASS src/features/admin/application/use-cases/get-admin-students.usecase.spec.ts
+PASS src/features/ai-ratings/application/services/ai-ratings.facade.spec.ts
+PASS src/features/progress/domain/services/learning-progress-calculator.spec.ts
+PASS src/features/evaluation/application/use-cases/grade-feedback-generation.usecase.spec.ts
+PASS src/features/groups/application/use-cases/remove-group-member.usecase.spec.ts
+PASS src/features/simulation/application/use-cases/send-ventilator-command.usecase.spec.ts
+PASS src/features/groups/application/use-cases/delete-group.usecase.spec.ts
+PASS src/features/groups/application/use-cases/add-group-member.usecase.spec.ts
+PASS src/features/evaluation/application/use-cases/reset-evaluation-attempt.usecase.spec.ts
+PASS src/features/groups/application/use-cases/get-groups.usecase.spec.ts
+PASS src/features/ai-telemetry/application/use-cases/get-ai-telemetry-stats.usecase.spec.ts
+PASS src/features/users/application/use-cases/change-user-role.usecase.spec.ts
+PASS src/features/evaluation/application/use-cases/change-evaluation-status.usecase.spec.ts
+PASS src/features/evaluation/infrastructure/simulation/simulation-replay-practical-score-provider.spec.ts
+PASS src/common/infrastructure/storage/noop-file-storage.adapter.spec.ts
+PASS src/features/ventilator-telemetry/infrastructure/mqtt/mqtt-ventilator.connection.spec.ts
+PASS src/features/evaluation/application/use-cases/grade-evaluation-answer.usecase.spec.ts
+PASS src/features/users/application/use-cases/change-avatar.usecase.spec.ts
+PASS src/features/users/application/use-cases/change-user-student-code.usecase.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:47 p. m.    WARN [UpdateAvatarUseCase] Avatar media media-old could not be removed: storage down
+PASS src/features/ai-ratings/application/use-cases/upsert-ai-rating.usecase.spec.ts
+PASS src/features/evaluation/application/use-cases/delete-evaluation.usecase.spec.ts
+PASS src/common/presentation/middlewares/trace-id.middleware.spec.ts
+PASS src/features/evaluation/application/use-cases/grade-feedback-release-notification.usecase.spec.ts
+PASS src/features/groups/application/use-cases/add-group-supervision.usecase.spec.ts
+PASS src/features/evaluation/application/use-cases/create-and-duplicate-evaluation.usecase.spec.ts
+PASS src/features/evaluation/application/use-cases/grade-feedback-regeneration.usecase.spec.ts
+PASS src/features/reservations/application/use-cases/reservation-reads.usecase.spec.ts
+PASS src/features/reservations/application/use-cases/legacy-reservation-adapters.usecase.spec.ts
+PASS src/features/evaluation/application/use-cases/submit-evaluation-attempt.usecase.spec.ts
+PASS src/features/ventilator-telemetry/application/services/telemetry-pipeline.service.spec.ts
+PASS src/features/ventilator-telemetry/application/services/device-staleness.service.spec.ts
+PASS src/features/users/application/services/users.facade.spec.ts
+[Nest] 22016  - 11/11/2026, 12:21:50 p. m.    WARN [UsersFacade] Profile photo of user U1 could not be resolved: storage down
+PASS src/features/evaluation/infrastructure/ai/ai-grade-feedback-generator.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:50 p. m.    WARN [AIGradeFeedbackGenerator] Could not load the student to redact the grade feedback prompt (Error)
+[Nest] 10264  - 11/11/2026, 12:21:50 p. m.    WARN [AIGradeFeedbackGenerator] Grade feedback generation failed (Error); using deterministic feedback
+[Nest] 10264  - 11/11/2026, 12:21:50 p. m.    WARN [AIGradeFeedbackGenerator] Grade feedback response was not usable; using deterministic feedback
+[Nest] 10264  - 11/11/2026, 12:21:50 p. m.    WARN [AIGradeFeedbackGenerator] Grade feedback response was not usable; using deterministic feedback
+[Nest] 10264  - 11/11/2026, 12:21:50 p. m.    WARN [AIGradeFeedbackGenerator] Grade feedback response was not usable; using deterministic feedback
+PASS src/features/progress/application/use-cases/learning-activity.usecases.spec.ts
+PASS src/features/evaluation/application/use-cases/create-evaluation-assignments.usecase.spec.ts
+PASS src/features/curriculum/application/use-cases/compute-curriculum-unlock.usecase.spec.ts
+PASS src/features/admin/application/use-cases/get-ai-providers.usecase.spec.ts
+PASS src/features/ai/application/services/ai-gateway.spec.ts
+PASS src/features/evaluation/application/use-cases/student-evaluation-reads.usecase.spec.ts
+PASS src/features/groups/application/services/groups.facade.spec.ts
+PASS src/features/auth/application/use-cases/refresh-token.usecase.spec.ts
+PASS src/features/clinical-cases/application/use-cases/ensure-seed-clinical-cases.usecase.spec.ts
+PASS src/features/clinical-cases/application/services/clinical-cases.facade.spec.ts
+PASS src/features/reservations/application/services/reservations.facade.spec.ts
+PASS src/features/ai-tutor/application/services/ai-tutor.facade.spec.ts
+PASS src/features/users/application/use-cases/get-student-by-id.usecase.spec.ts
+PASS src/features/auth/application/use-cases/password-reset.usecases.spec.ts
+[Nest] 10264  - 11/11/2026, 12:21:53 p. m.    WARN [RequestPasswordResetUseCase] Password reset email for user U1 could not be sent: SMTP down
+PASS src/features/ai-ratings/application/use-cases/get-ai-rating-stats.usecase.spec.ts
+PASS src/features/ventilator-telemetry/application/use-cases/list-telemetry-recordings.usecase.spec.ts
+PASS src/features/groups/application/use-cases/get-student-memberships.usecase.spec.ts
+PASS src/features/evaluation/application/services/evaluation-editor.spec.ts
+PASS src/features/analytics/application/services/analytics-cache.spec.ts
+PASS src/common/presentation/interceptors/deprecation-headers.interceptor.spec.ts
+PASS src/features/evaluation/application/services/evaluation.facade.spec.ts
+PASS src/features/progress/application/use-cases/get-module-progress-summary.usecase.spec.ts
+PASS src/features/groups/application/use-cases/create-group.usecase.spec.ts
+PASS src/features/ventilator-telemetry/infrastructure/influx/influx-telemetry.sink.spec.ts
+PASS src/features/admin/application/use-cases/get-platform-statistics.usecase.spec.ts
+PASS src/features/simulation/application/services/simulation-session-access.service.spec.ts
+PASS src/features/progress/application/use-cases/get-continue-learning.usecase.spec.ts
+PASS src/features/lessons/application/use-cases/get-lesson-by-id.usecase.spec.ts
+PASS src/features/platform-settings/application/use-cases/platform-settings.usecases.spec.ts
+PASS src/features/curriculum/infrastructure/content-import/curriculum-content.spec.ts
+PASS src/features/ai/infrastructure/providers/external.provider.spec.ts
+PASS src/features/simulation/domain/engine/engine-replay-parity.spec.ts
+PASS src/common/infrastructure/docs/docs-access.spec.ts
+PASS src/features/ai-telemetry/presentation/utils/ai-call-logs-csv.spec.ts
+PASS src/features/simulation/domain/assist/assist-snapshot.spec.ts
+PASS src/features/curriculum/domain/services/delete-guard.spec.ts
+PASS src/features/quizzes/infrastructure/persistence/prisma/mappers/quizzes.mapper.spec.ts
+PASS src/features/platform-settings/domain/registry/platform-settings.registry.spec.ts
+PASS src/features/progress/domain/services/gamification-rules.spec.ts
+PASS src/features/ai/infrastructure/providers/providers.spec.ts
+PASS src/features/activities/infrastructure/persistence/prisma/mappers/activities.mapper.spec.ts
+PASS src/common/domain/utils/mask-email-addresses.spec.ts
+PASS src/features/media/domain/services/media-access.spec.ts
+PASS src/features/evaluation/infrastructure/persistence/prisma/mappers/student-evaluation-attempts.mapper.spec.ts
+PASS src/features/evaluation/domain/entities/evaluation.entity.spec.ts
+PASS src/features/ventilator-commands/domain/entities/ventilator-command.entity.spec.ts
+PASS prisma/seed-helpers/evaluation-seed.mapper.spec.ts
+PASS src/features/ventilator-commands/domain/encoders/command-encoders.spec.ts
+PASS src/features/ai/domain/prompts/prompts.spec.ts
+PASS src/features/evaluation/domain/entities/student-evaluation-attempt.entity.spec.ts
+PASS src/features/notes/domain/services/tiptap-document.spec.ts
+PASS src/features/evaluation/domain/entities/evaluation-assignment.entity.spec.ts
+PASS src/features/ai/infrastructure/config/ai-settings.provider.spec.ts
+PASS src/features/simulation/domain/scoring/simulation-rubric.spec.ts
+PASS src/features/users/domain/entities/user-theme-preference.spec.ts
+PASS src/features/clinical-cases/domain/services/clinical-case-definition-validator.spec.ts
+PASS src/features/clinical-cases/domain/services/configuration-comparison.spec.ts
+PASS prisma/seed-helpers/evaluation-curriculum.mapper.spec.ts
+PASS src/features/ventilator-commands/domain/validation/ventilator-command-validator.spec.ts
+PASS src/features/media/domain/entities/media.entity.spec.ts
+PASS src/features/reservations/domain/services/reservation-scheduling-rules.spec.ts
+PASS src/features/reservations/domain/services/reservation-access-policy.spec.ts
+PASS src/features/analytics/domain/services/analytics-domain.spec.ts
+PASS src/features/system-status/domain/system-status.spec.ts
+PASS src/features/media/domain/value-objects/media-upload-policy.spec.ts
+PASS src/features/evaluation/domain/services/evaluation-attempt-grader.spec.ts
+PASS src/features/notes/domain/services/note-ownership.spec.ts
+PASS src/features/simulation/domain/sessions/simulation-session-rubric.spec.ts
+PASS src/features/ventilator-telemetry/domain/decoders/telemetry-decoders.spec.ts
+PASS src/features/simulation/application/interpretation/case-interpretation.spec.ts
+PASS src/features/simulation/domain/assist/assist-sim-time.spec.ts
+PASS src/features/simulation/domain/patient/patient-overrides.spec.ts
+PASS src/features/simulation/application/assist/coherent-assist-answer.spec.ts
+PASS src/features/curriculum/infrastructure/content-import/curriculum-plan.builder.spec.ts
+PASS src/features/evaluation/domain/services/evaluation-answer-validation.spec.ts
+PASS src/features/progress/domain/services/achievement-catalog.spec.ts
+PASS src/features/ai-telemetry/domain/services/ai-telemetry-metrics.spec.ts
+PASS src/features/groups/domain/services/group-management-policy.spec.ts
+PASS src/features/clinical-cases/domain/services/evaluation-feedback.spec.ts
+PASS src/features/simulation/domain/assist/assist-coherence.spec.ts
+PASS src/features/progress/domain/services/lesson-access-rules.spec.ts
+PASS src/features/analytics/presentation/utils/research-export-dictionary.spec.ts
+PASS src/common/domain/value-objects/title-case-name.spec.ts
+PASS src/features/simulation/domain/sessions/simulation-session-debrief.spec.ts
+PASS src/features/ai-ratings/domain/value-objects/ai-rating-answers.spec.ts
+PASS src/features/simulation/domain/assist/deterministic-assist-advisor.spec.ts
+PASS src/features/ventilator-telemetry/domain/services/sequence-gap-tracker.spec.ts
+PASS src/features/progress/domain/services/progress-overview-builder.spec.ts
+PASS src/features/evaluation/domain/services/evaluation-readiness.spec.ts
+PASS src/features/analytics/domain/services/student-risk.spec.ts
+PASS src/common/presentation/utils/sanitize-body.util.spec.ts
+PASS src/features/simulation/domain/assist/assist-state-snapshot.spec.ts
+PASS src/features/notes/infrastructure/ai/notes-analysis-response.parser.spec.ts
+PASS src/features/ai/domain/services/ai-error-classification.spec.ts
+PASS src/common/presentation/utils/csv.util.spec.ts
+PASS src/features/ai-tutor/domain/services/tutor-context.spec.ts
+PASS src/features/progress/domain/services/page-view-rules.spec.ts
+PASS src/features/progress/domain/services/module-progress-calculator.spec.ts
+PASS src/features/evaluation/domain/services/evaluation-management-policy.spec.ts
+PASS src/features/evaluation/domain/services/evaluation-attempt-policy.spec.ts
+PASS src/features/evaluation/domain/services/evaluation-analytics.spec.ts
+PASS src/features/evaluation/domain/services/deterministic-grade-feedback.spec.ts
+PASS src/features/ai/domain/services/ai-retry-policy.spec.ts
+PASS src/common/domain/utils/redact-secrets.spec.ts
+PASS src/features/progress/domain/services/composite-modules.spec.ts
+PASS src/features/curriculum/infrastructure/content-import/lesson-markdown.parser.spec.ts
+PASS src/features/ai-tutor/domain/services/topic-guard.spec.ts
+PASS src/common/domain/audit/audit-payload.spec.ts
+PASS src/features/users/domain/services/role-change-group-cleanup.spec.ts
+PASS src/features/notes/domain/services/deterministic-notes-analysis.spec.ts
+PASS src/features/users/domain/services/role-hierarchy.spec.ts
+PASS src/features/simulation/domain/engine/ventilator-limits.spec.ts
+PASS src/features/simulation/domain/engine/engine-version.spec.ts
+PASS src/features/progress/domain/services/activity-calendar.spec.ts
+PASS src/features/evaluation/domain/value-objects/simulation-rubric.spec.ts
+PASS src/features/ventilator-commands/domain/services/command-ack-and-applied-match.spec.ts
+PASS src/features/evaluation/domain/value-objects/results-release-scope.spec.ts
+PASS src/features/evaluation/domain/value-objects/evaluation-assignment-state.spec.ts
+PASS src/features/curriculum/infrastructure/content-import/lesson-content.validator.spec.ts
+PASS src/features/curriculum/domain/services/reorder-plan.spec.ts
+PASS src/features/analytics/presentation/mappers/analytics.mapper.spec.ts
+PASS src/features/ai-tutor/domain/services/tutor-fallback.spec.ts
+PASS src/features/ventilator-commands/domain/services/operator-control-policy.spec.ts
+PASS src/features/quizzes/domain/services/quiz-answer-visibility.spec.ts
+PASS src/common/infrastructure/config/cors-origins.spec.ts
+PASS src/features/curriculum/domain/services/lesson-completion-rules.spec.ts
+PASS src/common/infrastructure/docs/openapi-31.spec.ts
+PASS src/features/evaluation/domain/services/grade-feedback-prompt.spec.ts
+PASS src/features/curriculum/domain/services/prerequisite-graph.spec.ts
+PASS src/features/analytics/presentation/utils/analytics-csv.spec.ts
+PASS src/features/audit-log/presentation/utils/audit-log-csv.spec.ts
+PASS src/features/ventilator-commands/domain/services/token-bucket.spec.ts
+PASS src/features/ventilator-commands/domain/services/operator-name-projection.spec.ts
+PASS src/features/groups/domain/services/group-membership-policy.spec.ts
+PASS src/features/curriculum/domain/services/content-visibility.spec.ts
+PASS src/features/ai-ratings/presentation/utils/ai-ratings-csv.spec.ts
+PASS src/common/domain/audit/audit-action.spec.ts
+
+=============================== Coverage summary ===============================
+Statements   : 93.65% ( 4268/4557 )
+Branches     : 85.34% ( 1980/2320 )
+Functions    : 91.95% ( 777/845 )
+Lines        : 93.85% ( 4019/4282 )
+================================================================================
+
+Test Suites: 316 passed, 316 total
+Tests:       1 skipped, 2504 passed, 2505 total
+Snapshots:   0 total
+Time:        91.513 s, estimated 133 s
+Ran all test suites.
+[c1] line coverage by area (threshold 80 % per folder)
+  progress: 98.4 % (656/667)
+    features/progress/application: 97.9 % (425/434)
+    features/progress/domain/services: 99.1 % (231/233)
+  evaluation grading: 91.4 % (1154/1263)
+    features/evaluation/application/use-cases: 88.9 % (844/949)
+    features/evaluation/domain/services: 98.7 % (310/314)
+  simulation scoring and engine: 93.7 % (959/1024)
+    features/simulation/domain/scoring: 96.5 % (222/230)
+    features/simulation/domain/engine: 92.8 % (737/794)
+  reservations and preemption: 93.7 % (474/506)
+    features/reservations/application: 92.5 % (395/427)
+    features/reservations/domain/services: 100.0 % (79/79)
+  AI orchestrator and gateway: 94.2 % (408/433)
+    features/ai/application/services: 94.3 % (330/350)
+    features/ai/domain/services: 94.0 % (78/83)
+  platform settings hard limits: 94.6 % (368/389)
+    features/platform-settings/application: 97.7 % (167/171)
+    features/platform-settings/domain: 92.2 % (201/218)

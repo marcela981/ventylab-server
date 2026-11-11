@@ -1,0 +1,67 @@
+{
+  "label": "legacy60",
+  "simArgs": "--shape legacy --rate 50 --duration 60",
+  "published": 2999,
+  "receivedFrames": 2999,
+  "batches": 1771,
+  "lossPct": 0,
+  "receivedRateHz": 49.99,
+  "batchesPerS": 29.52,
+  "order": {
+    "serverTsDecreases": 0,
+    "deviceClockDecreases": 0,
+    "duplicateDeviceClock": 0
+  },
+  "latencyPublishToWsMs": {
+    "n": 2999,
+    "p50": 24,
+    "p95": 41,
+    "p99": 53,
+    "max": 90,
+    "min": 3
+  },
+  "backendBatchToWsMs": {
+    "p50": 3,
+    "p95": 11,
+    "p99": 23
+  },
+  "maxReceiveGapMs": 134,
+  "pause": null,
+  "firstPublishLineAt": 1794373571004,
+  "events": [
+    {
+      "t": 1794373562673,
+      "e": "socket_connect",
+      "rel": -7368
+    },
+    {
+      "t": 1794373562674,
+      "e": "ventilator:availability",
+      "p": "{\"occupied\":false}",
+      "rel": -7367
+    },
+    {
+      "t": 1794373570040,
+      "e": "ventilator:connected",
+      "p": "{\"at\":1794373570035}",
+      "rel": -1
+    },
+    {
+      "t": 1794373632212,
+      "e": "ventilator:disconnected",
+      "p": "{\"at\":1794373632203,\"reason\":\"device_stale\"}",
+      "rel": 62171
+    },
+    {
+      "t": 1794373633175,
+      "e": "socket_disconnect:io client disconnect",
+      "rel": 63134
+    }
+  ],
+  "socketStayedConnected": false,
+  "simTail": [
+    "[SimVent] second 57: 50 published",
+    "[SimVent] second 58: 50 published",
+    "[SimVent] Stopping (duration reached). published=2999 skippedByPause=0 droppedOffline=0 publishErrors=0"
+  ]
+}
