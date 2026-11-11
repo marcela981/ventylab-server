@@ -1,6 +1,6 @@
 # Funcionalidad: Contrato de eventos en tiempo real (AsyncAPI 3.0)
-# Descripción: Documenta los eventos Socket.io que emite el servidor (sala, destinatarios y carga), los mensajes que acepta del cliente (authenticate y los ventilator:* reenviados) y los flujos de eventos SSE del tutor de IA y de la asistencia de simulación; test/openapi/asyncapi-events.spec.ts falla si un evento emitido en src/ no aparece aquí. v1.1: sin ventilator:reserved ni ventilator:released, y ventilator:data solo para la simulación de paciente (sala del usuario). v1.2: ventilator:control-changed lleva el nombre del operador proyectado por sala (oculto a los estudiantes que no comparten la reserva con él) y la clave de su etiqueta genérica. v1.3 (Bloque 2): achievement:unlocked lleva el código estable del logro (code, AchievementDTO). v1.4: los flujos del tutor empiezan con start (conversationId y messageId del asistente antes del primer fragmento) para poder valorar una respuesta detenida. v1.5: el done del tutor lleva source (LLM o DETERMINISTIC: respuesta de respaldo sin IA cuando ningún proveedor responde, o el rechazo fijo de un mensaje fuera de tema)
-# Versión: 1.5
+# Descripción: Documenta los eventos Socket.io que emite el servidor (sala, destinatarios y carga), los mensajes que acepta del cliente (authenticate y los ventilator:* reenviados) y los flujos de eventos SSE del tutor de IA y de la asistencia de simulación; test/openapi/asyncapi-events.spec.ts falla si un evento emitido en src/ no aparece aquí. v1.1: sin ventilator:reserved ni ventilator:released, y ventilator:data solo para la simulación de paciente (sala del usuario). v1.2: ventilator:control-changed lleva el nombre del operador proyectado por sala (oculto a los estudiantes que no comparten la reserva con él) y la clave de su etiqueta genérica. v1.3 (Bloque 2): achievement:unlocked lleva el código estable del logro (code, AchievementDTO). v1.4: los flujos del tutor empiezan con start (conversationId y messageId del asistente antes del primer fragmento) para poder valorar una respuesta detenida. v1.5: el done del tutor lleva source (LLM o DETERMINISTIC: respuesta de respaldo sin IA cuando ningún proveedor responde, o el rechazo fijo de un mensaje fuera de tema). v1.6: TelemetryFrame documenta deviceTs (solo epoch válido del dispositivo) y el nuevo deviceClock opcional (reloj no epoch original, p. ej. tiempo de encendido, solo informativo)
+# Versión: 1.6
 # Autor: Marcela Mazo Castro
 # Proyecto: VentyLab
 # Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -740,8 +740,13 @@ components:
           type: number
         deviceTs:
           type: number
+          description: Device time in epoch milliseconds; present only when the device sent a valid epoch value (> 10^12). Absent for devices that send uptime
+        deviceClock:
+          type: number
+          description: Raw non-epoch device clock as received (e.g. firmware uptime in ms). Informative only; never use it as a time axis, for ordering or for latency
         serverTs:
           type: number
+          description: Server receive time in epoch milliseconds; use it for ordering and as the time axis when deviceTs is absent
         pressure:
           type: number
         flow:

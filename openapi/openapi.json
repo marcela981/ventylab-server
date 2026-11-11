@@ -19061,8 +19061,16 @@
       },
       "RecordedTelemetryFrameDTO": {
         "properties": {
+          "deviceClock": {
+            "description": "Raw non-epoch device clock as received (e.g. firmware uptime); informative only, never used for ordering or latency",
+            "example": 147,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "deviceTs": {
-            "description": "Device time (epoch ms) when sent",
+            "description": "Device time (epoch ms) when sent; null unless the device sent a valid epoch value",
             "example": 1760097599995,
             "type": [
               "number",
@@ -19117,6 +19125,7 @@
         "required": [
           "serverTs",
           "deviceTs",
+          "deviceClock",
           "seq",
           "pressure",
           "flow",

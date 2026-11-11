@@ -18854,7 +18854,12 @@ export interface components {
         };
         RecordedTelemetryFrameDTO: {
             /**
-             * @description Device time (epoch ms) when sent
+             * @description Raw non-epoch device clock as received (e.g. firmware uptime); informative only, never used for ordering or latency
+             * @example 147
+             */
+            deviceClock: number | null;
+            /**
+             * @description Device time (epoch ms) when sent; null unless the device sent a valid epoch value
              * @example 1760097599995
              */
             deviceTs: number | null;
