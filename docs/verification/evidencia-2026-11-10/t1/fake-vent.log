@@ -1,0 +1,12 @@
+[fake-ventilator] WARNING: this is a FAKE device for automated tests. The broker MUST be a TEST broker,
+[fake-ventilator] never the lab broker of the physical ventilator: its frames and ACKs would reach the backend as the real device's.
+[fake-ventilator] no backend env file is readable: the lab broker cannot be compared (localhost rule still applies).
+[fake-ventilator] broker localhost:1893; telemetry → test/ventylab/ventynet/data at 30 Hz; commands ← test/ventylab/ventilab/device/001/command; ACKs → test/ventylab/ventilab/device/001/ack
+[fake-ventilator] command 01a1c912-7f52-708f-8123-a96773052f74: applied
+[fake-ventilator] command 01a1c912-87a3-73cb-92e9-e9d7c3025b3e: applied
+[fake-ventilator] command 01a1c912-f21f-70eb-9a17-ab0e6507abb6: applied
+[fake-ventilator] command 01a1c912-fedb-738c-bb8c-2b2cac97584d: applied
+[fake-ventilator] command 01a1c913-05c2-778b-967c-4e9dee85aac7: applied
+[fake-ventilator] command 01a1c913-3dba-7530-a634-5e222b2b9792: applied
+[fake-ventilator] command 01a1c913-4a94-702a-b2b6-53e506ea9fa3: applied
+[fake-ventilator] command 01a1c913-51bf-715e-b096-930c19a242b8: applied

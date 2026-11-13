@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Validación de variables de entorno
- * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor externo de terceros, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo) y de la telemetría del ventilador físico (conexión MQTT habilitada solo con MQTT_BROKER_URL, tópicos, retroceso de reconexión, decodificador, intervalos de envío, máximo de tramas en el búfer de lotes, inactividad, sala, métricas, grabación, ventana de reordenamiento y vuelta opcional de 16 o 32 bits de la secuencia) y de los comandos del ventilador (tópico de acuse opcional, prefijo de tópicos de pruebas, que debe empezar por letra o dígito, codificación, tiempo máximo de espera, frecuencia por usuario, gracia del operador, refresco del control, tolerancia de parámetros aplicados y límites de seguridad) y del estado del sistema (tiempo máximo por chequeo de salud, segundos de caché del estado, versión de la aplicación, que por defecto se lee de package.json, y commit opcional con GIT_COMMIT como alias de APP_COMMIT_SHA) y la sal opcional de la exportación anonimizada de analítica (ANALYTICS_EXPORT_SALT, mínimo 16 caracteres); acepta las vistas previas de Vercel en CORS solo con CORS_ALLOW_VERCEL_PREVIEWS (por defecto falso); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL; ADMIN_API_KEY es opcional porque ninguna ruta aplica AdminApiKeyGuard. v1.16: sin NEXTAUTH_SECRET ni NEXTAUTH_BRIDGE_SECRET, que salen con el puente de NextAuth retirado. v1.17: APP_GIT_SHA y APP_BUILD_DATE opcionales, incrustados en la imagen por los argumentos de construcción GIT_SHA y BUILD_DATE y expuestos en GET /api/version. v1.18: proveedor externo de terceros (AI_EXTERNAL_BASE_URL, AI_EXTERNAL_API_KEY, AI_EXTERNAL_AUTH_HEADER, AI_EXTERNAL_MODEL, AI_EXTERNAL_FORMAT openai|simple, AI_EXTERNAL_TIMEOUT_MS y precios por millón de tokens AI_EXTERNAL_PRICE_INPUT_PER_MTOK/_OUTPUT_PER_MTOK) en lugar de AI_CUSTOM_HTTP_*
- * Versión: 1.18
+ * Descripción: Declara y valida con class-validator todas las variables de entorno al arrancar, falla con un mensaje que nombra cada variable inválida y resuelve MQTT_URL como alias de MQTT_BROKER_URL; incluye la nota mínima aprobatoria de evaluaciones (EVALUATION_PASSING_GRADE, 0–5, por defecto 3.0) y la configuración del gateway de IA (claves y URL base de OpenAI y Anthropic, proveedor externo de terceros, ajustes JSON por caso de uso, cuotas, precios, cortocircuito y tutor) y los ajustes de las sesiones de simulación con eventos (tolerancia del tiempo simulado, minutos para marcar abandono y tamaño máximo de lote de eventos) y las reglas de reservas del ventilador (duración máxima, granularidad de franja, días de antelación, máximo de reservas futuras por estudiante y por grupo, e identificador del dispositivo usado como clave del bloqueo) y de la telemetría del ventilador físico (conexión MQTT habilitada solo con MQTT_BROKER_URL, tópicos, retroceso de reconexión, decodificador, intervalos de envío, máximo de tramas en el búfer de lotes, inactividad, sala, métricas, grabación, ventana de reordenamiento y vuelta opcional de 16 o 32 bits de la secuencia) y de los comandos del ventilador (tópico de acuse opcional, prefijo de tópicos de pruebas, que debe empezar por letra o dígito, codificación, tiempo máximo de espera, frecuencia por usuario, gracia del operador, refresco del control, tolerancia de parámetros aplicados y límites de seguridad) y del estado del sistema (tiempo máximo por chequeo de salud, segundos de caché del estado, versión de la aplicación, que por defecto se lee de package.json, y commit opcional con GIT_COMMIT como alias de APP_COMMIT_SHA) y la sal opcional de la exportación anonimizada de analítica (ANALYTICS_EXPORT_SALT, mínimo 16 caracteres); acepta las vistas previas de Vercel en CORS solo con CORS_ALLOW_VERCEL_PREVIEWS (por defecto falso); expone además la lectura de la bandera opcional RUN_DB_INTEGRATION que habilita las pruebas de integración contra PostgreSQL; ADMIN_API_KEY es opcional porque ninguna ruta aplica AdminApiKeyGuard. v1.16: sin NEXTAUTH_SECRET ni NEXTAUTH_BRIDGE_SECRET, que salen con el puente de NextAuth retirado. v1.17: APP_GIT_SHA y APP_BUILD_DATE opcionales, incrustados en la imagen por los argumentos de construcción GIT_SHA y BUILD_DATE y expuestos en GET /api/version. v1.18: proveedor externo de terceros (AI_EXTERNAL_BASE_URL, AI_EXTERNAL_API_KEY, AI_EXTERNAL_AUTH_HEADER, AI_EXTERNAL_MODEL, AI_EXTERNAL_FORMAT openai|simple, AI_EXTERNAL_TIMEOUT_MS y precios por millón de tokens AI_EXTERNAL_PRICE_INPUT_PER_MTOK/_OUTPUT_PER_MTOK) en lugar de AI_CUSTOM_HTTP_*. v1.19 (2026-11-11, review R1 round 3 follow-up M3): MQTT_TELEMETRY_TOPIC y MQTT_ALARM_TOPIC rechazan los comodines MQTT (+ y #), porque el pipeline de telemetría filtra por tópico exacto y un comodín descartaría toda la telemetría
+ * Versión: 1.19
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -22,6 +22,9 @@ export enum Environment {
 
 // A test prefix such as "/" would map the test topics onto the real ones
 export const MQTT_TEST_TOPIC_PREFIX_PATTERN: RegExp = /^[A-Za-z0-9][A-Za-z0-9_\-/]*$/;
+
+// The telemetry pipeline matches incoming messages by exact topic: a wildcard subscription would drop every message
+export const MQTT_EXACT_TOPIC_PATTERN: RegExp = /^[^+#]*$/;
 
 const ToBoolean = (): PropertyDecorator =>
   Transform(({ value }: { value: unknown }): unknown => {
@@ -153,6 +156,7 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(MQTT_EXACT_TOPIC_PATTERN, { message: "MQTT_TELEMETRY_TOPIC must be an exact topic without MQTT wildcards (+ or #)" })
   public MQTT_TELEMETRY_TOPIC: string = "/ventynet/data";
 
   @IsString()
@@ -161,6 +165,7 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(MQTT_EXACT_TOPIC_PATTERN, { message: "MQTT_ALARM_TOPIC must be an exact topic without MQTT wildcards (+ or #)" })
   public MQTT_ALARM_TOPIC: string = "ventilab/device/001/alarm";
 
   @IsString()

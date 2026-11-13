@@ -1,0 +1,43 @@
+[fake-ventilator] WARNING: this is a FAKE device for automated tests. The broker MUST be a TEST broker,
+[fake-ventilator] never the lab broker of the physical ventilator: its frames and ACKs would reach the backend as the real device's.
+[fake-ventilator] no backend env file is readable: the lab broker cannot be compared (localhost rule still applies).
+[fake-ventilator] broker localhost:1893; telemetry → test/ventylab/ventynet/data at 30 Hz; commands ← test/ventylab/ventilab/device/001/command; ACKs → test/ventylab/ventilab/device/001/ack
+[fake-ventilator] command 01a1c91a-a1d1-779c-b0b3-23a5e0c63ab0: applied
+[fake-ventilator] command 01a1c91a-a931-7454-b928-eb2ee2be7743: applied
+[fake-ventilator] command 01a1c91a-b78b-7376-8f63-7b7398685b94: applied
+[fake-ventilator] command 01a1c91b-18ae-748e-acb7-953acaba6787: applied
+[fake-ventilator] command 01a1c91b-1fef-755e-b30e-a33bdf7976b0: applied
+[fake-ventilator] command 01a1c91b-2d6a-768e-ba5b-aa6efb81d47c: applied
+[fake-ventilator] command 01a1c91e-2abb-7626-9276-74af130068ce: applied
+[fake-ventilator] command 01a1c91e-37c2-754d-8bf3-ddb48de5ada0: applied
+[fake-ventilator] command 01a1c91e-3e7f-747f-865b-c1b9d226058a: applied
+[fake-ventilator] command 01a1c91e-457e-76bb-a4e9-189bd1176af9: applied
+[fake-ventilator] command 01a1c91e-46a8-7095-b2cf-7e331975eb48: applied
+[fake-ventilator] command 01a1c91e-7b66-753f-8391-b77514251db6: applied
+[fake-ventilator] command 01a1c91e-821d-71ca-ae1b-a0e7223fc0bb: applied
+[fake-ventilator] command 01a1c91e-8f0c-737f-8ae5-9ac797b248a2: applied
+[fake-ventilator] command 01a1c91e-d23c-729b-9459-373780d709eb: applied
+[fake-ventilator] command 01a1c91e-deff-7482-ab73-786ccbce3bb5: applied
+[fake-ventilator] command 01a1c91e-e5ff-7457-8b05-f341edca1773: applied
+[fake-ventilator] command 01a1c91e-ed04-75b1-81af-6dc85945e27c: applied
+[fake-ventilator] command 01a1c91e-ee53-72fc-a2de-5decef93a3e8: applied
+[fake-ventilator] command 01a1c91f-25cb-702d-b19f-9bb0fd6aa988: applied
+[fake-ventilator] command 01a1c91f-2c7d-72fe-a684-b125c5db94fb: applied
+[fake-ventilator] command 01a1c91f-3392-7039-a3c6-df3fe204f17d: applied
+[fake-ventilator] command 01a1c91f-34c1-751e-971a-1fb825837a9f: applied
+[fake-ventilator] command 01a1c91f-6a6f-73bc-ad3c-bc5f7c614ba9: applied
+[fake-ventilator] command 01a1c91f-712d-74bc-b81f-d1340090492a: applied
+[fake-ventilator] command 01a1c91f-7e5b-7529-b450-d77c76cdd0f7: applied
+[fake-ventilator] command 01a1c91f-b3f0-75fe-b624-5f83d50e2809: applied
+[fake-ventilator] command 01a1c91f-c0af-77bf-bef9-8c6799654442: applied
+[fake-ventilator] command 01a1c91f-c772-72f9-8e29-41535a3af187: applied
+[fake-ventilator] command 01a1c91f-d445-727a-b900-1d5480feab1a: applied
+[fake-ventilator] command 01a1c920-0864-743e-8d82-130da10fb30c: applied
+[fake-ventilator] command 01a1c920-1548-775d-a755-3d02f99fa42c: applied
+[fake-ventilator] command 01a1c920-1c26-770c-b07f-d427ed7bd3b3: applied
+[fake-ventilator] command 01a1c920-296b-769c-afea-00ac05b0562b: applied
+[fake-ventilator] command 01a1c920-7aae-70af-8467-ea90a4121c7e: applied
+[fake-ventilator] command 01a1c920-8785-7658-81c2-e5d45abefcb5: applied
+[fake-ventilator] command 01a1c920-8e37-757c-afc0-bf375a44e226: applied
+[fake-ventilator] command 01a1c920-9502-77df-81ed-db6896d3d55e: applied
+[fake-ventilator] command 01a1c920-961a-74dd-a412-669588d6cfc2: applied

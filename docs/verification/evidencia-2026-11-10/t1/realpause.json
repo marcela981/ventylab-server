@@ -1,0 +1,78 @@
+{
+  "label": "realpause",
+  "simArgs": "--shape real --pause 10:5 --duration 30",
+  "published": 1249,
+  "receivedFrames": 1249,
+  "batches": 725,
+  "lossPct": 0,
+  "receivedRateHz": 41.71,
+  "batchesPerS": 24.21,
+  "order": {
+    "serverTsDecreases": 0,
+    "deviceClockDecreases": 0,
+    "duplicateDeviceClock": 0
+  },
+  "latencyPublishToWsMs": null,
+  "backendBatchToWsMs": {
+    "p50": 2,
+    "p95": 15,
+    "p99": 33
+  },
+  "maxReceiveGapMs": 5014,
+  "pause": {
+    "pausedAt": 1794373521301,
+    "resumedAt": 1794373526311,
+    "gapStart": 1794373521309,
+    "gapEnd": 1794373526323,
+    "firstFrameAfterResumeMs": 12
+  },
+  "firstPublishLineAt": 1794373512303,
+  "events": [
+    {
+      "t": 1794373503086,
+      "e": "socket_connect",
+      "rel": -8260
+    },
+    {
+      "t": 1794373503094,
+      "e": "ventilator:availability",
+      "p": "{\"occupied\":false}",
+      "rel": -8252
+    },
+    {
+      "t": 1794373511343,
+      "e": "ventilator:connected",
+      "p": "{\"at\":1794373511339}",
+      "rel": -3
+    },
+    {
+      "t": 1794373523321,
+      "e": "ventilator:disconnected",
+      "p": "{\"at\":1794373523318,\"reason\":\"device_stale\"}",
+      "rel": 11975
+    },
+    {
+      "t": 1794373526317,
+      "e": "ventilator:connected",
+      "p": "{\"at\":1794373526314}",
+      "rel": 14971
+    },
+    {
+      "t": 1794373543373,
+      "e": "ventilator:disconnected",
+      "p": "{\"at\":1794373543372,\"reason\":\"device_stale\"}",
+      "rel": 32027
+    },
+    {
+      "t": 1794373544449,
+      "e": "socket_disconnect:io client disconnect",
+      "rel": 33103
+    }
+  ],
+  "socketStayedConnected": false,
+  "simTail": [
+    "[SimVent] second 27: 50 published",
+    "[SimVent] second 28: 50 published",
+    "[SimVent] Stopping (duration reached). published=1249 skippedByPause=250 droppedOffline=0 publishErrors=0"
+  ]
+}

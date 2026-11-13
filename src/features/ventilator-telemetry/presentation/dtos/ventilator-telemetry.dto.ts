@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: DTO de respuesta de la telemetría del ventilador
- * Descripción: Respuestas de las métricas del pipeline (tasas, contadores incluidos los duplicados y los descartes del búfer y resumen de percentiles por tipo de latencia), de las tramas grabadas de una reserva y del resumen de cada reserva grabada de un usuario
- * Versión: 1.4
+ * Descripción: Respuestas de las métricas del pipeline (tasas, contadores incluidos los duplicados y los descartes del búfer y resumen de percentiles por tipo de latencia), de las tramas grabadas de una reserva y del resumen de cada reserva grabada de un usuario. v1.5: la trama grabada expone deviceClock (reloj no epoch original del dispositivo) y deviceTs solo es tiempo epoch válido
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -122,8 +122,11 @@ export class RecordedTelemetryFrameDTO {
   @ApiProperty({ description: "Server receive time (epoch ms)", example: 1760097600000 })
   public serverTs: number;
 
-  @ApiProperty({ description: "Device time (epoch ms) when sent", example: 1760097599995, nullable: true, type: Number })
+  @ApiProperty({ description: "Device time (epoch ms) when sent; null unless the device sent a valid epoch value", example: 1760097599995, nullable: true, type: Number })
   public deviceTs: number | null;
+
+  @ApiProperty({ description: "Raw non-epoch device clock as received (e.g. firmware uptime); informative only, never used for ordering or latency", example: 147, nullable: true, type: Number })
+  public deviceClock: number | null;
 
   @ApiProperty({ description: "Device sequence number", example: 42, nullable: true, type: Number })
   public seq: number | null;
@@ -146,6 +149,7 @@ export class RecordedTelemetryFrameDTO {
   public constructor(fields: {
     serverTs: number;
     deviceTs: number | null;
+    deviceClock: number | null;
     seq: number | null;
     pressure: number;
     flow: number;
@@ -155,6 +159,7 @@ export class RecordedTelemetryFrameDTO {
   }) {
     this.serverTs = fields.serverTs;
     this.deviceTs = fields.deviceTs;
+    this.deviceClock = fields.deviceClock;
     this.seq = fields.seq;
     this.pressure = fields.pressure;
     this.flow = fields.flow;

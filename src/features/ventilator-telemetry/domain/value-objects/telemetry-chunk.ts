@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Fragmento grabado de telemetría
- * Descripción: Registro inmutable TelemetryChunk (reserva, intervalo, número de muestras, frecuencia de muestreo, codificación y bytes) y la muestra submuestreada RecordedTelemetrySample que se guarda durante una grabación
- * Versión: 1.0
+ * Descripción: Registro inmutable TelemetryChunk (reserva, intervalo, número de muestras, frecuencia de muestreo, codificación y bytes) y la muestra submuestreada RecordedTelemetrySample que se guarda durante una grabación. v1.1: la muestra grabada conserva deviceClock (reloj no epoch del dispositivo)
+ * Versión: 1.1
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -14,6 +14,7 @@ import { type TelemetryFrame } from "@/features/ventilator-telemetry/domain/valu
 export interface RecordedTelemetrySample {
   serverTs: number;
   deviceTs?: number;
+  deviceClock?: number;
   seq?: number;
   pressure: number;
   flow: number;
@@ -39,6 +40,10 @@ export function toRecordedSample(frame: TelemetryFrame): RecordedTelemetrySample
 
   if (frame.deviceTs !== undefined) {
     sample.deviceTs = frame.deviceTs;
+  }
+
+  if (frame.deviceClock !== undefined) {
+    sample.deviceClock = frame.deviceClock;
   }
 
   if (frame.seq !== undefined) {

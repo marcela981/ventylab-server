@@ -1,0 +1,4 @@
+npm notice run ventylab-server@1.0.0 openapi:check
+npm notice run node scripts/openapi/generate.mjs --check
+openapi/openapi.json is up to date
+EXIT 0

@@ -1,0 +1,1357 @@
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSentryModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRequestContextModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSecurityModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHttpModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDiscoveryModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEventsModule dependencies initialized[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [33m   WARN[39m [38;5;3m[LocalDiskFileStorageAdapter] [39m[33mLocalDiskFileStorageAdapter is active (development only): files are stored under <home>\AppData\Local\Temp\ventylab-local-storage[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[AiProviders] [39m[32mAI providers registered: openai[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHttpObservabilityModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mScheduleModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEventEmitterModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEmailModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStorageModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMulterModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mThrottlerModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLoggingModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMediaURLResolverModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEvaluationPortsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCompositionModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAnalyticsPortsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthorizationModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersPortsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRealtimeModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mChangeLogModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuditLogModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCurriculumModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTeacherStudentsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStepsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mActivitiesModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mScoresModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mQuizzesModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSectionsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMediaModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAiModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLevelsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mModulesModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mOverridesModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPlatformSettingsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAiTelemetryModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCurriculumEditorModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGroupsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPagesModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLessonsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mProgressModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAiRatingsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mNotificationsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAdminModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mReservationsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mClinicalCasesModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mNotesModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mVentilatorTelemetryModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAnalyticsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEvaluationModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSystemStatusModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAiTutorModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSimulationModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mVentilatorCommandsModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mI18nModule dependencies initialized[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mRealtimeGateway subscribed to the "authenticate" message[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health/ready, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health/ready, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mVersionController {/}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/version, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPlatformSettingsController {/api/platform-settings}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/platform-settings, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/platform-settings/:key, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/platform-settings/:key/reset, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/api/auth}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/register, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/login, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/google, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/refresh, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/change-password, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/password/forgot, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/password/reset, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/logout, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/auth/me, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/api/users}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/me, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/me/avatar, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/me/avatar, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/me, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/me/change-password, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/me/stats, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/students, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/students/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id/role, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id/status, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/users/:id/student-code, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthorizationController {/api/authorization}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/authorization/permissions, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/authorization/roles, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChangeLogController {/api/changelog}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/changelog, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/changelog/recent, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/changelog/stats, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/changelog/:entityType/:entityId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mLevelsController {/api/levels}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/curriculum, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/roadmap, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/reorder, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id/modules, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id/prerequisites, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id/unlock-status, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id/can-delete, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id/prerequisites, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id/prerequisites, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id/prerequisites/:prereqId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/levels/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCurriculumController {/api/curriculum}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/curriculum/tree, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/curriculum/overview, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/curriculum/beginner, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/curriculum/prerequisitos, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/curriculum/level/:level, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/curriculum/modules/:moduleId/unlocked, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/curriculum/modules/:moduleId/next, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSectionsController {/api/sections}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/sections, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/sections, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/sections/reorder, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/sections/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/sections/:id/levels, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/sections/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/sections/:id/status, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/sections/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mModulesController {/api/modules}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/reorder, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id/full, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id/lessons/count, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id/lessons, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id/progress, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id/resume, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id/prerequisites, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id/prerequisites, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/modules/:id/prerequisites/:prerequisiteId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mLessonsController {/api/lessons}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/reorder, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/:id/next, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/:id/previous, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/:id/steps, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/:id/complete, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/:id/access, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/:id/access, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/lessons/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mProgressController {/api/progress}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/overview, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/module/:moduleId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/lesson/:lessonId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/lesson/:lessonId, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/step/update, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/resume/:moduleId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/lesson/:lessonId/details, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/milestones, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/achievements, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/skills, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/pages/:pageId/view, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/summary, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/modules/:moduleId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/levels/:levelId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/sections/:sectionId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mGamificationController {/api/progress}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/gamification, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/activity, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/activity/recent, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStudentProgressController {/api/progress/users/:userId}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/users/:userId/summary, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/users/:userId/modules/:moduleId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/users/:userId/levels/:levelId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/users/:userId/sections/:sectionId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/users/:userId/gamification, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/users/:userId/activity/recent, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/progress/users/:userId/achievements, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTeachingProgressController {/api/teaching}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teaching/modules/unlocked, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teaching/modules/:moduleId/access, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teaching/lessons/:lessonId/access, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mGroupsController {/api/groups}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/mine, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/student-memberships, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id/members, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id/members, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id/members/:userId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id/lead, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id/supervisions, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id/supervisions, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/groups/:id/supervisions/:studentGroupId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStepsController {/api/steps}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/steps, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/steps/reorder, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/steps, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/steps/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/steps/:id/next, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/steps/:id/previous, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/steps/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/steps/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStepsController {/api/cards}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cards, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cards/reorder, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cards, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cards/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cards/:id/next, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cards/:id/previous, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cards/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cards/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPagesController {/api/pages}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/reorder, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/by-legacy-json/:legacyJsonId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/by-lesson/:lessonId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/by-module/:moduleId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/:id/blocks, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/:id/blocks/reorder, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/:id/blocks/:blockId, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/pages/:id/blocks/:blockId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mOverridesController {/api/overrides}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/overrides, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/overrides, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/overrides/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/overrides/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/overrides/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCurriculumEditorController {/api/teaching}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teaching/tree, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teaching/node, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teaching/node/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teaching/node/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teaching/lesson/:id/content, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teaching/lesson/:id/content, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mQuizzesController {/api/quizzes}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/quizzes/my-attempts, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/quizzes, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/quizzes/:quizId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/quizzes/:quizId/my-attempt, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/quizzes/:quizId/attempt, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mQuizzesController {/api/evaluation/quizzes}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation/quizzes/my-attempts, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation/quizzes, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation/quizzes/:quizId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation/quizzes/:quizId/my-attempt, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation/quizzes/:quizId/attempt, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mClinicalCasesController {/api/clinical-cases}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId/evaluate, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId/attempts, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId/definition, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId/status, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId/duplicate, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId/expert-validation, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mClinicalCasesController {/api/cases}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases/:caseId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases/:caseId/evaluate, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases/:caseId/attempts, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases/:caseId/definition, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases/:caseId, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases/:caseId/status, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases/:caseId/duplicate, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases/:caseId/expert-validation, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/cases/:caseId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAiTelemetryController {/api/admin/ai-telemetry}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/ai-telemetry/stats, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/ai-telemetry/export.csv, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mActivitiesController {/api/activities}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activities, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activities/catalog, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activities/catalog/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activities, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activities/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activities/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activities/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activities/:id/publish, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activities/:id/submissions, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mActivityAssignmentsController {/api/activity-assignments}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-assignments, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-assignments, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-assignments/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mActivitySubmissionsController {/api/activity-submissions}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-submissions/my, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-submissions/for-activity/:activityId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-submissions/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-submissions, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-submissions/:id, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-submissions/:id/submit, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-submissions/:id/grade, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/activity-submissions/:id/reset, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mScoresController {/api/scores}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/scores, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/scores/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/scores/students/:studentId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/scores/my-scores, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMediaController {/api/media}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/media, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/media, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/media/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/media/:id/url, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/media/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mNotesController {/api/notes}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notes, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notes/lessons/:lessonId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notes/modules/:moduleId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notes/analyze, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notes/:noteId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notes, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notes/:noteId, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notes/:noteId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTeacherStudentsController {/api/teacher-students}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teacher-students, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teacher-students, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teacher-students/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTeachersController {/api/teachers}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teachers/me/students/:studentId/check, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teachers/:id/students, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teachers/:teacherId/students/:studentId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/teachers/:teacherId/students/:studentId/progress, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStudentTeachersController {/api/students}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/students/:id/teachers, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAdminController {/api/admin}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/students, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/students/:id/progress, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/teachers, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/ai/providers, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/users/:id/role, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/statistics, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mReservationsController {/api/reservations}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/reservations, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/reservations/mine, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/reservations/current, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/reservations, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/reservations/:id/cancel, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/reservations/:id/preempt, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mVentilatorTelemetryController {/api/ventilator/telemetry}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/telemetry/metrics, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/telemetry/metrics.csv, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/telemetry/metrics/reset, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/telemetry/recordings/start, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/telemetry/recordings/stop, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/telemetry/recordings, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/telemetry/recordings/:reservationId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mVentilatorCommandsController {/api/ventilator}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/control, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/control, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/control/takeover, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/control, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/control/heartbeat, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/commands, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ventilator/commands, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSimulationController {/api/simulation}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/health, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/status, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/command, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/reserve, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/reserve, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/session, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/session/save, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPatientSimulationController {/api/simulation/patient}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/patient/configure, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/patient/start, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/patient/stop, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/patient, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSimulationSessionsController {/api/simulation/sessions}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions/history, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions/:id/events, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions/:id/state, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions/:id/end, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions/:id/summary, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions/:id/replay, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSimulationAssistController {/api/simulation/sessions}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions/:id/assist, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMonitorHelpController {/api/simulation}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/sessions/:id/alarm-help, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/real/alarm-help, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/simulation/real/assist, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mClinicalCaseTestRunController {/api/clinical-cases}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/clinical-cases/:caseId/test-run, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mEvaluationsController {/api/evaluations}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/status, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/duplicate, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/scenarios, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/scenarios/order, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/scenarios/:scenarioId, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/scenarios/:scenarioId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/questions, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/questions/order, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/questions/:questionId, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/questions/:questionId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/questions/:questionId/options, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/questions/:questionId/options/order, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/questions/:questionId/options/:optionId, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/questions/:questionId/options/:optionId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mEvaluationAssignmentsController {/api}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/assignments, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/assignments, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/assignments/:assignmentId, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/assignments/:assignmentId/close, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluations/:id/assignments/:assignmentId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-assignments, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStudentEvaluationsController {/api}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/my-evaluations/grades, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/my-evaluations, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/my-evaluations/:assignmentId/attempts, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-attempts/:attemptId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-attempts/:attemptId/answers/:questionId, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-attempts/:attemptId/submit, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mGradeFeedbackController {/api}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-attempts/:attemptId/feedback, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/attempts/:attemptId/feedback, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/attempts/:attemptId/feedback/regenerate, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mEvaluationGradingController {/api/evaluation-grading}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/queue, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/queue/count, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/students/:userId/grades, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/attempts, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/students/:userId/evaluations/:evaluationId/reset, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/attempts/:attemptId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/attempts/:attemptId/answers/:questionId, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/attempts/:attemptId/publish, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/evaluation-grading/publish, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAiRatingsController {/api/ai-ratings}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ai-ratings, PUT} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/ai-ratings/mine, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAiRatingsAdminController {/api/admin/ai-ratings}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/ai-ratings/stats, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/admin/ai-ratings/export.csv, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAiTutorController {/api/tutor}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/tutor/pages/:pageId/deepen, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/tutor/conversations, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/tutor/conversations/:conversationId/messages, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/tutor/conversations, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/tutor/conversations/:conversationId, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/tutor/conversations/:conversationId, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/tutor/conversations/:conversationId, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuditLogController {/api/audit}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/audit, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/audit/export, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/audit/catalog, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/audit/targets/:type/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/audit/:id, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mNotificationsController {/api/notifications}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notifications, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notifications/unread-count, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notifications/read-all, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notifications/:id/read, PATCH} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/notifications/:id, DELETE} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSystemStatusController {/api/system}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/system/status, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/system/probe/ai/:provider, POST} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAnalyticsController {/api/analytics}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/analytics/groups/:groupId/dashboard, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/analytics/groups/:groupId/export.csv, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/analytics/students/:userId/timeline, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/analytics/evaluations/:evaluationId/stats, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/analytics/research/export.csv, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/analytics/research/export/dictionary, GET} route[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMySummaryController {/api/me}:[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/me/summary, GET} route[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [33m   WARN[39m [38;5;3m[VentilatorTelemetryLifecycleService] [39m[33mMQTT telemetry topic has no leading slash: MQTT_TELEMETRY_TOPIC must match the publisher exactly. Current value: "test/ventylab/ventynet/data"[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[MqttVentilatorConnection] [39m[32mMQTT connected to mqtt://127.0.0.1:1893[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[SuperadminBootstrapService] [39m[32mSuperadmin account already has the ADMIN role and is active[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[ClinicalCasesBootstrapService] [39m[32mSeed clinical cases: 0 inserted, 8 already present[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:10:55 a. m. [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:11:10 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket mARIkhtdP3j9W2-aAAAA authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:11:12 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket v8QWx5SBZzQ7H7qWAAAB authenticated as user e63eb41a-c6ea-55f6-978d-423f8e791c0f[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:11:13 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket nlqhCjHkRk5qAeUxAAAC authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c904-75b3-72b7-86c1-d67626f817b5'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Module not found'[39m,
+    stack: [32m'Error: Module not found\n    at GetModulePagesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\application\\use-cases\\get-module-pages.usecase.js:31:19)\n    at async PagesController.getModulePages (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\presentation\\controllers\\pages.controller.js:113:23)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'cf9dab41-032a-5336-a0d6-78d6fce3f0a7'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/pages/by-module/module-02-ecuacion-movimiento'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        moduleId: [32m'module-02-ecuacion-movimiento'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c904-7606-7529-b725-ed37517be531'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Module not found'[39m,
+    stack: [32m'Error: Module not found\n    at GetModulePagesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\application\\use-cases\\get-module-pages.usecase.js:31:19)\n    at async PagesController.getModulePages (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\presentation\\controllers\\pages.controller.js:113:23)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'cf9dab41-032a-5336-a0d6-78d6fce3f0a7'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/pages/by-module/module-02-ecuacion-movimiento'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        moduleId: [32m'module-02-ecuacion-movimiento'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c904-763a-712b-baea-abac5d93a7ca'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Module not found'[39m,
+    stack: [32m'Error: Module not found\n    at GetModulePagesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\application\\use-cases\\get-module-pages.usecase.js:31:19)\n    at async PagesController.getModulePages (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\presentation\\controllers\\pages.controller.js:113:23)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'cf9dab41-032a-5336-a0d6-78d6fce3f0a7'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/pages/by-module/module-02-ecuacion-movimiento'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        moduleId: [32m'module-02-ecuacion-movimiento'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c904-7663-77dc-bac8-fd79c22e8af4'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Module not found'[39m,
+    stack: [32m'Error: Module not found\n    at GetModulePagesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\application\\use-cases\\get-module-pages.usecase.js:31:19)\n    at async PagesController.getModulePages (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\presentation\\controllers\\pages.controller.js:113:23)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'cf9dab41-032a-5336-a0d6-78d6fce3f0a7'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/pages/by-module/module-02-ecuacion-movimiento'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        moduleId: [32m'module-02-ecuacion-movimiento'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c904-768d-75e9-9fc0-6cb045cd26f6'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Module not found'[39m,
+    stack: [32m'Error: Module not found\n    at GetModulePagesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\application\\use-cases\\get-module-pages.usecase.js:31:19)\n    at async PagesController.getModulePages (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\presentation\\controllers\\pages.controller.js:113:23)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'cf9dab41-032a-5336-a0d6-78d6fce3f0a7'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/pages/by-module/module-02-ecuacion-movimiento'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        moduleId: [32m'module-02-ecuacion-movimiento'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c904-76b7-72cf-a887-5d74d4f1e3d2'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Module not found'[39m,
+    stack: [32m'Error: Module not found\n    at GetModulePagesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\application\\use-cases\\get-module-pages.usecase.js:31:19)\n    at async PagesController.getModulePages (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\presentation\\controllers\\pages.controller.js:113:23)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'cf9dab41-032a-5336-a0d6-78d6fce3f0a7'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/pages/by-module/module-02-ecuacion-movimiento'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        moduleId: [32m'module-02-ecuacion-movimiento'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c904-76f2-777e-932b-85ab6d28d24a'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Module not found'[39m,
+    stack: [32m'Error: Module not found\n    at GetModulePagesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\application\\use-cases\\get-module-pages.usecase.js:31:19)\n    at async PagesController.getModulePages (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\presentation\\controllers\\pages.controller.js:113:23)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'cf9dab41-032a-5336-a0d6-78d6fce3f0a7'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/pages/by-module/module-02-ecuacion-movimiento'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        moduleId: [32m'module-02-ecuacion-movimiento'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:15 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c904-7883-714e-9836-ed7f6b202003'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Invalid credentials'[39m,
+    stack: [32m'Error: Invalid credentials\n    at LoginUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\application\\use-cases\\login.usecase.js:38:19)\n    at async AuthController.login (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\presentation\\controllers\\auth.controller.js:85:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [1mnull[22m,
+  content: {
+    http: {
+      method: [32m'POST'[39m,
+      path: [32m'/api/auth/login'[39m,
+      body: {
+        email: [32m'[EMAIL]'[39m,
+        password: [32m'[REDACTED]'[39m
+      },
+      query: [1mnull[22m,
+      params: [1mnull[22m,
+      statusCode: [33m401[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:17 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:11:17 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c904-7d89-7708-9a23-03a241fe91f2'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Module not found'[39m,
+    stack: [32m'Error: Module not found\n    at GetModulePagesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\application\\use-cases\\get-module-pages.usecase.js:31:19)\n    at async PagesController.getModulePages (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\presentation\\controllers\\pages.controller.js:113:23)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'cf9dab41-032a-5336-a0d6-78d6fce3f0a7'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/pages/by-module/module-02-ecuacion-movimiento'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        moduleId: [32m'module-02-ecuacion-movimiento'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[33m[Nest] 17940  - [39m11/11/2026, 12:11:17 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mRequest rejected with status 429[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:11:17 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39mObject(3) {
+  traceId: [32m'01a1c904-7ec3-74b9-810b-8aee6f141a41'[39m,
+  method: [32m'POST'[39m,
+  path: [32m'/api/auth/login'[39m
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:19 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket JlLaOKbeg4hq3XNuAAAD authenticated as user 01a1c904-7eaf-71e8-976c-8d39d704540b[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:12:21 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:12:21 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c905-78c6-73af-bea5-f6082641925d'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Feedback is available once the teacher releases the answers'[39m,
+    stack: [32m'Error: Feedback is available once the teacher releases the answers\n    at GetMyGradeFeedbackUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\evaluation\\application\\use-cases\\grade-feedback-student-read.usecase.js:39:19)\n    at async GradeFeedbackController.getMyFeedback (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\evaluation\\presentation\\controllers\\grade-feedback.controller.js:45:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'01a1c904-7eaf-71e8-976c-8d39d704540b'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/evaluation-attempts/01a1c905-7329-77ce-afa4-09b875a8c9ee/feedback'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        attemptId: [32m'01a1c905-7329-77ce-afa4-09b875a8c9ee'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:22 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket tiWA1-YPv-zn8rGdAAAE authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:24 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 6cKfR2Ge3Cq7mIkpAAAF authenticated as user 01a1c904-7eaf-71e8-976c-8d39d704540b[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:12:24 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:12:24 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c905-84f3-7241-8dfb-24a3a0718ce6'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Feedback is available once the teacher releases the answers'[39m,
+    stack: [32m'Error: Feedback is available once the teacher releases the answers\n    at GetMyGradeFeedbackUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\evaluation\\application\\use-cases\\grade-feedback-student-read.usecase.js:39:19)\n    at async GradeFeedbackController.getMyFeedback (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\evaluation\\presentation\\controllers\\grade-feedback.controller.js:45:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'01a1c904-7eaf-71e8-976c-8d39d704540b'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/evaluation-attempts/01a1c905-7329-77ce-afa4-09b875a8c9ee/feedback'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        attemptId: [32m'01a1c905-7329-77ce-afa4-09b875a8c9ee'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:25 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 8PsoOFq8DyJ-6dTcAAAG authenticated as user 01a1c904-7eaf-71e8-976c-8d39d704540b[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:28 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket VKIHRoabFB-DXOyoAAAH authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:28 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket DpC9iBtk1Nfhk9NvAAAI authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:29 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 6oJK2DtAPIGEUa4yAAAJ authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:32 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket IifR1laF96PPMlahAAAK authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:33 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket kvrWpb-vSsZ9lvSMAAAL authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:35 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket laDEKKmmZIOLlAiMAAAM authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:37 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 9rkjwFGNR5cg7VH7AAAN authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:39 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket LQtQQu34C1AzHJbQAAAO authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:41 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket LJmJG4leABnbTVI2AAAP authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:42 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket FZhu1kjqE3O1MI0-AAAQ authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:44 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket HKMif2ulGUvrLIB6AAAR authenticated as user 01a1c905-8d81-75c6-9c0e-a6da5383a153[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:46 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket MXlmNL84PkJWvg_AAAAS authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:48 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket LY_U-tI9xxBlRZnZAAAT authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:50 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket bvKpOZ8TazcnZ0ekAAAU authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:51 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Y-Y0iKTAmtKqW2vQAAAV authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:52 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Fxhhw-5SNTqbwggTAAAW authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:54 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket elbh3u3m79SDO5QQAAAX authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:55 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket YvwWN1c0vSJFS_dUAAAY authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:57 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket A9trlAcySE5B4Dc4AAAZ authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:12:59 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket KQ4_9gO-y7MxIw-gAAAa authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:04 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket gZC-8zApf-zJdtrXAAAb authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:06 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket bf5pbZPRDSicduoDAAAc authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:07 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket ebRVElyfArnXCmBkAAAd authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:09 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket HaS4eMUCGYOLjIwVAAAe authenticated as user 01a1c906-2f6d-768a-b4a6-d8a8347dc0c8[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:10 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket UbpzeOToePhVX6HSAAAf authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:18 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket zfpCRKvKBj722aq6AAAg authenticated as user 01a1c906-2f6d-768a-b4a6-d8a8347dc0c8[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:19 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Tj7zD4de4rvbD2oDAAAh authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:23 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket UTGtHz2NY7zWgjd1AAAi authenticated as user 01a1c906-5b24-708a-a491-54e1efd0eb9e[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:24 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket QHusTP2FZ9ptVNgnAAAj authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:25 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 3C868pB3LM-bJ471AAAk authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:26 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket wFPcIVcpG7xeWKhWAAAl authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:13:31 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:13:31 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c906-8a23-741a-a686-17fe71961542'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Invalid or expired password reset token'[39m,
+    stack: [32m'Error: Invalid or expired password reset token\n    at <home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\application\\use-cases\\reset-password.usecase.js:35:23\n    at async <home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\common\\infrastructure\\persistence\\prisma\\prisma-transaction.manager.js:22:20\n    at async Proxy._transactionWithCallback (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\node_modules\\@prisma\\client\\runtime\\library.js:130:8120)\n    at async PrismaTransactionManager.run (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\common\\infrastructure\\persistence\\prisma\\prisma-transaction.manager.js:21:16)\n    at async ResetPasswordUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\application\\use-cases\\reset-password.usecase.js:32:9)\n    at async AuthController.resetPassword (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\presentation\\controllers\\auth.controller.js:122:9)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [1mnull[22m,
+  content: {
+    http: {
+      method: [32m'POST'[39m,
+      path: [32m'/api/auth/password/reset'[39m,
+      body: {
+        token: [32m'[REDACTED]'[39m,
+        newPassword: [32m'[REDACTED]'[39m
+      },
+      query: [1mnull[22m,
+      params: [1mnull[22m,
+      statusCode: [33m400[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:32 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket g3PlDDH7x2APdIbgAAAm authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:13:49 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket W-408u2sAVa8UqtUAAAn authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:14:02 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket QC7oQcRTc3MynqU2AAAo authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:14:12 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket XiSXpOpmx2IdL5sKAAAp authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:14:14 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket HGiRLfylDDoO_LoHAAAq authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:15:15 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket XMsXMbhhX8eXdfKgAAAr authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:15:20 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket sLfFEJwAmUe7HXh3AAAs authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:16:01 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket cnndMKhMfipAbFEMAAAt authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:16:18 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 8vo2dB5W24CQm1TgAAAu authenticated as user 01a1c909-11c3-75ce-9c4a-217f8a2670d5[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:16:51 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket o5bnEIrwJU22LCWoAAAv authenticated as user 01a1c909-90d6-77fa-aa97-0688ddd76210[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:17:00 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket lsMpoPN8CFQ4xzv2AAAw authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:17:01 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket UX1tRPVeaPRNegC5AAAx authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:17:09 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket -suwtoZToKFmdqJlAAAy authenticated as user 01a1c909-d962-75a1-bd4e-fc449e675505[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:17:12 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket KlC7mMz4RK_h06snAAAz authenticated as user 01a1c909-d962-75a1-bd4e-fc449e675505[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:17:14 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket naAtHsAoEAm24YfuAAA0 authenticated as user 01a1c909-d962-75a1-bd4e-fc449e675505[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:17:16 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket UNQjJDyVYa_XLFpmAAA1 authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:17:17 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:17:17 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c909-fe1c-74a2-b243-f5ce17e04d08'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Invalid credentials'[39m,
+    stack: [32m'Error: Invalid credentials\n    at LoginUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\application\\use-cases\\login.usecase.js:38:19)\n    at async AuthController.login (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\presentation\\controllers\\auth.controller.js:85:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [1mnull[22m,
+  content: {
+    http: {
+      method: [32m'POST'[39m,
+      path: [32m'/api/auth/login'[39m,
+      body: {
+        email: [32m'[EMAIL]'[39m,
+        password: [32m'[REDACTED]'[39m
+      },
+      query: [1mnull[22m,
+      params: [1mnull[22m,
+      statusCode: [33m401[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:17:20 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 7pLQnI5KARz1NJ80AAA2 authenticated as user 01a1c90a-03c7-7560-bdd8-f366b1169a80[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:17:21 a. m. [33m   WARN[39m [38;5;3m[AiOrchestrator] [39m[33mAI provider openai failed (SERVER), retrying in 300 ms[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:17:22 a. m. [33m   WARN[39m [38;5;3m[AiOrchestrator] [39m[33mAI provider openai failed (SERVER), trying the next provider[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:17:22 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mRequest rejected with status 429[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:17:22 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39mObject(3) {
+  traceId: [32m'01a1c90a-124e-76ab-a336-f4d0a398fd79'[39m,
+  method: [32m'POST'[39m,
+  path: [32m'/api/auth/login'[39m
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:18:25 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket UxmyglFb6WwBBmGIAAA3 authenticated as user 01a1c90a-1241-736a-aa84-1c62c337434b[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:18:26 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket OZt9sGcOzKuukM8CAAA4 authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:18:28 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket S4V80GtoyzzdPnTOAAA5 authenticated as user 01a1c90a-1241-736a-aa84-1c62c337434b[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:18:31 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket JoTMlxthrr28_jvyAAA6 authenticated as user 01a1c90b-1861-7709-ab52-ac4870d85007[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:19:32 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 8O1uFotJ0XEJe7HyAAA7 authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:19:41 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket QvAHY_A-1RMuvL9MAAA8 authenticated as user 01a1c90b-1861-7709-ab52-ac4870d85007[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:19:43 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 90Ax5Ct7JBmyVQvnAAA9 authenticated as user 01a1c90c-332a-71ec-8704-39b15a31ab9a[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:19:45 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 1tNJD1HcPkECAj9QAAA- authenticated as user 01a1c90c-332a-71ec-8704-39b15a31ab9a[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:19:45 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket N4o_8NWaJu6mmDSUAAA_ authenticated as user 01a1c90c-332a-71ec-8704-39b15a31ab9a[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:19:47 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket UTaxzVd8WVu2e6SOAABA authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:20:07 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mRequest rejected with status 429[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:20:07 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39mObject(3) {
+  traceId: [32m'01a1c90c-9714-7070-9e99-d5c5ae23414f'[39m,
+  method: [32m'POST'[39m,
+  path: [32m'/api/auth/login'[39m
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:21:12 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket PL0x0SaUDeay1G2aAABB authenticated as user 01a1c90d-8d42-775c-8345-a40007517a6a[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:21:16 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket FftwUV6BRfuieFNyAABC authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:21:18 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Lnwx0BnOY72Xkv_LAABD authenticated as user 01a1c90d-8d42-775c-8345-a40007517a6a[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:21:25 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 31ngJy5CeIqdo7R4AABE authenticated as user 01a1c90d-8d42-775c-8345-a40007517a6a[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:21:26 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:21:26 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c90d-c9e0-770b-9171-48e22b942cab'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Invalid credentials'[39m,
+    stack: [32m'Error: Invalid credentials\n    at LoginUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\application\\use-cases\\login.usecase.js:38:19)\n    at async AuthController.login (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\presentation\\controllers\\auth.controller.js:85:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [1mnull[22m,
+  content: {
+    http: {
+      method: [32m'POST'[39m,
+      path: [32m'/api/auth/login'[39m,
+      body: {
+        email: [32m'[EMAIL]'[39m,
+        password: [32m'[REDACTED]'[39m
+      },
+      query: [1mnull[22m,
+      params: [1mnull[22m,
+      statusCode: [33m401[39m
+    }
+  }
+}
+[33m[Nest] 17940  - [39m11/11/2026, 12:21:28 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mRequest rejected with status 429[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:21:28 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39mObject(3) {
+  traceId: [32m'01a1c90d-d08a-753a-89e9-5a2649712a3e'[39m,
+  method: [32m'POST'[39m,
+  path: [32m'/api/auth/login'[39m
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:22:29 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:22:29 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c90e-bee8-766c-9bd3-00e80f12978d'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Invalid credentials'[39m,
+    stack: [32m'Error: Invalid credentials\n    at LoginUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\application\\use-cases\\login.usecase.js:38:19)\n    at async AuthController.login (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\presentation\\controllers\\auth.controller.js:85:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [1mnull[22m,
+  content: {
+    http: {
+      method: [32m'POST'[39m,
+      path: [32m'/api/auth/login'[39m,
+      body: {
+        email: [32m'[EMAIL]'[39m,
+        password: [32m'[REDACTED]'[39m
+      },
+      query: [1mnull[22m,
+      params: [1mnull[22m,
+      statusCode: [33m401[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:22:31 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 9yhn3MKYgM2uURwSAABF authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:22:33 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 1pbK5Ax1oheZ1QOrAABG authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:22:38 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:22:38 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c90e-e1fe-7119-9d54-241f5a8633b4'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Invalid credentials'[39m,
+    stack: [32m'Error: Invalid credentials\n    at LoginUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\application\\use-cases\\login.usecase.js:38:19)\n    at async AuthController.login (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\presentation\\controllers\\auth.controller.js:85:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [1mnull[22m,
+  content: {
+    http: {
+      method: [32m'POST'[39m,
+      path: [32m'/api/auth/login'[39m,
+      body: {
+        email: [32m'[EMAIL]'[39m,
+        password: [32m'[REDACTED]'[39m
+      },
+      query: [1mnull[22m,
+      params: [1mnull[22m,
+      statusCode: [33m401[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:22:41 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket jTd51NKO6V_d_tzDAABH authenticated as user 01a1c90e-e816-7408-a43d-9dc73e9280b5[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:22:43 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket XOW0KLGCS4ta2qKgAABI authenticated as user 01a1c90e-f0ee-768c-ae76-e9b9aa9db39e[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:22:43 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket XOW0KLGCS4ta2qKgAABI authenticated as user 01a1c90e-f0ee-768c-ae76-e9b9aa9db39e[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:22:43 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket n58ADGedZOa9JwzZAABJ authenticated as user 01a1c90e-f0ee-768c-ae76-e9b9aa9db39e[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:22:44 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:22:44 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c90e-f959-76a5-aa73-2772e731c617'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Invalid credentials'[39m,
+    stack: [32m'Error: Invalid credentials\n    at LoginUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\application\\use-cases\\login.usecase.js:45:19)\n    at async AuthController.login (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\presentation\\controllers\\auth.controller.js:85:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [1mnull[22m,
+  content: {
+    http: {
+      method: [32m'POST'[39m,
+      path: [32m'/api/auth/login'[39m,
+      body: {
+        email: [32m'[EMAIL]'[39m,
+        password: [32m'[REDACTED]'[39m
+      },
+      query: [1mnull[22m,
+      params: [1mnull[22m,
+      statusCode: [33m401[39m
+    }
+  }
+}
+[33m[Nest] 17940  - [39m11/11/2026, 12:22:45 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mRequest rejected with status 429[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:22:45 a. m. [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39mObject(3) {
+  traceId: [32m'01a1c90e-fca8-723f-9a29-58f5aed0ab14'[39m,
+  method: [32m'POST'[39m,
+  path: [32m'/api/auth/login'[39m
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:23:46 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Gk4zZbYs7O0tuzuNAABK authenticated as user 01a1c90e-f0ee-768c-ae76-e9b9aa9db39e[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:23:47 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:23:47 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c90f-eef3-708b-9c71-84aed3a5e7fb'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Invalid credentials'[39m,
+    stack: [32m'Error: Invalid credentials\n    at LoginUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\application\\use-cases\\login.usecase.js:38:19)\n    at async AuthController.login (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\auth\\presentation\\controllers\\auth.controller.js:85:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [1mnull[22m,
+  content: {
+    http: {
+      method: [32m'POST'[39m,
+      path: [32m'/api/auth/login'[39m,
+      body: {
+        email: [32m'[EMAIL]'[39m,
+        password: [32m'[REDACTED]'[39m
+      },
+      query: [1mnull[22m,
+      params: [1mnull[22m,
+      statusCode: [33m401[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:23:50 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 2Zsd2YrcD04lu9KZAABL authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:23:54 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket eWBunKzQltLpuV2AAABM authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:02 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Gcv1pspwrpZf0j07AABN authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:06 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket r2lYJfZKupKLYbyEAABO authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:10 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket r2lYJfZKupKLYbyEAABO authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:11 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket KySRTpwC5Cin779CAABP authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:12 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket lc6Zewg49TNjNPKqAABQ authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:13 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket lc6Zewg49TNjNPKqAABQ authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:17 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket i9UhImGHrhVvm0HnAABR authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:19 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket yvSFAqiaKI6XHzXwAABS authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:21 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket yvSFAqiaKI6XHzXwAABS authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:23 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket pDI-bheRxrw9sHXSAABT authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:26 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket CrJIBP0s4WKDy-5DAABU authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:28 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket CrJIBP0s4WKDy-5DAABU authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:30 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Dhe4NqGixBX8_KXEAABV authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:31 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Dhe4NqGixBX8_KXEAABV authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:36 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket cRjB8_dKDK0VjCVwAABW authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:36 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket hfX6PGfq-ZhHcNhQAABX authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:38 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket pliVdlSgyeLaS3RdAABY authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:39 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Q6VAktxFl0sNzeSQAABZ authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:40 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket t5HL0XhqqtYtJ2D3AABa authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:41 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket t5HL0XhqqtYtJ2D3AABa authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:45 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 1_CWUa8QUuHSTu8TAABb authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:46 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 1_CWUa8QUuHSTu8TAABb authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:47 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 73JkrT1vM4C3uYFuAABc authenticated as user e63eb41a-c6ea-55f6-978d-423f8e791c0f[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:52 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 34PkAZ21oAghRp2bAABd authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:54 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 34PkAZ21oAghRp2bAABd authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:55 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 84Xbwh4_kAJmIipuAABe authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:56 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket uLLUwZMZogwb72DaAABf authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:57 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket YpJf70gVy1HWuQ3wAABg authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:24:59 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket CnOCSmj4gz74WE-kAABh authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:25:00 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket wRYNE32m6kttsS7QAABi authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:25:01 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket wTChiGS54NuqNP8dAABj authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:25:02 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket aNbWmZ7sOl484-eKAABk authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:25:03 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket aNbWmZ7sOl484-eKAABk authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:25:14 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket t3buBoOL2qIpsX7YAABl authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:25:15 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket t3buBoOL2qIpsX7YAABl authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:25:58 a. m. [32m    LOG[39m [38;5;3m[SystemStatusService] [39m[32mSystem status OK -> OK (ventilator)[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:26:15 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 1AGnk8GAznnR8myOAABm authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:26:16 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket eN6ran741jKKnrMOAABn authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:26:28 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 5Ii3dqqsNS_mSbVdAABo authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:26:30 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket F-CdcjZIIMkUJ1yiAABp authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:26:31 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket SSsGgBG465iTf3oVAABq authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:26:37 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket -cnWnL3uQTg9SVaBAABr authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:27:01 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket tOm9yvpX3kmn-85uAABs authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:27:02 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket ugeVeyEOJXzdIQH0AABt authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:27:10 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket IPqYG9c9knK8ZPKoAABu authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:27:20 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket lo8F_gZRdfgTPs_AAABv authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:27:21 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Su54ofI9xjBfGSPtAABw authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:27:29 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket g4eGgfcX3k7L6Rl-AABx authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:27:56 a. m. [32m    LOG[39m [38;5;3m[SystemStatusService] [39m[32mSystem status OK -> OK (ventilator)[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:28:07 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket VFEpTiz2QRsTgZpTAABy authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:28:08 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 20PzGFJy5FQIbHp2AABz authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:28:09 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Oz4MxywyGnWQBl0GAAB0 authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:28:14 a. m. [32m    LOG[39m [38;5;3m[DeleteCurriculumSubtreeUseCase] [39m[32mDeleted page 01a1c913-e152-7747-a717-aaad5cd2eedf subtree (0 levels, 0 modules, 0 lessons, 1 pages) by 81edf61c-11a8-526b-ac29-814843965c5b[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:28:14 a. m. [32m    LOG[39m [38;5;3m[DeleteCurriculumSubtreeUseCase] [39m[32mDeleted lesson 01a1c913-e11d-7765-b7b8-e273cc768e43 subtree (0 levels, 0 modules, 1 lessons, 0 pages) by 81edf61c-11a8-526b-ac29-814843965c5b[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:28:14 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:28:14 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c914-0356-747c-a3b5-1455c02937ae'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Module not found'[39m,
+    stack: [32m'Error: Module not found\n    at GetModulePagesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\application\\use-cases\\get-module-pages.usecase.js:31:19)\n    at async PagesController.getModulePages (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\pages\\presentation\\controllers\\pages.controller.js:113:23)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'cf9dab41-032a-5336-a0d6-78d6fce3f0a7'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/pages/by-module/module-02-ecuacion-movimiento'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        moduleId: [32m'module-02-ecuacion-movimiento'[39m
+      },
+      statusCode: [33m404[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:28:15 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket I3HagD2IYBkgYv1sAAB1 authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:28:38 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 1IjHlw7goQylWfeaAAB2 authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:29:00 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 4aMFI4pyApPrEV-QAAB3 authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:29:21 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Qz5gjq3M2KQDh8tsAAB4 authenticated as user 01a1c915-04ee-750e-b01d-feaf56545060[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:29:34 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket pxMYR4W-ZCNp6YFMAAB5 authenticated as user 81edf61c-11a8-526b-ac29-814843965c5b[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:29:39 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Vo4j72o8iy0CcWZ2AAB6 authenticated as user 81edf61c-11a8-526b-ac29-814843965c5b[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:40 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:40 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c915-546f-7235-a566-ef116d5ecef6'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'The superadmin role cannot be changed'[39m,
+    stack: [32m'Error: The superadmin role cannot be changed\n    at <home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\users\\application\\use-cases\\change-user-role.usecase.js:51:23\n    at async <home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\common\\infrastructure\\persistence\\prisma\\prisma-transaction.manager.js:22:20\n    at async Proxy._transactionWithCallback (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\node_modules\\@prisma\\client\\runtime\\library.js:130:8120)\n    at async PrismaTransactionManager.run (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\common\\infrastructure\\persistence\\prisma\\prisma-transaction.manager.js:21:16)\n    at async ChangeUserRoleUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\users\\application\\use-cases\\change-user-role.usecase.js:45:24)\n    at async AdminController.changeUserRole (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\admin\\presentation\\controllers\\admin.controller.js:91:9)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'81edf61c-11a8-526b-ac29-814843965c5b'[39m,
+  content: {
+    http: {
+      method: [32m'PATCH'[39m,
+      path: [32m'/api/admin/users/81edf61c-11a8-526b-ac29-814843965c5b/role'[39m,
+      body: {
+        role: [32m'TEACHER'[39m
+      },
+      query: [1mnull[22m,
+      params: {
+        id: [32m'81edf61c-11a8-526b-ac29-814843965c5b'[39m
+      },
+      statusCode: [33m403[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:29:42 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket rQAzQoZDh3LQ3dFsAAB7 authenticated as user cf9dab41-032a-5336-a0d6-78d6fce3f0a7[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:29:45 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Fs7CoPQxxXkwO4wRAAB8 authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:47 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:47 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c915-6ee1-747c-93c8-16312fc6a75a'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Student is not assigned to the requesting teacher'[39m,
+    stack: [32m'Error: Student is not assigned to the requesting teacher\n    at GetStudentByIdUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\users\\application\\use-cases\\get-student-by-id.usecase.js:48:23)\n    at async UsersController.getStudentById (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\users\\presentation\\controllers\\users.controller.js:192:25)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'17f71bb8-28ff-5815-a51d-b33497d805f8'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/users/students/01a1c915-6e4b-75a8-b5dd-9a9497bdf3bc'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        id: [32m'01a1c915-6e4b-75a8-b5dd-9a9497bdf3bc'[39m
+      },
+      statusCode: [33m403[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:29:48 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Jq3rpXmoMGRsVa3YAAB9 authenticated as user 17f71bb8-28ff-5815-a51d-b33497d805f8[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:48 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:48 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c915-73d3-77cc-b884-e9ea8a0466cb'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'You cannot read the grades of a student outside your groups'[39m,
+    stack: [32m'Error: You cannot read the grades of a student outside your groups\n    at GetStudentGradesUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\evaluation\\application\\use-cases\\get-student-grades.usecase.js:37:19)\n    at async EvaluationGradingController.getStudentGrades (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\evaluation\\presentation\\controllers\\evaluation-grading.controller.js:79:24)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'17f71bb8-28ff-5815-a51d-b33497d805f8'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/evaluation-grading/students/01a1c915-6e4b-75a8-b5dd-9a9497bdf3bc/grades'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        userId: [32m'01a1c915-6e4b-75a8-b5dd-9a9497bdf3bc'[39m
+      },
+      statusCode: [33m403[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:48 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:48 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c915-73ce-77b0-9cd9-03ecb3256d04'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'The student is not in a group you created or supervise'[39m,
+    stack: [32m'Error: The student is not in a group you created or supervise\n    at GroupsFacade.assertCanViewStudent (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\groups\\application\\services\\groups.facade.js:105:19)\n    at async StudentProgressController._assertCanView (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\progress\\presentation\\controllers\\student-progress.controller.js:108:9)\n    at async StudentProgressController.getUserLearningProgressSummary (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\progress\\presentation\\controllers\\student-progress.controller.js:52:9)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'17f71bb8-28ff-5815-a51d-b33497d805f8'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/progress/users/01a1c915-6e4b-75a8-b5dd-9a9497bdf3bc/summary'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        userId: [32m'01a1c915-6e4b-75a8-b5dd-9a9497bdf3bc'[39m
+      },
+      statusCode: [33m403[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:48 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:48 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c915-73bf-74dc-9ddc-a4a40134c95d'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'Student is not assigned to the requesting teacher'[39m,
+    stack: [32m'Error: Student is not assigned to the requesting teacher\n    at GetStudentByIdUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\users\\application\\use-cases\\get-student-by-id.usecase.js:48:23)\n    at async UsersController.getStudentById (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\users\\presentation\\controllers\\users.controller.js:192:25)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'17f71bb8-28ff-5815-a51d-b33497d805f8'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/users/students/01a1c915-6e4b-75a8-b5dd-9a9497bdf3bc'[39m,
+      body: [1mnull[22m,
+      query: [1mnull[22m,
+      params: {
+        id: [32m'01a1c915-6e4b-75a8-b5dd-9a9497bdf3bc'[39m
+      },
+      statusCode: [33m403[39m
+    }
+  }
+}
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:48 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mException occurred[39m
+[31m[Nest] 17940  - [39m11/11/2026, 12:29:48 a. m. [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mObject(4) {
+  traceId: [32m'01a1c915-73d5-7299-afdd-1b56ec415c8d'[39m,
+  exception: {
+    name: [32m'Error'[39m,
+    message: [32m'You do not have access to this simulation session'[39m,
+    stack: [32m'Error: You do not have access to this simulation session\n    at SimulationSessionAccessService.assertCanReadSessionsOf (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\simulation\\application\\services\\simulation-session-access.service.js:35:19)\n    at async GetSimulationSessionsUseCase.execute (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\simulation\\application\\use-cases\\get-simulation-sessions.usecase.js:30:9)\n    at async SimulationSessionsController.getSimulationSessions (<home>\\Documents\\Marce\\ventylab\\wt-rmc-server\\dist\\features\\simulation\\presentation\\controllers\\simulation-sessions.controller.js:78:26)'[39m,
+    validation: [90mundefined[39m
+  },
+  userId: [32m'17f71bb8-28ff-5815-a51d-b33497d805f8'[39m,
+  content: {
+    http: {
+      method: [32m'GET'[39m,
+      path: [32m'/api/simulation/sessions/history'[39m,
+      body: [1mnull[22m,
+      query: {
+        userId: [32m'01a1c915-6e4b-75a8-b5dd-9a9497bdf3bc'[39m,
+        page: [32m'1'[39m,
+        limit: [32m'10'[39m,
+        sortOrder: [32m'desc'[39m
+      },
+      params: [1mnull[22m,
+      statusCode: [33m403[39m
+    }
+  }
+}
+[95m[Nest] 17940  - [39m11/11/2026, 12:29:50 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 0OZDqi9zw7aNonchAAB- authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:29:58 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket hkDia1n_VdMCS-4qAAB_ authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:02 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket FhEOmQedsTAVX7ehAACA authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:08 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket pWeoszIO5CFT1dGtAACB authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:09 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket ID04lG7d0PGWhM_pAACC authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:14 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket T0gWDaOaI2388IGuAACD authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:16 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket qirzuFw9c9-dZEvHAACE authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:20 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket fHUaH_SI8Zs1F8aYAACF authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:23 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket Dallwm8QKE5QhzHFAACG authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:26 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket poGrjGvJtqfLXvC8AACH authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:32 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket 30ZjFxgQ_wuKPw24AACI authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:33 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket NEkLHfakzibml3zrAACJ authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[95m[Nest] 17940  - [39m11/11/2026, 12:30:34 a. m. [95m  DEBUG[39m [38;5;3m[RealtimeGateway] [39m[95mSocket FImWrTa1t7GCSF3LAACK authenticated as user f2bf99b2-48f6-598f-bacd-cc975639fc54[39m
+[32m[Nest] 17940  - [39m11/11/2026, 12:30:54 a. m. [32m    LOG[39m [38;5;3m[SystemStatusService] [39m[32mSystem status OK -> DEGRADED (mqttBroker)[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:30:54 a. m. [33m   WARN[39m [38;5;3m[MqttVentilatorConnection] [39m[33mMQTT error (mqtt://127.0.0.1:1893): connect ECONNREFUSED 127.0.0.1:1893[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:30:56 a. m. [33m   WARN[39m [38;5;3m[VentilatorRoomAccessService] [39m[33mVentilator room refresh failed: 
+Invalid `client.reservation.findFirst()` invocation in
+<home>\Documents\Marce\ventylab\wt-rmc-server\dist\features\reservations\infrastructure\persistence\prisma\repositories\reservations-prisma.repository.js:51:46
+
+  48 }
+  49 async getActiveAt(now, transaction) {
+  50     const client = (0, prisma_client_1.resolveClient)(this._prisma, transaction);
+→ 51     const row = await client.reservation.findFirst(
+Server has closed the connection.[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:30:56 a. m. [33m   WARN[39m [38;5;3m[OperatorControlService] [39m[33mVentilator control refresh failed: 
+Invalid `client.reservation.findFirst()` invocation in
+<home>\Documents\Marce\ventylab\wt-rmc-server\dist\features\reservations\infrastructure\persistence\prisma\repositories\reservations-prisma.repository.js:51:46
+
+  48 }
+  49 async getActiveAt(now, transaction) {
+  50     const client = (0, prisma_client_1.resolveClient)(this._prisma, transaction);
+→ 51     const row = await client.reservation.findFirst(
+Server has closed the connection.[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:30:56 a. m. [33m   WARN[39m [38;5;3m[MqttVentilatorConnection] [39m[33mMQTT error (mqtt://127.0.0.1:1893): connect ECONNREFUSED 127.0.0.1:1893[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:30:57 a. m. [33m   WARN[39m [38;5;3m[VentilatorRoomAccessService] [39m[33mVentilator room refresh failed: 
+Invalid `client.reservation.findFirst()` invocation in
+<home>\Documents\Marce\ventylab\wt-rmc-server\dist\features\reservations\infrastructure\persistence\prisma\repositories\reservations-prisma.repository.js:51:46
+
+  48 }
+  49 async getActiveAt(now, transaction) {
+  50     const client = (0, prisma_client_1.resolveClient)(this._prisma, transaction);
+→ 51     const row = await client.reservation.findFirst(
+Server has closed the connection.[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:30:58 a. m. [33m   WARN[39m [38;5;3m[MqttVentilatorConnection] [39m[33mMQTT error (mqtt://127.0.0.1:1893): connect ECONNREFUSED 127.0.0.1:1893[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:30:59 a. m. [33m   WARN[39m [38;5;3m[OperatorControlService] [39m[33mVentilator control refresh failed: 
+Invalid `client.reservation.findFirst()` invocation in
+<home>\Documents\Marce\ventylab\wt-rmc-server\dist\features\reservations\infrastructure\persistence\prisma\repositories\reservations-prisma.repository.js:51:46
+
+  48 }
+  49 async getActiveAt(now, transaction) {
+  50     const client = (0, prisma_client_1.resolveClient)(this._prisma, transaction);
+→ 51     const row = await client.reservation.findFirst(
+Can't reach database server at `127.0.0.1:55432`
+
+Please make sure your database server is running at `127.0.0.1:55432`.[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:31:00 a. m. [33m   WARN[39m [38;5;3m[VentilatorRoomAccessService] [39m[33mVentilator room refresh failed: 
+Invalid `client.reservation.findFirst()` invocation in
+<home>\Documents\Marce\ventylab\wt-rmc-server\dist\features\reservations\infrastructure\persistence\prisma\repositories\reservations-prisma.repository.js:51:46
+
+  48 }
+  49 async getActiveAt(now, transaction) {
+  50     const client = (0, prisma_client_1.resolveClient)(this._prisma, transaction);
+→ 51     const row = await client.reservation.findFirst(
+Can't reach database server at `127.0.0.1:55432`
+
+Please make sure your database server is running at `127.0.0.1:55432`.[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:31:02 a. m. [33m   WARN[39m [38;5;3m[OperatorControlService] [39m[33mVentilator control refresh failed: 
+Invalid `client.reservation.findFirst()` invocation in
+<home>\Documents\Marce\ventylab\wt-rmc-server\dist\features\reservations\infrastructure\persistence\prisma\repositories\reservations-prisma.repository.js:51:46
+
+  48 }
+  49 async getActiveAt(now, transaction) {
+  50     const client = (0, prisma_client_1.resolveClient)(this._prisma, transaction);
+→ 51     const row = await client.reservation.findFirst(
+Can't reach database server at `127.0.0.1:55432`
+
+Please make sure your database server is running at `127.0.0.1:55432`.[39m
+[33m[Nest] 17940  - [39m11/11/2026, 12:31:02 a. m. [33m   WARN[39m [38;5;3m[VentilatorRoomAccessService] [39m[33mVentilator room refresh failed: 
+Invalid `client.reservation.findFirst()` invocation in
+<home>\Documents\Marce\ventylab\wt-rmc-server\dist\features\reservations\infrastructure\persistence\prisma\repositories\reservations-prisma.repository.js:51:46
+
+  48 }
+  49 async getActiveAt(now, transaction) {
+  50     const client = (0, prisma_client_1.resolveClient)(this._prisma, transaction);
+→ 51     const row = await client.reservation.findFirst(
+Can't reach database server at `127.0.0.1:55432`
+
+Please make sure your database server is running at `127.0.0.1:55432`.[39m

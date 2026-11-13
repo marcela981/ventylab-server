@@ -1,0 +1,3 @@
+npm notice run ventylab-server@1.0.0 lint:check
+npm notice run eslint "{src,apps,libs,test}/**/*.ts"
+EXIT 0

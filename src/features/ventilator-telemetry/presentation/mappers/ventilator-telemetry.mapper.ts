@@ -1,7 +1,7 @@
 /*
  * Funcionalidad: Mapper de presentación de la telemetría del ventilador
- * Descripción: Convierte la instantánea de métricas (con los duplicados de secuencia), las tramas grabadas y las muestras de latencia (filas CSV) en sus DTO de respuesta
- * Versión: 1.4
+ * Descripción: Convierte la instantánea de métricas (con los duplicados de secuencia), las tramas grabadas y las muestras de latencia (filas CSV) en sus DTO de respuesta. v1.5: la trama grabada incluye deviceClock
+ * Versión: 1.5
  * Autor: Marcela Mazo Castro
  * Proyecto: VentyLab
  * Tesis: Desarrollo de una aplicación web para la enseñanza de mecánica ventilatoria que integre un sistema de retroalimentación usando modelos de lenguaje
@@ -72,6 +72,7 @@ export class VentilatorTelemetryMapper {
       frames: result.frames.map((frame: RecordedTelemetrySample): RecordedTelemetryFrameDTO => new RecordedTelemetryFrameDTO({
         serverTs: frame.serverTs,
         deviceTs: frame.deviceTs ?? null,
+        deviceClock: frame.deviceClock ?? null,
         seq: frame.seq ?? null,
         pressure: frame.pressure,
         flow: frame.flow,

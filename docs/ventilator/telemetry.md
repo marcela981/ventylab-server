@@ -12,8 +12,9 @@
 | `flow` | L/min | Required, finite number (negative during expiration). |
 | `volume` | mL | Required, finite number. |
 | `seq` | non-negative integer | Optional. Gaps add `gap - 1` to `lostMessages`; see [Sequence gaps](#sequence-gaps) for late frames, restarts and wraparound. |
-| `deviceTs` | epoch ms | Optional. A legacy `timestamp` is used when it is an epoch value (> 10^12 ms). |
-| `serverTs` | epoch ms | Stamped by the server when the message is received. |
+| `deviceTs` | epoch ms | Optional. Taken from `deviceTs` (or the legacy `timestamp` when `deviceTs` is absent) only when it is a finite epoch value (> 10^12 ms). Used for `deviceLatencyMs`. |
+| `deviceClock` | number | Optional. The same device value when it is finite but not epoch (e.g. firmware uptime: `{"pressure":26,"flow":14.3,"volume":401,"timestamp":147}` → `deviceClock: 147`). Kept as received for analysis; the frame is not rejected, and the value is never used for latency, ordering, freshness or InfluxDB timestamps. |
+| `serverTs` | epoch ms | Stamped by the server when the message is received. Source of ordering, freshness, recording and InfluxDB time. |
 | `mode` | string | Optional ventilation mode reported by the device. |
 | `settings` | `Record<string, number>` | Optional current device settings; the latest ones are exposed by `getLatestSettings()`. |
 | `alarms` | `string[]` | Optional alarm codes reported inside the frame. |
@@ -21,9 +22,9 @@
 | `spo2` | % | Optional. |
 | `deviceId` | string | Defaults to `VENTILATOR_DEVICE_ID`. |
 
-Decoders (`VENTILATOR_TELEMETRY_DECODER`): `json` (strict validation above), `hex` (the existing `[0xFF][TYPE][LEN][DATA][XOR]` parser: pressure in tenths of cmH2O, signed flow in tenths of L/min, volume in mL, alarm type and severity; partial frames are merged into a rolling reading) and `auto` (JSON, then hex when the payload is not JSON). No firmware specification of the hex format exists; the layout is the one the previous parser implemented. Invalid messages are dropped and counted; a warning is logged at most once per `VENTILATOR_INVALID_LOG_INTERVAL_MS`.
+Decoders (`VENTILATOR_TELEMETRY_DECODER`): `json` (strict validation above), `hex` (the existing `[0xFF][TYPE][LEN][DATA][XOR]` parser: pressure in tenths of cmH2O, signed flow in tenths of L/min, volume in mL, alarm type and severity; partial frames are merged into a rolling reading) and `auto` (JSON, then hex when the payload is not JSON). No firmware specification of the hex format exists; the layout is the one the previous parser implemented. Invalid messages are dropped and counted; a warning is logged at most once per `VENTILATOR_INVALID_LOG_INTERVAL_MS`. Only messages on `MQTT_TELEMETRY_TOPIC` and `MQTT_ALARM_TOPIC` reach the pipeline: messages on other topics of the shared connection (e.g. `MQTT_COMMAND_ACK_TOPIC`) neither refresh device activity nor count as invalid.
 
-JSON objects with a `type` field on the alarm topic are parsed as alarms (`VentilatorAlarm`: known `type`, `severity` default `MEDIUM`, default message, `timestamp` default server time, `active` default `true`, `acknowledged` default `false`).
+JSON objects with a `type` field on the alarm topic are parsed as alarms (`VentilatorAlarm`: known `type`, `severity` default `MEDIUM`, default message, `timestamp` used only when it is epoch ms, otherwise server time, `active` default `true`, `acknowledged` default `false`).
 
 ## Socket.io events
 
@@ -59,12 +60,12 @@ Off by default. `POST /api/ventilator/telemetry/recordings/start|stop` (holders 
 | `MQTT_USERNAME`, `MQTT_PASSWORD` | unset | |
 | `MQTT_CLIENT_ID` | `ventylab-server-<pid>-<random>` | Unique per process. |
 | `MQTT_TELEMETRY_TOPIC` | `/ventynet/data` | Subscribed with QoS 0. |
-| `MQTT_ALARM_TOPIC` | `ventilab/device/001/alarm` | Subscribed with QoS 1 (rare messages that must not be lost). |
+| `MQTT_ALARM_TOPIC` | `ventilab/device/001/alarm` | Subscribed with QoS 1 (rare messages that must not be lost). Like `MQTT_TELEMETRY_TOPIC`, it must be an exact topic: a value with an MQTT wildcard (`+` or `#`) is rejected at startup, since the pipeline matches messages by exact topic. |
 | `MQTT_COMMAND_TOPIC` | `ventilab/device/001/command` | Commands are published with QoS 1. |
 | `MQTT_RECONNECT_BASE_MS` / `MQTT_RECONNECT_MAX_MS` | 1000 / 30000 | Infinite exponential backoff with jitter, capped at the maximum. |
 | `VENTILATOR_TELEMETRY_DECODER` | `auto` | `auto`, `json` or `hex`. |
 | `VENTILATOR_FLUSH_INTERVAL_MS` | 33 | Batch emit period. |
-| `VENTILATOR_MAX_BUFFERED_FRAMES` | 256 | Batch buffer cap. When a frame arrives with the buffer full, the oldest frames are dropped and counted in the `bufferDrops` metric. |
+| `VENTILATOR_MAX_BUFFERED_FRAMES` | 256 | Batch buffer cap. When a frame arrives with the buffer full, the oldest frames are dropped, counted in the `bufferDrops` metric and reported by a warning sampled like invalid messages (`VENTILATOR_INVALID_LOG_INTERVAL_MS`). |
 | `VENTILATOR_STALE_AFTER_MS` | 2000 | Device silence before `ventilator:disconnected`. |
 | `VENTILATOR_ROOM_REFRESH_MS` | 1000 | Active reservation polling period. |
 | `VENTILATOR_METRICS_WINDOW` | 10000 | Retained samples per latency kind. |
@@ -73,4 +74,4 @@ Off by default. `POST /api/ventilator/telemetry/recordings/start|stop` (holders 
 | `VENTILATOR_RECORDING_FLUSH_SECONDS` | 5 | Chunk period. |
 | `VENTILATOR_SEQ_REORDER_WINDOW` | 16 | 0–1024. Late frames within this distance of the newest `seq` count as reordered, not lost. |
 | `VENTILATOR_SEQ_WRAP_BITS` | 0 | `0`, `16` or `32`. Width of the device sequence counter for wraparound; 0 disables it. |
-| `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET` | unset | Optional InfluxDB sink fed with every frame when all four are set. |
+| `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET` | unset | Optional InfluxDB sink fed with every frame when all four are set. Points are written at microsecond precision from `serverTs` plus a per-process ordinal within the same millisecond, so frames received in the same millisecond do not overwrite each other. |

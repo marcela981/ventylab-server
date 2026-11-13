@@ -1,0 +1,11 @@
+{
+  "extends": "<home>/Documents/Marce/ventylab/wt-rmc-server/tsconfig.json",
+  "compilerOptions": { "noEmit": true, "incremental": false, "allowImportingTsExtensions": true, "types": ["node"], "typeRoots": ["<home>/Documents/Marce/ventylab/wt-rmc-server/node_modules/@types"] },
+  "include": [],
+  "files": [
+    "<home>/Documents/Marce/ventylab/wt-rmc-server/scripts/simulate-ventilator.ts",
+    "<home>/Documents/Marce/ventylab/wt-rmc-server/scripts/audit-e2e/audit-e2e.ts",
+    "<home>/Documents/Marce/ventylab/wt-rmc-server/scripts/audit-e2e/local-broker.test.ts",
+    "<home>/Documents/Marce/ventylab/wt-rmc-server/scripts/audit-e2e/audit-guards.test.ts"
+  ]
+}

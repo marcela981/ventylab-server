@@ -1,0 +1,20 @@
+05:03:11.965 subscribed to ventilab/device/001/command on local broker
+(node:6204) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+05:03:18.195 (b1) no reservation (estudiante02) -> HTTP 403 code=ventilator-commands.no_active_reservation msg=There is no active ventilator reservation
+05:03:18.721 reservation -> HTTP 201 code=null msg=Reservation created successfully
+05:03:18.757 (b2) reservation but no control -> HTTP 423 code=ventilator-commands.not_operator msg=Only the current ventilator operator can do this
+05:03:18.807 WS ventilator:control-changed: {"reservationId":"01a1c8fd-2f56-701b-a074-595e78678dd3","operatorUserId":"f2bf99b2-48f6-598f-bacd-cc975639fc54","reason":"taken","operatorName":"Camila Rojas","operatorLabelKey":null}
+05:03:18.808 take control -> HTTP 200 code=null
+05:03:20.376 MQTT <- ventilab/device/001/command: {"mode":"VCV","tidalVolume":450,"respiratoryRate":14,"peep":6,"fio2":0.4,"inspiratoryTime":1,"flowRate":60,"sensitivity":2,"correlationId":"01a1c8fd-372a-765f-8227-6187187b613e"}
+05:03:20.388 WS ventilator:command-status: {"commandId":"01a1c8fd-372a-765f-8227-6187187b613e","reservationId":"01a1c8fd-2f56-701b-a074-595e78678dd3","userId":"f2bf99b2-48f6-598f-bacd-cc975639fc54","status":"SENT","sentAt":"2026-11-11T05:03:20.374Z"}
+05:03:20.401 (a) full VCV -> HTTP 202 data={"commandId":"01a1c8fd-372a-765f-8227-6187187b613e","reservationId":"01a1c8fd-2f56-701b-a074-595e78678dd3","status":"SENT","sentAt":"2026-11-11T05:03:20.374Z"}
+05:03:23.382 WS ventilator:command-status: {"commandId":"01a1c8fd-372a-765f-8227-6187187b613e","reservationId":"01a1c8fd-2f56-701b-a074-595e78678dd3","userId":"f2bf99b2-48f6-598f-bacd-cc975639fc54","status":"TIMEOUT","sentAt":"2026-11-11T05:03:20.374Z","resolvedA
+05:03:25.409 (a) statuses for 01a1c8fd-372a-765f-8227-6187187b613e: SENT@+75ms -> TIMEOUT@+3069ms
+05:03:25.409 (a) MQTT messages on command topic after POST: 1; payload contains correlationId: true
+05:03:26.953 (c) tidalVolume 5000 -> HTTP 422 code=ventilator-commands.invalid_command msg=The ventilator command is invalid; see the listed violations details={"violations":[{"field":"tidalVolume","rule":"out_of_range","message":"tidalVolume 5000 is outside [200, 800] mL","limit":{"min":200,"max":800}}]}
+05:03:26.969 WS ventilator:control-changed: {"reservationId":"01a1c8fd-2f56-701b-a074-595e78678dd3","operatorUserId":null,"reason":"released","operatorName":null,"operatorLabelKey":null}
+05:03:26.970 release control -> HTTP 200
+05:03:27.003 (b2') after releasing control -> HTTP 423 code=ventilator-commands.not_operator msg=Only the current ventilator operator can do this
+05:03:27.100 cancel reservation -> HTTP 200 code=null
+05:03:27.100 total MQTT command messages observed: 1

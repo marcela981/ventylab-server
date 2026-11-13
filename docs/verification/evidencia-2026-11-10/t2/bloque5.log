@@ -1,0 +1,19 @@
+npm notice run ventilab-web@0.1.0 npx
+npm notice run playwright test --project=e2e e2e/bloque5/monitoreo-ia.spec.ts e2e/bloque5/monitoreo-julio.spec.ts e2e/bloque5/monitoreo-orden.spec.ts e2e/bloque5/monitoreo-tarjetas.spec.ts e2e/bloque5/monitoreo-teclado.spec.ts e2e/bloque-a/repeticion.spec.ts --reporter=list
+
+Running 11 tests using 1 worker
+
+  -   1 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as student
+  -   2 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as group member
+  -   3 [setup] › e2e\support\auth.setup.ts:32:8 › sign in as teacher
+  ✓   4 [e2e] › e2e\bloque-a\repeticion.spec.ts:39:5 › the replay of a session with evolution equals the live session and the server summary (21.7s)
+  ✓   5 [e2e] › e2e\bloque5\monitoreo-ia.spec.ts:25:5 › Asesoría IA opens a 380 px drawer, answers with the fake LLM and gives the focus back (8.1s)
+  ✓   6 [e2e] › e2e\bloque5\monitoreo-julio.spec.ts:87:7 › July Monitoreo control order at 1920×1080 (4.8s)
+  ✓   7 [e2e] › e2e\bloque5\monitoreo-julio.spec.ts:87:7 › July Monitoreo control order at 1280×720 (4.9s)
+  ✓   8 [e2e] › e2e\bloque5\monitoreo-orden.spec.ts:81:5 › July Monitoreo order of the Real monitor at 1920×1080 and 1280×720 (8.3s)
+  ✓   9 [e2e] › e2e\bloque5\monitoreo-tarjetas.spec.ts:39:5 › Ajustar hides, moves with the keyboard, persists across a reload and resets (6.9s)
+  ✓  10 [e2e] › e2e\bloque5\monitoreo-tarjetas.spec.ts:98:5 › a corrupt preference or another user's preference leaves the default cards (4.0s)
+  ✓  11 [e2e] › e2e\bloque5\monitoreo-teclado.spec.ts:17:5 › edits wait for Enviar; Escape drops them and Enter sends them (6.4s)
+
+  3 skipped
+  8 passed (1.2m)
